@@ -1,0 +1,42 @@
+# Web-tier service-health incident filter (severity band: Sev2, domain: IaaS web VM).
+# NEW asset (2026-06-14) from the incident-response-plan re-architecting. Splits the
+# NGINX-down scenario out of the Sev2 network band so it is handled by the dedicated
+# iaas-vm-incident-handler instead of the networking specialist (gap G2 fix).
+#
+# Routing key: title match. The live Azure Monitor incident title for this scenario is
+# "NGINX service down on web tier" (the alert display_name -- verified live 2026-06-14
+# against contoso-sre-agent-dev). Title matching is case-insensitive (the data-plane
+# rejects case-insensitive duplicate tokens), so the single keyword "nginx" matches it
+# and also the rule name alert-vflta-nginx-down. The sibling network-observability-review
+# filter carries titleNotContains [nginx], so the two Sev2 plans are disjoint by
+# construction.
+#
+# Run mode (full-autonomy requirement, 2026-06-14): fully Autonomous. The
+# iaas-vm-incident-handler investigates the Syslog evidence AND remediates end to end
+# (restart nginx via az vm run-command) with no human approval gate. Non-production
+# lab; restore-nginx.sh is the restore path.
+# Real alert: azurerm_monitor_scheduled_query_rules_alert_v2.nginx_down
+# (name alert-vflta-nginx-down, Sev2, KQL on the Syslog table).
+# Deployed via data-plane v2 /api/v2/extendedAgent/incidentFilters/{name}.
+api_version: azuresre.ai/v1
+kind: IncidentFilter
+metadata:
+  name: web-tier-nginx
+spec:
+  incidentPlatform: AzMonitor
+  isEnabled: true
+  priorities:
+    - Sev2
+  titleContains: nginx
+  handlingAgent: iaas-vm-incident-handler
+  agentMode: Autonomous
+  maxAutomatedInvestigationAttempts: 2
+  customInstructions: >-
+    Investigate Sev2 web-tier service-health alerts where NGINX is down on the
+    web VMs (incident title "NGINX service down on web tier"). Confirm from the
+    Syslog table that nginx stopped (ProcessName systemd, SyslogMessage referencing
+    nginx with Stopped/Deactivated/Failed), identify the affected VM
+    (vm-vflta-web-1 / vm-vflta-web-2), then restart the service autonomously (for
+    example systemctl start nginx via az vm run-command) and verify it is active
+    again. Report impacted VM, Syslog evidence, root cause, the exact remediation
+    command, the verification result, and the restore step (restore-nginx.sh).

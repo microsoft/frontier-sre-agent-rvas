@@ -1,0 +1,54 @@
+# REFERENCE + ENABLEMENT RUNBOOK (excluded from data-plane apply).
+# Files prefixed `example-` are excluded from every sre-agent-config.sh discovery path
+# (validate / plan / apply / verify / delete). Here the prefix is REQUIRED, not a sign of an
+# unfinished stub: the Outlook notification connector CANNOT be created by a data-plane PUT.
+# It is provisioned by the Builder portal wizard (OAuth sign-in + managed identity +
+# Microsoft.Web/connections), which a data-plane manifest cannot do. This is the same
+# "authorize once in the portal" model the repo already accepts for connectors/github.yaml.
+#
+# PURPOSE: give cost-optimization-agent (and any subagent) the built-in Outlook tools so it can
+# email investigation summaries and the weekly FinOps report produced by the
+# cost-optimization-review scheduled task. Official capability: Builder > Connectors >
+# Notification > "Send email (Outlook)". Sources:
+#   - Send notifications:       https://learn.microsoft.com/en-us/azure/sre-agent/send-notifications
+#   - Set up Outlook connector:  https://learn.microsoft.com/en-us/azure/sre-agent/outlook-connector
+#   - Connectors overview:       https://learn.microsoft.com/en-us/azure/sre-agent/connectors
+#
+# PREREQUISITES (certified by outlook-connector):
+#   - SRE Agent Administrator (only this role can configure connectors).
+#   - Contributor on the agent's resource group (needs Microsoft.Web/connections/write and
+#     Microsoft.Authorization/roleAssignments/write).
+#   - A Microsoft 365 account with an active Outlook mailbox.
+#   - A managed identity on the agent (System-assigned is simplest; User-assigned to share it).
+#
+# SETUP (about 5 minutes; one Outlook connector per agent):
+#   1. https://sre.azure.com > your agent > Builder > Connectors > Add connector.
+#   2. Select "Outlook Tools (Office 365 Outlook)" > Next.
+#   3. Sign in to Outlook (OAuth popup; allow pop-ups from sre.azure.com). The agent sends
+#      email AS the authenticated user.
+#   4. Select the managed identity (runtime ARM access) > Review + add.
+#   5. Verify: ask the agent "Send an email to <you> with subject 'SRE Agent Test'".
+#
+# TOOLS EXPOSED after setup (certified by send-notifications): Send email, Get email,
+# Reply to email, List emails, Move email. HTML formatting is automatic; attachments <= 5 MB total.
+#
+# WIRE INTO AUTOMATION (certified: "to set up automated notifications triggered by scheduled
+# tasks or incident response plans, configure the tools on the appropriate subagent"): after
+# setup, read the surfaced tool IDs from GET /api/v2/extendedAgent/connectors/<outlook-id> and
+# add the "Send email" tool to subagents/cost-optimization-agent.yaml `tools:` (portal tool
+# picker or YAML). The cost-optimization-review scheduled task already asks the agent to email
+# the technical report to Platform Engineering. Outbound communication only; no Azure resource
+# is modified. Full recipe: docs/azure-sre-agent/cost-optimization-agent.md.
+#
+# BEST PRACTICES (certified by send-notifications): the agent only sends when asked (no
+# unsolicited mail); prefer one scheduled digest over per-alert emails (the weekly
+# cost-optimization-review is exactly this pattern).
+#
+# The skeleton below is intentionally inert: spec.properties is populated by the portal wizard.
+# Do NOT guess dataConnectorType/dataSource; read them back from the live connector if needed.
+api_version: azuresre.ai/v1
+kind: AgentConnector
+metadata:
+  name: outlook
+spec:
+  properties: {} # provisioned by the Builder portal wizard (OAuth + managed identity); not data-plane deployable

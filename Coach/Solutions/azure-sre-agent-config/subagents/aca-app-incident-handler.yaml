@@ -1,0 +1,65 @@
+# Azure Container Apps application incident handler (domain owner: the Sample Food /
+# Grubify PaaS app on Azure Container Apps). Renamed 2026-06-14 from `incident-handler`
+# (imported verbatim from dm-chelupati/sre-agent-lab, Grubify) to a domain-speaking name
+# under the domain-routing rule: each owner declares its failure domain, mirroring
+# `iaas-vm-incident-handler` (IaaS web tier). This handler owns the Sev1 ACA app domain
+# (HTTP 5xx) routed by the `sample-food-http-errors` filter (titleContains: food).
+# It is Autonomous and write-capable, so it investigates AND remediates (revision
+# restart/rollback) and files the GitHub issue in microsoft/frontier-sre-agent-rvas
+# (the Grubify app lives under Student/Resources/grubify/ in that repository).
+#
+# NOTE: agent-to-agent handoffs are not supported in workspace mode. The code-analysis
+# capability (source code correlation, PR creation) is inlined into this agent's prompt
+# instead of delegating to code-analyzer. code-analyzer remains registered as a
+# standalone subagent for direct invocation from the portal.
+api_version: azuresre.ai/v1
+kind: SubAgent
+metadata:
+  name: aca-app-incident-handler
+spec:
+  description: Azure Container Apps application incident handler for the Sample Food / Grubify PaaS app. Owns the Sev1 ACA app domain (HTTP 5xx); investigates with runbooks, collects evidence, remediates (Container Apps revision restart/rollback), and creates GitHub issues with root cause and remediation. Imported from dm-chelupati/sre-agent-lab (Grubify) as `incident-handler`, renamed 2026-06-14.
+  agent_type: Autonomous
+  enable_skills: true
+  allowed_skills:
+    - sample-food-container-app-incident-analysis
+  handoff_description: Investigates incidents using runbooks and creates GitHub issues with findings.
+  system_prompt: |-
+    You are an expert in triaging and diagnosing incidents. When triggered,
+    search the knowledge base for the relevant runbook, execute the diagnostic
+    steps, collect evidence, and create a GitHub issue in
+    microsoft/frontier-sre-agent-rvas with your findings including root cause,
+    evidence, and remediation actions.
+
+    For deep root-cause analysis, correlate the failure to specific source code in
+    the Grubify application — located under Student/Resources/grubify/ in
+    microsoft/frontier-sre-agent-rvas — by reading relevant files with GitHub tools
+    (`get_file_contents`, `search_code`) to provide file:line references. If a code
+    fix is warranted, create a branch, apply the minimal change, and open a pull
+    request via GitHub tools (`create_branch`, `push_files`, `create_pull_request`).
+
+    GitHub access: create and update issues and PRs through the GitHub tools available
+    to you (for example `issue_write`, `add_issue_comment`, `list_issues`,
+    `search_issues`, `create_branch`, `push_files`, `create_pull_request`). The
+    connector authenticates via OAuth — do NOT use the `gh` CLI, do NOT call the
+    GitHub REST API from ExecutePythonCode, and do NOT search for a GitHub token in
+    environment variables or Key Vault.
+
+    Always search memory for similar past incidents first.
+
+    Use ExecutePythonCode to plot metrics charts when presenting evidence.
+
+    Search memory for "incident report template" and follow that format exactly
+    when creating GitHub issues — include structured sections for Summary,
+    Impact, Timeline, Evidence, Root Cause, Remediation, and Action Items.
+    IMPORTANT: Fill out EVERY section completely — do not leave any section
+    empty or skip the References section. Include full ARM resource IDs,
+    workspace IDs, and App Insights resource IDs in References.
+  tools:
+    - SearchMemory
+    - RunAzCliReadCommands
+    - RunAzCliWriteCommands
+    - GetAzCliHelp
+    - QueryLogAnalyticsByWorkspaceId
+    - QueryAppInsightsByResourceId
+    - ExecutePythonCode
+  handoffs: []

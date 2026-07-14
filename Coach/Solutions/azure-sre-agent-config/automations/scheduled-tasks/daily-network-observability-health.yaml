@@ -1,0 +1,20 @@
+# Daily network-observability health check. Imported from the EMU project guide
+# docs-azure-sre-agent/azure-sre-agent-implementation-guide.md (section 11).
+# Autonomous read-only review; runs daily at 06:00 UTC via the
+# network-traffic-analyst specialist. Deployed via data-plane v2
+# /api/v2/extendedAgent/scheduledtasks/{name}.
+api_version: azuresre.ai/v1
+kind: ScheduledTask
+metadata:
+  name: daily-network-observability-health
+spec:
+  description: Daily read-only summary of the last 24 hours of NTANetAnalytics for the VNet Flow Logs and Traffic Analytics lab.
+  schedule: "0 6 * * *"
+  time_zone: UTC
+  enabled: true
+  agent: network-traffic-analyst
+  mode: Autonomous
+  prompt: >-
+    Review the last 24 hours of NTANetAnalytics for this project. Summarize
+    denied flows, top talkers, missing VNet coverage, unusual ports, and
+    ingestion delays. Do not change resources.

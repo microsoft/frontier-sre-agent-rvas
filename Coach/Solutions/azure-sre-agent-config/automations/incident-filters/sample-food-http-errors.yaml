@@ -1,0 +1,28 @@
+# Response plan / incident filter routing Sample Food (Grubify) HTTP 5xx alerts
+# to the aca-app-incident-handler subagent (renamed 2026-06-14 from incident-handler).
+# Imported from dm-chelupati/sre-agent-lab (filter "grubify-http-errors").
+# Enabled with autonomous handling to match the lab.
+# Deployed via data-plane v2 /api/v2/extendedAgent/incidentFilters/{name}.
+#
+# Domain routing (architectural rule, 2026-06-14): each response plan owns a
+# failure domain, keyed by incident title, across severities. This plan owns the
+# Sample Food / Grubify Azure Container Apps (PaaS) application domain at Sev1.
+# The live incident title is the metric-alert name "alert-vflta-food-http-5xx"
+# (azurerm_monitor_metric_alert.sample_food_http_5xx), so titleContains "food"
+# scopes this plan to the app domain (the only Sev1 response plan in this lab).
+# Title matching is case-insensitive. Sev2 networking uses network-observability-review;
+# Sev2 web-tier service health uses web-tier-nginx.
+api_version: azuresre.ai/v1
+kind: IncidentFilter
+metadata:
+  name: sample-food-http-errors
+spec:
+  incidentPlatform: AzMonitor
+  isEnabled: true
+  priorities:
+    - Sev1
+  titleContains: food
+  handlingAgent: aca-app-incident-handler
+  agentMode: Autonomous
+  maxAutomatedInvestigationAttempts: 3
+  customInstructions: Route Sample Food / Grubify HTTP 5xx alerts (Azure Container Apps app domain) to the aca-app-incident-handler subagent for runbook-driven investigation and remediation.

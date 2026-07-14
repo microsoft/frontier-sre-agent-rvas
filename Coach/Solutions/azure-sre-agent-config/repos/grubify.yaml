@@ -1,0 +1,16 @@
+# Grubify source repository for deep-context code correlation and issue triage.
+# Imported from dm-chelupati/sre-agent-lab. The Grubify application now lives INSIDE this
+# solution's repository (microsoft/frontier-sre-agent-rvas) under the subfolder
+# Student/Resources/grubify/ — the agent reads the source there and opens fix pull
+# requests against that repository.
+# authConnectorName links this repo to the GitHub OAuth connector (connectors/github.yaml)
+# so the agent can read source and manage issues/PRs via the authorized OAuth session.
+api_version: azuresre.ai/v1
+kind: Repository
+metadata:
+  name: grubify
+spec:
+  url: https://github.com/microsoft/frontier-sre-agent-rvas
+  type: GitHub
+  authConnectorName: github
+  description: Grubify application source (under Student/Resources/grubify/ in microsoft/frontier-sre-agent-rvas) for code-analyzer correlation, issue-triager triage, and autonomous fix pull requests.

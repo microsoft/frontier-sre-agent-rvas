@@ -1,0 +1,13 @@
+api_version: azuresre.ai/v1
+kind: Skill
+metadata:
+  name: rbac-and-resource-access-check
+spec:
+  description: Diagnose Azure SRE Agent access, managed identity permissions, user roles, and least-privilege RBAC gaps.
+  content_file: ./rbac-and-resource-access-check.md
+  tools:
+    - RunAzCliReadCommands
+    - GetAzCliHelp
+  safety:
+    default_mode: read_only
+    requires_approval_for_actions: true

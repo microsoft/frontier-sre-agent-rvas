@@ -37,6 +37,12 @@ jobs:
           - name: vm-health-control
             context: Student/Resources/parking-manager/backend/vm-health-control
             dockerfile: Student/Resources/parking-manager/backend/vm-health-control/Dockerfile
+          - name: grubify-api
+            context: Student/Resources/grubify/GrubifyApi
+            dockerfile: Student/Resources/grubify/GrubifyApi/Dockerfile
+          - name: grubify-frontend
+            context: Student/Resources/grubify/grubify-frontend
+            dockerfile: Student/Resources/grubify/grubify-frontend/Dockerfile
     steps:
       - name: Lower case REPO
         run: |

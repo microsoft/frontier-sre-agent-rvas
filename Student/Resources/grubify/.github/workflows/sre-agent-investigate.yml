@@ -1,0 +1,40 @@
+# Trigger SRE Agent investigation when a production issue is reported
+name: SRE Agent - Investigate Issue
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  investigate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Call SRE Agent HTTP Trigger
+        env:
+          SRE_TRIGGER_URL: ${{ secrets.SRE_TRIGGER_URL }}
+          ARM_TOKEN: ${{ secrets.ARM_TOKEN }}
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$SRE_TRIGGER_URL" \
+            -H "Authorization: Bearer $ARM_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"source\": \"github\",
+              \"issue_title\": \"${{ github.event.issue.title }}\",
+              \"issue_number\": ${{ github.event.issue.number }},
+              \"issue_url\": \"${{ github.event.issue.html_url }}\",
+              \"repo\": \"${{ github.repository }}\"
+            }")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+
+          echo "Response: $BODY"
+          echo "HTTP Status: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" != "202" ] && [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::SRE Agent trigger failed with HTTP $HTTP_CODE"
+            exit 1
+          fi
+
+          echo "::notice::SRE Agent investigation triggered successfully"

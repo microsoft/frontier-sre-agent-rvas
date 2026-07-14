@@ -1,0 +1,39 @@
+# Cost optimization review. Subscription-wide FinOps successor to weekly-cost-retention-review.
+# Autonomous read-only (recommendations only); runs weekly Monday 07:00 UTC via the
+# cost-optimization-agent specialist. Cadence-neutral name so the cron can change without a
+# rename. Deployed via data-plane v2 /api/v2/extendedAgent/scheduledtasks/{name}.
+api_version: azuresre.ai/v1
+kind: ScheduledTask
+metadata:
+  name: cost-optimization-review
+spec:
+  description: >-
+    Weekly subscription-wide cost optimization review. Correlates inventory, actual spend,
+    utilization, and Azure Advisor with workload criticality and budget, and reports prioritized,
+    read-only optimizations with trade-offs.
+  schedule: "0 7 * * 1"
+  time_zone: UTC
+  enabled: true
+  agent: cost-optimization-agent
+  mode: Autonomous
+  prompt: >-
+    Perform a subscription-wide cost optimization review. (1) Read the workload cost profiles for
+    business context. (2) Inventory all resources with Azure Resource Graph (SKU, tier,
+    redundancy), including orphaned public IPs, NICs, empty load balancers, and stale snapshots.
+    (3) Pull actual spend from the Cost Management Query API for the last month and month-to-date,
+    grouped by resource group, service, team tag, and environment tag, and flag any group trending
+    up more than 20 percent versus the prior period. (4) Forecast the next 30, 60, and 90 days and
+    compare to budgets to report variance. (5) Compute unit economics (cost per transaction from
+    Application Insights request volume) and flag unit cost rising while volume is flat. (6) Confirm
+    utilization with Azure Monitor and Log Analytics before any right-sizing, and detect
+    non-production resources running outside working hours. (7) Read reservation and savings-plan
+    coverage and utilization, flag low-utilization or expiring commitments, and compute break-even
+    for any new commitment. (8) Run Azure Advisor cost recommendations at subscription and
+    resource-group scope (read-only, never --refresh). (9) Correlate and de-duplicate. (10) Apply
+    Well-Architected Cost guardrails using each workload's criticality, SLA, resiliency,
+    performance, budget, headroom, peaks, failover, RTO/RPO, growth, and release calendar. (11)
+    Output a single prioritized savings table with benefit, payback, effort, reversibility,
+    confidence, risk, rollback, scope, and an advisory classification, plus an executive value
+    summary. (12) When the Outlook and Teams connectors are available, send the technical report by
+    email to Platform Engineering and post the executive value summary to the FinOps Teams channel.
+    Recommend only; do not modify any Azure resource.
