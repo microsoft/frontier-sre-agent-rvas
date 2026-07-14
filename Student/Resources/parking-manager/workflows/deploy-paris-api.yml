@@ -1,0 +1,231 @@
+name: Deploy Paris API to Linux VM
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/paris-parking-api/**'
+      - 'backend/shared/**'
+      - '.github/workflows/deploy-paris-api.yml'
+  workflow_dispatch:
+
+env:
+  APP_DIR: /opt/paris-parking-api
+  SERVICE_NAME: paris-parking-api
+  VM_NAME: ${{ vars.PARIS_VM_NAME }}
+  RESOURCE_GROUP: ${{ vars.PARIS_RESOURCE_GROUP }}
+  STORAGE_ACCOUNT: ${{ vars.DEPLOYMENT_STORAGE_ACCOUNT }}
+  STORAGE_RG: ${{ vars.HUB_RESOURCE_GROUP }}
+  CHAOS_CONTROL_URL: ${{ vars.CHAOS_CONTROL_URL }}
+
+jobs:
+  deploy:
+    runs-on: parking-hub-runner-linux
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Create deployment package
+        shell: bash
+        run: |
+          # Create zip of Paris API and shared directory (preserving relative structure)
+          echo "Creating deployment package..."
+          cd backend
+          zip -r "../paris-api-${{ github.run_id }}.zip" paris-parking-api/ shared/
+          cd ..
+
+      - name: Upload deployment package to storage
+        shell: bash
+        run: |
+          echo "Uploading package to storage account (with retry for RBAC propagation)..."
+          
+          MAX_RETRIES=5
+          RETRY_COUNT=0
+          UPLOADED=false
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ "$UPLOADED" = "false" ]; do
+            if az storage blob upload \
+              --account-name $STORAGE_ACCOUNT \
+              --container-name "deployments" \
+              --file "paris-api-${{ github.run_id }}.zip" \
+              --name "paris-api-deploy-${{ github.run_id }}.zip" \
+              --auth-mode login \
+              --overwrite; then
+              UPLOADED=true
+              echo "Package uploaded successfully"
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "Upload failed, retrying in 10 seconds (attempt $RETRY_COUNT/$MAX_RETRIES)..."
+                sleep 10
+              else
+                echo "Failed to upload after $MAX_RETRIES attempts"
+                exit 1
+              fi
+            fi
+          done
+          
+          # Generate SAS URL (valid for 30 minutes) using RBAC
+          BLOB_URL=$(az storage blob generate-sas \
+            --account-name $STORAGE_ACCOUNT \
+            --container-name "deployments" \
+            --name "paris-api-deploy-${{ github.run_id }}.zip" \
+            --expiry $(date -u -d '+30 minutes' '+%Y-%m-%dT%H:%MZ') \
+            --permissions r \
+            --auth-mode login \
+            --as-user \
+            -o tsv)
+          
+          FULL_BLOB_URL="https://$STORAGE_ACCOUNT.blob.core.windows.net/deployments/paris-api-deploy-${{ github.run_id }}.zip?$BLOB_URL"
+          echo "BLOB_URL=$FULL_BLOB_URL" >> $GITHUB_ENV
+
+      - name: Deploy to Paris VM via Run Command
+        shell: bash
+        run: |
+          # Create bash deployment script
+          cat > /tmp/deploy-paris-${{ github.run_id }}.sh << 'EOFSCRIPT'
+          #!/bin/bash
+          set -e
+          
+          SERVICE_NAME="${{ env.SERVICE_NAME }}"
+          APP_DIR="${{ env.APP_DIR }}"
+          BLOB_URL="${{ env.BLOB_URL }}"
+          
+          echo "Stopping service if exists..."
+          sudo systemctl stop $SERVICE_NAME || true
+          sleep 2
+          
+          echo "Installing required packages..."
+          sudo apt-get update -qq
+          sudo apt-get install -y unzip curl wget build-essential
+          
+          echo "Creating application directory..."
+          sudo mkdir -p $APP_DIR
+          
+          echo "Downloading deployment package..."
+          TEMP_ZIP="/tmp/paris-api.zip"
+          TEMP_EXTRACT="/tmp/paris-extract"
+          
+          # Download using SAS URL (no auth needed - URL is pre-signed)
+          wget -q "$BLOB_URL" -O "$TEMP_ZIP" || curl -s -o "$TEMP_ZIP" "$BLOB_URL"
+          
+          if [ ! -f "$TEMP_ZIP" ]; then
+            echo "ERROR: Download failed - file not created"
+            exit 1
+          fi
+          
+          echo "Extracting package..."
+          mkdir -p $TEMP_EXTRACT
+          unzip -q "$TEMP_ZIP" -d $TEMP_EXTRACT
+          
+          echo "Copying application files..."
+          sudo cp -r $TEMP_EXTRACT/paris-parking-api/* $APP_DIR/
+          sudo cp -r $TEMP_EXTRACT/shared /opt/shared
+          sudo chown -R $USER:$USER $APP_DIR /opt/shared
+          
+          # Clean up
+          rm -rf "$TEMP_ZIP" "$TEMP_EXTRACT"
+          
+          echo "Installing dependencies..."
+          cd $APP_DIR
+          npm ci --only=production
+          
+          echo "Checking for HTTPS certificates..."
+          if [ ! -f "$APP_DIR/paris.crt" ] || [ ! -f "$APP_DIR/paris.key" ]; then
+            echo "Generating self-signed certificates..."
+            openssl genrsa -out "$APP_DIR/paris.key" 2048
+            openssl req -new -x509 -key "$APP_DIR/paris.key" -out "$APP_DIR/paris.crt" \
+              -days 365 \
+              -subj "/C=FR/ST=Paris/L=Paris/O=Parking/OU=API/CN=10.0.1.4"
+            chmod 600 "$APP_DIR/paris.key"
+            chmod 644 "$APP_DIR/paris.crt"
+            echo "✅ Certificates generated"
+          else
+            echo "✅ Certificates already exist"
+          fi
+          
+          echo "Creating .env file..."
+          cat > "$APP_DIR/.env" << EOF
+          PORT=3003
+          PARKING_NAME=Paris Centre Parking
+          PARKING_CITY=Paris
+          PARKING_LOCATION=Champs-Élysées, Paris
+          SYSLOG_FACILITY=local0
+          SYSLOG_TAG=ParisParkingAPI
+          NODE_ENV=production
+          CERT_PATH=$APP_DIR/paris.crt
+          KEY_PATH=$APP_DIR/paris.key
+          CHAOS_CONTROL_URL=$CHAOS_CONTROL_URL
+          EOF
+          
+          echo "Creating systemd service file..."
+          sudo tee /etc/systemd/system/$SERVICE_NAME.service > /dev/null << EOF
+          [Unit]
+          Description=Paris Parking API
+          After=network.target
+          
+          [Service]
+          Type=simple
+          User=$USER
+          WorkingDirectory=$APP_DIR
+          ExecStart=/usr/bin/node $APP_DIR/server.js
+          Restart=always
+          RestartSec=10
+          StandardOutput=journal
+          StandardError=journal
+          SyslogIdentifier=paris-parking-api
+          
+          Environment=NODE_ENV=production
+          
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+          
+          echo "Reloading systemd and starting service..."
+          sudo systemctl daemon-reload
+          sudo systemctl enable $SERVICE_NAME
+          sudo systemctl start $SERVICE_NAME
+          
+          echo "Waiting for service to start..."
+          sleep 5
+          
+          if sudo systemctl is-active --quiet $SERVICE_NAME; then
+            echo "✅ Service is running"
+          else
+            echo "❌ Service failed to start"
+            sudo journalctl -u $SERVICE_NAME --no-pager -n 50
+            exit 1
+          fi
+          EOFSCRIPT
+          
+          chmod +x /tmp/deploy-paris-${{ github.run_id }}.sh
+          
+          echo "Deploying to VM ${{ env.VM_NAME }}..."
+          az vm run-command invoke \
+            --name ${{ env.VM_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --command-id RunShellScript \
+            --scripts @/tmp/deploy-paris-${{ github.run_id }}.sh
+          
+          rm -f /tmp/deploy-paris-${{ github.run_id }}.sh
+
+      - name: Cleanup deployment package
+        if: always()
+        shell: bash
+        run: |
+          echo "Cleaning up deployment package from storage..."
+          az storage blob delete \
+            --account-name $STORAGE_ACCOUNT \
+            --container-name "deployments" \
+            --name "paris-api-deploy-${{ github.run_id }}.zip" \
+            --auth-mode login \
+            --only-show-errors 2>/dev/null || true
+          
+          echo "✅ Cleanup complete"

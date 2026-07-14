@@ -1,0 +1,371 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.40.2.10011",
+      "templateHash": "15979375976132433706"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Location for all hub resources"
+      }
+    },
+    "vnetAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/16",
+      "metadata": {
+        "description": "Virtual Network address prefix"
+      }
+    },
+    "vmSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.1.0/24",
+      "metadata": {
+        "description": "Subnet address prefix for VMs"
+      }
+    },
+    "containerSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.2.0/23",
+      "metadata": {
+        "description": "Subnet address prefix for Container Apps"
+      }
+    },
+    "allowedSourceIpPrefix": {
+      "type": "string",
+      "defaultValue": "*",
+      "metadata": {
+        "description": "Allowed source IP address prefix for SSH/RDP access. Use specific IP ranges in production."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags to apply to resources"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2023-05-01",
+      "name": "nsg-app-service",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "securityRules": []
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2023-05-01",
+      "name": "nsg-vms",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "AllowHTTP",
+            "properties": {
+              "priority": 100,
+              "direction": "Inbound",
+              "access": "Allow",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "80",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*"
+            }
+          },
+          {
+            "name": "AllowHTTPS",
+            "properties": {
+              "priority": 110,
+              "direction": "Inbound",
+              "access": "Allow",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "443",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*"
+            }
+          },
+          {
+            "name": "AllowAPIPort3002",
+            "properties": {
+              "priority": 120,
+              "direction": "Inbound",
+              "access": "Allow",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "3002",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*"
+            }
+          },
+          {
+            "name": "AllowAPIPort3003",
+            "properties": {
+              "priority": 130,
+              "direction": "Inbound",
+              "access": "Allow",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "3003",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*"
+            }
+          },
+          {
+            "name": "AllowSSH",
+            "properties": {
+              "priority": 200,
+              "direction": "Inbound",
+              "access": "Allow",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "[parameters('allowedSourceIpPrefix')]",
+              "destinationAddressPrefix": "*"
+            }
+          },
+          {
+            "name": "AllowRDP",
+            "properties": {
+              "priority": 210,
+              "direction": "Inbound",
+              "access": "Allow",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "3389",
+              "sourceAddressPrefix": "[parameters('allowedSourceIpPrefix')]",
+              "destinationAddressPrefix": "*"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2023-05-01",
+      "name": "pip-github-runners-egress",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Static",
+        "publicIPAddressVersion": "IPv4",
+        "idleTimeoutInMinutes": 10
+      },
+      "zones": [
+        "1",
+        "2",
+        "3"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/natGateways",
+      "apiVersion": "2023-05-01",
+      "name": "ngw-github-runners",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "publicIpAddresses": [
+          {
+            "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'pip-github-runners-egress')]"
+          }
+        ],
+        "idleTimeoutInMinutes": 10
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', 'pip-github-runners-egress')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/routeTables",
+      "apiVersion": "2023-05-01",
+      "name": "udr-vms",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "routes": [
+          {
+            "name": "route-to-app-service",
+            "properties": {
+              "addressPrefix": "10.0.5.0/24",
+              "nextHopType": "VnetLocal"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/routeTables",
+      "apiVersion": "2023-05-01",
+      "name": "udr-app-service",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "routes": [
+          {
+            "name": "route-to-vms",
+            "properties": {
+              "addressPrefix": "10.0.1.0/24",
+              "nextHopType": "VnetLocal"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2023-05-01",
+      "name": "vnet-parking-hub",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('vnetAddressPrefix')]"
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "apiVersion": "2023-05-01",
+      "name": "[format('{0}/{1}', 'vnet-parking-hub', 'snet-vms')]",
+      "properties": {
+        "addressPrefix": "[parameters('vmSubnetPrefix')]",
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-vms')]"
+        },
+        "routeTable": {
+          "id": "[resourceId('Microsoft.Network/routeTables', 'udr-vms')]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-vms')]",
+        "[resourceId('Microsoft.Network/routeTables', 'udr-vms')]",
+        "[resourceId('Microsoft.Network/virtualNetworks', 'vnet-parking-hub')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "apiVersion": "2023-05-01",
+      "name": "[format('{0}/{1}', 'vnet-parking-hub', 'snet-container-apps')]",
+      "properties": {
+        "addressPrefix": "[parameters('containerSubnetPrefix')]",
+        "delegations": [
+          {
+            "name": "Microsoft.App/environments",
+            "properties": {
+              "serviceName": "Microsoft.App/environments"
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet-parking-hub', 'snet-vms')]",
+        "[resourceId('Microsoft.Network/virtualNetworks', 'vnet-parking-hub')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "apiVersion": "2023-05-01",
+      "name": "[format('{0}/{1}', 'vnet-parking-hub', 'snet-app-service')]",
+      "properties": {
+        "addressPrefix": "10.0.5.0/24",
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-app-service')]"
+        },
+        "routeTable": {
+          "id": "[resourceId('Microsoft.Network/routeTables', 'udr-app-service')]"
+        },
+        "delegations": [
+          {
+            "name": "Microsoft.Web/serverFarms",
+            "properties": {
+              "serviceName": "Microsoft.Web/serverFarms"
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet-parking-hub', 'snet-container-apps')]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-app-service')]",
+        "[resourceId('Microsoft.Network/routeTables', 'udr-app-service')]",
+        "[resourceId('Microsoft.Network/virtualNetworks', 'vnet-parking-hub')]"
+      ]
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2022-10-01",
+      "name": "law-parking-hub",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "sku": {
+          "name": "PerGB2018"
+        },
+        "retentionInDays": 30,
+        "features": {
+          "enableLogAccessUsingOnlyResourcePermissions": true
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "vnetId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks', 'vnet-parking-hub')]"
+    },
+    "vnetName": {
+      "type": "string",
+      "value": "vnet-parking-hub"
+    },
+    "vmSubnetId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet-parking-hub', 'snet-vms')]"
+    },
+    "containerSubnetId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet-parking-hub', 'snet-container-apps')]"
+    },
+    "appServiceSubnetId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet-parking-hub', 'snet-app-service')]"
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.OperationalInsights/workspaces', 'law-parking-hub')]"
+    },
+    "logAnalyticsWorkspaceName": {
+      "type": "string",
+      "value": "law-parking-hub"
+    },
+    "logAnalyticsCustomerId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', 'law-parking-hub'), '2022-10-01').customerId]"
+    },
+    "natGatewayId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/natGateways', 'ngw-github-runners')]"
+    },
+    "natGatewayPublicIp": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', 'pip-github-runners-egress'), '2023-05-01').ipAddress]"
+    }
+  }
+}

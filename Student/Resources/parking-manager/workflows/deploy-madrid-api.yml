@@ -1,0 +1,415 @@
+name: Deploy Madrid API to Windows VM
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/madrid-parking-api/**'
+      - 'backend/shared/**'
+      - '.github/workflows/deploy-madrid-api.yml'
+  workflow_dispatch:
+
+env:
+  APP_DIR: C:\Apps\madrid-parking-api
+  SERVICE_NAME: MadridParkingAPI
+  VM_NAME: ${{ vars.MADRID_VM_NAME }}
+  RESOURCE_GROUP: ${{ vars.MADRID_RESOURCE_GROUP }}
+  STORAGE_ACCOUNT: ${{ vars.DEPLOYMENT_STORAGE_ACCOUNT }}
+  STORAGE_RG: ${{ vars.HUB_RESOURCE_GROUP }}
+  CHAOS_CONTROL_URL: ${{ vars.CHAOS_CONTROL_URL }}
+
+jobs:
+  deploy:
+    runs-on: parking-hub-runner-windows
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Debug - Show current principal
+        shell: pwsh
+        run: |
+          $account = az account show -o json | ConvertFrom-Json
+          $principal = $account.user.name
+          Write-Host "Service Principal: $($principal.Substring(0, [Math]::Min(8, $principal.Length)))..."
+          Write-Host "Full details - user.name will be the service principal ID"
+          Write-Host "To see the actual ID: check GitHub secret AZURE_CREDENTIALS and look at clientId field"
+
+      - name: Create deployment package
+        shell: pwsh
+        run: |
+          Write-Host "Creating deployment package..."
+          $tempDir = "$env:TEMP\madrid-deploy-${{ github.run_id }}"
+          New-Item -ItemType Directory -Path "$tempDir\madrid-parking-api" -Force | Out-Null
+          New-Item -ItemType Directory -Path "$tempDir\shared" -Force | Out-Null
+          Copy-Item -Path "backend\madrid-parking-api\*" -Destination "$tempDir\madrid-parking-api" -Recurse -Force
+          Copy-Item -Path "backend\shared\*" -Destination "$tempDir\shared" -Recurse -Force
+          Compress-Archive -Path "$tempDir\*" -DestinationPath "madrid-api-${{ github.run_id }}.zip" -Force
+          Remove-Item $tempDir -Recurse -Force
+
+      - name: Upload to storage via private endpoint
+        shell: pwsh
+        run: |
+          Write-Host "Uploading to deployment storage via private endpoint..."
+          az storage blob upload `
+            --account-name $env:STORAGE_ACCOUNT `
+            --container-name "deployments" `
+            --file "madrid-api-${{ github.run_id }}.zip" `
+            --name "madrid-api-${{ github.run_id }}.zip" `
+            --auth-mode login `
+            --overwrite
+          
+          Write-Host "Generating SAS token (RBAC-based, valid 30 min)..."
+          $sasToken = az storage blob generate-sas `
+            --account-name $env:STORAGE_ACCOUNT `
+            --container-name "deployments" `
+            --name "madrid-api-${{ github.run_id }}.zip" `
+            --expiry (Get-Date).AddMinutes(30).ToString("yyyy-MM-ddTHH:mm:ssZ") `
+            --permissions r `
+            --auth-mode login `
+            --as-user `
+            -o tsv
+          
+          $blobUrl = "https://$($env:STORAGE_ACCOUNT).blob.core.windows.net/deployments/madrid-api-${{ github.run_id }}.zip?$sasToken"
+          "BLOB_URL=$blobUrl" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Deploy to Madrid VM via Run Command
+        shell: pwsh
+        run: |
+          $deployScript = @'
+          $serviceName = "${{ env.SERVICE_NAME }}"
+          $appDir = "${{ env.APP_DIR }}"
+          $blobUrl = "${{ env.BLOB_URL }}"
+          $chaosControlUrl = "${{ env.CHAOS_CONTROL_URL }}"
+          
+          Write-Host "Stopping service if exists..."
+          $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+          if ($service) {
+            Stop-Service -Name $serviceName -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 3
+          }
+          
+          Write-Host "Killing any processes on port 3002..."
+          $process = Get-NetTCPConnection -LocalPort 3002 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess
+          if ($process) {
+            Stop-Process -Id $process -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 2
+          }
+          
+          Write-Host "Creating application directory..."
+          if (-not (Test-Path $appDir)) {
+            New-Item -ItemType Directory -Path $appDir -Force | Out-Null
+          }
+          
+          Write-Host "Downloading from storage via private endpoint..."
+          $tempZip = "$env:TEMP\madrid-api.zip"
+          
+          try {
+            Invoke-WebRequest -Uri $blobUrl -OutFile $tempZip -UseBasicParsing
+            
+            Write-Host "Extracting package..."
+            $tempExtract = "$env:TEMP\madrid-extract"
+            if (Test-Path $tempExtract) { Remove-Item $tempExtract -Recurse -Force }
+            Expand-Archive -Path $tempZip -DestinationPath $tempExtract -Force
+            
+            Write-Host "Copying files..."
+            Copy-Item -Path "$tempExtract\madrid-parking-api\*" -Destination $appDir -Recurse -Force
+            
+            $sharedDir = Join-Path (Split-Path $appDir -Parent) "shared"
+            if (-not (Test-Path $sharedDir)) { New-Item -ItemType Directory -Path $sharedDir -Force | Out-Null }
+            Copy-Item -Path "$tempExtract\shared\*" -Destination $sharedDir -Recurse -Force
+            
+            Remove-Item $tempZip -Force
+            Remove-Item $tempExtract -Recurse -Force
+          } catch {
+            Write-Host "ERROR: $_"
+            exit 1
+          }
+          
+          Write-Host "Ensuring Node.js is installed..."
+          $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+          if (-not $nodeCmd) {
+            Write-Host "Node.js not found. Installing Node.js LTS..."
+            $nodeMsi = "$env:TEMP\node-lts.msi"
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            try {
+              Write-Host "Downloading Node.js installer from internet..."
+              Invoke-WebRequest -Uri "https://nodejs.org/dist/v20.11.1/node-v20.11.1-x64.msi" -OutFile $nodeMsi -UseBasicParsing
+            } catch {
+              Write-Host "ERROR: Failed to download Node.js installer: $_"
+              exit 1
+            }
+            Write-Host "Installing Node.js..."
+            Start-Process msiexec.exe -ArgumentList "/i `"$nodeMsi`" /qn /norestart" -Wait
+            if (Test-Path $nodeMsi) { Remove-Item $nodeMsi -Force }
+            $env:PATH = [System.Environment]::GetEnvironmentVariable('Path','Machine')
+          }
+          $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
+          if (-not $npmCmd) {
+            Write-Host "ERROR: npm still not available after install. Aborting."
+            exit 1
+          }
+
+          Write-Host "Installing dependencies..."
+          cd $appDir
+          npm ci --omit=dev --include=optional
+
+          if (-not (Test-Path "$appDir\node_modules\node-windows")) {
+            Write-Host "ERROR: node-windows package was not installed; Windows Event Viewer logging will not work."
+            Write-Host "Check npm config for omitted optional dependencies and registry connectivity."
+            exit 1
+          }
+          
+          Write-Host "Creating .env file..."
+          @"
+          PORT=3002
+          PARKING_NAME=Madrid Centro Parking
+          PARKING_CITY=Madrid
+          PARKING_LOCATION=Plaza Mayor, Madrid
+          EVENT_LOG_SOURCE=MadridParkingAPI
+          EVENT_LOG_NAME=Application
+          EVENT_LOG_BACKEND=eventcreate
+          NODE_ENV=production
+          CHAOS_CONTROL_URL=$chaosControlUrl
+          "@ | Out-File -FilePath "$appDir\.env" -Encoding UTF8
+          
+          Write-Host "Installing Windows Event Log source..."
+          npm run install-windows
+          
+          # Install Chocolatey if not present
+          Write-Host "Checking for Chocolatey..."
+          if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+            Write-Host "Installing Chocolatey..."
+            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+            Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+            $env:Path += ";C:\ProgramData\chocolatey\bin"
+          }
+          
+          # Install NSSM via Chocolatey
+          Write-Host "Installing NSSM via Chocolatey..."
+          choco install nssm -y --no-progress
+          $env:Path = "C:\Program Files (x86)\NSSM\nssm\win64;" + $env:Path
+          
+          function Wait-UntilServiceStopped {
+            param(
+              [string]$Name,
+              [int]$TimeoutSeconds = 60
+            )
+
+            $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+            while ((Get-Date) -lt $deadline) {
+              $svc = Get-Service -Name $Name -ErrorAction SilentlyContinue
+              if (-not $svc) {
+                return $true
+              }
+
+              if ($svc.Status -eq 'Stopped') {
+                return $true
+              }
+
+              Start-Sleep -Seconds 2
+            }
+
+            return $false
+          }
+
+          function Get-ServiceProcessId {
+            param([string]$Name)
+
+            $svcInfo = Get-CimInstance Win32_Service -Filter "Name='$Name'" -ErrorAction SilentlyContinue
+            if ($svcInfo -and $svcInfo.ProcessId -and $svcInfo.ProcessId -gt 0) {
+              return [int]$svcInfo.ProcessId
+            }
+
+            return $null
+          }
+
+          function Wait-UntilServiceUsable {
+            param(
+              [string]$Name,
+              [int]$TimeoutSeconds = 60
+            )
+
+            $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+            while ((Get-Date) -lt $deadline) {
+              $scOutput = (sc.exe qc $Name 2>&1 | Out-String)
+
+              if ($scOutput -match 'OpenService FAILED 1060') {
+                return $true
+              }
+
+              if ($scOutput -notmatch 'marked for deletion') {
+                return $true
+              }
+
+              Start-Sleep -Seconds 2
+            }
+
+            return $false
+          }
+
+          if (-not (Wait-UntilServiceUsable -Name $serviceName -TimeoutSeconds 60)) {
+            Write-Host "ERROR: Service '$serviceName' remains marked for deletion before configuration."
+            Write-Host "Reboot the VM to clear stale SCM handles, then rerun deployment."
+            exit 1
+          }
+
+          $existingSvc = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+          if ($existingSvc) {
+            Write-Host "Service exists - stopping before reconfiguration..."
+            if ($existingSvc.Status -eq 'Paused') {
+              sc.exe continue $serviceName 2>$null | Out-Null
+              Start-Sleep -Seconds 2
+            }
+
+            Stop-Service -Name $serviceName -Force -ErrorAction SilentlyContinue
+            nssm stop $serviceName 2>$null
+            sc.exe stop $serviceName 2>$null | Out-Null
+
+            if (-not (Wait-UntilServiceStopped -Name $serviceName -TimeoutSeconds 20)) {
+              $servicePid = Get-ServiceProcessId -Name $serviceName
+              if ($servicePid) {
+                Write-Host "Service did not stop gracefully, force-killing PID $servicePid..."
+                Stop-Process -Id $servicePid -Force -ErrorAction SilentlyContinue
+                taskkill /PID $servicePid /F 2>$null | Out-Null
+              }
+
+              if (-not (Wait-UntilServiceStopped -Name $serviceName -TimeoutSeconds 40)) {
+                Write-Host "ERROR: Service '$serviceName' did not stop in time."
+                exit 1
+              }
+            }
+          }
+
+          Write-Host "Ensuring Windows service exists with NSSM..."
+          $nodePath = "C:\Program Files\nodejs\node.exe"
+          $serverPath = Join-Path $appDir "server.js"
+
+          if (-not (Get-Service -Name $serviceName -ErrorAction SilentlyContinue)) {
+            nssm install $serviceName $nodePath $serverPath
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "ERROR: Failed to create service '$serviceName'."
+              exit 1
+            }
+          }
+          
+          # Set service parameters
+          nssm set $serviceName Application $nodePath
+          nssm set $serviceName AppParameters $serverPath
+          nssm set $serviceName AppDirectory $appDir
+          nssm set $serviceName DisplayName "Madrid Parking API"
+          nssm set $serviceName Description "Madrid Parking API Service"
+          nssm set $serviceName Start SERVICE_AUTO_START
+          nssm set $serviceName Type SERVICE_WIN32_OWN_PROCESS
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "ERROR: Failed to configure service '$serviceName'."
+            exit 1
+          }
+          
+          # Set environment variables (newline-separated; each nssm set call replaces, not appends)
+          $envVars = "NODE_ENV=production`nPORT=3002`nPARKING_NAME=Madrid Centro Parking`nPARKING_CITY=Madrid`nPARKING_LOCATION=Plaza Mayor, Madrid`nEVENT_LOG_SOURCE=MadridParkingAPI`nEVENT_LOG_NAME=Application`nEVENT_LOG_BACKEND=eventcreate`nCERT_PATH=$appDir\madrid.crt`nKEY_PATH=$appDir\madrid.key"
+          nssm set $serviceName AppEnvironmentExtra $envVars
+          
+          # Configure logging
+          $logDir = Join-Path $appDir "logs"
+          if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
+          nssm set $serviceName AppStdout (Join-Path $logDir "service-stdout.log")
+          nssm set $serviceName AppStderr (Join-Path $logDir "service-stderr.log")
+          nssm set $serviceName AppRotateFiles 1
+          nssm set $serviceName AppRotateOnline 1
+          nssm set $serviceName AppRotateBytes 1048576
+          
+          # Set restart policy
+          nssm set $serviceName AppRestartDelay 5000
+          
+          Write-Host "Starting service..."
+          nssm start $serviceName
+          Start-Sleep -Seconds 8
+          
+          # If service ended up paused (stale SCM state), resume it
+          $serviceStatus = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+          if ($serviceStatus -and $serviceStatus.Status -eq 'Paused') {
+            Write-Host "Service is paused, attempting to resume..."
+            sc.exe continue $serviceName
+            Start-Sleep -Seconds 5
+            $serviceStatus = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+          }
+          
+          # Verify service is running
+          Write-Host "Service status: $($serviceStatus.Status)"
+          
+          if ($serviceStatus.Status -ne "Running") {
+            Write-Host "ERROR: Service failed to start"
+            Write-Host "=== Service Output ==="
+            Get-Content (Join-Path $logDir "service-stdout.log") -ErrorAction SilentlyContinue
+            Get-Content (Join-Path $logDir "service-stderr.log") -ErrorAction SilentlyContinue
+            Exit 1
+          }
+          
+          Start-Sleep -Seconds 5
+          $service = Get-Service -Name $serviceName
+          if ($service.Status -eq 'Running') {
+            Write-Host "✅ Service is running"
+            exit 0
+          } else {
+            Write-Host "❌ Service failed to start"
+            exit 1
+          }
+          '@
+          
+          Write-Host "Deploying to VM ${{ env.VM_NAME }}..."
+          $scriptPath = "$env:TEMP\deploy-${{ github.run_id }}.ps1"
+          $deployScript | Out-File -FilePath $scriptPath -Encoding UTF8
+          
+          $result = az vm run-command invoke `
+            --name ${{ env.VM_NAME }} `
+            --resource-group ${{ env.RESOURCE_GROUP }} `
+            --command-id RunPowerShellScript `
+            --scripts @$scriptPath `
+            -o json | ConvertFrom-Json
+          
+          Remove-Item $scriptPath -Force
+          
+          # Check for errors in output
+          $stdout = $result.value | Where-Object { $_.code -eq 'ComponentStatus/StdOut/succeeded' }
+          $stderr = $result.value | Where-Object { $_.code -eq 'ComponentStatus/StdErr/succeeded' }
+          
+          Write-Host "=== STDOUT ==="
+          Write-Host $stdout.message
+          if ($stderr.message) {
+            Write-Host "=== STDERR ==="
+            Write-Host $stderr.message
+          }
+          
+          # Fail if deployment script failed
+          if ($stdout.message -match '❌' -or $stdout.message -match 'ERROR:') {
+            Write-Host "Deployment failed!"
+            exit 1
+          }
+          
+          Write-Host "✅ Deployment successful"
+
+      - name: Cleanup
+        if: always()
+        shell: pwsh
+        run: |
+          az storage blob delete `
+            --account-name $env:STORAGE_ACCOUNT `
+            --container-name "deployments" `
+            --name "madrid-api-${{ github.run_id }}.zip" `
+            --auth-mode login
+
+      - name: Deployment summary
+        run: |
+          echo "### Deployment Successful! 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **VM**: ${{ env.VM_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service**: ${{ env.SERVICE_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Resource Group**: ${{ env.RESOURCE_GROUP }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment Method**: Direct transfer from runner to VM (no storage account)" >> $GITHUB_STEP_SUMMARY

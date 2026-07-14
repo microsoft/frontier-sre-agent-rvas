@@ -1,0 +1,219 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.40.2.10011",
+      "templateHash": "2431130882982345683"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Location for all Lisbon API resources"
+      }
+    },
+    "containerSubnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "Container subnet ID from hub VNet"
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics Workspace ID"
+      }
+    },
+    "logAnalyticsCustomerId": {
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics Customer ID (Workspace ID for the API)"
+      }
+    },
+    "containerImage": {
+      "type": "string",
+      "defaultValue": "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest",
+      "metadata": {
+        "description": "Container image name"
+      }
+    },
+    "containerRegistry": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Container registry server (leave empty for public registries)"
+      }
+    },
+    "chaosControlUrl": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Chaos Control service URL for the chaos middleware to fetch fault configuration"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags to apply to resources"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.App/managedEnvironments",
+      "apiVersion": "2023-05-01",
+      "name": "cae-parking-lisbon",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "appLogsConfiguration": {
+          "destination": "log-analytics",
+          "logAnalyticsConfiguration": {
+            "customerId": "[parameters('logAnalyticsCustomerId')]",
+            "sharedKey": "[listKeys(parameters('logAnalyticsWorkspaceId'), '2022-10-01').primarySharedKey]"
+          }
+        },
+        "vnetConfiguration": {
+          "infrastructureSubnetId": "[parameters('containerSubnetId')]"
+        },
+        "workloadProfiles": [
+          {
+            "name": "Consumption",
+            "workloadProfileType": "Consumption"
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.App/containerApps",
+      "apiVersion": "2023-05-01",
+      "name": "ca-parking-lisbon",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "environmentId": "[resourceId('Microsoft.App/managedEnvironments', 'cae-parking-lisbon')]",
+        "configuration": {
+          "ingress": {
+            "external": true,
+            "targetPort": 3001,
+            "transport": "auto",
+            "allowInsecure": false
+          },
+          "registries": "[if(empty(parameters('containerRegistry')), createArray(), createArray(createObject('server', parameters('containerRegistry'), 'identity', 'system')))]"
+        },
+        "template": {
+          "containers": [
+            {
+              "name": "lisbon-parking-api",
+              "image": "[parameters('containerImage')]",
+              "resources": {
+                "cpu": "[json('0.25')]",
+                "memory": "0.5Gi"
+              },
+              "env": [
+                {
+                  "name": "PARKING_CITY",
+                  "value": "Lisbon"
+                },
+                {
+                  "name": "PARKING_NAME",
+                  "value": "Lisbon Central Parking"
+                },
+                {
+                  "name": "PARKING_LOCATION",
+                  "value": "Lisbon, Portugal"
+                },
+                {
+                  "name": "WORKSPACE_ID",
+                  "value": "[parameters('logAnalyticsCustomerId')]"
+                },
+                {
+                  "name": "SHARED_KEY",
+                  "value": "[listKeys(parameters('logAnalyticsWorkspaceId'), '2022-10-01').primarySharedKey]"
+                },
+                {
+                  "name": "LOG_TYPE",
+                  "value": "LisbonParkingLogs"
+                },
+                {
+                  "name": "CHAOS_CONTROL_URL",
+                  "value": "[parameters('chaosControlUrl')]"
+                }
+              ],
+              "probes": [
+                {
+                  "type": "liveness",
+                  "httpGet": {
+                    "path": "/health",
+                    "port": 3001
+                  },
+                  "initialDelaySeconds": 10,
+                  "periodSeconds": 30
+                },
+                {
+                  "type": "readiness",
+                  "httpGet": {
+                    "path": "/health",
+                    "port": 3001
+                  },
+                  "initialDelaySeconds": 5,
+                  "periodSeconds": 10
+                }
+              ]
+            }
+          ],
+          "scale": {
+            "minReplicas": 1,
+            "maxReplicas": 3,
+            "rules": [
+              {
+                "name": "http-scaling",
+                "http": {
+                  "metadata": {
+                    "concurrentRequests": "10"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.App/managedEnvironments', 'cae-parking-lisbon')]"
+      ]
+    }
+  ],
+  "outputs": {
+    "containerAppName": {
+      "type": "string",
+      "value": "ca-parking-lisbon"
+    },
+    "containerAppFqdn": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.App/containerApps', 'ca-parking-lisbon'), '2023-05-01').configuration.ingress.fqdn]"
+    },
+    "containerAppUrl": {
+      "type": "string",
+      "value": "[format('https://{0}', reference(resourceId('Microsoft.App/containerApps', 'ca-parking-lisbon'), '2023-05-01').configuration.ingress.fqdn)]"
+    },
+    "containerAppEnvironmentName": {
+      "type": "string",
+      "value": "cae-parking-lisbon"
+    },
+    "containerAppEnvironmentId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.App/managedEnvironments', 'cae-parking-lisbon')]"
+    },
+    "containerAppPrincipalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.App/containerApps', 'ca-parking-lisbon'), '2023-05-01', 'full').identity.principalId]"
+    }
+  }
+}

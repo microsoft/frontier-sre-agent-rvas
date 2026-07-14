@@ -1,0 +1,82 @@
+{
+  "containerRegistryLoginServer": {
+    "type": "String",
+    "value": "acrparkingdev725vs7xw6g7qg.azurecr.io"
+  },
+  "containerRegistryName": {
+    "type": "String",
+    "value": "acrparkingdev725vs7xw6g7qg"
+  },
+  "containerRegistryUrl": {
+    "type": "String",
+    "value": "https://acrparkingdev725vs7xw6g7qg.azurecr.io"
+  },
+  "frontendResourceGroup": {
+    "type": "String",
+    "value": "rg-parking-frontend-dev"
+  },
+  "frontendUrl": {
+    "type": "String",
+    "value": "https://app-parking-frontend-yd5hvpxzlffke.azurewebsites.net"
+  },
+  "hubResourceGroup": {
+    "type": "String",
+    "value": "rg-parking-hub-dev"
+  },
+  "lisbonApiUrl": {
+    "type": "String",
+    "value": "https://ca-parking-lisbon.redmushroom-90cac1a3.swedencentral.azurecontainerapps.io"
+  },
+  "lisbonResourceGroup": {
+    "type": "String",
+    "value": "rg-parking-lisbon-dev"
+  },
+  "logAnalyticsWorkspaceName": {
+    "type": "String",
+    "value": "law-parking-hub"
+  },
+  "madridApiUrl": {
+    "type": "String",
+    "value": "http://10.0.1.5:3002"
+  },
+  "madridFqdn": {
+    "type": "String",
+    "value": ""
+  },
+  "madridPublicIp": {
+    "type": "String",
+    "value": ""
+  },
+  "madridResourceGroup": {
+    "type": "String",
+    "value": "rg-parking-madrid-dev"
+  },
+  "madridVmName": {
+    "type": "String",
+    "value": "vm-madrid-api"
+  },
+  "parisApiUrl": {
+    "type": "String",
+    "value": "http://10.0.1.4:3003"
+  },
+  "parisFqdn": {
+    "type": "String",
+    "value": ""
+  },
+  "parisPublicIp": {
+    "type": "String",
+    "value": ""
+  },
+  "parisResourceGroup": {
+    "type": "String",
+    "value": "rg-parking-paris-dev"
+  },
+  "parisVmName": {
+    "type": "String",
+    "value": "vm-paris-api"
+  },
+  "vnetName": {
+    "type": "String",
+    "value": "vnet-parking-hub"
+  }
+}

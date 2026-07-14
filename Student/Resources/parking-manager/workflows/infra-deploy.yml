@@ -1,0 +1,225 @@
+name: Deploy Infrastructure to Azure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+        default: 'dev'
+      location:
+        description: 'Azure region for deployment'
+        required: true
+        type: string
+        default: 'westeurope'
+      parametersFile:
+        description: 'Parameters file path (relative to repository root)'
+        required: true
+        type: string
+        default: 'infrastructure/main.parameters.json'
+      confirmDeployment:
+        description: 'Type "DEPLOY" to confirm deployment'
+        required: true
+        type: string
+
+jobs:
+  validate-input:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      proceed: ${{ steps.check.outputs.proceed }}
+    steps:
+      - name: Validate confirmation
+        id: check
+        run: |
+          if [ "${{ inputs.confirmDeployment }}" != "DEPLOY" ]; then
+            echo "❌ Deployment cancelled: confirmation not provided"
+            echo "Please enter 'DEPLOY' to confirm the deployment"
+            exit 1
+          fi
+          echo "proceed=true" >> $GITHUB_OUTPUT
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: validate-input
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Extract subscription ID
+        id: extract-sub
+        run: |
+          SUBSCRIPTION_ID=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.subscriptionId')
+          echo "subscription-id=$SUBSCRIPTION_ID" >> $GITHUB_OUTPUT
+          echo "Using subscription: $SUBSCRIPTION_ID"
+
+      - name: Validate parameters file
+        run: |
+          if [ ! -f "${{ inputs.parametersFile }}" ]; then
+            echo "❌ Parameters file not found: ${{ inputs.parametersFile }}"
+            exit 1
+          fi
+          echo "✅ Parameters file found: ${{ inputs.parametersFile }}"
+          
+          # Validate it's valid JSON
+          if ! jq empty "${{ inputs.parametersFile }}" 2>/dev/null; then
+            echo "❌ Parameters file is not valid JSON"
+            exit 1
+          fi
+          echo "✅ Parameters file is valid JSON"
+
+      - name: Display deployment configuration
+        run: |
+          echo "### Deployment Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Location**: ${{ inputs.location }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Template**: \`infrastructure/main.bicep\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Parameters**: \`${{ inputs.parametersFile }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Subscription**: ${{ steps.extract-sub.outputs.subscription-id }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target Scope**: Subscription" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+      - name: Run pre-deployment What-If
+        id: whatif
+        run: |
+          DEPLOYMENT_NAME="infra-deploy-${{ inputs.environment }}-$(date +%Y%m%d-%H%M%S)"
+          
+          echo "Running What-If analysis before deployment..."
+          set +e  # Don't exit on error, we'll handle it
+          az deployment sub what-if \
+            --name "$DEPLOYMENT_NAME" \
+            --location "${{ inputs.location }}" \
+            --template-file infrastructure/main.bicep \
+            --parameters "${{ inputs.parametersFile }}" \
+            --subscription "${{ steps.extract-sub.outputs.subscription-id }}" \
+            > whatif-output.txt 2>&1
+          WHATIF_EXIT_CODE=$?
+          set -e
+          
+          echo "deployment-name=$DEPLOYMENT_NAME" >> $GITHUB_OUTPUT
+          echo "whatif-exit-code=$WHATIF_EXIT_CODE" >> $GITHUB_OUTPUT
+          
+          if [ -f whatif-output.txt ]; then
+            echo "### Pre-Deployment What-If Analysis" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            if [ $WHATIF_EXIT_CODE -ne 0 ]; then
+              echo "⚠️ **Warning**: What-If analysis encountered errors (exit code: $WHATIF_EXIT_CODE)" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "The deployment will still proceed. Review the errors below:" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            head -n 50 whatif-output.txt >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Deploy infrastructure
+        id: deploy
+        run: |
+          DEPLOYMENT_NAME="${{ steps.whatif.outputs.deployment-name }}"
+          
+          echo "Starting deployment..."
+          echo "Deployment: $DEPLOYMENT_NAME"
+          echo "Location: ${{ inputs.location }}"
+          echo "Environment: ${{ inputs.environment }}"
+          
+          # Deploy the infrastructure
+          az deployment sub create \
+            --name "$DEPLOYMENT_NAME" \
+            --location "${{ inputs.location }}" \
+            --template-file infrastructure/main.bicep \
+            --parameters "${{ inputs.parametersFile }}" \
+            --subscription "${{ steps.extract-sub.outputs.subscription-id }}" \
+            --output json > deployment-output.json
+          
+          # Extract outputs
+          if [ -f deployment-output.json ]; then
+            cat deployment-output.json | jq '.'
+            
+            # Save key outputs
+            echo "deployment-id=$(cat deployment-output.json | jq -r '.id // empty')" >> $GITHUB_OUTPUT
+            echo "deployment-state=$(cat deployment-output.json | jq -r '.properties.provisioningState // empty')" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get deployment outputs
+        id: outputs
+        if: success()
+        run: |
+          DEPLOYMENT_NAME="${{ steps.whatif.outputs.deployment-name }}"
+          
+          # Get deployment outputs
+          az deployment sub show \
+            --name "$DEPLOYMENT_NAME" \
+            --subscription "${{ steps.extract-sub.outputs.subscription-id }}" \
+            --query 'properties.outputs' \
+            --output json > deployment-outputs.json || true
+          
+          if [ -f deployment-outputs.json ]; then
+            cat deployment-outputs.json
+          fi
+
+      - name: Generate deployment summary
+        if: always()
+        run: |
+          echo "## Infrastructure Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.deploy.outcome }}" == "success" ]; then
+            echo "### ✅ Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- **Deployment Name**: ${{ steps.whatif.outputs.deployment-name }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Environment**: ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Location**: ${{ inputs.location }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **State**: ${{ steps.deploy.outputs.deployment-state }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Deployment ID**: ${{ steps.deploy.outputs.deployment-id }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            if [ -f deployment-outputs.json ]; then
+              echo "### Deployment Outputs" >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+              cat deployment-outputs.json | jq '.' >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "### ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please check the workflow logs for detailed error messages." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "- Verify resources in the Azure Portal" >> $GITHUB_STEP_SUMMARY
+          echo "- Check resource group: \`rg-parking-*-${{ inputs.environment }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Review deployment logs in the Azure Portal if needed" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload deployment artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-artifacts-${{ inputs.environment }}-${{ github.run_number }}
+          path: |
+            whatif-output.txt
+            deployment-output.json
+            deployment-outputs.json
+          retention-days: 30
+          if-no-files-found: ignore

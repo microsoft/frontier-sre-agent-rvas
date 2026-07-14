@@ -1,0 +1,188 @@
+.parking-details-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.parking-details-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.parking-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 16px;
+}
+
+.parking-details-header h2 {
+  margin: 0;
+  color: #333;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #999;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.close-btn:hover {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.levels-container {
+  display: grid;
+  gap: 16px;
+}
+
+.level-card {
+  background: #f9f9f9;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+}
+
+.level-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.level-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.level-occupancy {
+  padding: 6px 12px;
+  border-radius: 16px;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.level-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.level-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.level-stat .stat-label {
+  font-size: 12px;
+  color: #666;
+}
+
+.level-stat .stat-value {
+  font-size: 20px;
+  font-weight: bold;
+  color: #333;
+}
+
+.level-stat .stat-value.available {
+  color: #4caf50;
+}
+
+.level-input {
+  padding: 8px;
+  border: 2px solid #2196f3;
+  border-radius: 4px;
+  font-size: 18px;
+  font-weight: bold;
+  width: 80px;
+}
+
+.level-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.edit-btn, .save-btn, .cancel-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.edit-btn {
+  background-color: #2196f3;
+  color: white;
+  flex: 1;
+}
+
+.edit-btn:hover {
+  background-color: #1976d2;
+}
+
+.save-btn {
+  background-color: #4caf50;
+  color: white;
+  flex: 1;
+}
+
+.save-btn:hover {
+  background-color: #45a049;
+}
+
+.cancel-btn {
+  background-color: #f44336;
+  color: white;
+  flex: 1;
+}
+
+.cancel-btn:hover {
+  background-color: #da190b;
+}
+
+.level-visual {
+  margin-top: 12px;
+}
+
+.slots-bar {
+  height: 20px;
+  background-color: #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.slots-occupied {
+  height: 100%;
+  transition: width 0.3s ease;
+  border-radius: 10px;
+}

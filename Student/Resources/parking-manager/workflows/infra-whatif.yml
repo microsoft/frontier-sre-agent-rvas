@@ -1,0 +1,109 @@
+name: Infrastructure What-If Analysis
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'infrastructure/**'
+      - '.github/workflows/infra-whatif.yml'
+
+jobs:
+  whatif:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Extract subscription ID from credentials
+        id: extract-sub
+        run: |
+          SUBSCRIPTION_ID=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.subscriptionId')
+          echo "subscription-id=$SUBSCRIPTION_ID" >> $GITHUB_OUTPUT
+          echo "Using subscription: $SUBSCRIPTION_ID"
+
+      - name: Determine parameters file
+        id: params
+        run: |
+          # Check if environment-specific parameters exist
+          if [ -f "infrastructure/main.parameters.json" ]; then
+            PARAMS_FILE="infrastructure/main.parameters.json"
+          else
+            echo "Error: Default parameters file not found"
+            exit 1
+          fi
+          echo "parameters-file=$PARAMS_FILE" >> $GITHUB_OUTPUT
+          echo "Using parameters file: $PARAMS_FILE"
+
+      - name: Run What-If analysis
+        id: whatif
+        run: |
+          DEPLOYMENT_NAME="infra-whatif-$(date +%Y%m%d-%H%M%S)"
+          LOCATION="westeurope"
+          
+          echo "Running What-If analysis..."
+          echo "Deployment: $DEPLOYMENT_NAME"
+          echo "Location: $LOCATION"
+          echo "Parameters: ${{ steps.params.outputs.parameters-file }}"
+          echo "Template: infrastructure/main.bicep"
+          
+          # Run what-if command and capture output
+          az deployment sub what-if \
+            --name "$DEPLOYMENT_NAME" \
+            --location "$LOCATION" \
+            --template-file infrastructure/main.bicep \
+            --parameters "${{ steps.params.outputs.parameters-file }}" \
+            --subscription "${{ steps.extract-sub.outputs.subscription-id }}" \
+            --no-pretty-print \
+            > whatif-output.txt 2>&1 || {
+              echo "What-If analysis failed!"
+              cat whatif-output.txt
+              exit 1
+            }
+          
+          cat whatif-output.txt
+          
+          echo "deployment-name=$DEPLOYMENT_NAME" >> $GITHUB_OUTPUT
+          echo "location=$LOCATION" >> $GITHUB_OUTPUT
+
+      - name: Generate summary
+        if: always()
+        run: |
+          echo "## Infrastructure What-If Analysis 🔍" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment Name**: ${{ steps.whatif.outputs.deployment-name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Location**: ${{ steps.whatif.outputs.location }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Template**: \`infrastructure/main.bicep\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Parameters**: \`${{ steps.params.outputs.parameters-file }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Subscription**: ${{ steps.extract-sub.outputs.subscription-id }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target Scope**: Subscription" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f whatif-output.txt ]; then
+            echo "### Analysis Results" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            head -n 100 whatif-output.txt >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ '${{ job.status }}' == 'success' ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **What-If analysis completed successfully**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Review the changes above before merging this PR." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **What-If analysis failed**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please review the errors above and fix the issues." >> $GITHUB_STEP_SUMMARY
+          fi

@@ -1,0 +1,63 @@
+name: Deploy Chaos Control to Azure Container App
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/chaos-control/**'
+      - '.github/workflows/deploy-chaos-control.yml'
+  workflow_dispatch:
+
+env:
+  AZURE_CONTAINER_REGISTRY: ${{ vars.AZURE_CONTAINER_REGISTRY }}
+  CONTAINER_APP_NAME: ${{ vars.CHAOS_CONTROL_CONTAINER_APP_NAME }}
+  CHAOS_CONTROL_RESOURCE_GROUP: ${{ vars.CHAOS_CONTROL_RESOURCE_GROUP }}
+  IMAGE_NAME: chaos-control
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Log in to Azure Container Registry
+        run: |
+          az acr login --name ${{ env.AZURE_CONTAINER_REGISTRY }}
+
+      - name: Build and push Docker image
+        working-directory: backend/chaos-control
+        run: |
+          IMAGE_TAG=${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          IMAGE_TAG_LATEST=${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
+          
+          docker build -t $IMAGE_TAG -t $IMAGE_TAG_LATEST .
+          docker push $IMAGE_TAG
+          docker push $IMAGE_TAG_LATEST
+          
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Deploy to Azure Container App
+        run: |
+          az containerapp update \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.CHAOS_CONTROL_RESOURCE_GROUP }} \
+            --image ${{ env.IMAGE_TAG }}
+
+      - name: Deployment summary
+        run: |
+          echo "### Deployment Successful! 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Container App**: ${{ env.CONTAINER_APP_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: ${{ env.IMAGE_TAG }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Resource Group**: ${{ env.CHAOS_CONTROL_RESOURCE_GROUP }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY

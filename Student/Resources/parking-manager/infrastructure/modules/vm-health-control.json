@@ -1,0 +1,291 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.33.27573",
+      "templateHash": "17523862689586698386"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Location for all VM Health Control resources"
+      }
+    },
+    "containerAppEnvironmentId": {
+      "type": "string",
+      "metadata": {
+        "description": "Existing Container App Environment ID (shared with chaos-control)"
+      }
+    },
+    "containerImage": {
+      "type": "string",
+      "defaultValue": "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest",
+      "metadata": {
+        "description": "Container image name"
+      }
+    },
+    "containerRegistry": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Container registry server (leave empty for public registries)"
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics workspace resource ID for the DCR destination"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags to apply to resources"
+      }
+    }
+  },
+  "variables": {
+    "monitoringMetricsPublisherRoleId": "3913510d-42f4-4e42-8a64-420c390055eb"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Insights/dataCollectionEndpoints",
+      "apiVersion": "2022-06-01",
+      "name": "dce-vm-health-status",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "networkAcls": {
+          "publicNetworkAccess": "Enabled"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Insights/dataCollectionRules",
+      "apiVersion": "2022-06-01",
+      "name": "dcr-vm-health-status",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "dataCollectionEndpointId": "[resourceId('Microsoft.Insights/dataCollectionEndpoints', 'dce-vm-health-status')]",
+        "streamDeclarations": {
+          "Custom-VMHealthStatus_CL": {
+            "columns": [
+              {
+                "name": "TimeGenerated",
+                "type": "datetime"
+              },
+              {
+                "name": "vmName",
+                "type": "string"
+              },
+              {
+                "name": "city",
+                "type": "string"
+              },
+              {
+                "name": "healthState",
+                "type": "string"
+              },
+              {
+                "name": "previousState",
+                "type": "string"
+              },
+              {
+                "name": "severity",
+                "type": "string"
+              },
+              {
+                "name": "source",
+                "type": "string"
+              },
+              {
+                "name": "message",
+                "type": "string"
+              },
+              {
+                "name": "resourceGroup",
+                "type": "string"
+              },
+              {
+                "name": "subscriptionId",
+                "type": "string"
+              },
+              {
+                "name": "resourceType",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "destinations": {
+          "logAnalytics": [
+            {
+              "name": "la-vm-health",
+              "workspaceResourceId": "[parameters('logAnalyticsWorkspaceId')]"
+            }
+          ]
+        },
+        "dataFlows": [
+          {
+            "streams": [
+              "Custom-VMHealthStatus_CL"
+            ],
+            "destinations": [
+              "la-vm-health"
+            ],
+            "outputStream": "Custom-VMHealthStatus_CL",
+            "transformKql": "source"
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Insights/dataCollectionEndpoints', 'dce-vm-health-status')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.Insights/dataCollectionRules/{0}', 'dcr-vm-health-status')]",
+      "name": "[guid(resourceId('Microsoft.Insights/dataCollectionRules', 'dcr-vm-health-status'), resourceId('Microsoft.App/containerApps', 'ca-vm-health-control'), variables('monitoringMetricsPublisherRoleId'))]",
+      "properties": {
+        "principalId": "[reference(resourceId('Microsoft.App/containerApps', 'ca-vm-health-control'), '2023-05-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal",
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('monitoringMetricsPublisherRoleId'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.App/containerApps', 'ca-vm-health-control')]",
+        "[resourceId('Microsoft.Insights/dataCollectionRules', 'dcr-vm-health-status')]"
+      ]
+    },
+    {
+      "type": "Microsoft.App/containerApps",
+      "apiVersion": "2023-05-01",
+      "name": "ca-vm-health-control",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "environmentId": "[parameters('containerAppEnvironmentId')]",
+        "configuration": {
+          "ingress": {
+            "external": true,
+            "targetPort": 3095,
+            "transport": "auto",
+            "allowInsecure": false
+          },
+          "registries": "[if(empty(parameters('containerRegistry')), createArray(), createArray(createObject('server', parameters('containerRegistry'), 'identity', 'system')))]"
+        },
+        "template": {
+          "containers": [
+            {
+              "name": "vm-health-control",
+              "image": "[parameters('containerImage')]",
+              "resources": {
+                "cpu": "[json('0.25')]",
+                "memory": "0.5Gi"
+              },
+              "env": [
+                {
+                  "name": "PORT",
+                  "value": "3095"
+                },
+                {
+                  "name": "NODE_ENV",
+                  "value": "production"
+                },
+                {
+                  "name": "DCE_ENDPOINT",
+                  "value": "[reference(resourceId('Microsoft.Insights/dataCollectionEndpoints', 'dce-vm-health-status'), '2022-06-01').logsIngestion.endpoint]"
+                },
+                {
+                  "name": "DCR_RULE_ID",
+                  "value": "[reference(resourceId('Microsoft.Insights/dataCollectionRules', 'dcr-vm-health-status'), '2022-06-01').immutableId]"
+                },
+                {
+                  "name": "DCR_STREAM_NAME",
+                  "value": "Custom-VMHealthStatus_CL"
+                }
+              ],
+              "probes": [
+                {
+                  "type": "liveness",
+                  "httpGet": {
+                    "path": "/health",
+                    "port": 3095
+                  },
+                  "initialDelaySeconds": 10,
+                  "periodSeconds": 30
+                },
+                {
+                  "type": "readiness",
+                  "httpGet": {
+                    "path": "/health",
+                    "port": 3095
+                  },
+                  "initialDelaySeconds": 5,
+                  "periodSeconds": 10
+                }
+              ]
+            }
+          ],
+          "scale": {
+            "minReplicas": 1,
+            "maxReplicas": 2,
+            "rules": [
+              {
+                "name": "http-scaling",
+                "http": {
+                  "metadata": {
+                    "concurrentRequests": "20"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Insights/dataCollectionEndpoints', 'dce-vm-health-status')]",
+        "[resourceId('Microsoft.Insights/dataCollectionRules', 'dcr-vm-health-status')]"
+      ]
+    }
+  ],
+  "outputs": {
+    "containerAppName": {
+      "type": "string",
+      "value": "ca-vm-health-control"
+    },
+    "containerAppFqdn": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.App/containerApps', 'ca-vm-health-control'), '2023-05-01').configuration.ingress.fqdn]"
+    },
+    "containerAppUrl": {
+      "type": "string",
+      "value": "[format('https://{0}', reference(resourceId('Microsoft.App/containerApps', 'ca-vm-health-control'), '2023-05-01').configuration.ingress.fqdn)]"
+    },
+    "containerAppPrincipalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.App/containerApps', 'ca-vm-health-control'), '2023-05-01', 'full').identity.principalId]"
+    },
+    "dcrRuleId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Insights/dataCollectionRules', 'dcr-vm-health-status'), '2022-06-01').immutableId]"
+    },
+    "dceEndpointId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Insights/dataCollectionEndpoints', 'dce-vm-health-status')]"
+    },
+    "dceLogsUri": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Insights/dataCollectionEndpoints', 'dce-vm-health-status'), '2022-06-01').logsIngestion.endpoint]"
+    }
+  }
+}

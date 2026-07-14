@@ -1,0 +1,227 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.40.2.10011",
+      "templateHash": "1876282321700861213"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Location for all Madrid API resources"
+      }
+    },
+    "vmSubnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "VM subnet ID from hub VNet"
+      }
+    },
+    "adminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "Admin username for the VM"
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Admin password for the VM"
+      }
+    },
+    "createPublicIp": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Create public IP for the VM"
+      }
+    },
+    "deployVM": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Deploy VM resources (set to false if VM already exists to avoid disk update conflicts)"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags to apply to resources"
+      }
+    }
+  },
+  "resources": [
+    {
+      "condition": "[parameters('createPublicIp')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2023-05-01",
+      "name": "pip-madrid-vm",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Static",
+        "dnsSettings": {
+          "domainNameLabel": "[format('madrid-parking-{0}', uniqueString(resourceGroup().id))]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2023-05-01",
+      "name": "nic-madrid-vm",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "subnet": {
+                "id": "[parameters('vmSubnetId')]"
+              },
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": "[if(parameters('createPublicIp'), createObject('id', resourceId('Microsoft.Network/publicIPAddresses', 'pip-madrid-vm')), null())]"
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', 'pip-madrid-vm')]"
+      ]
+    },
+    {
+      "condition": "[parameters('deployVM')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2023-03-01",
+      "name": "vm-madrid-api",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "Standard_B2s"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "MicrosoftWindowsServer",
+            "offer": "WindowsServer",
+            "sku": "2022-datacenter-azure-edition-smalldisk",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "osdisk-madrid-vm",
+            "createOption": "FromImage",
+            "managedDisk": {
+              "storageAccountType": "StandardSSD_LRS"
+            },
+            "diskSizeGB": 64
+          }
+        },
+        "osProfile": {
+          "computerName": "madrid-api",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]",
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "provisionVMAgent": true,
+            "patchSettings": {
+              "patchMode": "AutomaticByOS"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'nic-madrid-vm')]"
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', 'nic-madrid-vm')]"
+      ]
+    },
+    {
+      "condition": "[parameters('deployVM')]",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "apiVersion": "2023-03-01",
+      "name": "[format('{0}/{1}', 'vm-madrid-api', 'AzureMonitorWindowsAgent')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publisher": "Microsoft.Azure.Monitor",
+        "type": "AzureMonitorWindowsAgent",
+        "typeHandlerVersion": "1.0",
+        "autoUpgradeMinorVersion": true,
+        "enableAutomaticUpgrade": true
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', 'vm-madrid-api')]"
+      ]
+    },
+    {
+      "condition": "[and(parameters('deployVM'), false())]",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "apiVersion": "2023-03-01",
+      "name": "[format('{0}/{1}', 'vm-madrid-api', 'CustomScriptExtension')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.10",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "commandToExecute": "echo VM provisioned - Node.js will be installed during GitHub Actions deployment"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines/extensions', 'vm-madrid-api', 'AzureMonitorWindowsAgent')]",
+        "[resourceId('Microsoft.Compute/virtualMachines', 'vm-madrid-api')]"
+      ]
+    }
+  ],
+  "outputs": {
+    "vmName": {
+      "type": "string",
+      "value": "[if(parameters('deployVM'), 'vm-madrid-api', '')]"
+    },
+    "vmId": {
+      "type": "string",
+      "value": "[if(parameters('deployVM'), resourceId('Microsoft.Compute/virtualMachines', 'vm-madrid-api'), '')]"
+    },
+    "vmPrincipalId": {
+      "type": "string",
+      "value": "[if(parameters('deployVM'), reference(resourceId('Microsoft.Compute/virtualMachines', 'vm-madrid-api'), '2023-03-01', 'full').identity.principalId, '')]"
+    },
+    "privateIpAddress": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', 'nic-madrid-vm'), '2023-05-01').ipConfigurations[0].properties.privateIPAddress]"
+    },
+    "publicIpAddress": {
+      "type": "string",
+      "value": "[if(and(parameters('deployVM'), parameters('createPublicIp')), reference(resourceId('Microsoft.Network/publicIPAddresses', 'pip-madrid-vm'), '2023-05-01').ipAddress, '')]"
+    },
+    "fqdn": {
+      "type": "string",
+      "value": "[if(and(parameters('deployVM'), parameters('createPublicIp')), reference(resourceId('Microsoft.Network/publicIPAddresses', 'pip-madrid-vm'), '2023-05-01').dnsSettings.fqdn, '')]"
+    },
+    "apiUrl": {
+      "type": "string",
+      "value": "[if(and(parameters('deployVM'), parameters('createPublicIp')), format('http://{0}:3002', reference(resourceId('Microsoft.Network/publicIPAddresses', 'pip-madrid-vm'), '2023-05-01').dnsSettings.fqdn), format('http://{0}:3002', reference(resourceId('Microsoft.Network/networkInterfaces', 'nic-madrid-vm'), '2023-05-01').ipConfigurations[0].properties.privateIPAddress))]"
+    }
+  }
+}
