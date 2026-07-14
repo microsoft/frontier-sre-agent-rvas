@@ -1,0 +1,91 @@
+name: Deploy VM Apps (Paris and Madrid)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment"
+        required: true
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+        default: dev
+      deployParis:
+        description: "Deploy Paris app"
+        required: true
+        type: boolean
+        default: true
+      deployMadrid:
+        description: "Deploy Madrid app"
+        required: true
+        type: boolean
+        default: true
+
+env:
+  PARIS_VM_NAME: ${{ vars.PARIS_VM_NAME }}
+  PARIS_RESOURCE_GROUP: ${{ vars.PARIS_RESOURCE_GROUP }}
+  MADRID_VM_NAME: ${{ vars.MADRID_VM_NAME }}
+  MADRID_RESOURCE_GROUP: ${{ vars.MADRID_RESOURCE_GROUP }}
+  DEPLOYMENT_STORAGE_ACCOUNT: ${{ vars.DEPLOYMENT_STORAGE_ACCOUNT }}
+  CHAOS_CONTROL_URL: ${{ vars.CHAOS_CONTROL_URL }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Create deployment packages
+        run: |
+          set -euo pipefail
+          cd backend
+          zip -r ../paris-api-${{ github.run_id }}.zip paris-parking-api/ shared/
+          zip -r ../madrid-api-${{ github.run_id }}.zip madrid-parking-api/ shared/
+
+      - name: Upload deployment packages
+        run: |
+          set -euo pipefail
+          az storage blob upload --account-name "$DEPLOYMENT_STORAGE_ACCOUNT" --container-name deployments --file "paris-api-${{ github.run_id }}.zip" --name "paris-api-${{ github.run_id }}.zip" --auth-mode login --overwrite
+          az storage blob upload --account-name "$DEPLOYMENT_STORAGE_ACCOUNT" --container-name deployments --file "madrid-api-${{ github.run_id }}.zip" --name "madrid-api-${{ github.run_id }}.zip" --auth-mode login --overwrite
+
+          PARIS_SAS=$(az storage blob generate-sas --account-name "$DEPLOYMENT_STORAGE_ACCOUNT" --container-name deployments --name "paris-api-${{ github.run_id }}.zip" --expiry "$(date -u -d '+30 minutes' '+%Y-%m-%dT%H:%MZ')" --permissions r --auth-mode login --as-user -o tsv)
+          MADRID_SAS=$(az storage blob generate-sas --account-name "$DEPLOYMENT_STORAGE_ACCOUNT" --container-name deployments --name "madrid-api-${{ github.run_id }}.zip" --expiry "$(date -u -d '+30 minutes' '+%Y-%m-%dT%H:%MZ')" --permissions r --auth-mode login --as-user -o tsv)
+
+          echo "PARIS_BLOB_URL=https://${DEPLOYMENT_STORAGE_ACCOUNT}.blob.core.windows.net/deployments/paris-api-${{ github.run_id }}.zip?${PARIS_SAS}" >> "$GITHUB_ENV"
+          echo "MADRID_BLOB_URL=https://${DEPLOYMENT_STORAGE_ACCOUNT}.blob.core.windows.net/deployments/madrid-api-${{ github.run_id }}.zip?${MADRID_SAS}" >> "$GITHUB_ENV"
+
+      - name: Deploy Paris app
+        if: inputs.deployParis == true
+        run: |
+          az vm run-command invoke \
+            --name "$PARIS_VM_NAME" \
+            --resource-group "$PARIS_RESOURCE_GROUP" \
+            --command-id RunShellScript \
+            --scripts "set -e; sudo mkdir -p /opt/paris-parking-api; cd /tmp; curl -fsSL '$PARIS_BLOB_URL' -o paris.zip; rm -rf paris-extract; mkdir paris-extract; unzip -q paris.zip -d paris-extract; sudo cp -r paris-extract/paris-parking-api/* /opt/paris-parking-api/; sudo cp -r paris-extract/shared /opt/shared; cd /opt/paris-parking-api; npm ci --omit=dev; echo 'CHAOS_CONTROL_URL=$CHAOS_CONTROL_URL' | sudo tee -a .env >/dev/null; sudo systemctl restart paris-parking-api"
+
+      - name: Deploy Madrid app
+        if: inputs.deployMadrid == true
+        run: |
+          az vm run-command invoke \
+            --name "$MADRID_VM_NAME" \
+            --resource-group "$MADRID_RESOURCE_GROUP" \
+            --command-id RunPowerShellScript \
+            --scripts "`$appDir='C:\\Apps\\madrid-parking-api'; New-Item -ItemType Directory -Force -Path `$appDir | Out-Null; `$zip='`$env:TEMP\\madrid.zip'; Invoke-WebRequest -Uri '$MADRID_BLOB_URL' -OutFile `$zip -UseBasicParsing; `$extract='`$env:TEMP\\madrid-extract'; if (Test-Path `$extract) { Remove-Item `$extract -Recurse -Force }; Expand-Archive -Path `$zip -DestinationPath `$extract -Force; Copy-Item -Path `$extract\\madrid-parking-api\\* -Destination `$appDir -Recurse -Force; `$sharedDir='C:\\Apps\\shared'; New-Item -ItemType Directory -Force -Path `$sharedDir | Out-Null; Copy-Item -Path `$extract\\shared\\* -Destination `$sharedDir -Recurse -Force; Set-Location `$appDir; npm ci --omit=dev; Add-Content -Path .env -Value 'CHAOS_CONTROL_URL=${{ vars.CHAOS_CONTROL_URL }}'; Restart-Service -Name MadridParkingAPI -ErrorAction SilentlyContinue"
+
+      - name: Cleanup deployment blobs
+        if: always()
+        run: |
+          az storage blob delete --account-name "$DEPLOYMENT_STORAGE_ACCOUNT" --container-name deployments --name "paris-api-${{ github.run_id }}.zip" --auth-mode login --only-show-errors || true
+          az storage blob delete --account-name "$DEPLOYMENT_STORAGE_ACCOUNT" --container-name deployments --name "madrid-api-${{ github.run_id }}.zip" --auth-mode login --only-show-errors || true

@@ -177,6 +177,29 @@ docker run -p 3001:3001 \
 
 ## Azure Deployment
 
+### Delivery Model
+
+Use the assets in this solution according to the following ownership model:
+
+- **Canonical CI/CD and day-2 deployments** live in `workflows/`.
+- **Bootstrap, recovery, and local developer utilities** live in `scripts/`.
+- **Workflows are the default operating path** once infrastructure and hosts already exist.
+
+#### Canonical workflow paths
+
+- `workflows/infra-whatif.yml`: preview infrastructure changes
+- `workflows/infra-deploy.yml`: apply infrastructure changes
+- `workflows/deploy-container-apps.yml`: deploy Lisbon, Berlin, Chaos Control, Berlin MCP, and optional VM Health container app images
+- `workflows/deploy-vm-apps.yml`: redeploy Paris and Madrid application code to existing VMs
+
+#### Bootstrap and local-only scripts
+
+- `scripts/start-chaos-stack.sh`: local development orchestration only
+- `scripts/bootstrap/bootstrap-vm-health-control.sh`: bootstrap or recovery path for VM Health when supporting resources or first deployment are needed
+- `scripts/bootstrap/setup-paris-api.sh`: first-time Paris VM setup, not the normal release path
+
+The self-hosted runner setup scripts were removed from this solution because the deployment workflows use GitHub-hosted runners.
+
 ### Infrastructure as Code with Bicep
 
 Bicep templates in `infrastructure/` deploy the full Azure environment.
@@ -200,6 +223,8 @@ The script deploys:
 **Estimated monthly cost**: ~$120–180 (varies by region and usage; see [infrastructure/README.md](infrastructure/README.md) for details).
 
 For full deployment instructions, see [infrastructure/README.md](infrastructure/README.md).
+
+For the workflow-level deployment sequence, see [workflows/README.md](workflows/README.md).
 
 #### One-off manual deployment
 

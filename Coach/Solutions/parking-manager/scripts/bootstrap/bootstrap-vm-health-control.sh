@@ -1,9 +1,12 @@
-#!/bin/bash
-# Standalone deployment script for VM Health Control container app.
+#!/usr/bin/env bash
+# Bootstrap or recovery deployment script for VM Health Control.
+# This is not the normal day-2 rollout path. Regular image updates should use
+# workflows/deploy-container-apps.yml, while this script remains available when
+# first-time deployment or supporting resource recovery is required.
 # Deploys into the existing chaos-control Container App Environment.
-# Uses managed identity (Logs Ingestion API) — no shared keys needed.
+# Uses managed identity (Logs Ingestion API) - no shared keys needed.
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INFRA_DIR="$SCRIPT_DIR/../infrastructure"
@@ -18,6 +21,82 @@ print_info()    { echo -e "${GREEN}[INFO]${NC} $1"; }
 print_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 print_error()   { echo -e "${RED}[ERROR]${NC} $1"; }
 
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") [options]
+
+Options:
+  --build-image         Build and push vm-health-control image
+  --skip-build-image    Skip image build
+  --non-interactive     Never prompt for input
+  --environment <name>  Override environment from parameters file
+  --location <name>     Override location from parameters file
+  --params-file <path>  Path to parameters JSON file
+  -h, --help            Show this help
+EOF
+}
+
+NON_INTERACTIVE=false
+BUILD_IMAGE_MODE="ask"
+ENVIRONMENT_OVERRIDE=""
+LOCATION_OVERRIDE=""
+
+PARAMS_FILE_DEFAULT="$INFRA_DIR/main.parameters.json"
+PARAMS_FILE="$PARAMS_FILE_DEFAULT"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --build-image)
+      BUILD_IMAGE_MODE="yes"
+      shift
+      ;;
+    --skip-build-image)
+      BUILD_IMAGE_MODE="no"
+      shift
+      ;;
+    --non-interactive)
+      NON_INTERACTIVE=true
+      shift
+      ;;
+    --environment)
+      ENVIRONMENT_OVERRIDE="$2"
+      shift 2
+      ;;
+    --location)
+      LOCATION_OVERRIDE="$2"
+      shift 2
+      ;;
+    --params-file)
+      PARAMS_FILE="$2"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      print_error "Unknown option: $1"
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+prompt_yes_no() {
+  local question="$1"
+  local default_answer="$2"
+
+  if [[ "$NON_INTERACTIVE" == "true" ]]; then
+    [[ "$default_answer" == "yes" ]]
+    return
+  fi
+
+  local reply
+  read -r -p "$question" reply
+  reply="${reply:-$default_answer}"
+  [[ "$reply" == "yes" || "$reply" == "y" || "$reply" == "Y" ]]
+}
+
 # --- pre-flight checks ---
 if ! command -v az &> /dev/null; then
   print_error "Azure CLI is not installed."
@@ -30,16 +109,18 @@ if ! az account show &> /dev/null; then
 fi
 
 # --- read environment from parameters file ---
-PARAMS_FILE="$INFRA_DIR/main.parameters.json"
 if [ ! -f "$PARAMS_FILE" ]; then
   print_error "Parameters file not found: $PARAMS_FILE"
   exit 1
 fi
 
-ENVIRONMENT=$(grep -A1 '"environment"' "$PARAMS_FILE" | grep '"value"' | cut -d'"' -f4)
-ENVIRONMENT="${ENVIRONMENT:-dev}"
-LOCATION=$(grep -A1 '"location"' "$PARAMS_FILE" | grep '"value"' | cut -d'"' -f4)
-LOCATION="${LOCATION:-swedencentral}"
+if ! command -v jq &> /dev/null; then
+  print_error "jq is required to read parameters from JSON. Install jq and re-run."
+  exit 1
+fi
+
+ENVIRONMENT="${ENVIRONMENT_OVERRIDE:-$(jq -r '.parameters.environment.value // "dev"' "$PARAMS_FILE")}"
+LOCATION="${LOCATION_OVERRIDE:-$(jq -r '.parameters.location.value // "swedencentral"' "$PARAMS_FILE")}"
 
 CHAOS_RG="rg-parking-chaos-${ENVIRONMENT}"
 HUB_RG="rg-parking-hub-${ENVIRONMENT}"
@@ -64,7 +145,7 @@ ACR_LOGIN_SERVER=$(az acr list -g "$HUB_RG" --query "[0].loginServer" -o tsv 2>/
 ACR_NAME=$(az acr list -g "$HUB_RG" --query "[0].name" -o tsv 2>/dev/null)
 
 if [ -z "$ACR_LOGIN_SERVER" ]; then
-  print_warning "No ACR found in $HUB_RG — will use the default hello-world image."
+  print_warning "No ACR found in $HUB_RG - will use the default hello-world image."
   CONTAINER_IMAGE="mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
   CONTAINER_REGISTRY=""
 else
@@ -88,8 +169,18 @@ fi
 # --- optionally build & push the image ---
 if [ -n "$ACR_LOGIN_SERVER" ]; then
   echo ""
-  read -p "Build and push Docker image to $ACR_LOGIN_SERVER? (yes/no): " BUILD_IMAGE
-  if [ "$BUILD_IMAGE" = "yes" ]; then
+  SHOULD_BUILD_IMAGE=false
+  case "$BUILD_IMAGE_MODE" in
+    yes) SHOULD_BUILD_IMAGE=true ;;
+    no) SHOULD_BUILD_IMAGE=false ;;
+    ask)
+      if prompt_yes_no "Build and push Docker image to $ACR_LOGIN_SERVER? (yes/no) [no]: " "no"; then
+        SHOULD_BUILD_IMAGE=true
+      fi
+      ;;
+  esac
+
+  if [[ "$SHOULD_BUILD_IMAGE" == "true" ]]; then
     print_info "Building image with ACR task..."
     az acr build \
       --registry "$ACR_NAME" \
@@ -103,13 +194,11 @@ fi
 echo ""
 TABLE_DEPLOYMENT_NAME="vm-health-table-$(date +%Y%m%d-%H%M%S)"
 print_info "Creating custom table VMHealthStatus_CL in $HUB_RG..."
-az deployment group create \
+if ! az deployment group create \
   --name "$TABLE_DEPLOYMENT_NAME" \
   --resource-group "$HUB_RG" \
   --template-file "$INFRA_DIR/modules/vm-health-table.bicep" \
-  --parameters workspaceName="$LA_WORKSPACE_NAME"
-
-if [ $? -ne 0 ]; then
+  --parameters workspaceName="$LA_WORKSPACE_NAME"; then
   print_error "Failed to create custom table."
   exit 1
 fi
@@ -118,16 +207,14 @@ print_info "Custom table created."
 # --- Step 1b: deploy alert rules in hub RG ---
 ALERTS_DEPLOYMENT_NAME="vm-health-alerts-$(date +%Y%m%d-%H%M%S)"
 print_info "Creating VM health alert rules in $HUB_RG..."
-az deployment group create \
+if ! az deployment group create \
   --name "$ALERTS_DEPLOYMENT_NAME" \
   --resource-group "$HUB_RG" \
   --template-file "$INFRA_DIR/modules/vm-health-alerts.bicep" \
   --parameters \
     location="$LOCATION" \
-    logAnalyticsWorkspaceId="$LA_WORKSPACE_ID"
-
-if [ $? -ne 0 ]; then
-  print_warning "Alert rules deployment failed — continuing with container app deployment."
+    logAnalyticsWorkspaceId="$LA_WORKSPACE_ID"; then
+  print_warning "Alert rules deployment failed - continuing with container app deployment."
 else
   print_info "Alert rules created."
 fi
@@ -142,7 +229,7 @@ az bicep build --file "$INFRA_DIR/modules/vm-health-control.bicep"
 # Phase 1: Deploy with a public placeholder image (no ACR auth needed)
 # This creates the container app, DCE, DCR, and role assignments.
 PLACEHOLDER_IMAGE="mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
-print_info "Phase 1 — Deploying infrastructure with placeholder image..."
+print_info "Phase 1 - Deploying infrastructure with placeholder image..."
 az deployment group create \
   --name "$DEPLOYMENT_NAME" \
   --resource-group "$CHAOS_RG" \
@@ -152,11 +239,6 @@ az deployment group create \
     containerAppEnvironmentId="$CAE_ID" \
     containerImage="$PLACEHOLDER_IMAGE" \
     logAnalyticsWorkspaceId="$LA_WORKSPACE_ID"
-
-if [ $? -ne 0 ]; then
-  print_error "Infrastructure deployment failed — check the Azure Portal for details."
-  exit 1
-fi
 
 print_info "Infrastructure deployed."
 
@@ -175,7 +257,7 @@ PRINCIPAL_ID=$(az deployment group show \
 
 # Phase 2: Grant ACR pull and update to real image
 if [ -n "$ACR_NAME" ] && [ -n "$PRINCIPAL_ID" ]; then
-  print_info "Phase 2 — Granting ACR pull role..."
+  print_info "Phase 2 - Granting ACR pull role..."
   ACR_ID=$(az acr show --name "$ACR_NAME" --query id -o tsv)
   az role assignment create \
     --assignee-object-id "$PRINCIPAL_ID" \
@@ -183,28 +265,36 @@ if [ -n "$ACR_NAME" ] && [ -n "$PRINCIPAL_ID" ]; then
     --role AcrPull \
     --scope "$ACR_ID" 2>/dev/null || true
 
-  print_info "Waiting for role propagation (30s)..."
-  sleep 30
+  print_info "Configuring ACR registry on container app (retrying while role propagates)..."
+  REGISTRY_SET=false
+  for attempt in {1..10}; do
+    if az containerapp registry set \
+      --name "$APP_NAME" \
+      --resource-group "$CHAOS_RG" \
+      --server "$ACR_LOGIN_SERVER" \
+      --identity system >/dev/null 2>&1; then
+      REGISTRY_SET=true
+      break
+    fi
+    print_warning "ACR role not propagated yet (attempt $attempt/10). Retrying in 10s..."
+    sleep 10
+  done
 
-  print_info "Configuring ACR registry on container app..."
-  az containerapp registry set \
-    --name "$APP_NAME" \
-    --resource-group "$CHAOS_RG" \
-    --server "$ACR_LOGIN_SERVER" \
-    --identity system
-
-  print_info "Updating container app to $CONTAINER_IMAGE..."
-  az containerapp update \
-    --name "$APP_NAME" \
-    --resource-group "$CHAOS_RG" \
-    --image "$CONTAINER_IMAGE"
-
-  if [ $? -eq 0 ]; then
-    print_info "Container app updated with real image."
+  if [[ "$REGISTRY_SET" == "true" ]]; then
+    print_info "Updating container app to $CONTAINER_IMAGE..."
+    if az containerapp update \
+      --name "$APP_NAME" \
+      --resource-group "$CHAOS_RG" \
+      --image "$CONTAINER_IMAGE" >/dev/null; then
+      print_info "Container app updated with real image."
+    else
+      print_warning "Image update failed. You can retry manually:"
+      echo "  az containerapp registry set --name $APP_NAME -g $CHAOS_RG --server $ACR_LOGIN_SERVER --identity system"
+      echo "  az containerapp update --name $APP_NAME -g $CHAOS_RG --image $CONTAINER_IMAGE"
+    fi
   else
-    print_warning "Image update failed. You can retry manually:"
+    print_warning "Could not configure ACR registry after retries. You can retry manually:"
     echo "  az containerapp registry set --name $APP_NAME -g $CHAOS_RG --server $ACR_LOGIN_SERVER --identity system"
-    echo "  az containerapp update --name $APP_NAME -g $CHAOS_RG --image $CONTAINER_IMAGE"
   fi
 fi
 

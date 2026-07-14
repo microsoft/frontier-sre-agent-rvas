@@ -51,7 +51,7 @@ The infrastructure is organized into multiple resource groups for better managem
    - Application Insights
    - Enable by setting `deployBerlinMcp=true` in your parameters file.
 
-> **Note**: The `vm-health-control` service is an application-layer service only (not provisioned by Bicep). It runs locally via `start-chaos-stack.sh` or can be deployed to an existing Container App environment.
+> **Note**: The `vm-health-control` service is an application-layer service only (not provisioned by Bicep). Its normal day-2 rollout path is `workflows/deploy-container-apps.yml`. It also runs locally via `scripts/start-chaos-stack.sh`, and `scripts/bootstrap/bootstrap-vm-health-control.sh` remains available as a bootstrap or recovery path when extra setup is required.
 
 ## Cost Optimization Strategy
 

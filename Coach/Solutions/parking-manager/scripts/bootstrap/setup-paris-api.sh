@@ -1,6 +1,7 @@
 #!/bin/bash
-# Complete setup script for Paris Parking API on Ubuntu VM
-# Run this script on the Paris VM after certificates have been generated
+# First-time setup script for Paris Parking API on Ubuntu VM.
+# This prepares the machine and service layout and is not the normal release
+# path. Regular application updates should use workflows/deploy-vm-apps.yml.
 
 set -e  # Exit on any error
 
