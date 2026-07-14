@@ -1,78 +1,127 @@
-# Azure Infrastructure for SRE Demo Manager
+# Azure Infrastructure for Parking Manager
 
-This directory contains the Bicep templates to deploy the complete Azure infrastructure for the Parking Manager application.
+This directory contains the subscription-scope Bicep templates used to provision the Azure infrastructure for the Parking Manager demo environment.
 
-## Architecture Overview
+## Operating model
 
-The infrastructure is organized into multiple resource groups for better management and cost tracking:
+- `main.bicep` is the canonical infrastructure definition.
+- `../workflows/infra-whatif.yml` is the preview path for infrastructure changes.
+- `../workflows/infra-deploy.yml` is the canonical apply path for infrastructure changes.
+- `../workflows/deploy-container-apps.yml` handles routine image rollouts for Lisbon, Berlin, Chaos Control, optional Berlin MCP, and `vm-health-control`.
+- `../workflows/deploy-vm-apps.yml` handles routine application redeploys for Madrid and Paris.
+- `../scripts/start-local-stack.sh` is local-only and does not deploy Azure resources.
 
-### Resource Groups
+## Architecture overview
 
-1. **Hub Resource Group** (`rg-parking-hub-{env}`)
-   - Virtual Network (VNet) with subnets
-   - Log Analytics Workspace (shared across all components)
-   - Azure Container Registry (ACR)
-   - Network Security Groups
+The deployment is organized into multiple resource groups so networking, compute, monitoring, and app workloads can evolve independently.
 
-2. **Frontend Resource Group** (`rg-parking-frontend-{env}`)
-   - Azure App Service Plan (Linux, B1 tier)
-   - Azure App Service (React + Express proxy, port 8080)
-   - Application Insights
+### Resource groups
 
-3. **Lisbon API Resource Group** (`rg-parking-lisbon-{env}`)
-   - Container App Environment
-   - Container App (Docker-based API, port 3001)
-   - Application Insights
+Base deployment creates these 7 resource groups:
 
-4. **Berlin API Resource Group** (`rg-parking-berlin-{env}`)
-   - Container App Environment
-   - Container App (Docker-based API, port 3004)
-   - Application Insights
+1. `rg-parking-hub-{env}`
+2. `rg-parking-frontend-{env}`
+3. `rg-parking-lisbon-{env}`
+4. `rg-parking-madrid-{env}`
+5. `rg-parking-paris-{env}`
+6. `rg-parking-berlin-{env}`
+7. `rg-parking-chaos-{env}`
 
-5. **Madrid API Resource Group** (`rg-parking-madrid-{env}`)
-   - Windows Server 2022 VM (Standard_B2s)
-   - Network Interface
-   - Public IP (optional)
-   - Application Insights
+Optional resource group:
 
-6. **Paris API Resource Group** (`rg-parking-paris-{env}`)
-   - Ubuntu Server 22.04 LTS VM (Standard_B2s)
-   - Network Interface
-   - Public IP (optional)
-   - Application Insights
+- `rg-parking-berlin-mcp-{env}` when `deployBerlinMcp=true`
 
-7. **Chaos Control Resource Group** (`rg-parking-chaos-{env}`)
-   - Container App Environment
-   - Container App for Chaos Control service (port 3090)
-   - Application Insights
+### What each resource group contains
 
-8. **Berlin MCP Server Resource Group** (`rg-parking-berlin-mcp-{env}`) *(optional)*
-   - Container App for the Berlin MCP Server
-   - Application Insights
-   - Enable by setting `deployBerlinMcp=true` in your parameters file.
+#### Hub resource group
 
-> **Note**: The `vm-health-control` service is an application-layer service only (not provisioned by Bicep). Its normal day-2 rollout path is `workflows/deploy-container-apps.yml`. It also runs locally via `scripts/start-chaos-stack.sh`, and `scripts/bootstrap/bootstrap-vm-health-control.sh` remains available as a bootstrap or recovery path when extra setup is required.
+`rg-parking-hub-{env}` contains shared infrastructure:
 
-## Cost Optimization Strategy
+- Virtual network and subnets
+- Network security groups
+- Log Analytics workspace
+- Deployment storage account
+- Optional Azure Container Registry
+- VM health table and alerting resources
+- Data collection rules and endpoint for VM log collection
+- Optional GitHub-hosted runner private networking resources
 
-The infrastructure is designed for cost optimization:
+#### Frontend resource group
 
-- **App Service Plan**: B1 tier (Basic) — approximately $13/month
-- **Virtual Machines**: Standard_B2s (2 vCPUs, 4 GB RAM) — approximately $30/month each
-- **Container Apps**: Consumption-based pricing with 0.25 vCPU and 0.5 Gi memory
-- **Storage**: StandardSSD_LRS for VM disks
-- **Log Analytics**: Pay-as-you-go with 30-day retention
-- **Network**: Standard public IPs (optional, can be disabled)
+`rg-parking-frontend-{env}` contains:
 
-**Estimated Monthly Cost**: ~$120–180 (varies by region, usage, and optional components)
+- Linux App Service Plan
+- Frontend App Service
+- Application Insights
+
+#### Lisbon resource group
+
+`rg-parking-lisbon-{env}` contains:
+
+- Lisbon Container App
+
+#### Berlin resource group
+
+`rg-parking-berlin-{env}` contains:
+
+- Berlin Container App
+
+#### Madrid resource group
+
+`rg-parking-madrid-{env}` contains:
+
+- Windows VM and related network resources
+
+#### Paris resource group
+
+`rg-parking-paris-{env}` contains:
+
+- Ubuntu VM and related network resources
+
+#### Chaos resource group
+
+`rg-parking-chaos-{env}` contains:
+
+- Chaos Control Container App
+- VM Health Control Container App
+
+#### Optional Berlin MCP resource group
+
+`rg-parking-berlin-mcp-{env}` contains:
+
+- Berlin MCP Container App
+- Its monitoring resources when enabled
+
+## Bootstrap and redeploy model
+
+- Paris first-time VM bootstrap is handled by `modules/paris-api.bicep` using cloud-init.
+- Madrid first-time VM bootstrap is handled by `modules/madrid-api.bicep`.
+- VM health supporting infrastructure is provisioned by `main.bicep`, but normal day-2 rollouts happen through `../workflows/deploy-container-apps.yml`.
+- Routine application rollouts should not use ad-hoc bootstrap scripts.
+
+## Cost profile
+
+The environment is designed for demo and workshop cost efficiency.
+
+- Frontend App Service Plan: B1 Linux, about $13/month
+- Madrid VM: Standard_B2s, about $30/month
+- Paris VM: Standard_B2s, about $30/month
+- Container Apps: consumption-based for Lisbon, Berlin, Chaos Control, and VM Health
+- Azure Container Registry: Basic SKU when enabled
+- Log Analytics and Application Insights: pay-as-you-go
+- VM disks: StandardSSD_LRS
+- Public IPs: optional Standard IPs
+
+Estimated baseline monthly cost is typically around $110-$160, with Berlin MCP adding a small extra amount when enabled.
 
 ## Prerequisites
 
-1. **Azure CLI** version 2.50.0 or later
-2. **Azure Subscription** with Contributor access
-3. **Bicep CLI** (automatically installed with Azure CLI 2.20.0+)
+1. Azure CLI 2.50.0 or newer
+2. Access to an Azure subscription with permissions to deploy at subscription scope
+3. Bicep support through Azure CLI
 
-To verify your setup:
+Verify your setup:
+
 ```bash
 az --version
 az bicep version
@@ -80,375 +129,275 @@ az bicep version
 
 ## Parameters
 
-### Required Parameters
+### Required parameters
 
-| Parameter | Description | Example |
-|-----------|-------------|---------|
-| `location` | Azure region for resources | `westeurope` |
-| `environment` | Environment name (dev/test/prod) | `dev` |
-| `adminUsername` | Admin username for VMs | `azureadmin` |
-| `adminPassword` | Admin password for VMs (secure) | `P@ssw0rd123!` |
+|Parameter|Description|Example|
+|---|---|---|
+|`location`|Azure region for the deployment|`swedencentral`|
+|`environment`|Environment name|`dev`|
+|`adminUsername`|Admin username for the VMs|`azureadmin`|
+|`adminPassword`|Secure admin password for the VMs|`P@ssw0rd123!`|
 
-### Optional Parameters
+### Common optional parameters
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `lisbonContainerImage` | Container image for Lisbon API | `mcr.microsoft.com/azuredocs/containerapps-helloworld:latest` |
-| `containerRegistry` | Private container registry URL | `""` (empty) |
-| `createPublicIps` | Create public IPs for VMs | `true` |
-| `vnetAddressPrefix` | VNet address space | `10.0.0.0/16` |
-| `vmSubnetPrefix` | VM subnet address space | `10.0.1.0/24` |
-| `containerSubnetPrefix` | Container Apps subnet address space | `10.0.2.0/23` |
+|Parameter|Description|Default|
+|---|---|---|
+|`lisbonContainerImage`|Lisbon image reference|`mcr.microsoft.com/azuredocs/containerapps-helloworld:latest`|
+|`berlinContainerImage`|Berlin image reference|`mcr.microsoft.com/azuredocs/containerapps-helloworld:latest`|
+|`chaosControlContainerImage`|Chaos Control image reference|`mcr.microsoft.com/azuredocs/containerapps-helloworld:latest`|
+|`vmHealthControlContainerImage`|VM Health Control image reference|`mcr.microsoft.com/azuredocs/containerapps-helloworld:latest`|
+|`containerRegistry`|External registry server when not creating ACR|`''`|
+|`createPublicIps`|Create public IPs for Madrid and Paris|`true`|
+|`deployMadridVm`|Deploy the Madrid VM|`true`|
+|`deployParisVm`|Deploy the Paris VM|`true`|
+|`deployBerlinMcp`|Deploy Berlin MCP resources|`false`|
+|`vnetAddressPrefix`|Hub VNet CIDR|`10.0.0.0/16`|
+|`vmSubnetPrefix`|VM subnet CIDR|`10.0.1.0/24`|
+|`containerSubnetPrefix`|Container Apps subnet CIDR|`10.0.2.0/23`|
+|`allowedSourceIpPrefix`|Source IP prefix for SSH/RDP|`*`|
+|`githubOrgDatabaseId`|GitHub org database ID for runner networking|`''`|
+|`createContainerRegistry`|Create ACR in the hub resource group|`true`|
+|`containerRegistrySku`|ACR SKU|`Basic`|
+|`githubActionsPrincipalId`|Service principal object ID for deployment storage access|`''`|
 
-## Deployment
+See `main.bicep` and `main.parameters.json` for the full current set.
 
-### Step 1: Login to Azure
+## Deployment options
 
-```bash
-az login
-az account set --subscription "<your-subscription-id>"
-```
+### Option 1: GitHub workflows
 
-### Step 2: Validate the Bicep Template
+Preferred path:
+
+1. Run `../workflows/infra-whatif.yml`
+2. Review the result
+3. Run `../workflows/infra-deploy.yml`
+
+### Option 2: Direct CLI
+
+Validate the deployment:
 
 ```bash
 cd infrastructure
 az deployment sub validate \
-  --location westeurope \
+  --location swedencentral \
   --template-file main.bicep \
-  --parameters main.parameters.json \
+  --parameters @main.parameters.json \
   --parameters adminPassword='<your-secure-password>'
 ```
 
-### Step 3: Deploy the Infrastructure
-
-#### Quick Deploy (with inline parameters)
+Deploy the infrastructure:
 
 ```bash
 az deployment sub create \
-  --location westeurope \
+  --location swedencentral \
   --template-file main.bicep \
-  --parameters environment=dev \
-  --parameters adminUsername=azureadmin \
-  --parameters adminPassword='<your-secure-password>' \
-  --parameters location=westeurope
+  --parameters @main.parameters.json \
+  --parameters adminPassword='<your-secure-password>'
 ```
 
-#### Deploy with Parameters File
-
-1. Create a copy of the parameters file:
-   ```bash
-   cp main.parameters.json main.parameters.local.json
-   ```
-
-2. Edit `main.parameters.local.json` and update the values:
-   - Replace `{subscription-id}`, `{rg-name}`, `{vault-name}` if using Key Vault
-   - Or provide the password directly (not recommended for production)
-
-3. Deploy:
-   ```bash
-   az deployment sub create \
-     --location westeurope \
-     --template-file main.bicep \
-     --parameters main.parameters.local.json \
-     --parameters adminPassword='<your-secure-password>'
-   ```
-
-### Step 4: Monitor Deployment
+### Option 3: Local helper script
 
 ```bash
-# List all deployments
+cd infrastructure
+./deploy.sh
+```
+
+`deploy.sh` is a convenience wrapper around validation and `az deployment sub create`.
+
+## Monitoring deployment status
+
+```bash
+# List subscription-scope deployments
 az deployment sub list --output table
 
-# Show deployment details
-az deployment sub show --name main-deployment
+# Show a specific deployment
+az deployment sub show --name <deployment-name>
+
+# Show deployment outputs
+az deployment sub show --name <deployment-name> --query properties.outputs
 ```
 
-## Post-Deployment Steps
+## Key outputs
 
-### 1. Configure Container Image for Lisbon API
+The deployment exposes outputs for:
 
-If you're using a custom container image:
+- resource group names
+- VNet and workspace names
+- optional ACR name and login server
+- deployment storage account details
+- frontend URL
+- Lisbon, Berlin, Madrid, Paris, Chaos Control, and VM Health endpoints
+- optional Berlin MCP endpoint and related names
+
+Example:
 
 ```bash
-# Build and push your Lisbon API image
-cd backend/lisbon-parking-api
-docker build -t <acr-name>.azurecr.io/lisbon-parking-api:latest .
-az acr login --name <acr-name>
-docker push <acr-name>.azurecr.io/lisbon-parking-api:latest
-
-# Update the Container App
-az containerapp update \
-  --name ca-parking-lisbon \
-  --resource-group rg-parking-lisbon-<env> \
-  --image <acr-name>.azurecr.io/lisbon-parking-api:latest
+az deployment sub show --name <deployment-name> \
+  --query "properties.outputs.{frontend:frontendUrl.value,lisbon:lisbonApiUrl.value,berlin:berlinApiUrl.value,madrid:madridApiUrl.value,paris:parisApiUrl.value,chaos:chaosControlUrl.value,vmHealth:vmHealthControlUrl.value}" \
+  -o json
 ```
 
-### 2. Deploy Madrid API to Windows VM
+## Post-deployment responsibilities
 
-SSH/RDP into the Madrid VM and deploy the Node.js application:
+### Container apps
 
-```powershell
-# RDP into the Windows VM
-# Then download and setup the Madrid API
+Use `../workflows/deploy-container-apps.yml` for:
 
-# Create application directory
-New-Item -ItemType Directory -Path C:\parking-api
+- Lisbon
+- Berlin
+- Chaos Control
+- VM Health Control
+- optional Berlin MCP
 
-# Clone or copy the application code
-# Install dependencies
-cd C:\parking-api
-npm install
+### VM applications
 
-# Install as Windows Service (optional)
-npm install -g node-windows
-node install-service.js
+Use `../workflows/deploy-vm-apps.yml` for:
 
-# Or run manually
-npm start
-```
+- Madrid application redeploys
+- Paris application redeploys
 
-### 3. Deploy Paris API to Linux VM
+### Frontend
 
-SSH into the Paris VM and deploy the Node.js application:
+Frontend hosting is provisioned by infrastructure, but there is currently no dedicated frontend deployment workflow in `../workflows/`.
+
+Typical frontend build steps:
 
 ```bash
-# SSH into the Ubuntu VM
-ssh azureadmin@<paris-vm-fqdn>
-
-# Create application directory
-sudo mkdir -p /opt/parking-api
-sudo chown $USER:$USER /opt/parking-api
-
-# Clone or copy the application code
-cd /opt/parking-api
-npm install
-
-# Create systemd service
-sudo nano /etc/systemd/system/paris-parking-api.service
-```
-
-Example systemd service file:
-```ini
-[Unit]
-Description=Paris Parking API
-After=network.target
-
-[Service]
-Type=simple
-User=azureadmin
-WorkingDirectory=/opt/parking-api
-ExecStart=/usr/bin/node server.js
-Restart=on-failure
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Enable and start the service:
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable paris-parking-api
-sudo systemctl start paris-parking-api
-```
-
-### 4. Deploy Frontend to App Service
-
-```bash
-# Build the frontend
-cd frontend/parking-manager
+cd ../frontend/parking-manager
 npm install
 npm run build
-
-# Deploy using Azure CLI
-az webapp up \
-  --name <app-service-name> \
-  --resource-group rg-parking-frontend-<env> \
-  --plan asp-parking-frontend \
-  --runtime "NODE:18-lts" \
-  --src-path .
 ```
 
-Or use GitHub Actions / Azure DevOps for CI/CD.
+### Local development
 
-## Accessing the Resources
-
-After deployment, retrieve the outputs:
+Use the local launcher only for a local demo stack:
 
 ```bash
-az deployment sub show \
-  --name main-deployment \
-  --query properties.outputs
+cd ../scripts
+./start-local-stack.sh
 ```
 
-Key outputs:
-- **Frontend URL**: `https://<app-service-name>.azurewebsites.net`
-- **Lisbon API URL**: `https://<lisbon-container-app-fqdn>.azurecontainerapps.io`
-- **Berlin API URL**: `https://<berlin-container-app-fqdn>.azurecontainerapps.io`
-- **Madrid API URL**: `http://<madrid-vm-fqdn>:3002`
-- **Paris API URL**: `https://<paris-vm-fqdn>:3003`
+## Updating infrastructure
 
-## Updating the Infrastructure
+Infrastructure updates are idempotent. After changing Bicep files, rerun either:
 
-To update resources:
+- `../workflows/infra-whatif.yml` and `../workflows/infra-deploy.yml`, or
+- `az deployment sub create ...`, or
+- `./deploy.sh`
+
+## Cleanup
+
+Delete the environment by resource group:
 
 ```bash
-# Modify the Bicep files as needed
-# Run deployment again (Bicep is idempotent)
-az deployment sub create \
-  --location westeurope \
-  --template-file main.bicep \
-  --parameters main.parameters.local.json \
-  --parameters adminPassword='<your-secure-password>'
+az group delete --name rg-parking-hub-<env> --yes --no-wait
+az group delete --name rg-parking-frontend-<env> --yes --no-wait
+az group delete --name rg-parking-lisbon-<env> --yes --no-wait
+az group delete --name rg-parking-berlin-<env> --yes --no-wait
+az group delete --name rg-parking-madrid-<env> --yes --no-wait
+az group delete --name rg-parking-paris-<env> --yes --no-wait
+az group delete --name rg-parking-chaos-<env> --yes --no-wait
+
+# Optional Berlin MCP
+az group delete --name rg-parking-berlin-mcp-<env> --yes --no-wait
 ```
 
-## Cleaning Up
-
-To delete all resources:
-
-```bash
-# Replace <env> with your environment (e.g., dev, test, prod)
-az group delete --name rg-parking-hub-<env>            --yes --no-wait
-az group delete --name rg-parking-frontend-<env>       --yes --no-wait
-az group delete --name rg-parking-lisbon-<env>         --yes --no-wait
-az group delete --name rg-parking-berlin-<env>         --yes --no-wait
-az group delete --name rg-parking-madrid-<env>         --yes --no-wait
-az group delete --name rg-parking-paris-<env>          --yes --no-wait
-az group delete --name rg-parking-chaos-<env>          --yes --no-wait
-# Optional Berlin MCP:
-az group delete --name rg-parking-berlin-mcp-<env>     --yes --no-wait
-```
-
-> ⚠️ **Cost reminder**: Azure resources continue to accrue charges until deleted. Run the cleanup commands above when the demo environment is no longer needed.
+Azure resources continue billing until they are removed.
 
 ## Troubleshooting
 
-### GitHub Runners Subnet Deployment
+### GitHub runners subnet deployment
 
-**Issue**: Deployment fails with `InUseSubnetCannotBeDeleted` for `snet-github-runners` subnet.
+If deployment fails with `InUseSubnetCannotBeDeleted` for `snet-github-runners`:
 
-**Cause**: The subnet has a service association link from GitHub Actions networking that prevents deletion during VNet state reconciliation.
+- pull the latest infrastructure code and redeploy
+- keep the runner subnet managed by the dedicated GitHub runner networking module
+- if needed, delete the stale GitHub Network Settings resource and rerun the deployment
 
-**Solution**: VNet subnets are created as separate child resources instead of inline definitions to prevent Azure from attempting to delete existing subnets during redeployment. The `snet-github-runners` subnet is managed by the `github-runner-network.bicep` module.
-
-If you encounter this error on an older deployment:
-- Pull the latest infrastructure code and redeploy (preferred — prevents future occurrences).
-- Or remove the GitHub Network Settings resource first:
-  ```bash
-  az resource delete \
-    --resource-group rg-parking-hub-<env> \
-    --name github-actions-network-settings \
-    --resource-type GitHub.Network/networkSettings
-  ```
-  Then redeploy the infrastructure.
-
-### Bicep Compilation Errors
+Example cleanup:
 
 ```bash
-# Validate Bicep syntax
+az resource delete \
+  --resource-group rg-parking-hub-<env> \
+  --name github-actions-network-settings \
+  --resource-type GitHub.Network/networkSettings
+```
+
+### Bicep compilation errors
+
+```bash
 az bicep build --file main.bicep
 ```
 
-### Deployment Errors
+### Deployment errors
 
 ```bash
-# Get deployment error details
 az deployment sub show \
-  --name main-deployment \
+  --name <deployment-name> \
   --query properties.error
-
-# View deployment operations
-az deployment operation sub list \
-  --name main-deployment
 ```
 
-### VM Access Issues
+### VM access problems
+
+- verify the VM is running
+- verify a public IP exists when `createPublicIps=true`
+- review NSG rules and `allowedSourceIpPrefix`
+- reset credentials if needed
+
+### Container App rollout problems
+
+- inspect container logs
+- verify the image exists in ACR or the configured registry
+- verify environment variables and networking
+
+### Security considerations
+
+This repository is intended for demo and workshop scenarios. Review the defaults before exposing the environment publicly.
+
+1. Restrict SSH and RDP access by setting `allowedSourceIpPrefix` to a known IP range.
+2. Consider `createPublicIps=false` and use Azure Bastion or private access patterns.
+3. Replace self-signed certificates with managed or trusted certificates for production use.
+4. Use Key Vault for secrets and sensitive deployment values.
+5. Prefer managed identities over long-lived credentials where possible.
+6. Review NSG rules and inbound exposure regularly.
+
+Example restricted deployment:
 
 ```bash
-# Reset VM password
-az vm user update \
-  --resource-group rg-parking-madrid-<env> \
-  --name vm-madrid-api \
-  --username azureadmin \
-  --password '<new-password>'
-
-# Enable boot diagnostics
-az vm boot-diagnostics enable \
-  --resource-group rg-parking-madrid-<env> \
-  --name vm-madrid-api
+az deployment sub create \
+  --location swedencentral \
+  --template-file main.bicep \
+  --parameters @main.parameters.json \
+  --parameters allowedSourceIpPrefix='<your-ip>/32' \
+  --parameters adminPassword='<your-secure-password>'
 ```
 
-## Security Considerations
+### Networking summary
 
-> **This is a demo/development project.** The default settings below are intentionally permissive for ease of setup. Review all settings before exposing this environment to the internet.
+- Hub VNet: `10.0.0.0/16`
+- VM subnet: `10.0.1.0/24`
+- Container Apps subnet: `10.0.2.0/23`
+- Optional GitHub-hosted runners subnet: `10.0.3.0/24`
 
-### Critical Security Settings
+### Monitoring notes
 
-1. **SSH/RDP Access**: By default, the NSG allows SSH (port 22) and RDP (port 3389) from any IP address (`*`). **This is for demo purposes only.**
-
-   For restricted access:
-   ```bash
-   az deployment sub create \
-     --location westeurope \
-     --template-file main.bicep \
-     --parameters allowedSourceIpPrefix='<your-ip>/32'
-   ```
-
-   Or use **Azure Bastion** for secure VM access without public IPs:
-   ```bash
-   --parameters createPublicIps=false
-   ```
-
-2. **Self-signed certificates**: Paris and Madrid APIs use self-signed TLS certificates in Azure deployments. The Express proxy server disables certificate verification (`NODE_TLS_REJECT_UNAUTHORIZED=0`) to connect to these services. Do not use self-signed certificates in production.
-
-3. **Container Registry Authentication**: The default configuration uses admin credentials for private registries. For production, use **Managed Identity** authentication and disable the admin user.
-
-### Additional Security Best Practices
-
-4. **Use Key Vault** for storing VM passwords and container registry credentials
-5. **Enable Azure AD authentication** for App Service and Container Apps
-6. **Configure NSG rules** to restrict inbound access to what is needed
-7. **Use Managed Identities** instead of connection strings where possible
-8. **Enable HTTPS only** for web applications
-9. **Regular patching** of VMs through Azure Update Management
-10. **Enable Microsoft Defender for Cloud** for advanced threat protection
-
-## Networking
-
-The infrastructure uses a hub-and-spoke network topology:
-
-- **Hub VNet**: 10.0.0.0/16
-  - VM Subnet: 10.0.1.0/24 (254 addresses)
-  - Container Apps Subnet: 10.0.2.0/23 (510 addresses)
-
-All resources are connected to the hub VNet for centralized management and monitoring.
-
-## Monitoring
-
-All resources send logs to the centralized Log Analytics Workspace:
+The deployment centralizes monitoring through Log Analytics and Application Insights.
 
 ```kusto
-// Query all API requests
 AppRequests
 | where TimeGenerated > ago(1h)
 | summarize count() by cloud_RoleName, resultCode
+```
 
-// Check VM performance
+```kusto
 Perf
 | where TimeGenerated > ago(1h)
 | where ObjectName == "Processor" and CounterName == "% Processor Time"
 | summarize avg(CounterValue) by Computer
 ```
 
-## Contributing
+## Related docs
 
-When modifying the infrastructure:
-
-1. Test changes in a dev environment first
-2. Use `az deployment sub what-if` to preview changes
-3. Document any new parameters or outputs
-4. Update this README with relevant information
-
-## License
-
-ISC
+- `QUICK_REFERENCE.md`
+- `../workflows/README.md`
+- `../scripts/README.md`

@@ -1,0 +1,187 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.44.1.10279",
+      "templateHash": "6637773190888662799"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Location for all frontend resources"
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics Workspace ID for Application Insights"
+      }
+    },
+    "lisbonApiUrl": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Environment URLs for the APIs"
+      }
+    },
+    "madridApiUrl": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "parisApiUrl": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "berlinApiUrl": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "chaosControlUrl": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "vmHealthControlUrl": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags to apply to resources"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2023-01-01",
+      "name": "asp-parking-frontend",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "sku": {
+        "name": "B1",
+        "tier": "Basic",
+        "size": "B1",
+        "family": "B",
+        "capacity": 1
+      },
+      "kind": "linux",
+      "properties": {
+        "reserved": true
+      }
+    },
+    {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "appi-parking-frontend",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "kind": "web",
+      "properties": {
+        "Application_Type": "web",
+        "WorkspaceResourceId": "[parameters('logAnalyticsWorkspaceId')]",
+        "RetentionInDays": 30
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2023-01-01",
+      "name": "[format('app-parking-frontend-{0}', uniqueString(resourceGroup().id))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "kind": "app,linux",
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', 'asp-parking-frontend')]",
+        "httpsOnly": true,
+        "siteConfig": {
+          "linuxFxVersion": "NODE|18-lts",
+          "alwaysOn": true,
+          "minTlsVersion": "1.2",
+          "ftpsState": "Disabled",
+          "appSettings": [
+            {
+              "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+              "value": "[reference(resourceId('Microsoft.Insights/components', 'appi-parking-frontend'), '2020-02-02').InstrumentationKey]"
+            },
+            {
+              "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+              "value": "[reference(resourceId('Microsoft.Insights/components', 'appi-parking-frontend'), '2020-02-02').ConnectionString]"
+            },
+            {
+              "name": "ApplicationInsightsAgent_EXTENSION_VERSION",
+              "value": "~3"
+            },
+            {
+              "name": "REACT_APP_LISBON_API_URL",
+              "value": "[parameters('lisbonApiUrl')]"
+            },
+            {
+              "name": "REACT_APP_MADRID_API_URL",
+              "value": "[parameters('madridApiUrl')]"
+            },
+            {
+              "name": "REACT_APP_PARIS_API_URL",
+              "value": "[parameters('parisApiUrl')]"
+            },
+            {
+              "name": "REACT_APP_BERLIN_API_URL",
+              "value": "[parameters('berlinApiUrl')]"
+            },
+            {
+              "name": "REACT_APP_CHAOS_CONTROL_URL",
+              "value": "[parameters('chaosControlUrl')]"
+            },
+            {
+              "name": "REACT_APP_VM_HEALTH_CONTROL_URL",
+              "value": "[parameters('vmHealthControlUrl')]"
+            },
+            {
+              "name": "SCM_DO_BUILD_DURING_DEPLOYMENT",
+              "value": "true"
+            },
+            {
+              "name": "WEBSITE_NODE_DEFAULT_VERSION",
+              "value": "~20"
+            },
+            {
+              "name": "WEBSITES_PORT",
+              "value": "8080"
+            }
+          ],
+          "appCommandLine": "node server.js"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Insights/components', 'appi-parking-frontend')]",
+        "[resourceId('Microsoft.Web/serverfarms', 'asp-parking-frontend')]"
+      ]
+    }
+  ],
+  "outputs": {
+    "appServiceName": {
+      "type": "string",
+      "value": "[format('app-parking-frontend-{0}', uniqueString(resourceGroup().id))]"
+    },
+    "appServiceUrl": {
+      "type": "string",
+      "value": "[format('https://{0}', reference(resourceId('Microsoft.Web/sites', format('app-parking-frontend-{0}', uniqueString(resourceGroup().id))), '2023-01-01').defaultHostName)]"
+    },
+    "appServicePlanName": {
+      "type": "string",
+      "value": "asp-parking-frontend"
+    },
+    "appInsightsName": {
+      "type": "string",
+      "value": "appi-parking-frontend"
+    },
+    "appInsightsInstrumentationKey": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Insights/components', 'appi-parking-frontend'), '2020-02-02').InstrumentationKey]"
+    }
+  }
+}

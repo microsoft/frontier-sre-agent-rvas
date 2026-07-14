@@ -4,7 +4,7 @@ This folder is intentionally limited to utilities that are **not** the canonical
 
 ## Use these scripts for
 
-- local development
+- local development orchestration
 - first-time host or service bootstrap
 - break-glass or recovery operations
 
@@ -18,16 +18,12 @@ Those standard deployment paths live in `../workflows/`.
 
 ## Layout
 
-- `start-chaos-stack.sh`: one-command local development stack launcher
-- `bootstrap/`: first-time setup, recovery, and certificate helper scripts
+- `start-local-stack.sh`: one-command local launcher for the full Parking Manager demo stack
 
-## Bootstrap files
+## Local development
 
-- `bootstrap/bootstrap-vm-health-control.sh`: bootstrap or recovery deployment for VM Health when the normal workflow path is not enough
-- `bootstrap/setup-paris-api.sh`: first-time Paris VM setup only
-- `bootstrap/generate-paris-certs.sh`: Linux/macOS certificate helper for Paris
-- `bootstrap/generate-paris-certs.ps1`: PowerShell certificate helper for Paris
-- `bootstrap/generate-madrid-certs.ps1`: PowerShell certificate helper for Madrid
+- `start-local-stack.sh` installs missing dependencies, builds the frontend when needed, and starts the local backend services plus the frontend proxy.
+- This is a local-only convenience script. It is not part of the Azure deployment path.
 
 ## Canonical workflow replacements
 

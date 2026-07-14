@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.38.33.27573",
-      "templateHash": "8342294058669570352"
+      "version": "0.44.1.10279",
+      "templateHash": "13253355242143240052"
     }
   },
   "parameters": {
@@ -281,8 +281,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "17690009358630070878"
+              "version": "0.44.1.10279",
+              "templateHash": "4857075887292359225"
             }
           },
           "parameters": {
@@ -688,8 +688,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "12530932876367506038"
+              "version": "0.44.1.10279",
+              "templateHash": "17426679052413855030"
             }
           },
           "parameters": {
@@ -865,8 +865,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "185852612899822830"
+              "version": "0.44.1.10279",
+              "templateHash": "3388892820128651872"
             }
           },
           "parameters": {
@@ -982,8 +982,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "17498475635471516356"
+              "version": "0.44.1.10279",
+              "templateHash": "16677925159407485353"
             }
           },
           "parameters": {
@@ -1129,8 +1129,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "16714604538621567723"
+              "version": "0.44.1.10279",
+              "templateHash": "2011784097457803549"
             }
           },
           "parameters": {
@@ -1213,8 +1213,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "7580079684313953900"
+              "version": "0.44.1.10279",
+              "templateHash": "14392946557340520944"
             }
           },
           "parameters": {
@@ -1355,8 +1355,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "1807054221077234571"
+              "version": "0.44.1.10279",
+              "templateHash": "6159044091078476050"
             }
           },
           "parameters": {
@@ -1601,8 +1601,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "7239364955348035886"
+              "version": "0.44.1.10279",
+              "templateHash": "7078182401951743483"
             }
           },
           "parameters": {
@@ -1623,7 +1623,7 @@
             {
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
-              "scope": "[format('Microsoft.ContainerRegistry/registries/{0}', parameters('acrName'))]",
+              "scope": "[resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName'))]",
               "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), 'AcrPull')]",
               "properties": {
                 "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')]",
@@ -1642,6 +1642,235 @@
       },
       "dependsOn": [
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'container-registry-deployment')]",
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('hubRgName'))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('lisbonRgName')), 'Microsoft.Resources/deployments', 'lisbon-api-deployment')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "lisbon-chaos-alerts-deployment",
+      "resourceGroup": "[variables('hubRgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "logAnalyticsWorkspaceId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'hub-deployment'), '2025-04-01').outputs.logAnalyticsWorkspaceId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.0",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.44.1.10279",
+              "templateHash": "6921007328144673668"
+            }
+          },
+          "definitions": {
+            "AlertSpec": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "int"
+                },
+                "threshold": {
+                  "type": "int"
+                },
+                "query": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for scheduled query rules (usually same region as Log Analytics workspace)."
+              }
+            },
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Fully qualified ARM resource ID of the Log Analytics workspace that stores Lisbon custom logs. Must start with /subscriptions/. Do not use the workspace customer ID (GUID)."
+              }
+            },
+            "actionGroupResourceId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Action Group resource ID to notify when alerts fire. Leave empty to create rules without action groups."
+              }
+            },
+            "enabled": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable or disable all Lisbon chaos alerts."
+              }
+            },
+            "evaluationFrequency": {
+              "type": "string",
+              "defaultValue": "PT5M",
+              "metadata": {
+                "description": "How often the alert query runs."
+              }
+            },
+            "windowSize": {
+              "type": "string",
+              "defaultValue": "PT5M",
+              "metadata": {
+                "description": "Lookback window used by alert queries."
+              }
+            },
+            "namePrefix": {
+              "type": "string",
+              "defaultValue": "lisbon-chaos",
+              "metadata": {
+                "description": "Optional prefix for alert rule names."
+              }
+            }
+          },
+          "variables": {
+            "alertSpecs": [
+              {
+                "key": "generic",
+                "severity": 3,
+                "threshold": 0,
+                "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| where operation == 'CHAOS_INJECTED'\n| summarize totalChaosInjected = count() by bin(TimeGenerated, 5m)\n"
+              },
+              {
+                "key": "http-error",
+                "severity": 0,
+                "threshold": 0,
+                "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| where operation == 'CHAOS_INJECTED' and tostring(details_faultType_s) == 'httpError'\n| summarize count() by bin(TimeGenerated, 5m)\n"
+              },
+              {
+                "key": "dependency-failure",
+                "severity": 2,
+                "threshold": 0,
+                "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| where operation == 'CHAOS_INJECTED' and tostring(details_faultType_s) == 'dependencyFailure'\n| summarize count() by bin(TimeGenerated, 5m)\n"
+              },
+              {
+                "key": "https-error",
+                "severity": 2,
+                "threshold": 0,
+                "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| where operation == 'CHAOS_INJECTED' and tostring(details_faultType_s) == 'httpsError'\n| summarize count() by bin(TimeGenerated, 5m)\n"
+              },
+              {
+                "key": "exception",
+                "severity": 1,
+                "threshold": 0,
+                "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| where operation == 'CHAOS_INJECTED' and tostring(details_faultType_s) == 'exception'\n| summarize count() by bin(TimeGenerated, 5m)\n"
+              },
+              {
+                "key": "disconnect",
+                "severity": 2,
+                "threshold": 0,
+                "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| where operation == 'CHAOS_INJECTED' and tostring(details_faultType_s) == 'disconnect'\n| summarize count() by bin(TimeGenerated, 5m)\n"
+              },
+              {
+                "key": "timeout",
+                "severity": 2,
+                "threshold": 0,
+                "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| where operation == 'CHAOS_INJECTED' and tostring(details_faultType_s) == 'timeout'\n| summarize count() by bin(TimeGenerated, 5m)\n"
+              },
+              {
+                "key": "bad-payload",
+                "severity": 2,
+                "threshold": 0,
+                "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| where operation == 'CHAOS_INJECTED' and tostring(details_faultType_s) == 'badPayload'\n| summarize count() by bin(TimeGenerated, 5m)\n"
+              },
+              {
+                "key": "high-cpu",
+                "severity": 2,
+                "threshold": 0,
+                "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| where operation == 'CHAOS_INJECTED' and tostring(details_faultType_s) == 'highCpu'\n| summarize count() by bin(TimeGenerated, 5m)\n"
+              },
+              {
+                "key": "high-memory",
+                "severity": 2,
+                "threshold": 0,
+                "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| where operation == 'CHAOS_INJECTED' and tostring(details_faultType_s) == 'highMemory'\n| summarize count() by bin(TimeGenerated, 5m)\n"
+              },
+              {
+                "key": "latency-performance",
+                "severity": 2,
+                "threshold": 0,
+                "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| extend responseTimeMs = todouble(coalesce(column_ifexists('responseTimeMs_d', real(null)), column_ifexists('responseTimeMs', real(null))))\n| where operation == 'HTTP_RESPONSE' and isnotnull(responseTimeMs)\n| where responseTimeMs > 1500\n| summarize slowRequests = count(), p95 = percentile(responseTimeMs, 95) by bin(TimeGenerated, 5m)\n"
+              },
+              {
+                "key": "high-memory-guard-429",
+                "severity": 2,
+                "threshold": 0,
+                "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| extend statusCode = coalesce(toint(column_ifexists('statusCode_d', real(null))), toint(column_ifexists('statusCode', int(null))))\n| where operation == 'HTTP_RESPONSE'\n| where statusCode == 429\n| summarize count() by bin(TimeGenerated, 5m)\n"
+              }
+            ]
+          },
+          "resources": {
+            "chaosAlerts": {
+              "copy": {
+                "name": "chaosAlerts",
+                "count": "[length(variables('alertSpecs'))]"
+              },
+              "type": "Microsoft.Insights/scheduledQueryRules",
+              "apiVersion": "2023-12-01",
+              "name": "[format('{0}-{1}', parameters('namePrefix'), variables('alertSpecs')[copyIndex()].key)]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "displayName": "[format('{0}-{1}', parameters('namePrefix'), variables('alertSpecs')[copyIndex()].key)]",
+                "description": "[format('Lisbon chaos alert for {0}', variables('alertSpecs')[copyIndex()].key)]",
+                "severity": "[variables('alertSpecs')[copyIndex()].severity]",
+                "enabled": "[parameters('enabled')]",
+                "scopes": [
+                  "[parameters('logAnalyticsWorkspaceId')]"
+                ],
+                "evaluationFrequency": "[parameters('evaluationFrequency')]",
+                "windowSize": "[parameters('windowSize')]",
+                "autoMitigate": false,
+                "criteria": {
+                  "allOf": [
+                    {
+                      "query": "[variables('alertSpecs')[copyIndex()].query]",
+                      "timeAggregation": "Count",
+                      "operator": "GreaterThan",
+                      "threshold": "[variables('alertSpecs')[copyIndex()].threshold]",
+                      "failingPeriods": {
+                        "numberOfEvaluationPeriods": 1,
+                        "minFailingPeriodsToAlert": 1
+                      }
+                    }
+                  ]
+                },
+                "actions": "[if(empty(parameters('actionGroupResourceId')), createObject('actionGroups', createArray()), createObject('actionGroups', createArray(parameters('actionGroupResourceId'))))]"
+              }
+            }
+          },
+          "outputs": {
+            "createdAlertNames": {
+              "type": "array",
+              "copy": {
+                "count": "[length(variables('alertSpecs'))]",
+                "input": "[format('{0}-{1}', parameters('namePrefix'), variables('alertSpecs')[copyIndex()].key)]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'hub-deployment')]",
         "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('hubRgName'))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('lisbonRgName')), 'Microsoft.Resources/deployments', 'lisbon-api-deployment')]"
       ]
@@ -1677,8 +1906,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "16953242303859215706"
+              "version": "0.44.1.10279",
+              "templateHash": "17423617138427712422"
             }
           },
           "parameters": {
@@ -1888,8 +2117,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "7239364955348035886"
+              "version": "0.44.1.10279",
+              "templateHash": "7078182401951743483"
             }
           },
           "parameters": {
@@ -1910,7 +2139,7 @@
             {
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
-              "scope": "[format('Microsoft.ContainerRegistry/registries/{0}', parameters('acrName'))]",
+              "scope": "[resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName'))]",
               "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), 'AcrPull')]",
               "properties": {
                 "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')]",
@@ -1967,8 +2196,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "18248275963403466511"
+              "version": "0.44.1.10279",
+              "templateHash": "3076496195145319132"
             }
           },
           "parameters": {
@@ -2177,8 +2406,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "7239364955348035886"
+              "version": "0.44.1.10279",
+              "templateHash": "7078182401951743483"
             }
           },
           "parameters": {
@@ -2199,7 +2428,7 @@
             {
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
-              "scope": "[format('Microsoft.ContainerRegistry/registries/{0}', parameters('acrName'))]",
+              "scope": "[resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName'))]",
               "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), 'AcrPull')]",
               "properties": {
                 "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')]",
@@ -2243,8 +2472,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "17632239383979605501"
+              "version": "0.44.1.10279",
+              "templateHash": "18064300243615783358"
             }
           },
           "parameters": {
@@ -2361,8 +2590,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "17523862689586698386"
+              "version": "0.44.1.10279",
+              "templateHash": "9570597958833457094"
             }
           },
           "parameters": {
@@ -2508,7 +2737,7 @@
             {
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
-              "scope": "[format('Microsoft.Insights/dataCollectionRules/{0}', 'dcr-vm-health-status')]",
+              "scope": "[resourceId('Microsoft.Insights/dataCollectionRules', 'dcr-vm-health-status')]",
               "name": "[guid(resourceId('Microsoft.Insights/dataCollectionRules', 'dcr-vm-health-status'), resourceId('Microsoft.App/containerApps', 'ca-vm-health-control'), variables('monitoringMetricsPublisherRoleId'))]",
               "properties": {
                 "principalId": "[reference(resourceId('Microsoft.App/containerApps', 'ca-vm-health-control'), '2023-05-01', 'full').identity.principalId]",
@@ -2680,8 +2909,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "7239364955348035886"
+              "version": "0.44.1.10279",
+              "templateHash": "7078182401951743483"
             }
           },
           "parameters": {
@@ -2702,7 +2931,7 @@
             {
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
-              "scope": "[format('Microsoft.ContainerRegistry/registries/{0}', parameters('acrName'))]",
+              "scope": "[resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName'))]",
               "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), 'AcrPull')]",
               "properties": {
                 "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')]",
@@ -2749,8 +2978,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "17706176128021404017"
+              "version": "0.44.1.10279",
+              "templateHash": "13588590208154330376"
             }
           },
           "parameters": {
@@ -2928,9 +3157,6 @@
           "location": {
             "value": "[parameters('location')]"
           },
-          "environment": {
-            "value": "[parameters('environment')]"
-          },
           "containerSubnetId": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'hub-deployment'), '2025-04-01').outputs.containerSubnetId.value]"
           },
@@ -2951,8 +3177,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "11833751532690082500"
+              "version": "0.44.1.10279",
+              "templateHash": "6735596972587384386"
             }
           },
           "parameters": {
@@ -2960,13 +3186,6 @@
               "type": "string",
               "metadata": {
                 "description": "Location for all MCP server resources"
-              }
-            },
-            "environment": {
-              "type": "string",
-              "defaultValue": "dev",
-              "metadata": {
-                "description": "Environment name (e.g., dev, prod) - NOTE: Not used in resource naming as resources are hardcoded to match existing manually deployed Azure resources"
               }
             },
             "containerSubnetId": {
@@ -3243,8 +3462,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "7239364955348035886"
+              "version": "0.44.1.10279",
+              "templateHash": "7078182401951743483"
             }
           },
           "parameters": {
@@ -3265,7 +3484,7 @@
             {
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
-              "scope": "[format('Microsoft.ContainerRegistry/registries/{0}', parameters('acrName'))]",
+              "scope": "[resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName'))]",
               "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), 'AcrPull')]",
               "properties": {
                 "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')]",
@@ -3327,8 +3546,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "8987415333394988064"
+              "version": "0.44.1.10279",
+              "templateHash": "13848402059689360235"
             }
           },
           "parameters": {
@@ -3377,6 +3596,11 @@
                 "description": "Tags to apply to resources"
               }
             }
+          },
+          "variables": {
+            "madridBootstrapScript": "$ErrorActionPreference = 'Stop'\n\n$appDir = 'C:\\Apps\\madrid-parking-api'\n$sharedDir = 'C:\\Apps\\shared'\n$envFile = Join-Path $appDir '.env'\n$pfxPath = Join-Path $appDir 'madrid.pfx'\n$runnerPath = Join-Path $appDir 'run-madrid-api.ps1'\n$serviceName = 'MadridParkingAPI'\n$serviceDisplayName = 'Madrid Parking API'\n$nodeVersion = '18.20.4'\n$nodeMsi = \"node-v$nodeVersion-x64.msi\"\n$nodeUrl = \"https://nodejs.org/dist/v$nodeVersion/$nodeMsi\"\n$nodeInstaller = Join-Path $env:TEMP $nodeMsi\n$pfxPassphrase = 'ChangeMe123!'\n$nodeExe = 'C:\\Program Files\\nodejs\\node.exe'\n\nNew-Item -ItemType Directory -Force -Path $appDir | Out-Null\nNew-Item -ItemType Directory -Force -Path $sharedDir | Out-Null\n\nif (-not (Test-Path $nodeExe)) {\n  Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeInstaller -UseBasicParsing\n  Start-Process msiexec.exe -ArgumentList \"/i `\"$nodeInstaller`\" /qn /norestart\" -Wait\n}\n\nif (-not (Test-Path $pfxPath)) {\n  $cert = New-SelfSignedCertificate -DnsName 'madrid-api' -CertStoreLocation 'cert:\\LocalMachine\\My' -FriendlyName 'Madrid Parking API'\n  $securePassphrase = ConvertTo-SecureString $pfxPassphrase -AsPlainText -Force\n  Export-PfxCertificate -Cert \"cert:\\LocalMachine\\My\\$($cert.Thumbprint)\" -FilePath $pfxPath -Password $securePassphrase | Out-Null\n}\n\n@\"\nEVENT_LOG_SOURCE=MadridParkingAPI\nEVENT_LOG_NAME=Application\nPORT=3002\nNODE_ENV=production\nPFX_PATH=$pfxPath\nPFX_PASSPHRASE=$pfxPassphrase\nPARKING_NAME=Madrid Centro Parking\nPARKING_CITY=Madrid\nPARKING_LOCATION=Plaza Mayor, Madrid\n\"@ | Set-Content -Path $envFile -Encoding UTF8\n\n@\"\n$appDir = 'C:\\Apps\\madrid-parking-api'\n$nodeExe = 'C:\\Program Files\\nodejs\\node.exe'\n\nif (-not (Test-Path (Join-Path $appDir 'server.js'))) {\n  Start-Sleep -Seconds 10\n  exit 1\n}\n\nSet-Location $appDir\n& $nodeExe server.js\n\"@ | Set-Content -Path $runnerPath -Encoding UTF8\n\nif (-not (Get-Service -Name $serviceName -ErrorAction SilentlyContinue)) {\n  $binPath = \"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NoProfile -ExecutionPolicy Bypass -File `\"$runnerPath`\"\"\n  sc.exe create $serviceName binPath= $binPath start= auto DisplayName= $serviceDisplayName | Out-Null\n  sc.exe failure $serviceName reset= 60 actions= restart/5000 | Out-Null\n}\n\nNew-NetFirewallRule -DisplayName 'Madrid Parking API 3002' -Direction Inbound -LocalPort 3002 -Protocol TCP -Action Allow -ErrorAction SilentlyContinue | Out-Null\n",
+            "madridBootstrapCommandTemplate": "powershell -ExecutionPolicy Bypass -Command \"[System.IO.File]::WriteAllText('C:\\Windows\\Temp\\bootstrap-madrid.ps1', [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('__BOOTSTRAP_BASE64__'))); & 'C:\\Windows\\Temp\\bootstrap-madrid.ps1'\"",
+            "madridBootstrapCommand": "[replace(variables('madridBootstrapCommandTemplate'), '__BOOTSTRAP_BASE64__', base64(variables('madridBootstrapScript')))]"
           },
           "resources": [
             {
@@ -3497,7 +3721,7 @@
               ]
             },
             {
-              "condition": "[and(parameters('deployVM'), false())]",
+              "condition": "[parameters('deployVM')]",
               "type": "Microsoft.Compute/virtualMachines/extensions",
               "apiVersion": "2023-03-01",
               "name": "[format('{0}/{1}', 'vm-madrid-api', 'CustomScriptExtension')]",
@@ -3508,7 +3732,7 @@
                 "typeHandlerVersion": "1.10",
                 "autoUpgradeMinorVersion": true,
                 "settings": {
-                  "commandToExecute": "echo VM provisioned - Node.js will be installed during GitHub Actions deployment"
+                  "commandToExecute": "[variables('madridBootstrapCommand')]"
                 }
               },
               "dependsOn": [
@@ -3593,8 +3817,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "1789761160882046084"
+              "version": "0.44.1.10279",
+              "templateHash": "725796804346344046"
             }
           },
           "parameters": {
@@ -3643,6 +3867,11 @@
                 "description": "Tags to apply to resources"
               }
             }
+          },
+          "variables": {
+            "parisApiDirectory": "/opt/paris-parking-api",
+            "parisCloudInitTemplate": "#cloud-config\npackage_update: true\npackages:\n  - ca-certificates\n  - curl\n  - gnupg\n  - rsyslog\n  - ufw\n  - openssl\n\nwrite_files:\n  - path: /usr/local/bin/bootstrap-paris-api.sh\n    permissions: '0755'\n    content: |\n      #!/usr/bin/env bash\n      set -euo pipefail\n\n      API_DIR=\"__PARIS_API_DIRECTORY__\"\n      SERVICE_NAME=\"paris-parking-api\"\n\n      mkdir -p /etc/apt/keyrings\n      curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor --batch --yes -o /etc/apt/keyrings/nodesource.gpg\n      echo \"deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main\" > /etc/apt/sources.list.d/nodesource.list\n\n      apt-get update\n      apt-get install -y nodejs\n\n      mkdir -p \"$API_DIR\" /opt/shared\n\n      if [[ ! -f \"$API_DIR/paris.key\" || ! -f \"$API_DIR/paris.crt\" ]]; then\n        openssl req -new -x509 \\\n          -keyout \"$API_DIR/paris.key\" \\\n          -out \"$API_DIR/paris.crt\" \\\n          -days 365 \\\n          -nodes \\\n          -subj \"/C=FR/ST=Paris/L=Paris/O=Parking/OU=API/CN=paris-api\"\n      fi\n\n      cat > \"$API_DIR/.env\" <<EOF\n      PORT=3003\n      NODE_ENV=production\n      CERT_PATH=$API_DIR/paris.crt\n      KEY_PATH=$API_DIR/paris.key\n      PARKING_NAME=Paris Centre Parking\n      PARKING_CITY=Paris\n      PARKING_LOCATION=Champs-Elysees, Paris\n      SYSLOG_FACILITY=local0\n      SYSLOG_TAG=ParisParkingAPI\n      EOF\n\n      chmod 600 \"$API_DIR/paris.key\"\n      chmod 644 \"$API_DIR/paris.crt\"\n      chown -R __ADMIN_USERNAME__:__ADMIN_USERNAME__ \"$API_DIR\" /opt/shared\n\n      cat > /etc/systemd/system/${'$'}{SERVICE_NAME}.service <<EOF\n      [Unit]\n      Description=Paris Parking API Service\n      After=network.target\n      ConditionPathExists=$API_DIR/server.js\n\n      [Service]\n      Type=simple\n        User=__ADMIN_USERNAME__\n      WorkingDirectory=$API_DIR\n      ExecStart=/usr/bin/node server.js\n      Restart=on-failure\n      RestartSec=10\n      StandardOutput=journal\n      StandardError=journal\n      SyslogIdentifier=paris-parking-api\n      EnvironmentFile=$API_DIR/.env\n\n      [Install]\n      WantedBy=multi-user.target\n      EOF\n\n      systemctl daemon-reload\n      systemctl enable \"$SERVICE_NAME\"\n      ufw allow 3003/tcp || true\n\n  - path: /etc/motd.d/parking-manager\n    permissions: '0644'\n    content: |\n      Paris Parking API bootstrap is handled by cloud-init.\n      Deploy application code with workflows/deploy-vm-apps.yml.\n\nruncmd:\n  - /usr/local/bin/bootstrap-paris-api.sh\n",
+            "parisCloudInit": "[replace(replace(variables('parisCloudInitTemplate'), '__PARIS_API_DIRECTORY__', variables('parisApiDirectory')), '__ADMIN_USERNAME__', parameters('adminUsername'))]"
           },
           "resources": [
             {
@@ -3720,6 +3949,7 @@
                   "computerName": "paris-api",
                   "adminUsername": "[parameters('adminUsername')]",
                   "adminPassword": "[parameters('adminPassword')]",
+                  "customData": "[base64(variables('parisCloudInit'))]",
                   "linuxConfiguration": {
                     "disablePasswordAuthentication": false,
                     "provisionVMAgent": true,
@@ -3759,26 +3989,6 @@
                 "enableAutomaticUpgrade": true
               },
               "dependsOn": [
-                "[resourceId('Microsoft.Compute/virtualMachines', 'vm-paris-api')]"
-              ]
-            },
-            {
-              "condition": "[parameters('deployVM')]",
-              "type": "Microsoft.Compute/virtualMachines/extensions",
-              "apiVersion": "2023-03-01",
-              "name": "[format('{0}/{1}', 'vm-paris-api', 'CustomScriptExtension')]",
-              "location": "[parameters('location')]",
-              "properties": {
-                "publisher": "Microsoft.Azure.Extensions",
-                "type": "CustomScript",
-                "typeHandlerVersion": "2.1",
-                "autoUpgradeMinorVersion": true,
-                "settings": {
-                  "script": "[base64('#!/bin/bash\nset -e\n\n# Update package lists\napt-get update\n\n# Install required packages\napt-get install -y ca-certificates curl gnupg rsyslog\n\n# Setup NodeSource repository for Node.js 18.x\nmkdir -p /etc/apt/keyrings\ncurl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor --batch --yes -o /etc/apt/keyrings/nodesource.gpg 2>/dev/null || true\necho \"deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main\" | tee /etc/apt/sources.list.d/nodesource.list\n\n# Install Node.js\napt-get update\napt-get install -y nodejs\n\n# Verify installation\nnode --version\nnpm --version\n')]"
-                }
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Compute/virtualMachines/extensions', 'vm-paris-api', 'AzureMonitorLinuxAgent')]",
                 "[resourceId('Microsoft.Compute/virtualMachines', 'vm-paris-api')]"
               ]
             }
@@ -3853,8 +4063,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "12744835931254206772"
+              "version": "0.44.1.10279",
+              "templateHash": "17600828523785446202"
             }
           },
           "parameters": {
@@ -4084,8 +4294,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "7243683384978409428"
+              "version": "0.44.1.10279",
+              "templateHash": "17851711612343290806"
             }
           },
           "parameters": {
@@ -4125,7 +4335,7 @@
             {
               "type": "Microsoft.Insights/dataCollectionRuleAssociations",
               "apiVersion": "2022-06-01",
-              "scope": "[format('Microsoft.Compute/virtualMachines/{0}', parameters('vmName'))]",
+              "scope": "[resourceId('Microsoft.Compute/virtualMachines', parameters('vmName'))]",
               "name": "[parameters('associationName')]",
               "properties": {
                 "dataCollectionRuleId": "[parameters('dataCollectionRuleId')]",
@@ -4181,8 +4391,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "7243683384978409428"
+              "version": "0.44.1.10279",
+              "templateHash": "17851711612343290806"
             }
           },
           "parameters": {
@@ -4222,7 +4432,7 @@
             {
               "type": "Microsoft.Insights/dataCollectionRuleAssociations",
               "apiVersion": "2022-06-01",
-              "scope": "[format('Microsoft.Compute/virtualMachines/{0}', parameters('vmName'))]",
+              "scope": "[resourceId('Microsoft.Compute/virtualMachines', parameters('vmName'))]",
               "name": "[parameters('associationName')]",
               "properties": {
                 "dataCollectionRuleId": "[parameters('dataCollectionRuleId')]",
@@ -4269,8 +4479,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "7745699788390878691"
+              "version": "0.44.1.10279",
+              "templateHash": "14020155558817509053"
             }
           },
           "parameters": {
@@ -4298,7 +4508,7 @@
             {
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
-              "scope": "[format('Microsoft.Storage/storageAccounts/{0}', parameters('storageAccountName'))]",
+              "scope": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
               "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), parameters('principalId'), parameters('roleDefinitionId'))]",
               "properties": {
                 "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', parameters('roleDefinitionId'))]",
@@ -4346,8 +4556,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "7745699788390878691"
+              "version": "0.44.1.10279",
+              "templateHash": "14020155558817509053"
             }
           },
           "parameters": {
@@ -4375,7 +4585,7 @@
             {
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
-              "scope": "[format('Microsoft.Storage/storageAccounts/{0}', parameters('storageAccountName'))]",
+              "scope": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
               "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), parameters('principalId'), parameters('roleDefinitionId'))]",
               "properties": {
                 "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', parameters('roleDefinitionId'))]",
@@ -4443,8 +4653,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.38.33.27573",
-              "templateHash": "443081395568853513"
+              "version": "0.44.1.10279",
+              "templateHash": "6637773190888662799"
             }
           },
           "parameters": {

@@ -21,6 +21,73 @@ param deployVM bool = true
 @description('Tags to apply to resources')
 param tags object = {}
 
+var madridBootstrapScript = '''
+$ErrorActionPreference = 'Stop'
+
+$appDir = 'C:\Apps\madrid-parking-api'
+$sharedDir = 'C:\Apps\shared'
+$envFile = Join-Path $appDir '.env'
+$pfxPath = Join-Path $appDir 'madrid.pfx'
+$runnerPath = Join-Path $appDir 'run-madrid-api.ps1'
+$serviceName = 'MadridParkingAPI'
+$serviceDisplayName = 'Madrid Parking API'
+$nodeVersion = '18.20.4'
+$nodeMsi = "node-v$nodeVersion-x64.msi"
+$nodeUrl = "https://nodejs.org/dist/v$nodeVersion/$nodeMsi"
+$nodeInstaller = Join-Path $env:TEMP $nodeMsi
+$pfxPassphrase = 'ChangeMe123!'
+$nodeExe = 'C:\Program Files\nodejs\node.exe'
+
+New-Item -ItemType Directory -Force -Path $appDir | Out-Null
+New-Item -ItemType Directory -Force -Path $sharedDir | Out-Null
+
+if (-not (Test-Path $nodeExe)) {
+  Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeInstaller -UseBasicParsing
+  Start-Process msiexec.exe -ArgumentList "/i `"$nodeInstaller`" /qn /norestart" -Wait
+}
+
+if (-not (Test-Path $pfxPath)) {
+  $cert = New-SelfSignedCertificate -DnsName 'madrid-api' -CertStoreLocation 'cert:\LocalMachine\My' -FriendlyName 'Madrid Parking API'
+  $securePassphrase = ConvertTo-SecureString $pfxPassphrase -AsPlainText -Force
+  Export-PfxCertificate -Cert "cert:\LocalMachine\My\$($cert.Thumbprint)" -FilePath $pfxPath -Password $securePassphrase | Out-Null
+}
+
+@"
+EVENT_LOG_SOURCE=MadridParkingAPI
+EVENT_LOG_NAME=Application
+PORT=3002
+NODE_ENV=production
+PFX_PATH=$pfxPath
+PFX_PASSPHRASE=$pfxPassphrase
+PARKING_NAME=Madrid Centro Parking
+PARKING_CITY=Madrid
+PARKING_LOCATION=Plaza Mayor, Madrid
+"@ | Set-Content -Path $envFile -Encoding UTF8
+
+@"
+$appDir = 'C:\Apps\madrid-parking-api'
+$nodeExe = 'C:\Program Files\nodejs\node.exe'
+
+if (-not (Test-Path (Join-Path $appDir 'server.js'))) {
+  Start-Sleep -Seconds 10
+  exit 1
+}
+
+Set-Location $appDir
+& $nodeExe server.js
+"@ | Set-Content -Path $runnerPath -Encoding UTF8
+
+if (-not (Get-Service -Name $serviceName -ErrorAction SilentlyContinue)) {
+  $binPath = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$runnerPath`""
+  sc.exe create $serviceName binPath= $binPath start= auto DisplayName= $serviceDisplayName | Out-Null
+  sc.exe failure $serviceName reset= 60 actions= restart/5000 | Out-Null
+}
+
+New-NetFirewallRule -DisplayName 'Madrid Parking API 3002' -Direction Inbound -LocalPort 3002 -Protocol TCP -Action Allow -ErrorAction SilentlyContinue | Out-Null
+'''
+var madridBootstrapCommandTemplate = '''powershell -ExecutionPolicy Bypass -Command "[System.IO.File]::WriteAllText('C:\Windows\Temp\bootstrap-madrid.ps1', [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('__BOOTSTRAP_BASE64__'))); & 'C:\Windows\Temp\bootstrap-madrid.ps1'"'''
+var madridBootstrapCommand = replace(madridBootstrapCommandTemplate, '__BOOTSTRAP_BASE64__', base64(madridBootstrapScript))
+
 // Public IP (optional)
 resource publicIp 'Microsoft.Network/publicIPAddresses@2023-05-01' = if (createPublicIp) {
   name: 'pip-madrid-vm'
@@ -130,9 +197,8 @@ resource azureMonitorWindowsAgent 'Microsoft.Compute/virtualMachines/extensions@
 }
 
 // VM Extension - Custom Script to install Node.js and setup application
-// NOTE: Node.js is installed during GitHub Actions deployment workflow (deploy-madrid-api.yml)
-// This extension is skipped to avoid network/internet dependency during Bicep deployment
-resource customScriptExtension 'Microsoft.Compute/virtualMachines/extensions@2023-03-01' = if (deployVM && false) {
+// Bootstrap the VM so routine deployments only need to copy app code and restart the service.
+resource customScriptExtension 'Microsoft.Compute/virtualMachines/extensions@2023-03-01' = if (deployVM) {
   parent: vm
   name: 'CustomScriptExtension'
   location: location
@@ -145,7 +211,7 @@ resource customScriptExtension 'Microsoft.Compute/virtualMachines/extensions@202
     typeHandlerVersion: '1.10'
     autoUpgradeMinorVersion: true
     settings: {
-      commandToExecute: 'echo VM provisioned - Node.js will be installed during GitHub Actions deployment'
+      commandToExecute: madridBootstrapCommand
     }
   }
 }

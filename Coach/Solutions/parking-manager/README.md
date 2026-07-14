@@ -66,7 +66,6 @@ Azure-SRE-Demo-Manager/
 │       ├── server.js             # Express proxy server (serves UI + proxies API calls)
 │       └── README.md
 ├── scripts/
-│   ├── start-chaos-stack.sh      # One-command local stack launcher
 │   └── ...                       # VM setup and deployment helper scripts
 ├── demo/
 │   └── DEMO.md                   # Demo agenda and sample prompts
@@ -97,21 +96,24 @@ Azure-SRE-Demo-Manager/
 
 ## Quick Start
 
-### One-command local stack (recommended)
+### One-command local startup
 
-The `start-chaos-stack.sh` script installs dependencies, builds the frontend if needed, starts all backend services, and launches the Express proxy server.
+Use the local launcher script to start the full demo stack:
 
 ```bash
-./scripts/start-chaos-stack.sh
+cd scripts
+./start-local-stack.sh
 ```
 
-Open **http://localhost:8080** in your browser. The Chaos Backoffice panel is available in the UI.
+This script installs missing dependencies, builds the frontend when needed, and starts the backend services plus the frontend proxy.
 
-Logs for each service are written to `.runtime-logs/` in the repository root. Press `Ctrl+C` to stop all services.
+### Manual local startup
 
-> **Requirements**: Node.js 18+. Docker is not required for a local run — all services start as Node.js processes.
+Use the following manual steps to run the full local stack.
 
-### Manual service startup (alternative)
+Open **http://localhost:8080** in your browser after starting the backend services and frontend proxy. The Chaos Backoffice panel is available in the UI.
+
+> **Requirements**: Node.js 18+. Docker is not required for a local run.
 
 If you prefer to start services individually:
 
@@ -194,9 +196,9 @@ Use the assets in this solution according to the following ownership model:
 
 #### Bootstrap and local-only scripts
 
-- `scripts/start-chaos-stack.sh`: local development orchestration only
-- `scripts/bootstrap/bootstrap-vm-health-control.sh`: bootstrap or recovery path for VM Health when supporting resources or first deployment are needed
-- `scripts/bootstrap/setup-paris-api.sh`: first-time Paris VM setup, not the normal release path
+- VM Health bootstrap is handled by `infrastructure/main.bicep`, and normal image rollout is handled by `workflows/deploy-container-apps.yml`
+- Paris VM first-time bootstrap is handled by cloud-init in `infrastructure/modules/paris-api.bicep`
+- Madrid VM first-time bootstrap is handled by `infrastructure/modules/madrid-api.bicep`
 
 The self-hosted runner setup scripts were removed from this solution because the deployment workflows use GitHub-hosted runners.
 

@@ -11,7 +11,7 @@ PIDS=()
 ensure_dependencies() {
   local service_dir="$1"
   if [[ ! -d "$service_dir/node_modules" ]]; then
-    echo "📦 Installing dependencies in $service_dir"
+    echo "Installing dependencies in $service_dir"
     (
       cd "$service_dir"
       npm install
@@ -53,7 +53,7 @@ start_service() {
   local service_dir="$2"
   shift 2
 
-  echo "▶️  Starting $name"
+  echo "Starting $name"
   (
     cd "$service_dir"
     "$@" >"$LOG_DIR/${name}.log" 2>&1
@@ -61,25 +61,25 @@ start_service() {
 
   local pid=$!
   PIDS+=("$pid")
-  echo "   PID: $pid | log: $LOG_DIR/${name}.log"
+  echo "  PID: $pid | log: $LOG_DIR/${name}.log"
 }
 
 cleanup() {
   echo
-  echo "🛑 Stopping all services..."
+  echo "Stopping all services..."
   for pid in "${PIDS[@]:-}"; do
     if kill -0 "$pid" >/dev/null 2>&1; then
       kill "$pid" >/dev/null 2>&1 || true
     fi
   done
   wait || true
-  echo "✅ All services stopped"
+  echo "All services stopped"
 }
 
 trap cleanup EXIT INT TERM
 
-echo "🚀 Starting local chaos stack"
-echo "   Workspace: $ROOT_DIR"
+echo "Starting local chaos stack"
+echo "  Workspace: $ROOT_DIR"
 
 CHAOS_URL="${CHAOS_CONTROL_URL:-http://localhost:3090}"
 
@@ -92,13 +92,13 @@ ensure_dependencies "$ROOT_DIR/backend/berlin-parking-api"
 ensure_dependencies "$FRONTEND_DIR"
 
 if needs_frontend_build; then
-  echo "🏗️  Frontend changes detected. Building..."
+  echo "Frontend changes detected. Building..."
   (
     cd "$FRONTEND_DIR"
     npm run build
   )
 else
-  echo "✅ Frontend build is up to date"
+  echo "Frontend build is up to date"
 fi
 
 start_service "chaos-control" "$ROOT_DIR/backend/chaos-control" npm run start
@@ -111,10 +111,10 @@ start_service "frontend" "$FRONTEND_DIR" env REACT_APP_LISBON_API_URL="http://lo
 
 echo
 
-echo "✅ Chaos stack is running"
-echo "   Frontend:      http://localhost:8080"
-echo "   Chaos control: $CHAOS_URL/health"
-echo "   Logs:          $LOG_DIR"
+echo "Chaos stack is running"
+echo "  Frontend:      http://localhost:8080"
+echo "  Chaos control: $CHAOS_URL/health"
+echo "  Logs:          $LOG_DIR"
 echo
 echo "Press Ctrl+C to stop all services"
 

@@ -5,20 +5,27 @@
     "_generator": {
       "name": "bicep",
       "version": "0.44.1.10279",
-      "templateHash": "17423617138427712422"
+      "templateHash": "3076496195145319132"
     }
   },
   "parameters": {
     "location": {
       "type": "string",
       "metadata": {
-        "description": "Location for all Berlin API resources"
+        "description": "Location for all Chaos Control resources"
       }
     },
     "containerSubnetId": {
       "type": "string",
       "metadata": {
         "description": "Container subnet ID from hub VNet"
+      }
+    },
+    "environment": {
+      "type": "string",
+      "defaultValue": "dev",
+      "metadata": {
+        "description": "Environment name (e.g., dev, test, prod)"
       }
     },
     "containerImage": {
@@ -47,7 +54,7 @@
     {
       "type": "Microsoft.App/managedEnvironments",
       "apiVersion": "2023-05-01",
-      "name": "cae-parking-berlin",
+      "name": "cae-chaos-control",
       "location": "[parameters('location')]",
       "tags": "[parameters('tags')]",
       "properties": {
@@ -65,18 +72,18 @@
     {
       "type": "Microsoft.App/containerApps",
       "apiVersion": "2023-05-01",
-      "name": "ca-parking-berlin",
+      "name": "ca-chaos-control",
       "location": "[parameters('location')]",
       "tags": "[parameters('tags')]",
       "identity": {
         "type": "SystemAssigned"
       },
       "properties": {
-        "environmentId": "[resourceId('Microsoft.App/managedEnvironments', 'cae-parking-berlin')]",
+        "environmentId": "[resourceId('Microsoft.App/managedEnvironments', 'cae-chaos-control')]",
         "configuration": {
           "ingress": {
             "external": true,
-            "targetPort": 3004,
+            "targetPort": 3090,
             "transport": "auto",
             "allowInsecure": false
           },
@@ -85,7 +92,7 @@
         "template": {
           "containers": [
             {
-              "name": "berlin-parking-api",
+              "name": "chaos-control",
               "image": "[parameters('containerImage')]",
               "resources": {
                 "cpu": "[json('0.25')]",
@@ -93,24 +100,16 @@
               },
               "env": [
                 {
-                  "name": "PARKING_CITY",
-                  "value": "Berlin"
-                },
-                {
-                  "name": "PARKING_NAME",
-                  "value": "Berlin Central Parking"
-                },
-                {
-                  "name": "PARKING_LOCATION",
-                  "value": "Alexanderplatz, Berlin, Germany"
-                },
-                {
                   "name": "PORT",
-                  "value": "3004"
+                  "value": "3090"
                 },
                 {
                   "name": "NODE_ENV",
                   "value": "production"
+                },
+                {
+                  "name": "CHAOS_ENVIRONMENT",
+                  "value": "[parameters('environment')]"
                 }
               ],
               "probes": [
@@ -118,7 +117,7 @@
                   "type": "liveness",
                   "httpGet": {
                     "path": "/health",
-                    "port": 3004
+                    "port": 3090
                   },
                   "initialDelaySeconds": 10,
                   "periodSeconds": 30
@@ -127,7 +126,7 @@
                   "type": "readiness",
                   "httpGet": {
                     "path": "/health",
-                    "port": 3004
+                    "port": 3090
                   },
                   "initialDelaySeconds": 5,
                   "periodSeconds": 10
@@ -137,13 +136,13 @@
           ],
           "scale": {
             "minReplicas": 1,
-            "maxReplicas": 3,
+            "maxReplicas": 2,
             "rules": [
               {
                 "name": "http-scaling",
                 "http": {
                   "metadata": {
-                    "concurrentRequests": "10"
+                    "concurrentRequests": "20"
                   }
                 }
               }
@@ -152,34 +151,34 @@
         }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.App/managedEnvironments', 'cae-parking-berlin')]"
+        "[resourceId('Microsoft.App/managedEnvironments', 'cae-chaos-control')]"
       ]
     }
   ],
   "outputs": {
     "containerAppName": {
       "type": "string",
-      "value": "ca-parking-berlin"
+      "value": "ca-chaos-control"
     },
     "containerAppFqdn": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.App/containerApps', 'ca-parking-berlin'), '2023-05-01').configuration.ingress.fqdn]"
+      "value": "[reference(resourceId('Microsoft.App/containerApps', 'ca-chaos-control'), '2023-05-01').configuration.ingress.fqdn]"
     },
     "containerAppUrl": {
       "type": "string",
-      "value": "[format('https://{0}', reference(resourceId('Microsoft.App/containerApps', 'ca-parking-berlin'), '2023-05-01').configuration.ingress.fqdn)]"
+      "value": "[format('https://{0}', reference(resourceId('Microsoft.App/containerApps', 'ca-chaos-control'), '2023-05-01').configuration.ingress.fqdn)]"
     },
     "containerAppEnvironmentName": {
       "type": "string",
-      "value": "cae-parking-berlin"
+      "value": "cae-chaos-control"
     },
     "containerAppEnvironmentId": {
       "type": "string",
-      "value": "[resourceId('Microsoft.App/managedEnvironments', 'cae-parking-berlin')]"
+      "value": "[resourceId('Microsoft.App/managedEnvironments', 'cae-chaos-control')]"
     },
     "containerAppPrincipalId": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.App/containerApps', 'ca-parking-berlin'), '2023-05-01', 'full').identity.principalId]"
+      "value": "[reference(resourceId('Microsoft.App/containerApps', 'ca-chaos-control'), '2023-05-01', 'full').identity.principalId]"
     }
   }
 }

@@ -262,6 +262,17 @@ module lisbonAcrAccess 'modules/acr-role-assignment.bicep' = if (createContainer
   }
 }
 
+// Lisbon chaos alerts (scheduled query rules on LisbonParkingLogs_CL)
+module lisbonChaosAlerts 'modules/lisbon-chaos-alerts.bicep' = {
+  scope: hubRg
+  name: 'lisbon-chaos-alerts-deployment'
+  dependsOn: [ lisbonApi ]
+  params: {
+    location: location
+    logAnalyticsWorkspaceId: hub.outputs.logAnalyticsWorkspaceId
+  }
+}
+
 // ========================================
 // Berlin API (Container App)
 // ========================================
@@ -371,7 +382,6 @@ module berlinMcpServer 'modules/berlin-mcp-server.bicep' = if (deployBerlinMcp) 
   name: 'berlin-mcp-server-deployment'
   params: {
     location: location
-    environment: environment
     containerSubnetId: hub.outputs.containerSubnetId
     berlinApiUrl: berlinApi.outputs.containerAppUrl
     containerImage: '' // Will be set by CI/CD pipeline

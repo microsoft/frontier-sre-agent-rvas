@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.40.2.10011",
-      "templateHash": "1876282321700861213"
+      "version": "0.44.1.10279",
+      "templateHash": "13848402059689360235"
     }
   },
   "parameters": {
@@ -54,6 +54,11 @@
         "description": "Tags to apply to resources"
       }
     }
+  },
+  "variables": {
+    "madridBootstrapScript": "$ErrorActionPreference = 'Stop'\n\n$appDir = 'C:\\Apps\\madrid-parking-api'\n$sharedDir = 'C:\\Apps\\shared'\n$envFile = Join-Path $appDir '.env'\n$pfxPath = Join-Path $appDir 'madrid.pfx'\n$runnerPath = Join-Path $appDir 'run-madrid-api.ps1'\n$serviceName = 'MadridParkingAPI'\n$serviceDisplayName = 'Madrid Parking API'\n$nodeVersion = '18.20.4'\n$nodeMsi = \"node-v$nodeVersion-x64.msi\"\n$nodeUrl = \"https://nodejs.org/dist/v$nodeVersion/$nodeMsi\"\n$nodeInstaller = Join-Path $env:TEMP $nodeMsi\n$pfxPassphrase = 'ChangeMe123!'\n$nodeExe = 'C:\\Program Files\\nodejs\\node.exe'\n\nNew-Item -ItemType Directory -Force -Path $appDir | Out-Null\nNew-Item -ItemType Directory -Force -Path $sharedDir | Out-Null\n\nif (-not (Test-Path $nodeExe)) {\n  Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeInstaller -UseBasicParsing\n  Start-Process msiexec.exe -ArgumentList \"/i `\"$nodeInstaller`\" /qn /norestart\" -Wait\n}\n\nif (-not (Test-Path $pfxPath)) {\n  $cert = New-SelfSignedCertificate -DnsName 'madrid-api' -CertStoreLocation 'cert:\\LocalMachine\\My' -FriendlyName 'Madrid Parking API'\n  $securePassphrase = ConvertTo-SecureString $pfxPassphrase -AsPlainText -Force\n  Export-PfxCertificate -Cert \"cert:\\LocalMachine\\My\\$($cert.Thumbprint)\" -FilePath $pfxPath -Password $securePassphrase | Out-Null\n}\n\n@\"\nEVENT_LOG_SOURCE=MadridParkingAPI\nEVENT_LOG_NAME=Application\nPORT=3002\nNODE_ENV=production\nPFX_PATH=$pfxPath\nPFX_PASSPHRASE=$pfxPassphrase\nPARKING_NAME=Madrid Centro Parking\nPARKING_CITY=Madrid\nPARKING_LOCATION=Plaza Mayor, Madrid\n\"@ | Set-Content -Path $envFile -Encoding UTF8\n\n@\"\n$appDir = 'C:\\Apps\\madrid-parking-api'\n$nodeExe = 'C:\\Program Files\\nodejs\\node.exe'\n\nif (-not (Test-Path (Join-Path $appDir 'server.js'))) {\n  Start-Sleep -Seconds 10\n  exit 1\n}\n\nSet-Location $appDir\n& $nodeExe server.js\n\"@ | Set-Content -Path $runnerPath -Encoding UTF8\n\nif (-not (Get-Service -Name $serviceName -ErrorAction SilentlyContinue)) {\n  $binPath = \"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NoProfile -ExecutionPolicy Bypass -File `\"$runnerPath`\"\"\n  sc.exe create $serviceName binPath= $binPath start= auto DisplayName= $serviceDisplayName | Out-Null\n  sc.exe failure $serviceName reset= 60 actions= restart/5000 | Out-Null\n}\n\nNew-NetFirewallRule -DisplayName 'Madrid Parking API 3002' -Direction Inbound -LocalPort 3002 -Protocol TCP -Action Allow -ErrorAction SilentlyContinue | Out-Null\n",
+    "madridBootstrapCommandTemplate": "powershell -ExecutionPolicy Bypass -Command \"[System.IO.File]::WriteAllText('C:\\Windows\\Temp\\bootstrap-madrid.ps1', [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('__BOOTSTRAP_BASE64__'))); & 'C:\\Windows\\Temp\\bootstrap-madrid.ps1'\"",
+    "madridBootstrapCommand": "[replace(variables('madridBootstrapCommandTemplate'), '__BOOTSTRAP_BASE64__', base64(variables('madridBootstrapScript')))]"
   },
   "resources": [
     {
@@ -174,7 +179,7 @@
       ]
     },
     {
-      "condition": "[and(parameters('deployVM'), false())]",
+      "condition": "[parameters('deployVM')]",
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "apiVersion": "2023-03-01",
       "name": "[format('{0}/{1}', 'vm-madrid-api', 'CustomScriptExtension')]",
@@ -185,7 +190,7 @@
         "typeHandlerVersion": "1.10",
         "autoUpgradeMinorVersion": true,
         "settings": {
-          "commandToExecute": "echo VM provisioned - Node.js will be installed during GitHub Actions deployment"
+          "commandToExecute": "[variables('madridBootstrapCommand')]"
         }
       },
       "dependsOn": [

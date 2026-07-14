@@ -2,9 +2,6 @@
 @description('Location for all MCP server resources')
 param location string
 
-@description('Environment name (e.g., dev, prod) - NOTE: Not used in resource naming as resources are hardcoded to match existing manually deployed Azure resources')
-param environment string = 'dev'
-
 @description('Container subnet ID from hub VNet')
 param containerSubnetId string
 
@@ -65,7 +62,7 @@ resource containerAppEnvironment 'Microsoft.App/managedEnvironments@2023-05-01' 
       destination: 'log-analytics'
       logAnalyticsConfiguration: {
         customerId: logAnalyticsWorkspace.properties.customerId
-        sharedKey: listKeys(logAnalyticsWorkspace.id, '2022-10-01').primarySharedKey
+        sharedKey: logAnalyticsWorkspace.listKeys().primarySharedKey
       }
     }
     vnetConfiguration: {

@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.38.33.27573",
-      "templateHash": "17523862689586698386"
+      "version": "0.44.1.10279",
+      "templateHash": "9570597958833457094"
     }
   },
   "parameters": {
@@ -151,7 +151,7 @@
     {
       "type": "Microsoft.Authorization/roleAssignments",
       "apiVersion": "2022-04-01",
-      "scope": "[format('Microsoft.Insights/dataCollectionRules/{0}', 'dcr-vm-health-status')]",
+      "scope": "[resourceId('Microsoft.Insights/dataCollectionRules', 'dcr-vm-health-status')]",
       "name": "[guid(resourceId('Microsoft.Insights/dataCollectionRules', 'dcr-vm-health-status'), resourceId('Microsoft.App/containerApps', 'ca-vm-health-control'), variables('monitoringMetricsPublisherRoleId'))]",
       "properties": {
         "principalId": "[reference(resourceId('Microsoft.App/containerApps', 'ca-vm-health-control'), '2023-05-01', 'full').identity.principalId]",

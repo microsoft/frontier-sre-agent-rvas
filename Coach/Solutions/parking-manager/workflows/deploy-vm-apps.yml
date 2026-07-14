@@ -73,7 +73,7 @@ jobs:
             --name "$PARIS_VM_NAME" \
             --resource-group "$PARIS_RESOURCE_GROUP" \
             --command-id RunShellScript \
-            --scripts "set -e; sudo mkdir -p /opt/paris-parking-api; cd /tmp; curl -fsSL '$PARIS_BLOB_URL' -o paris.zip; rm -rf paris-extract; mkdir paris-extract; unzip -q paris.zip -d paris-extract; sudo cp -r paris-extract/paris-parking-api/* /opt/paris-parking-api/; sudo cp -r paris-extract/shared /opt/shared; cd /opt/paris-parking-api; npm ci --omit=dev; echo 'CHAOS_CONTROL_URL=$CHAOS_CONTROL_URL' | sudo tee -a .env >/dev/null; sudo systemctl restart paris-parking-api"
+            --scripts "set -e; sudo mkdir -p /opt/paris-parking-api; cd /tmp; curl -fsSL '$PARIS_BLOB_URL' -o paris.zip; rm -rf paris-extract; mkdir paris-extract; unzip -q paris.zip -d paris-extract; sudo cp -r paris-extract/paris-parking-api/* /opt/paris-parking-api/; sudo cp -r paris-extract/shared /opt/shared; cd /opt/paris-parking-api; npm ci --omit=dev; echo 'CHAOS_CONTROL_URL=$CHAOS_CONTROL_URL' | sudo tee -a .env >/dev/null; sudo systemctl daemon-reload; sudo systemctl restart paris-parking-api"
 
       - name: Deploy Madrid app
         if: inputs.deployMadrid == true
@@ -82,7 +82,7 @@ jobs:
             --name "$MADRID_VM_NAME" \
             --resource-group "$MADRID_RESOURCE_GROUP" \
             --command-id RunPowerShellScript \
-            --scripts "`$appDir='C:\\Apps\\madrid-parking-api'; New-Item -ItemType Directory -Force -Path `$appDir | Out-Null; `$zip='`$env:TEMP\\madrid.zip'; Invoke-WebRequest -Uri '$MADRID_BLOB_URL' -OutFile `$zip -UseBasicParsing; `$extract='`$env:TEMP\\madrid-extract'; if (Test-Path `$extract) { Remove-Item `$extract -Recurse -Force }; Expand-Archive -Path `$zip -DestinationPath `$extract -Force; Copy-Item -Path `$extract\\madrid-parking-api\\* -Destination `$appDir -Recurse -Force; `$sharedDir='C:\\Apps\\shared'; New-Item -ItemType Directory -Force -Path `$sharedDir | Out-Null; Copy-Item -Path `$extract\\shared\\* -Destination `$sharedDir -Recurse -Force; Set-Location `$appDir; npm ci --omit=dev; Add-Content -Path .env -Value 'CHAOS_CONTROL_URL=${{ vars.CHAOS_CONTROL_URL }}'; Restart-Service -Name MadridParkingAPI -ErrorAction SilentlyContinue"
+            --scripts "`$appDir='C:\\Apps\\madrid-parking-api'; New-Item -ItemType Directory -Force -Path `$appDir | Out-Null; `$zip='`$env:TEMP\\madrid.zip'; Invoke-WebRequest -Uri '$MADRID_BLOB_URL' -OutFile `$zip -UseBasicParsing; `$extract='`$env:TEMP\\madrid-extract'; if (Test-Path `$extract) { Remove-Item `$extract -Recurse -Force }; Expand-Archive -Path `$zip -DestinationPath `$extract -Force; Copy-Item -Path `$extract\\madrid-parking-api\\* -Destination `$appDir -Recurse -Force; `$sharedDir='C:\\Apps\\shared'; New-Item -ItemType Directory -Force -Path `$sharedDir | Out-Null; Copy-Item -Path `$extract\\shared\\* -Destination `$sharedDir -Recurse -Force; Set-Location `$appDir; npm ci --omit=dev; npm run install-windows --if-present; Add-Content -Path .env -Value 'CHAOS_CONTROL_URL=${{ vars.CHAOS_CONTROL_URL }}'; Restart-Service -Name MadridParkingAPI -ErrorAction SilentlyContinue"
 
       - name: Cleanup deployment blobs
         if: always()

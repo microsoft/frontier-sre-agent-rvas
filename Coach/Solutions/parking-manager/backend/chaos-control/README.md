@@ -25,15 +25,9 @@ Run container:
 docker run --rm -p 3090:3090 --name chaos-control chaos-control
 ```
 
-## Run full local stack
+## Run with the full local stack
 
-From repository root:
-
-```bash
-./scripts/start-chaos-stack.sh
-```
-
-This starts chaos-control + all parking APIs + frontend proxy in one terminal.
+Start this service first, then start the other city APIs and the frontend proxy using the manual local startup steps in [Coach/Solutions/parking-manager/README.md](../../README.md).
 
 ## Endpoints
 
@@ -200,6 +194,8 @@ Lisbon emits custom logs to the `LisbonParkingLogs_CL` table. The module below c
 ### Bicep module
 
 `infrastructure/modules/lisbon-chaos-alerts.bicep`
+
+This module is included by `infrastructure/main.bicep`, so the canonical deployment path is now the infrastructure workflows. The example below is only needed for standalone or break-glass deployment.
 
 ### Example deployment
 

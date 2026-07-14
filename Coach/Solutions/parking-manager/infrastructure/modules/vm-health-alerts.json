@@ -1,0 +1,163 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.44.1.10279",
+      "templateHash": "13588590208154330376"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure region for the scheduled query rules."
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Fully qualified ARM resource ID of the Log Analytics workspace."
+      }
+    },
+    "actionGroupResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Action Group resource ID to notify when alerts fire. Leave empty to create rules without action groups."
+      }
+    },
+    "enabled": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable or disable VM health alerts."
+      }
+    },
+    "evaluationFrequency": {
+      "type": "string",
+      "defaultValue": "PT5M",
+      "metadata": {
+        "description": "How often the alert query runs."
+      }
+    },
+    "windowSize": {
+      "type": "string",
+      "defaultValue": "PT5M",
+      "metadata": {
+        "description": "Lookback window used by alert queries."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Insights/scheduledQueryRules",
+      "apiVersion": "2023-12-01",
+      "name": "vm-health-unhealthy",
+      "location": "[parameters('location')]",
+      "properties": {
+        "displayName": "VM Unhealthy Alert",
+        "description": "Fires when a parking VM is reported as unhealthy in the VMHealthStatus_CL custom table.",
+        "severity": 1,
+        "enabled": "[parameters('enabled')]",
+        "scopes": [
+          "[parameters('logAnalyticsWorkspaceId')]"
+        ],
+        "evaluationFrequency": "[parameters('evaluationFrequency')]",
+        "windowSize": "[parameters('windowSize')]",
+        "autoMitigate": true,
+        "criteria": {
+          "allOf": [
+            {
+              "query": "VMHealthStatus_CL\n| where healthState == \"Unhealthy\"\n| summarize unhealthyCount = count() by vmName, city, bin(TimeGenerated, 5m)\n",
+              "timeAggregation": "Count",
+              "operator": "GreaterThan",
+              "threshold": 0,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              },
+              "dimensions": [
+                {
+                  "name": "vmName",
+                  "operator": "Include",
+                  "values": [
+                    "*"
+                  ]
+                },
+                {
+                  "name": "city",
+                  "operator": "Include",
+                  "values": [
+                    "*"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "actions": "[if(empty(parameters('actionGroupResourceId')), createObject('actionGroups', createArray()), createObject('actionGroups', createArray(parameters('actionGroupResourceId'))))]"
+      }
+    },
+    {
+      "type": "Microsoft.Insights/scheduledQueryRules",
+      "apiVersion": "2023-12-01",
+      "name": "vm-health-recovered",
+      "location": "[parameters('location')]",
+      "properties": {
+        "displayName": "VM Recovered Alert",
+        "description": "Fires when a previously unhealthy parking VM is reported as healthy again.",
+        "severity": 3,
+        "enabled": "[parameters('enabled')]",
+        "scopes": [
+          "[parameters('logAnalyticsWorkspaceId')]"
+        ],
+        "evaluationFrequency": "[parameters('evaluationFrequency')]",
+        "windowSize": "[parameters('windowSize')]",
+        "autoMitigate": false,
+        "criteria": {
+          "allOf": [
+            {
+              "query": "VMHealthStatus_CL\n| where healthState == \"Healthy\" and previousState == \"Unhealthy\"\n| summarize recoveryCount = count() by vmName, city, bin(TimeGenerated, 5m)\n",
+              "timeAggregation": "Count",
+              "operator": "GreaterThan",
+              "threshold": 0,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              },
+              "dimensions": [
+                {
+                  "name": "vmName",
+                  "operator": "Include",
+                  "values": [
+                    "*"
+                  ]
+                },
+                {
+                  "name": "city",
+                  "operator": "Include",
+                  "values": [
+                    "*"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "actions": "[if(empty(parameters('actionGroupResourceId')), createObject('actionGroups', createArray()), createObject('actionGroups', createArray(parameters('actionGroupResourceId'))))]"
+      }
+    }
+  ],
+  "outputs": {
+    "unhealthyAlertName": {
+      "type": "string",
+      "value": "vm-health-unhealthy"
+    },
+    "recoveredAlertName": {
+      "type": "string",
+      "value": "vm-health-recovered"
+    }
+  }
+}

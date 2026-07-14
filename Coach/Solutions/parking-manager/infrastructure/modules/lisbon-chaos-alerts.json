@@ -1,0 +1,204 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.0",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.44.1.10279",
+      "templateHash": "6921007328144673668"
+    }
+  },
+  "definitions": {
+    "AlertSpec": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "int"
+        },
+        "threshold": {
+          "type": "int"
+        },
+        "query": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure region for scheduled query rules (usually same region as Log Analytics workspace)."
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Fully qualified ARM resource ID of the Log Analytics workspace that stores Lisbon custom logs. Must start with /subscriptions/. Do not use the workspace customer ID (GUID)."
+      }
+    },
+    "actionGroupResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Action Group resource ID to notify when alerts fire. Leave empty to create rules without action groups."
+      }
+    },
+    "enabled": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable or disable all Lisbon chaos alerts."
+      }
+    },
+    "evaluationFrequency": {
+      "type": "string",
+      "defaultValue": "PT5M",
+      "metadata": {
+        "description": "How often the alert query runs."
+      }
+    },
+    "windowSize": {
+      "type": "string",
+      "defaultValue": "PT5M",
+      "metadata": {
+        "description": "Lookback window used by alert queries."
+      }
+    },
+    "namePrefix": {
+      "type": "string",
+      "defaultValue": "lisbon-chaos",
+      "metadata": {
+        "description": "Optional prefix for alert rule names."
+      }
+    }
+  },
+  "variables": {
+    "alertSpecs": [
+      {
+        "key": "generic",
+        "severity": 3,
+        "threshold": 0,
+        "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| where operation == 'CHAOS_INJECTED'\n| summarize totalChaosInjected = count() by bin(TimeGenerated, 5m)\n"
+      },
+      {
+        "key": "http-error",
+        "severity": 0,
+        "threshold": 0,
+        "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| where operation == 'CHAOS_INJECTED' and tostring(details_faultType_s) == 'httpError'\n| summarize count() by bin(TimeGenerated, 5m)\n"
+      },
+      {
+        "key": "dependency-failure",
+        "severity": 2,
+        "threshold": 0,
+        "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| where operation == 'CHAOS_INJECTED' and tostring(details_faultType_s) == 'dependencyFailure'\n| summarize count() by bin(TimeGenerated, 5m)\n"
+      },
+      {
+        "key": "https-error",
+        "severity": 2,
+        "threshold": 0,
+        "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| where operation == 'CHAOS_INJECTED' and tostring(details_faultType_s) == 'httpsError'\n| summarize count() by bin(TimeGenerated, 5m)\n"
+      },
+      {
+        "key": "exception",
+        "severity": 1,
+        "threshold": 0,
+        "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| where operation == 'CHAOS_INJECTED' and tostring(details_faultType_s) == 'exception'\n| summarize count() by bin(TimeGenerated, 5m)\n"
+      },
+      {
+        "key": "disconnect",
+        "severity": 2,
+        "threshold": 0,
+        "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| where operation == 'CHAOS_INJECTED' and tostring(details_faultType_s) == 'disconnect'\n| summarize count() by bin(TimeGenerated, 5m)\n"
+      },
+      {
+        "key": "timeout",
+        "severity": 2,
+        "threshold": 0,
+        "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| where operation == 'CHAOS_INJECTED' and tostring(details_faultType_s) == 'timeout'\n| summarize count() by bin(TimeGenerated, 5m)\n"
+      },
+      {
+        "key": "bad-payload",
+        "severity": 2,
+        "threshold": 0,
+        "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| where operation == 'CHAOS_INJECTED' and tostring(details_faultType_s) == 'badPayload'\n| summarize count() by bin(TimeGenerated, 5m)\n"
+      },
+      {
+        "key": "high-cpu",
+        "severity": 2,
+        "threshold": 0,
+        "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| where operation == 'CHAOS_INJECTED' and tostring(details_faultType_s) == 'highCpu'\n| summarize count() by bin(TimeGenerated, 5m)\n"
+      },
+      {
+        "key": "high-memory",
+        "severity": 2,
+        "threshold": 0,
+        "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| where operation == 'CHAOS_INJECTED' and tostring(details_faultType_s) == 'highMemory'\n| summarize count() by bin(TimeGenerated, 5m)\n"
+      },
+      {
+        "key": "latency-performance",
+        "severity": 2,
+        "threshold": 0,
+        "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| extend responseTimeMs = todouble(coalesce(column_ifexists('responseTimeMs_d', real(null)), column_ifexists('responseTimeMs', real(null))))\n| where operation == 'HTTP_RESPONSE' and isnotnull(responseTimeMs)\n| where responseTimeMs > 1500\n| summarize slowRequests = count(), p95 = percentile(responseTimeMs, 95) by bin(TimeGenerated, 5m)\n"
+      },
+      {
+        "key": "high-memory-guard-429",
+        "severity": 2,
+        "threshold": 0,
+        "query": "LisbonParkingLogs_CL\n| extend operation = tostring(coalesce(column_ifexists('operation_s', ''), column_ifexists('operation', '')))\n| extend statusCode = coalesce(toint(column_ifexists('statusCode_d', real(null))), toint(column_ifexists('statusCode', int(null))))\n| where operation == 'HTTP_RESPONSE'\n| where statusCode == 429\n| summarize count() by bin(TimeGenerated, 5m)\n"
+      }
+    ]
+  },
+  "resources": {
+    "chaosAlerts": {
+      "copy": {
+        "name": "chaosAlerts",
+        "count": "[length(variables('alertSpecs'))]"
+      },
+      "type": "Microsoft.Insights/scheduledQueryRules",
+      "apiVersion": "2023-12-01",
+      "name": "[format('{0}-{1}', parameters('namePrefix'), variables('alertSpecs')[copyIndex()].key)]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "displayName": "[format('{0}-{1}', parameters('namePrefix'), variables('alertSpecs')[copyIndex()].key)]",
+        "description": "[format('Lisbon chaos alert for {0}', variables('alertSpecs')[copyIndex()].key)]",
+        "severity": "[variables('alertSpecs')[copyIndex()].severity]",
+        "enabled": "[parameters('enabled')]",
+        "scopes": [
+          "[parameters('logAnalyticsWorkspaceId')]"
+        ],
+        "evaluationFrequency": "[parameters('evaluationFrequency')]",
+        "windowSize": "[parameters('windowSize')]",
+        "autoMitigate": false,
+        "criteria": {
+          "allOf": [
+            {
+              "query": "[variables('alertSpecs')[copyIndex()].query]",
+              "timeAggregation": "Count",
+              "operator": "GreaterThan",
+              "threshold": "[variables('alertSpecs')[copyIndex()].threshold]",
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "actions": "[if(empty(parameters('actionGroupResourceId')), createObject('actionGroups', createArray()), createObject('actionGroups', createArray(parameters('actionGroupResourceId'))))]"
+      }
+    }
+  },
+  "outputs": {
+    "createdAlertNames": {
+      "type": "array",
+      "copy": {
+        "count": "[length(variables('alertSpecs'))]",
+        "input": "[format('{0}-{1}', parameters('namePrefix'), variables('alertSpecs')[copyIndex()].key)]"
+      }
+    }
+  }
+}

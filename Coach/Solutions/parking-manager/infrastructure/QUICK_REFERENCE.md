@@ -1,81 +1,142 @@
 # Quick Reference Guide
 
-## Azure Resources Created
+## Operating model
 
-### Resource Groups (5 total)
-- `rg-parking-hub-{env}` - Networking and monitoring
-- `rg-parking-frontend-{env}` - React frontend
-- `rg-parking-lisbon-{env}` - Lisbon API (Container)
-- `rg-parking-madrid-{env}` - Madrid API (Windows VM)
-- `rg-parking-paris-{env}` - Paris API (Ubuntu VM)
+- The canonical Azure deployment path is under `../workflows/`.
+- Use `infra-whatif.yml` before `infra-deploy.yml` for infrastructure changes.
+- Use `deploy-container-apps.yml` for Lisbon, Berlin, Chaos Control, and `vm-health-control` image rollouts.
+- Use `deploy-vm-apps.yml` for Paris and Madrid application redeploys.
+- Use `../scripts/start-local-stack.sh` only for local development.
 
-## Cost Breakdown (Monthly Estimates)
+## Azure resources created
 
-| Resource | SKU/Size | Estimated Cost |
-|----------|----------|----------------|
-| App Service Plan | Basic B1 (Linux) | $13 |
-| Windows Server VM | Standard_B2s | $30 |
-| Ubuntu VM | Standard_B2s | $30 |
-| Container App | Consumption (0.25 vCPU, 0.5Gi) | $5-10 |
-| Log Analytics Workspace | Pay-as-you-go | $5-10 |
-| Application Insights (3x) | Pay-as-you-go | $5-10 |
-| VNet | Free | $0 |
-| Storage (VM disks) | StandardSSD_LRS | $5-10 |
-| Public IPs (2x) | Standard | $5-10 |
-| **Total** | | **$120-150** |
+### Resource groups
 
-## Network Configuration
+Base deployment creates 7 resource groups:
 
-### VNet Address Space
-- **Hub VNet**: `10.0.0.0/16`
-  - VM Subnet: `10.0.1.0/24` (254 usable IPs)
-  - Container Apps Subnet: `10.0.2.0/23` (510 usable IPs)
+- `rg-parking-hub-{env}`
+- `rg-parking-frontend-{env}`
+- `rg-parking-lisbon-{env}`
+- `rg-parking-madrid-{env}`
+- `rg-parking-paris-{env}`
+- `rg-parking-berlin-{env}`
+- `rg-parking-chaos-{env}`
 
-### NSG Rules (VM Subnet)
-- HTTP (80)
-- HTTPS (443)
-- API Port 3002 (Madrid)
-- API Port 3003 (Paris)
-- SSH (22)
-- RDP (3389)
+Optional resource group:
 
-## Common Commands
+- `rg-parking-berlin-mcp-{env}` when `deployBerlinMcp=true`
 
-### Deployment
+### What lives where
+
+- `rg-parking-hub-{env}`: VNet, subnets, NSGs, Log Analytics, deployment storage, optional ACR, VM health table and alerts, DCR/DCE resources, optional GitHub runner networking
+- `rg-parking-frontend-{env}`: App Service Plan, App Service, Application Insights
+- `rg-parking-lisbon-{env}`: Lisbon Container App
+- `rg-parking-berlin-{env}`: Berlin Container App
+- `rg-parking-madrid-{env}`: Madrid VM and related VM resources
+- `rg-parking-paris-{env}`: Paris VM and related VM resources
+- `rg-parking-chaos-{env}`: Chaos Control Container App and `vm-health-control`
+- `rg-parking-berlin-mcp-{env}`: Berlin MCP Container App and monitoring resources when enabled
+
+## Cost snapshot
+
+Approximate monthly baseline, excluding unusual traffic and log spikes:
+
+|Resource|SKU or shape|Estimated cost|
+|---|---|---|
+|Frontend App Service Plan|B1 Linux|$13|
+|Madrid VM|Standard_B2s|$30|
+|Paris VM|Standard_B2s|$30|
+|Container Apps|Consumption for Lisbon, Berlin, Chaos, VM Health|$15-35|
+|Optional Berlin MCP|Consumption|$5-10|
+|Azure Container Registry|Basic|$5|
+|Log Analytics and Application Insights|Pay-as-you-go|$10-25|
+|Storage, disks, public IPs|StandardSSD_LRS and Standard IP|$10-20|
+|**Total baseline**||**$110-160**|
+|**With Berlin MCP enabled**||**$115-170**|
+
+## Network configuration
+
+### VNet address space
+
+- Hub VNet: `10.0.0.0/16`
+- VM subnet: `10.0.1.0/24`
+- Container Apps subnet: `10.0.2.0/23`
+- Optional GitHub-hosted runners subnet: `10.0.3.0/24`
+
+### Access rules
+
+- SSH access to Paris and RDP access to Madrid are controlled by `allowedSourceIpPrefix`.
+- Default value is `*`; tighten this for real environments.
+- Paris uses port `3003` and Madrid uses port `3002` for app traffic.
+
+## Canonical deployment commands
+
+### Workflow order
+
+1. Run `infra-whatif.yml`
+2. Run `infra-deploy.yml`
+3. Run `deploy-container-apps.yml`
+4. Run `deploy-vm-apps.yml`
+
+### CLI validation and deployment
+
 ```bash
-# Interactive deployment
+# Validate the subscription-scope deployment
 cd infrastructure
-./deploy.sh
-
-# Direct deployment
-az deployment sub create \
-  --location westeurope \
+az deployment sub validate \
+  --location swedencentral \
   --template-file main.bicep \
-  --parameters main.parameters.example.json \
-  --parameters adminPassword='SecurePassword123!'
+  --parameters @main.parameters.json \
+  --parameters adminPassword='<secure-password>'
+
+# Deploy directly with the parameters file
+az deployment sub create \
+  --location swedencentral \
+  --template-file main.bicep \
+  --parameters @main.parameters.json \
+  --parameters adminPassword='<secure-password>'
 ```
 
-### Check Deployment Status
+### Helper script
+
 ```bash
-# List all deployments
+cd infrastructure
+./deploy.sh
+```
+
+## Common commands
+
+### Deployment status
+
+```bash
+# List subscription deployments
 az deployment sub list --output table
 
-# Show specific deployment
+# Show a specific deployment
 az deployment sub show --name <deployment-name>
 
-# Get outputs
+# Show deployment outputs
 az deployment sub show --name <deployment-name> --query properties.outputs
 ```
 
-### Access VMs
+### Useful outputs
+
 ```bash
-# SSH to Paris VM (Linux)
+az deployment sub show --name <deployment-name> \
+  --query "properties.outputs.{frontend:frontendUrl.value,lisbon:lisbonApiUrl.value,madrid:madridApiUrl.value,paris:parisApiUrl.value,berlin:berlinApiUrl.value,chaos:chaosControlUrl.value,vmHealth:vmHealthControlUrl.value}" \
+  -o json
+```
+
+### Access VMs
+
+```bash
+# Paris VM
 ssh azureadmin@<paris-vm-fqdn>
 
-# RDP to Madrid VM (Windows)
+# Madrid VM
 mstsc /v:<madrid-vm-fqdn>
 
-# Reset VM password
+# Reset the Madrid VM password
 az vm user update \
   --resource-group rg-parking-madrid-dev \
   --name vm-madrid-api \
@@ -83,50 +144,44 @@ az vm user update \
   --password 'NewPassword123!'
 ```
 
-### Container App Management
+### Container App image updates
+
 ```bash
-# Update container image
+# Example: Lisbon
 az containerapp update \
   --name ca-parking-lisbon \
   --resource-group rg-parking-lisbon-dev \
   --image <your-registry>.azurecr.io/lisbon-parking-api:latest
+
+# Example: Chaos Control
+az containerapp update \
+  --name ca-chaos-control \
+  --resource-group rg-parking-chaos-dev \
+  --image <your-registry>.azurecr.io/chaos-control:latest
 
 # View logs
 az containerapp logs show \
   --name ca-parking-lisbon \
   --resource-group rg-parking-lisbon-dev \
   --follow
-
-# Scale container app
-az containerapp update \
-  --name ca-parking-lisbon \
-  --resource-group rg-parking-lisbon-dev \
-  --min-replicas 1 \
-  --max-replicas 5
 ```
 
-### App Service Management
+### Frontend operations
+
 ```bash
-# Deploy frontend
-cd frontend/parking-manager
+# Build the frontend bundle
+cd ../frontend/parking-manager
+npm install
 npm run build
-az webapp up \
-  --name <app-service-name> \
-  --resource-group rg-parking-frontend-dev
 
-# View logs
+# Tail frontend logs
 az webapp log tail \
-  --name <app-service-name> \
+  --name <frontend-app-name> \
   --resource-group rg-parking-frontend-dev
-
-# Configure app settings
-az webapp config appsettings set \
-  --name <app-service-name> \
-  --resource-group rg-parking-frontend-dev \
-  --settings REACT_APP_LISBON_API_URL=https://...
 ```
 
 ### Monitoring
+
 ```bash
 # Query Log Analytics
 az monitor log-analytics query \
@@ -140,82 +195,92 @@ az monitor app-insights metrics show \
   --metric requests/count
 ```
 
-### Cleanup
-```bash
-# Delete all resources (by resource groups)
-az group delete --name rg-parking-hub-dev --yes --no-wait
-az group delete --name rg-parking-frontend-dev --yes --no-wait
-az group delete --name rg-parking-lisbon-dev --yes --no-wait
-az group delete --name rg-parking-madrid-dev --yes --no-wait
-az group delete --name rg-parking-paris-dev --yes --no-wait
+## Workflow configuration
 
-# Or delete the entire deployment
-az deployment sub delete --name <deployment-name>
-```
+### Required secret
 
-## Post-Deployment Checklist
+- `AZURE_CREDENTIALS`
 
-### 1. Deploy Applications
-- [ ] Build and push Lisbon API container image
-- [ ] Deploy Madrid API to Windows VM
-- [ ] Deploy Paris API to Ubuntu VM
-- [ ] Build and deploy React frontend
+### Required workflow variables
 
-### 2. Configure Networking
-- [ ] Review NSG rules and adjust if needed
-- [ ] Configure custom domains (optional)
-- [ ] Set up SSL certificates
-- [ ] Configure CORS settings
+- `AZURE_CONTAINER_REGISTRY`
+- `LISBON_RESOURCE_GROUP`
+- `BERLIN_RESOURCE_GROUP`
+- `CHAOS_CONTROL_RESOURCE_GROUP`
+- `CHAOS_CONTROL_CONTAINER_APP_NAME`
+- `PARIS_VM_NAME`
+- `PARIS_RESOURCE_GROUP`
+- `MADRID_VM_NAME`
+- `MADRID_RESOURCE_GROUP`
+- `DEPLOYMENT_STORAGE_ACCOUNT`
+- `CHAOS_CONTROL_URL`
 
-### 3. Set Up Monitoring
-- [ ] Create Application Insights availability tests
-- [ ] Configure Log Analytics queries and alerts
-- [ ] Set up Azure Monitor alerts for VM health
-- [ ] Create dashboards for monitoring
+Optional workflow variables:
 
-### 4. Security Hardening
-- [ ] Rotate VM passwords regularly
-- [ ] Enable Azure AD authentication for App Service
-- [ ] Configure Key Vault for secrets
-- [ ] Review and restrict NSG rules
-- [ ] Enable Azure Defender for Cloud
+- `BERLIN_MCP_RESOURCE_GROUP`
+- `VM_HEALTH_RESOURCE_GROUP`
+- `VM_HEALTH_CONTAINER_APP_NAME`
 
-### 5. Cost Optimization
-- [ ] Set up budgets and cost alerts
-- [ ] Review and adjust VM auto-shutdown schedules
-- [ ] Optimize Log Analytics retention
-- [ ] Review unused resources monthly
+## Post-deployment checklist
+
+### After infrastructure deployment
+
+- [ ] Confirm deployment outputs were generated
+- [ ] Confirm ACR exists if `createContainerRegistry=true`
+- [ ] Confirm deployment storage exists and is reachable
+- [ ] Review NSG access and tighten `allowedSourceIpPrefix`
+
+### After application deployment
+
+- [ ] Roll out Lisbon, Berlin, Chaos Control, and `vm-health-control`
+- [ ] Redeploy Madrid and Paris application code
+- [ ] Verify frontend proxy configuration and app settings
+- [ ] Verify Berlin MCP only if `deployBerlinMcp=true`
+
+### Monitoring and security
+
+- [ ] Verify VM log collection is working for Madrid and Paris
+- [ ] Verify Lisbon chaos alerts and VM health alerts are firing correctly
+- [ ] Review Log Analytics retention and ingestion volume
+- [ ] Rotate VM passwords and review public IP exposure
 
 ## Troubleshooting
 
-### Deployment Fails
+### Deployment fails
+
 1. Check deployment errors: `az deployment sub show --name <name> --query properties.error`
-2. Verify subscription permissions (Contributor role required)
-3. Check resource name uniqueness
-4. Ensure quota limits are not exceeded
+2. Verify Contributor-level permissions at subscription scope
+3. Check regional quota and naming conflicts
+4. Confirm `adminPassword` meets Azure VM requirements
 
-### Cannot Connect to VMs
-1. Verify NSG rules allow the traffic
-2. Check VM is running: `az vm get-instance-view`
-3. Verify public IP is attached (if using)
-4. Reset VM password if authentication fails
+### Cannot connect to VMs
 
-### Container App Not Starting
-1. Check container logs: `az containerapp logs show`
-2. Verify container image is accessible
-3. Check environment variables are set correctly
-4. Ensure Container App Environment is healthy
+1. Verify the VM is running: `az vm get-instance-view`
+2. Verify the public IP exists if `createPublicIps=true`
+3. Check NSG rules and `allowedSourceIpPrefix`
+4. Reset credentials if authentication fails
 
-### Frontend Not Loading
-1. Check App Service logs: `az webapp log tail`
-2. Verify build was successful
-3. Check app settings (API URLs)
-4. Ensure App Service Plan is running
+### Container App not starting
 
-## Support and Resources
+1. Check `az containerapp logs show`
+2. Verify the image exists in ACR or the referenced registry
+3. Check environment variables and app settings
+4. Confirm the Container Apps subnet and environment are healthy
 
-- [Azure Bicep Documentation](https://learn.microsoft.com/azure/azure-resource-manager/bicep/)
-- [Azure App Service Documentation](https://learn.microsoft.com/azure/app-service/)
-- [Azure Container Apps Documentation](https://learn.microsoft.com/azure/container-apps/)
-- [Azure Virtual Machines Documentation](https://learn.microsoft.com/azure/virtual-machines/)
-- [Azure Monitor Documentation](https://learn.microsoft.com/azure/azure-monitor/)
+### Frontend not loading
+
+1. Check App Service logs
+2. Verify the frontend build completed successfully
+3. Verify frontend app settings point to the deployed backend URLs
+4. Confirm the App Service is running and responding on port `8080`
+
+## Local development
+
+Use the restored local helper for demo or development runs:
+
+```bash
+cd ../scripts
+./start-local-stack.sh
+```
+
+This is local-only and does not replace the Azure deployment workflows.

@@ -33,15 +33,7 @@ Backend URLs are configured via environment variables (see below). The proxy han
 
 ## Quick Start (Local)
 
-The easiest way to run the full local stack is:
-
-```bash
-# From the repository root
-./scripts/start-chaos-stack.sh
-```
-
-This starts all backend services and the frontend proxy. Open **http://localhost:8080**.
-Logs are written to `.runtime-logs/` in the repository root. Press `Ctrl+C` to stop everything.
+Start the backend services first, then build and run the frontend proxy using the manual local startup steps in [Coach/Solutions/parking-manager/README.md](../../README.md). Open **http://localhost:8080**.
 
 ## Manual Setup for Local Development
 

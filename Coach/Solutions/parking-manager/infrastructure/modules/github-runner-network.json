@@ -1,0 +1,153 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.44.1.10279",
+      "templateHash": "17426679052413855030"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Location for network resources"
+      }
+    },
+    "vnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Existing VNet name where runner subnet will be created"
+      }
+    },
+    "runnerSubnetPrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "Subnet CIDR for GitHub runners (recommended: /24)"
+      }
+    },
+    "githubOrgDatabaseId": {
+      "type": "string",
+      "metadata": {
+        "description": "GitHub organization databaseId (GraphQL) used as businessId"
+      }
+    },
+    "natGatewayId": {
+      "type": "string",
+      "metadata": {
+        "description": "NAT Gateway ID for outbound connectivity"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags to apply to resources"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2023-05-01",
+      "name": "nsg-github-actions",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "AllowVnetOutBound443",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "443",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "access": "Allow",
+              "priority": 200,
+              "direction": "Outbound"
+            }
+          },
+          {
+            "name": "AllowStorageOutbound443",
+            "properties": {
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "443",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "Storage",
+              "access": "Allow",
+              "priority": 230,
+              "direction": "Outbound"
+            }
+          },
+          {
+            "name": "AllowGitHubOutbound443",
+            "properties": {
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "443",
+              "sourceAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 220,
+              "direction": "Outbound",
+              "destinationAddressPrefix": "*"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "apiVersion": "2023-05-01",
+      "name": "[format('{0}/{1}', parameters('vnetName'), 'snet-github-runners')]",
+      "properties": {
+        "addressPrefix": "[parameters('runnerSubnetPrefix')]",
+        "delegations": [
+          {
+            "name": "GitHub.Network/networkSettings",
+            "properties": {
+              "serviceName": "GitHub.Network/networkSettings"
+            }
+          }
+        ],
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-github-actions')]"
+        },
+        "natGateway": {
+          "id": "[parameters('natGatewayId')]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-github-actions')]"
+      ]
+    },
+    {
+      "type": "GitHub.Network/networkSettings",
+      "apiVersion": "2024-04-02",
+      "name": "github-actions-network-settings",
+      "location": "[parameters('location')]",
+      "properties": {
+        "subnetId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), 'snet-github-runners')]",
+        "businessId": "[parameters('githubOrgDatabaseId')]"
+      },
+      "tags": {
+        "GitHubId": "[parameters('githubOrgDatabaseId')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), 'snet-github-runners')]"
+      ]
+    }
+  ],
+  "outputs": {
+    "runnerSubnetId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), 'snet-github-runners')]"
+    },
+    "networkSettingsResourceId": {
+      "type": "string",
+      "value": "[resourceId('GitHub.Network/networkSettings', 'github-actions-network-settings')]"
+    }
+  }
+}

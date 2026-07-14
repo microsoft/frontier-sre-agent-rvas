@@ -65,11 +65,14 @@ app.use((req, res, next) => {
       statusCode: res.statusCode,
       responseTimeMs,
       city: parkingState.city
+      const pfxPath = process.env.PFX_PATH || path.join(__dirname, 'madrid.pfx');
+      const pfxPassphrase = process.env.PFX_PASSPHRASE || '';
     });
   });
+      const hasPfx = fs.existsSync(pfxPath);
 
   next();
-});
+      const useHttps = hasPfx || (fs.existsSync(certPath) && fs.existsSync(keyPath));
 
 app.use(createChaosMiddleware('madrid', {
   onChaosInject: (details) => {
@@ -339,11 +342,19 @@ process.on('SIGTERM', async () => {
       process.exit(0);
     });
   } else {
+          ? {
+              pfx: fs.readFileSync(pfxPath),
+              passphrase: pfxPassphrase || undefined
+            }
+          : {
+              key: fs.readFileSync(keyPath),
+              cert: fs.readFileSync(certPath)
+            };
     process.exit(0);
   }
 });
 
-process.on('SIGINT', async () => {
+          console.log(`🔒 Using HTTPS with ${hasPfx ? 'PFX certificate bundle' : 'self-signed certificate'}`);
   console.log('SIGINT signal received: closing server');
   logger.logOperation('SERVER_SHUTDOWN', parkingState.id, { 
     city: parkingState.city,

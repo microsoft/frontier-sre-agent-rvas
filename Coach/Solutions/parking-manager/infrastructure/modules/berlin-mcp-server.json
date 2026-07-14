@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.40.2.10011",
-      "templateHash": "11310229025724973034"
+      "version": "0.44.1.10279",
+      "templateHash": "6735596972587384386"
     }
   },
   "parameters": {
@@ -13,13 +13,6 @@
       "type": "string",
       "metadata": {
         "description": "Location for all MCP server resources"
-      }
-    },
-    "environment": {
-      "type": "string",
-      "defaultValue": "dev",
-      "metadata": {
-        "description": "Environment name (e.g., dev, prod) - NOTE: Not used in resource naming as resources are hardcoded to match existing manually deployed Azure resources"
       }
     },
     "containerSubnetId": {
@@ -138,7 +131,7 @@
           "ingress": {
             "external": true,
             "targetPort": 8080,
-            "transport": "auto",
+            "transport": "http",
             "allowInsecure": false
           },
           "registries": "[if(empty(parameters('containerRegistry')), createArray(), createArray(createObject('server', parameters('containerRegistry'), 'identity', 'system')))]"
@@ -168,39 +161,57 @@
               ],
               "probes": [
                 {
-                  "type": "startup",
+                  "type": "Startup",
                   "httpGet": {
-                    "path": "/health",
-                    "port": 8080
+                    "path": "/startup",
+                    "port": 8080,
+                    "scheme": "HTTP"
                   },
-                  "initialDelaySeconds": 0,
+                  "initialDelaySeconds": 5,
                   "periodSeconds": 5,
+                  "timeoutSeconds": 3,
                   "failureThreshold": 12
                 },
                 {
-                  "type": "liveness",
+                  "type": "Readiness",
                   "httpGet": {
                     "path": "/health",
-                    "port": 8080
+                    "port": 8080,
+                    "scheme": "HTTP"
                   },
-                  "initialDelaySeconds": 10,
-                  "periodSeconds": 30
+                  "initialDelaySeconds": 5,
+                  "periodSeconds": 5,
+                  "timeoutSeconds": 3,
+                  "failureThreshold": 6
                 },
                 {
-                  "type": "readiness",
+                  "type": "Liveness",
                   "httpGet": {
                     "path": "/health",
-                    "port": 8080
+                    "port": 8080,
+                    "scheme": "HTTP"
                   },
-                  "initialDelaySeconds": 10,
-                  "periodSeconds": 10
+                  "initialDelaySeconds": 30,
+                  "periodSeconds": 10,
+                  "timeoutSeconds": 5,
+                  "failureThreshold": 3
                 }
               ]
             }
           ],
           "scale": {
             "minReplicas": 1,
-            "maxReplicas": 3
+            "maxReplicas": 3,
+            "rules": [
+              {
+                "name": "http-scaling",
+                "http": {
+                  "metadata": {
+                    "concurrentRequests": "10"
+                  }
+                }
+              }
+            ]
           }
         }
       },
