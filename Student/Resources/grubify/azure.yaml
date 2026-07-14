@@ -1,0 +1,22 @@
+name: grubify
+metadata:
+  template: grubify-food-delivery@0.0.1-beta
+
+services:
+  api:
+    project: ./GrubifyApi
+    language: dotnet
+    host: containerapp
+
+  frontend:
+    project: ./grubify-frontend
+    language: js
+    host: containerapp
+
+hooks:
+  postdeploy:
+    shell: pwsh
+    run: |
+      echo "🍕 Grubify Food Delivery App deployed successfully!"
+      echo "Frontend URL: $env:FRONTEND_URL"
+      echo "API URL: $env:API_BASE_URL"

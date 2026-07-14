@@ -19,3 +19,4 @@ image:
 		image_name=$$(echo "$$app" | tr '/.' '-' | sed 's/-$$//'); \
 		( cd "$$app" && docker build -t "$$image_name:local" . ); \
 	done
+

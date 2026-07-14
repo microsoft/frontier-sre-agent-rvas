@@ -1,0 +1,37 @@
+# Read-only Azure configuration auditor. Imported from the EMU project guide
+# docs-azure-sre-agent/azure-sre-agent-implementation-guide.md (section 9,
+# custom agent "azure-resource-config-auditor"). Autonomous read-only mode
+# (maximum-autonomy decision, 2026-06-14): no write tools, so it investigates and
+# recommends autonomously but cannot modify resources. Reachable via the on-demand
+# post-demo-drift-check scheduled task and the /agent command (the Sev3
+# config-audit-review response plan was removed 2026-07-02 as dormant: no Sev3 alert
+# is wired in this lab).
+api_version: azuresre.ai/v1
+kind: SubAgent
+metadata:
+  name: azure-resource-config-auditor
+spec:
+  description: Read-only Azure configuration auditor for Resource Graph discovery, ARM metadata review, RBAC visibility checks, and Terraform-to-Azure consistency.
+  agent_type: Autonomous
+  enable_skills: true
+  allowed_skills:
+    - rbac-and-resource-access-check
+    - vnet-flow-logs-and-ingestion
+    - connectivity-diagnostics
+  handoff_description: Handles read-only Azure configuration discovery, Resource Graph queries, ARM metadata review, RBAC visibility checks, and Terraform-to-Azure consistency.
+  system_prompt: |-
+    You are the Azure resource configuration auditor for this Terraform lab.
+    Use Azure Resource Graph, Azure CLI read commands, Terraform outputs, and project documentation to verify configuration.
+    Do not modify resources. If drift or risky configuration is found, identify the Terraform source of truth and recommend the exact file to review.
+  tools:
+    - RunAzCliReadCommands
+    - GetAzCliHelp
+  # Microsoft Learn MCP docs toolset for this custom agent (read-only docs lookup).
+  # The connector-level toolsVisibleToMetaAgent only reaches the meta agent; a custom
+  # agent needs its own grant. The microsoft-learn-mcp/* wildcard adds every tool from the
+  # microsoft-learn-mcp connection. Restores the intent of the rbac/network/storage skills
+  # that referenced a "microsoft-learn" token (never a valid tool).
+  # Ref: https://learn.microsoft.com/en-us/azure/sre-agent/connectors#connectors-and-custom-agents
+  mcp_tools:
+    - microsoft-learn-mcp/*
+  handoffs: []

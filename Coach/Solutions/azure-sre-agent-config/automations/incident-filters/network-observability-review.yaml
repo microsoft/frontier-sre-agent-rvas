@@ -1,0 +1,47 @@
+# Networking observability incident filter (severity band: Sev2, networking domain).
+# Routes Azure Monitor Sev2 networking alerts to the network-traffic-analyst specialist.
+# Covered Sev2 alerts (networking domain only):
+#   - azurerm_monitor_scheduled_query_rules_alert_v2.denied_flow_spike (NSG block)
+#   - routing / UDR asymmetry (interactive scenario)
+#   - unexpected top talkers / egress spikes
+# NGINX-down (web-tier service health) is SPLIT OUT to the web-tier-nginx filter
+# (-> iaas-vm-incident-handler); this filter excludes it via titleNotContains.
+#
+# Run mode (full-autonomy requirement, 2026-06-14): fully Autonomous. The
+# specialist investigates AND remediates end to end (NSG rule delete/modify,
+# route change) with no human approval gate -- the block-unsafe-remediation hook
+# is disabled for this demo lab. Maximizes resolution speed; the environment is
+# non-production and every scenario has a restore script.
+#
+# Authored from the EMU guide section 10 response-plan table. The networking Sev2
+# triggers (denied-flow-spike, unexpected-top-talker, route-asymmetry) are
+# consolidated into this single Sev2 band routed to the networking specialist; the
+# web-tier nginx scenario is carved out to its own filter via titleNotContains, so
+# the two Sev2 plans are disjoint by construction.
+# Deployed via data-plane v2 /api/v2/extendedAgent/incidentFilters/{name}.
+api_version: azuresre.ai/v1
+kind: IncidentFilter
+metadata:
+  name: network-observability-review
+spec:
+  incidentPlatform: AzMonitor
+  isEnabled: true
+  priorities:
+    - Sev2
+  titleNotContains:
+    - nginx
+  handlingAgent: network-traffic-analyst
+  agentMode: Autonomous
+  maxAutomatedInvestigationAttempts: 2
+  customInstructions: >-
+    Investigate Sev2 network-observability alerts for the VNet Flow Logs and
+    Traffic Analytics lab. Typical triggers: denied-flow spikes (NSG block
+    scenario), unexpected top talkers or egress spikes, and routing / UDR
+    asymmetry. Start from NTANetAnalytics evidence, then Network Watcher
+    diagnostics and Terraform outputs. Report impacted resource, source and
+    destination IP, port, protocol, flow direction, affected VNet/subnet, rule
+    or service name, probable root cause, and confidence. Drive diagnostics
+    autonomously, then execute the exact remediation (NSG rule removal or route
+    fix) yourself and verify the signal clears -- run fully autonomously, with no
+    human approval gate. NGINX or other web/api/db VM service-health incidents
+    are handled by the web-tier-nginx filter (iaas-vm-incident-handler), not here.
