@@ -27,7 +27,7 @@ jobs:
             dockerfile: Student/Resources/parking-manager/backend/lisbon-parking-api/Dockerfile
           - name: berlin-parking-api
             context: Student/Resources/parking-manager/backend
-            dockerfile: Student/Resources/parking-manager/berlin-parking-api/Dockerfile
+            dockerfile: Student/Resources/parking-manager/backend/berlin-parking-api/Dockerfile
           - name: berlin-mcp-server
             context: Student/Resources/parking-manager/backend/berlin-mcp-server
             dockerfile: Student/Resources/parking-manager/backend/berlin-mcp-server/Dockerfile
