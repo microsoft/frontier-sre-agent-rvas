@@ -1,0 +1,103 @@
+.parking-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.parking-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.parking-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.parking-card-header h2 {
+  margin: 0;
+  font-size: 24px;
+  color: #333;
+}
+
+.parking-status {
+  padding: 6px 12px;
+  border-radius: 16px;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.parking-location {
+  margin-bottom: 20px;
+  color: #666;
+}
+
+.parking-location p {
+  margin: 0;
+}
+
+.parking-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: bold;
+  color: #333;
+}
+
+.parking-facilities {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 20px;
+  padding: 12px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+}
+
+.facility-item {
+  font-size: 14px;
+  color: #666;
+}
+
+.view-details-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.view-details-btn:hover {
+  background-color: #1976d2;
+}
+
+.last-updated {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 12px;
+  color: #999;
+}

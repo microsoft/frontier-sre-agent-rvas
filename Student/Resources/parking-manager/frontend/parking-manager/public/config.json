@@ -1,0 +1,7 @@
+{
+  "apis": {
+    "lisbon": "http://localhost:3001",
+    "madrid": "http://localhost:3002",
+    "paris": "http://localhost:3003"
+  }
+}
