@@ -38,20 +38,7 @@ The **Berlin MCP Server** (`backend/berlin-mcp-server`) is a separate Model Cont
 ## Project Structure
 
 ```
-Azure-SRE-Demo-Manager/
-├── infrastructure/              # Bicep templates for Azure deployment
-│   ├── modules/                # Modular Bicep templates
-│   │   ├── hub.bicep           # Hub VNet and Log Analytics
-│   │   ├── frontend.bicep      # React frontend App Service
-│   │   ├── lisbon-api.bicep    # Container App for Lisbon API
-│   │   ├── berlin-api.bicep    # Container App for Berlin API
-│   │   ├── madrid-api.bicep    # Windows VM for Madrid API
-│   │   ├── paris-api.bicep     # Ubuntu VM for Paris API
-│   │   ├── chaos-control.bicep # Container App for Chaos Control
-│   │   └── berlin-mcp-server.bicep # Container App for Berlin MCP
-│   ├── main.bicep              # Main orchestration template
-│   ├── deploy.sh               # Automated deployment script
-│   └── README.md               # Deployment documentation
+parking-manager/
 ├── backend/
 │   ├── lisbon-parking-api/       # Lisbon parking API (Docker + Azure Log Analytics)
 │   ├── berlin-parking-api/       # Berlin parking API (Docker + OpenTelemetry)
@@ -65,11 +52,6 @@ Azure-SRE-Demo-Manager/
 │       ├── src/                  # React application source
 │       ├── server.js             # Express proxy server (serves UI + proxies API calls)
 │       └── README.md
-├── scripts/
-│   └── ...                       # VM setup and deployment helper scripts
-├── demo/
-│   └── DEMO.md                   # Demo agenda and sample prompts
-├── docs/                         # Additional deployment and setup guides
 └── README.md                     # This file
 ```
 
