@@ -4,16 +4,10 @@ on:
   push:
     branches: [main]
     paths:
-      - 'index.html'
+      - 'web/**'
       - 'README.md'
-      - 'Student/customer/Challenge-*.md'
-      - 'Student/java/Challenge-*.md'
-      - 'Student/dotnet/Challenge-*.md'
-      - 'Student/net8/Challenge-*.md'
-      - 'Coach/customer/Solution-*.md'
-      - 'Coach/java/Solution-*.md'
-      - 'Coach/dotnet/Solution-*.md'
-      - 'Coach/net8/Solution-*.md'
+      - 'Student/**'
+      - 'Coach/**'
 
   workflow_dispatch:
 
@@ -41,8 +35,7 @@ jobs:
 
       - name: Assemble site
         run: |
-          mkdir -p _site
-          cp ./index.html _site/index.html
+          make build-web
 
       - name: Setup Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
