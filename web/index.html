@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure SRE Agent — RVAS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* ─── Page-specific token overrides & extensions ────────────────── */
+        :root {
+            /* Pillar-mapped scenario colors */
+            --autonomous-color: #1A77E3;
+            --scheduled-color:  #504092;
+            --interactive-color:#14868A;
+            --setup-color:      #6B7280;
+            --config-color:     #7c3aed;
+
+            /* Legacy aliases for inline use */
+            --cyan:         #1A77E3;
+            --cyan-dim:     rgba(26, 119, 227, .12);
+            --amber:        #0078D4;
+            --deploy-color: #14868A;
+            --stretch-color:#f43f5e;
+
+            /* Kept from shell.css */
+            --border:    #E3E6ED;
+            --border-2:  #c8d0de;
+        }
+
+        /* ─── Challenges ────────────────────────────────────────────────── */
+        #challenges { border-bottom: 1px solid var(--border); }
+
+        .challenges-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 3.5rem;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .challenges-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .challenge-card.full  { grid-column: span 3; }
+        .challenge-card.half  { grid-column: span 1; }
+
+        .challenge-card {
+            position: relative;
+            --c-color: var(--cyan);
+            background: #fff;
+            border: 1px solid var(--border);
+            padding: 2rem;
+            overflow: hidden;
+            cursor: pointer;
+            transition: background .25s, border-color .25s, box-shadow .25s;
+            text-decoration: none;
+            color: var(--c-fg, #111827);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .challenge-card:hover {
+            background: #F5F8FE;
+            border-color: var(--cyan);
+            box-shadow: 0 4px 16px rgba(26, 119, 227, .12);
+        }
+
+        .challenge-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: var(--c-color);
+        }
+
+        .challenge-card[data-phase="00"] { --c-color: var(--setup-color); }
+        .challenge-card[data-phase="01"],
+        .challenge-card[data-phase="02"],
+        .challenge-card[data-phase="03"] { --c-color: var(--config-color, #7c3aed); }
+        .challenge-card[data-phase="04"],
+        .challenge-card[data-phase="05"],
+        .challenge-card[data-phase="07"],
+        .challenge-card[data-phase="09"] { --c-color: var(--autonomous-color); }
+        .challenge-card[data-phase="06"] { --c-color: var(--scheduled-color); }
+        .challenge-card[data-phase="08"] { --c-color: var(--interactive-color); }
+
+        .card-bg-number {
+            position: absolute;
+            right: -.1em; top: -.15em;
+            font-family: var(--font-display, "Outfit", sans-serif);
+            font-size: clamp(5rem, 10vw, 8rem);
+            font-weight: 700;
+            color: rgba(3, 34, 84, .04);
+            line-height: 1;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .card-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+        }
+
+        .card-phase-badge {
+            font-family: var(--font-body, "Inter", sans-serif);
+            font-size: .6rem;
+            font-weight: 600;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            padding: .25rem .65rem;
+            border-radius: 3px;
+            border: 1px solid;
+            color: var(--c-color);
+            border-color: var(--c-color);
+            background: rgba(26, 119, 227, .08);
+        }
+
+        .card-num {
+            font-family: var(--font-mono, monospace);
+            font-size: .65rem;
+            color: #6B7280;
+            letter-spacing: .1em;
+        }
+
+        .card-title {
+            font-family: var(--font-display, "Outfit", sans-serif);
+            font-size: clamp(1.4rem, 3vw, 2rem);
+            font-weight: 700;
+            color: #032254;
+            line-height: 1.05;
+            margin-bottom: .75rem;
+        }
+
+        .card-desc {
+            font-size: .875rem;
+            line-height: 1.65;
+            color: #47494E;
+            flex: 1;
+        }
+
+        .card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .4rem;
+        }
+
+        .card-tag {
+            font-family: var(--font-mono, monospace);
+            font-size: .6rem;
+            color: #6B7280;
+            letter-spacing: .08em;
+            background: #F5F8FE;
+            border: 1px solid var(--border);
+            padding: .2rem .55rem;
+            border-radius: 3px;
+        }
+
+        .card-arrow {
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+            font-family: var(--font-mono, monospace);
+            font-size: .65rem;
+            color: var(--c-color);
+            opacity: 0;
+            transition: opacity .25s, transform .25s;
+            transform: translateX(-8px);
+        }
+
+        .challenge-card:hover .card-arrow {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .challenge-card.full .card-inner {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .challenge-card.full .card-title {
+            font-size: clamp(2rem, 4vw, 3rem);
+        }
+
+        /* ─── Subagent inventory ────────────────────────────────────────── */
+        #agents {
+            border-bottom: 1px solid var(--border);
+            background: #F5F8FE;
+        }
+
+        .agent-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 2rem;
+        }
+
+        .agent-card {
+            background: #fff;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: .5rem;
+        }
+
+        .agent-name {
+            font-family: var(--font-mono, monospace);
+            font-size: .75rem;
+            font-weight: 500;
+            color: var(--cyan);
+            letter-spacing: .04em;
+        }
+
+        .agent-role {
+            font-family: var(--font-display, "Outfit", sans-serif);
+            font-size: .95rem;
+            font-weight: 700;
+            color: #032254;
+        }
+
+        .agent-desc {
+            font-size: .8rem;
+            color: #47494E;
+            line-height: 1.6;
+            flex: 1;
+        }
+
+        .agent-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .35rem;
+            margin-top: .5rem;
+        }
+
+        .agent-badge {
+            font-family: var(--font-mono, monospace);
+            font-size: .58rem;
+            font-weight: 600;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            padding: .18rem .5rem;
+            border-radius: 3px;
+        }
+
+        .ab-write  { background: rgba(209,52,56,.08);  color: #D13438; }
+        .ab-github { background: rgba(80,64,146,.08);  color: #504092; }
+        .ab-sched  { background: rgba(26,119,227,.08); color: #1A77E3; }
+        .ab-kql    { background: rgba(20,134,138,.08); color: #14868A; }
+
+        /* ─── Coach section ─────────────────────────────────────────────── */
+        #coach {
+            border-top: 2px solid var(--amber);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .coach-banner {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            background: rgba(0,120,212,.06);
+            border: 1px solid rgba(0,120,212,.18);
+            border-radius: 6px;
+            padding: .6rem 1rem;
+            margin-bottom: 2rem;
+            font-size: .82rem;
+            color: #0078D4;
+        }
+
+        .coach-label {
+            font-family: var(--font-mono, monospace);
+            font-size: .65rem;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            background: #0078D4;
+            color: #fff;
+            padding: .2rem .55rem;
+            border-radius: 3px;
+        }
+
+        /* Coach cards variant */
+        .coach-card-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: rgba(0,120,212,.18);
+            border: 1px solid rgba(0,120,212,.18);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .coach-card {
+            position: relative;
+            background: #fff;
+            border: 1px solid rgba(0,120,212,.14);
+            padding: 1.5rem;
+            text-decoration: none;
+            color: var(--c-fg, #111827);
+            display: flex;
+            flex-direction: column;
+            gap: .5rem;
+            transition: background .2s;
+        }
+
+        .coach-card:hover { background: #F5F8FE; }
+        .coach-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: #0078D4;
+        }
+
+        .coach-num {
+            font-family: var(--font-mono, monospace);
+            font-size: .65rem;
+            color: #6B7280;
+            letter-spacing: .1em;
+        }
+
+        .coach-title {
+            font-family: var(--font-display, "Outfit", sans-serif);
+            font-size: 1rem;
+            font-weight: 700;
+            color: #032254;
+            line-height: 1.15;
+        }
+
+        .coach-desc {
+            font-size: .78rem;
+            color: #47494E;
+            line-height: 1.6;
+            flex: 1;
+        }
+
+        .coach-arrow {
+            font-family: var(--font-mono, monospace);
+            font-size: .65rem;
+            color: #0078D4;
+            opacity: 0;
+            transition: opacity .2s, transform .2s;
+            transform: translateX(-6px);
+            margin-top: .5rem;
+        }
+
+        .coach-card:hover .coach-arrow {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* ─── Drawer ────────────────────────────────────────────────────── */
+        #drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(3, 34, 84, .5);
+            backdrop-filter: blur(4px);
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s ease;
+        }
+
+        #drawer-overlay.open { opacity: 1; pointer-events: all; }
+
+        #drawer {
+            position: fixed;
+            top: 0; right: 0; bottom: 0;
+            width: min(760px, 100vw);
+            background: #fff;
+            border-left: 1px solid var(--border);
+            z-index: 201;
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform .35s cubic-bezier(.4, 0, .2, 1);
+            overflow: hidden;
+        }
+
+        #drawer.open { transform: translateX(0); }
+
+        .drawer-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: #F5F8FE;
+            gap: 1rem;
+            flex-shrink: 0;
+        }
+
+        .drawer-nav { display: flex; gap: .5rem; }
+
+        .drawer-nav-btn {
+            background: #F5F8FE;
+            border: 1px solid var(--border);
+            color: #47494E;
+            font-family: var(--font-body, "Inter", sans-serif);
+            font-size: .7rem;
+            font-weight: 500;
+            padding: .35rem .75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background .2s, color .2s, border-color .2s;
+        }
+
+        .drawer-nav-btn:hover {
+            background: rgba(26, 119, 227, .10);
+            color: var(--cyan);
+            border-color: var(--cyan);
+        }
+
+        .drawer-nav-btn:disabled { opacity: .3; cursor: not-allowed; }
+
+        .drawer-close {
+            background: none;
+            border: 1px solid var(--border);
+            color: #47494E;
+            font-size: 1.2rem;
+            line-height: 1;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            transition: background .2s, color .2s, border-color .2s;
+            flex-shrink: 0;
+        }
+
+        .drawer-close:hover {
+            background: rgba(244, 63, 94, .12);
+            color: #f43f5e;
+            border-color: #f43f5e;
+        }
+
+        .drawer-breadcrumb {
+            font-family: var(--font-body, "Inter", sans-serif);
+            font-size: .65rem;
+            font-weight: 500;
+            color: #6B7280;
+            letter-spacing: .1em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .drawer-breadcrumb span { color: var(--cyan); }
+
+        .drawer-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem 2.5rem;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+
+        .drawer-body::-webkit-scrollbar { width: 4px; }
+        .drawer-body::-webkit-scrollbar-track { background: transparent; }
+        .drawer-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        /* Rendered markdown */
+        .md-content h1 {
+            font-family: var(--font-display, "Outfit", sans-serif);
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 700;
+            color: #032254;
+            line-height: 1.05;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .md-content h2 {
+            font-family: var(--font-display, "Outfit", sans-serif);
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--cyan);
+            margin-top: 2.5rem;
+            margin-bottom: .75rem;
+            letter-spacing: .02em;
+        }
+
+        .md-content h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #032254;
+            margin-top: 1.5rem;
+            margin-bottom: .5rem;
+        }
+
+        .md-content p {
+            font-size: .9rem;
+            line-height: 1.8;
+            color: #47494E;
+            margin-bottom: 1rem;
+        }
+
+        .md-content ul, .md-content ol {
+            padding-left: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .md-content li {
+            font-size: .9rem;
+            line-height: 1.8;
+            color: #47494E;
+            margin-bottom: .25rem;
+        }
+
+        .md-content li::marker { color: var(--cyan); }
+
+        .md-content code {
+            font-family: var(--font-mono, monospace);
+            font-size: .78em;
+            background: #F5F8FE;
+            border: 1px solid var(--border);
+            padding: .1em .4em;
+            border-radius: 3px;
+            color: #032254;
+        }
+
+        .md-content pre {
+            background: #F5F8FE;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            overflow-x: auto;
+            margin-bottom: 1.25rem;
+        }
+
+        .md-content pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            font-size: .78rem;
+            color: #47494E;
+            line-height: 1.8;
+        }
+
+        .md-content blockquote {
+            border: 1px solid rgba(0, 120, 212, .24);
+            box-shadow: inset 0 3px 0 #0078D4;
+            padding: .75rem 1rem;
+            margin: 1rem 0;
+            background: rgba(0, 120, 212, .06);
+            border-radius: 6px;
+        }
+
+        .md-content blockquote p { color: #111827; margin-bottom: 0; font-size: .85rem; }
+
+        .md-content a {
+            color: var(--cyan);
+            text-decoration: none;
+            border-bottom: 1px solid rgba(26, 119, 227, .3);
+            transition: border-color .2s;
+        }
+
+        .md-content a:hover { border-color: var(--cyan); }
+
+        .md-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.25rem;
+            font-size: .85rem;
+        }
+
+        .md-content th {
+            text-align: left;
+            padding: .6rem .75rem;
+            border-bottom: 2px solid var(--border-2);
+            color: #032254;
+            font-weight: 600;
+            font-size: .72rem;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        .md-content td {
+            padding: .6rem .75rem;
+            border-bottom: 1px solid var(--border);
+            color: #47494E;
+            vertical-align: top;
+            line-height: 1.6;
+        }
+
+        .md-content hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 2rem 0;
+        }
+
+        .md-content > p:first-child a[href*="Solution"],
+        .md-content > p:first-child a[href*="Challenge"],
+        .md-content > p:first-child a[href*="README"] {
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
+            font-family: var(--font-mono, monospace);
+            font-size: .7rem;
+            color: #6B7280;
+            border-bottom: none;
+            padding: .2rem .5rem;
+            background: #F5F8FE;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+        }
+
+        .drawer-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            gap: 1rem;
+            color: #6B7280;
+            font-size: .75rem;
+            letter-spacing: .1em;
+        }
+
+        .drawer-loading::before {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-top-color: var(--cyan);
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ─── Coach mode ─────────────────────────────────────────────────── */
+        .coach-hidden { display: none; }
+
+        #coach-toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #F5F8FE;
+            border: 1px solid #0078D4;
+            color: #0078D4;
+            font-family: var(--font-body, "Inter", sans-serif);
+            font-size: .72rem;
+            letter-spacing: .08em;
+            font-weight: 600;
+            padding: .6rem 1.25rem;
+            border-radius: 99px;
+            z-index: 300;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s ease, transform .3s ease;
+        }
+
+        #coach-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ─── Responsive ─────────────────────────────────────────────────── */
+        @media (max-width: 900px) {
+            .challenges-grid  { grid-template-columns: 1fr 1fr; }
+            .challenge-card.full { grid-column: span 2; }
+            .challenge-card.full .card-inner { grid-template-columns: 1fr; }
+            .coach-card-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 600px) {
+            .challenges-grid  { grid-template-columns: 1fr; }
+            .challenge-card.full { grid-column: span 1; }
+            .coach-card-grid { grid-template-columns: 1fr; }
+            .agent-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+    <link rel="stylesheet" href="assets/css/brand.css" />
+    <link rel="stylesheet" href="assets/css/shell.css" />
+</head>
+
+<body>
+
+    <!-- ── Nav ───────────────────────────────────────────────────────── -->
+    <header class="nav" role="banner">
+        <div class="nav-inner">
+            <a class="brand" href="index.html" aria-label="RVAS — Azure SRE Agent">
+                <img src="assets/img/logo-full.png" alt="RVAP" class="rvap-nav-logo" height="32">
+            </a>
+            <nav class="nav-links" id="navLinks" aria-label="Primary">
+                <a href="#challenges">Challenges</a>
+                <a href="#agents">Subagents</a>
+                <a href="README.md">Docs</a>
+                <a class="cta" href="#challenges">Start the Lab →</a>
+                <a class="gh" href="https://github.com/microsoft/frontier-sre-agent-rvas" target="_blank" rel="noopener">GitHub ↗</a>
+            </nav>
+            <div class="nav-actions">
+                <button class="icon-btn nav-toggle" type="button" aria-label="Open navigation menu"
+                    aria-expanded="false" aria-controls="navLinks">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero -->
+        <section class="hero" id="hero" aria-labelledby="heroHeading">
+            <svg class="hero-compass" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                <circle cx="200" cy="200" r="180" stroke="currentColor" stroke-width="0.6" stroke-opacity="0.15" stroke-dasharray="4 8"/>
+                <circle cx="200" cy="200" r="140" stroke="currentColor" stroke-width="0.4" stroke-opacity="0.10"/>
+                <circle cx="200" cy="200" r="80"  stroke="currentColor" stroke-width="0.4" stroke-opacity="0.12"/>
+                <path d="M200 60 A140 140 0 0 1 340 200" stroke="#38bdf8" stroke-width="2" stroke-opacity="0.5" stroke-linecap="round"/>
+                <path d="M340 200 A140 140 0 0 1 200 340" stroke="#f87171" stroke-width="2" stroke-opacity="0.5" stroke-linecap="round"/>
+                <path d="M200 340 A140 140 0 0 1 60 200"  stroke="#a78bfa" stroke-width="2" stroke-opacity="0.5" stroke-linecap="round"/>
+                <path d="M60 200 A140 140 0 0 1 200 60"   stroke="#fb923c" stroke-width="2" stroke-opacity="0.5" stroke-linecap="round"/>
+                <line x1="200" y1="20"  x2="200" y2="380" stroke="currentColor" stroke-width="0.5" stroke-opacity="0.10"/>
+                <line x1="20"  y1="200" x2="380" y2="200" stroke="currentColor" stroke-width="0.5" stroke-opacity="0.10"/>
+                <circle cx="200" cy="200" r="5"  fill="#1A77E3" fill-opacity="0.8"/>
+                <circle cx="200" cy="200" r="12" stroke="#1A77E3" stroke-width="1" stroke-opacity="0.3"/>
+                <circle cx="200" cy="60"  r="5"  fill="#38bdf8" fill-opacity="0.7"/>
+                <circle cx="340" cy="200" r="5"  fill="#f87171" fill-opacity="0.7"/>
+                <circle cx="200" cy="340" r="5"  fill="#a78bfa" fill-opacity="0.7"/>
+                <circle cx="60"  cy="200" r="5"  fill="#fb923c" fill-opacity="0.7"/>
+            </svg>
+            <div class="wrap hero-grid">
+                <div>
+                    <span class="eyebrow">Azure SRE Agent · Real Value Acceleration Program</span>
+                    <h1 id="heroHeading">Autonomous SRE with <span class="accent">Azure SRE Agent</span></h1>
+                    <p class="lede">
+                        Ten hands-on challenges: configure SRE Agent building blocks (skills, subagents, connectors, scheduled tasks), then trigger and observe 6 autonomous incident scenarios.
+                    </p>
+                    <div class="hero-actions">
+                        <a class="btn btn-primary" href="#challenges">
+                            Start the Lab
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                        </a>
+                        <a class="btn btn-ghost" href="README.md">Read the Briefing</a>
+                    </div>
+                    <div class="stats stats-4" aria-label="Lab statistics">
+                        <div class="stat"><span class="stat-num" data-count="10">10</span><span class="stat-lbl">Challenges</span></div>
+                        <div class="stat"><span class="stat-num" data-count="6">6</span><span class="stat-lbl">Subagents</span></div>
+                        <div class="stat"><span class="stat-num" data-count="8">8</span><span class="stat-lbl">Skills</span></div>
+                        <div class="stat"><span class="stat-num" data-count="5">5</span><span class="stat-lbl">Scheduled Tasks</span></div>
+                    </div>
+                </div>
+                <div class="hero-modules" aria-label="Scenario overview">
+                    <a href="#challenges" class="hero-mod-card" style="--mod-color:#1A77E3">
+                        <div class="mod-name">Autonomous PaaS response</div>
+                        <div class="mod-count">S1–S2 · Container Apps · App Insights</div>
+                    </a>
+                    <a href="#challenges" class="hero-mod-card" style="--mod-color:#504092">
+                        <div class="mod-name">Proactive workflow automation</div>
+                        <div class="mod-count">S3 · GitHub issue triage · scheduled tasks</div>
+                    </a>
+                    <a href="#challenges" class="hero-mod-card" style="--mod-color:#0078D4">
+                        <div class="mod-name">IaaS service recovery</div>
+                        <div class="mod-count">S4 · VMs · Syslog · az run-command</div>
+                    </a>
+                    <a href="#challenges" class="hero-mod-card" style="--mod-color:#14868A">
+                        <div class="mod-name">Network diagnostics &amp; remediation</div>
+                        <div class="mod-count">S5–S6 · VNet Flow Logs · NSG · UDR</div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Challenges -->
+        <section id="challenges">
+            <div class="wrap">
+                <div class="challenges-header">
+                    <div>
+                        <div class="section-label">Hands-On Lab</div>
+                        <h2 class="section-title display reveal">Challenges</h2>
+                        <p class="section-desc reveal">
+                            Challenges 00–03 cover SRE Agent configuration primitives. Challenges 04–09 are live incident scenarios.
+                            Complete in order for the full learning arc, or jump to any scenario after Challenge 03.
+                            Coaches: press <kbd style="font-family:var(--font-mono);font-size:.75em;background:#F5F8FE;border:1px solid #E3E6ED;padding:.1em .4em;border-radius:3px;">Shift+C</kbd> to unlock solution guides.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="challenges-grid">
+
+                    <!-- CH-00 -->
+                    <a class="challenge-card full" data-phase="00" href="Student/Challenge-00.md">
+                        <div class="card-bg-number display">00</div>
+                        <div class="card-inner">
+                            <div>
+                                <div class="card-top">
+                                    <span class="card-phase-badge">Setup</span>
+                                    <span class="card-num mono">CH — 00</span>
+                                </div>
+                                <h3 class="card-title display">Prerequisites &amp;<br>Lab Setup</h3>
+                            </div>
+                            <div style="display:flex;flex-direction:column;justify-content:space-between;">
+                                <p class="card-desc">
+                                    Deploy the Grubify infrastructure with Terraform, configure the Azure SRE Agent
+                                    data plane — subagents, skills, connectors, scheduled tasks — authorize the GitHub
+                                    OAuth connector, and generate baseline traffic to seed the observability pipeline.
+                                </p>
+                                <div class="card-footer">
+                                    <div class="card-tags">
+                                        <span class="card-tag">terraform</span>
+                                        <span class="card-tag">sre-agent config</span>
+                                        <span class="card-tag">GitHub OAuth</span>
+                                        <span class="card-tag">VNet Flow Logs</span>
+                                    </div>
+                                    <div class="card-arrow mono">Open challenge →</div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- CH-01 -->
+                    <a class="challenge-card" data-phase="01" href="Student/Challenge-01.md">
+                        <div class="card-bg-number display">01</div>
+                        <div class="card-top">
+                            <span class="card-phase-badge">Config</span>
+                            <span class="card-num mono">CH — 01</span>
+                        </div>
+                        <h3 class="card-title display">Skills &amp;<br>Knowledge Docs</h3>
+                        <p class="card-desc">
+                            Write your own skill YAML and knowledge document from scratch, apply them
+                            to the SRE Agent, and verify the new capability appears in the portal.
+                        </p>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="card-tag">skill YAML</span>
+                                <span class="card-tag">knowledge docs</span>
+                                <span class="card-tag">sre-agent-config</span>
+                            </div>
+                            <div class="card-arrow mono">Open →</div>
+                        </div>
+                    </a>
+
+                    <!-- CH-02 -->
+                    <a class="challenge-card" data-phase="02" href="Student/Challenge-02.md">
+                        <div class="card-bg-number display">02</div>
+                        <div class="card-top">
+                            <span class="card-phase-badge">Config</span>
+                            <span class="card-num mono">CH — 02</span>
+                        </div>
+                        <h3 class="card-title display">Subagents &amp;<br>Incident Filters</h3>
+                        <p class="card-desc">
+                            Define a subagent YAML and pair it with an incident filter. Verify that
+                            matching alert titles are automatically routed to your new specialist agent.
+                        </p>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="card-tag">SubAgent YAML</span>
+                                <span class="card-tag">IncidentFilter</span>
+                                <span class="card-tag">alert routing</span>
+                            </div>
+                            <div class="card-arrow mono">Open →</div>
+                        </div>
+                    </a>
+
+                    <!-- CH-03 -->
+                    <a class="challenge-card" data-phase="03" href="Student/Challenge-03.md">
+                        <div class="card-bg-number display">03</div>
+                        <div class="card-top">
+                            <span class="card-phase-badge">Config</span>
+                            <span class="card-num mono">CH — 03</span>
+                        </div>
+                        <h3 class="card-title display">Connectors, Repos<br>&amp; Scheduled Tasks</h3>
+                        <p class="card-desc">
+                            Register a data connector, link a code repository, and create a scheduled
+                            task. Manually trigger the task from the portal to confirm execution.
+                        </p>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="card-tag">DataConnector</span>
+                                <span class="card-tag">Repository</span>
+                                <span class="card-tag">ScheduledTask</span>
+                            </div>
+                            <div class="card-arrow mono">Open →</div>
+                        </div>
+                    </a>
+
+                    <!-- CH-04 -->
+                    <a class="challenge-card" data-phase="04" href="Student/Challenge-04.md">
+                        <div class="card-bg-number display">04</div>
+                        <div class="card-top">
+                            <span class="card-phase-badge">Autonomous</span>
+                            <span class="card-num mono">CH — 04</span>
+                        </div>
+                        <h3 class="card-title display">Autonomous App<br>Incident Response</h3>
+                        <p class="card-desc">
+                            Inject a PaaS fault into the Grubify API and watch the SRE Agent detect the
+                            5xx spike, execute the investigation runbook, and remediate — no human prompt required.
+                        </p>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="card-tag">Container Apps</span>
+                                <span class="card-tag">App Insights</span>
+                                <span class="card-tag">aca-incident-handler</span>
+                            </div>
+                            <div class="card-arrow mono">Open →</div>
+                        </div>
+                    </a>
+
+                    <!-- CH-05 -->
+                    <a class="challenge-card" data-phase="05" href="Student/Challenge-05.md">
+                        <div class="card-bg-number display">05</div>
+                        <div class="card-top">
+                            <span class="card-phase-badge">Autonomous</span>
+                            <span class="card-num mono">CH — 05</span>
+                        </div>
+                        <h3 class="card-title display">Code Correlation<br>&amp; GitHub</h3>
+                        <p class="card-desc">
+                            Push the agent from infrastructure diagnosis into developer territory: read source
+                            code, trace the 5xx to a specific file and line, and open a GitHub pull request.
+                        </p>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="card-tag">GitHub OAuth</span>
+                                <span class="card-tag">code-analyzer</span>
+                                <span class="card-tag">PR creation</span>
+                            </div>
+                            <div class="card-arrow mono">Open →</div>
+                        </div>
+                    </a>
+
+                    <!-- CH-06 -->
+                    <a class="challenge-card" data-phase="06" href="Student/Challenge-06.md">
+                        <div class="card-bg-number display">06</div>
+                        <div class="card-top">
+                            <span class="card-phase-badge">Scheduled</span>
+                            <span class="card-num mono">CH — 06</span>
+                        </div>
+                        <h3 class="card-title display">Proactive Workflow<br>Automation</h3>
+                        <p class="card-desc">
+                            Create customer GitHub issues and trigger the scheduled <code>issue-triager</code>
+                            subagent. Observe automatic classification, labeling, and structured bot comments.
+                        </p>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="card-tag">issue-triager</span>
+                                <span class="card-tag">scheduled task</span>
+                                <span class="card-tag">GitHub</span>
+                            </div>
+                            <div class="card-arrow mono">Open →</div>
+                        </div>
+                    </a>
+
+                    <!-- CH-07 -->
+                    <a class="challenge-card" data-phase="07" href="Student/Challenge-07.md">
+                        <div class="card-bg-number display">07</div>
+                        <div class="card-top">
+                            <span class="card-phase-badge">Autonomous</span>
+                            <span class="card-num mono">CH — 07</span>
+                        </div>
+                        <h3 class="card-title display">IaaS Service<br>Recovery</h3>
+                        <p class="card-desc">
+                            Stop NGINX on the web-tier VMs and let the agent detect the Syslog alert,
+                            SSH-equivalent into the VM via run-command, and restart the service.
+                        </p>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="card-tag">VM run-command</span>
+                                <span class="card-tag">AMA / Syslog</span>
+                                <span class="card-tag">iaas-vm-handler</span>
+                            </div>
+                            <div class="card-arrow mono">Open →</div>
+                        </div>
+                    </a>
+
+                    <!-- CH-08 -->
+                    <a class="challenge-card" data-phase="08" href="Student/Challenge-08.md">
+                        <div class="card-bg-number display">08</div>
+                        <div class="card-top">
+                            <span class="card-phase-badge">Interactive</span>
+                            <span class="card-num mono">CH — 08</span>
+                        </div>
+                        <h3 class="card-title display">Network Diagnostics<br>(Interactive)</h3>
+                        <p class="card-desc">
+                            Inject a UDR asymmetry fault and drive a diagnostic conversation with the
+                            <code>network-traffic-analyst</code> agent. Find the blackhole route using VNet
+                            Flow Logs and Traffic Analytics KQL.
+                        </p>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="card-tag">VNet Flow Logs</span>
+                                <span class="card-tag">Traffic Analytics</span>
+                                <span class="card-tag">UDR</span>
+                            </div>
+                            <div class="card-arrow mono">Open →</div>
+                        </div>
+                    </a>
+
+                    <!-- CH-09 -->
+                    <a class="challenge-card" data-phase="09" href="Student/Challenge-09.md">
+                        <div class="card-bg-number display">09</div>
+                        <div class="card-top">
+                            <span class="card-phase-badge">Autonomous</span>
+                            <span class="card-num mono">CH — 09</span>
+                        </div>
+                        <h3 class="card-title display">Autonomous NSG<br>Remediation</h3>
+                        <p class="card-desc">
+                            Block PostgreSQL traffic with an NSG deny rule and observe the agent
+                            autonomously identify the deny flow in NTANetAnalytics and remove the rule —
+                            no human in the loop.
+                        </p>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="card-tag">NSG</span>
+                                <span class="card-tag">NTANetAnalytics</span>
+                                <span class="card-tag">network-analyst</span>
+                            </div>
+                            <div class="card-arrow mono">Open →</div>
+                        </div>
+                    </a>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Subagents -->
+        <section id="agents">
+            <div class="wrap">
+                <div class="section-label">Architecture</div>
+                <h2 class="section-title display reveal">Subagents</h2>
+                <p class="section-desc reveal">
+                    Each subagent is a specialist with its own system prompt, tool grants, and incident routing.
+                    The <code>network-traffic-analyst</code> supports both interactive and autonomous modes.
+                </p>
+                <div class="agent-grid">
+                    <div class="agent-card">
+                        <div class="agent-name">aca-app-incident-handler</div>
+                        <div class="agent-role">PaaS Incident Handler</div>
+                        <div class="agent-desc">Investigates Grubify Container Apps 5xx incidents. Queries App Insights, identifies bad revisions, deactivates or rolls back, optionally analyzes source code and opens GitHub PRs.</div>
+                        <div class="agent-badges">
+                            <span class="agent-badge ab-write">Write CLI</span>
+                            <span class="agent-badge ab-github">GitHub OAuth</span>
+                            <span class="agent-badge ab-kql">App Insights</span>
+                        </div>
+                    </div>
+                    <div class="agent-card">
+                        <div class="agent-name">iaas-vm-incident-handler</div>
+                        <div class="agent-role">IaaS VM Recovery Agent</div>
+                        <div class="agent-desc">Handles NGINX and other VM service failures detected via Syslog. Uses az vm run-command to restart services and verify recovery.</div>
+                        <div class="agent-badges">
+                            <span class="agent-badge ab-write">Write CLI</span>
+                            <span class="agent-badge ab-kql">Log Analytics</span>
+                        </div>
+                    </div>
+                    <div class="agent-card">
+                        <div class="agent-name">network-traffic-analyst</div>
+                        <div class="agent-role">Network Observability &amp; Remediation</div>
+                        <div class="agent-desc">Analyzes VNet Flow Logs, Traffic Analytics KQL, and NSG/UDR configs. Supports interactive investigation (S5) and autonomous remediation (S6).</div>
+                        <div class="agent-badges">
+                            <span class="agent-badge ab-write">Write CLI</span>
+                            <span class="agent-badge ab-kql">NTANetAnalytics</span>
+                        </div>
+                    </div>
+                    <div class="agent-card">
+                        <div class="agent-name">issue-triager</div>
+                        <div class="agent-role">GitHub Issue Classifier</div>
+                        <div class="agent-desc">Runs on a schedule to triage [Customer Issue] GitHub issues. Classifies as Bug/Performance/Feature/Question, adds labels, and posts a structured bot comment.</div>
+                        <div class="agent-badges">
+                            <span class="agent-badge ab-github">GitHub OAuth</span>
+                            <span class="agent-badge ab-sched">Scheduled</span>
+                        </div>
+                    </div>
+                    <div class="agent-card">
+                        <div class="agent-name">cost-optimization-agent</div>
+                        <div class="agent-role">Cost &amp; Efficiency Analyst</div>
+                        <div class="agent-desc">Reviews Azure resource costs on a weekly schedule. Queries Cost Management, correlates with workload usage, and reports optimization opportunities.</div>
+                        <div class="agent-badges">
+                            <span class="agent-badge ab-sched">Scheduled</span>
+                            <span class="agent-badge ab-kql">Cost Management</span>
+                        </div>
+                    </div>
+                    <div class="agent-card">
+                        <div class="agent-name">azure-resource-config-auditor</div>
+                        <div class="agent-role">Compliance &amp; Config Auditor</div>
+                        <div class="agent-desc">Audits Azure resource configuration against best practices. Checks SKU selection, redundancy settings, diagnostic settings, and security posture on demand.</div>
+                        <div class="agent-badges">
+                            <span class="agent-badge ab-kql">Read-only</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Coach section (hidden by default, Shift+C to reveal) -->
+        <section id="coach" class="coach-hidden">
+            <div class="wrap">
+                <div class="coach-banner">
+                    <span class="coach-label">Coach</span>
+                    Solution guides — visible only to coaches. Press Shift+C to hide.
+                </div>
+                <div class="section-label">Solutions</div>
+                <h2 class="section-title display">Solution Guides</h2>
+                <p class="section-desc" style="margin-bottom:2rem;">
+                    Mini-lectures, expected agent behavior, common failure modes, and debrief discussion guides.
+                    See the <a href="Coach/README.md">Coach README</a> for the full index.
+                </p>
+                <div class="coach-card-grid">
+                    <a class="coach-card" href="Coach/Solution-00.md">
+                        <div class="card-bg-number display">00</div>
+                        <div class="coach-num mono">SOL — 00</div>
+                        <div class="coach-title">Prerequisites &amp; Lab Setup</div>
+                        <div class="coach-desc">TF deploy walkthrough, config-sre-agent pitfalls, OAuth authorization, pre-flight checks.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/Solution-01.md">
+                        <div class="card-bg-number display">01</div>
+                        <div class="coach-num mono">SOL — 01</div>
+                        <div class="coach-title">Skills &amp; Knowledge Docs</div>
+                        <div class="coach-desc">Skill YAML anatomy, knowledge doc conventions, apply targeting, portal verification steps.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/Solution-02.md">
+                        <div class="card-bg-number display">02</div>
+                        <div class="coach-num mono">SOL — 02</div>
+                        <div class="coach-title">Subagents &amp; Incident Filters</div>
+                        <div class="coach-desc">SubAgent YAML anatomy, IncidentFilter routing logic, write-capability governance discussion.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/Solution-03.md">
+                        <div class="card-bg-number display">03</div>
+                        <div class="coach-num mono">SOL — 03</div>
+                        <div class="coach-title">Connectors, Repos &amp; Scheduled Tasks</div>
+                        <div class="coach-desc">Connector chain, repo link auth, scheduled task cron, manual portal trigger, debrief prompts.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/Solution-04.md">
+                        <div class="card-bg-number display">04</div>
+                        <div class="coach-num mono">SOL — 04</div>
+                        <div class="coach-title">Autonomous App Incident Response</div>
+                        <div class="coach-desc">Incident routing architecture, expected agent behavior, debrief: autonomous vs. manual.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/Solution-05.md">
+                        <div class="card-bg-number display">05</div>
+                        <div class="coach-num mono">SOL — 05</div>
+                        <div class="coach-title">Code Correlation &amp; GitHub</div>
+                        <div class="coach-desc">Inline code-analyzer architecture, OAuth prereq check, PR governance discussion.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/Solution-06.md">
+                        <div class="card-bg-number display">06</div>
+                        <div class="coach-num mono">SOL — 06</div>
+                        <div class="coach-title">Proactive Workflow Automation</div>
+                        <div class="coach-desc">Sample issue titles, expected triage behavior, idempotency check, production path discussion.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/Solution-07.md">
+                        <div class="card-bg-number display">07</div>
+                        <div class="coach-num mono">SOL — 07</div>
+                        <div class="coach-title">IaaS Service Recovery</div>
+                        <div class="coach-desc">AMA/Syslog path, run-command extension, expected remediation, write-capable agent governance.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/Solution-08.md">
+                        <div class="card-bg-number display">08</div>
+                        <div class="coach-num mono">SOL — 08</div>
+                        <div class="coach-title">Network Diagnostics (Interactive)</div>
+                        <div class="coach-desc">TA timing warning, expected prompts, IsFlowCapturedAtUDRHop KQL, interactive vs. autonomous debrief.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/Solution-09.md">
+                        <div class="card-bg-number display">09</div>
+                        <div class="coach-num mono">SOL — 09</div>
+                        <div class="coach-title">Autonomous NSG Remediation</div>
+                        <div class="coach-desc">NSG delete blast radius, governance provocation, interactive↔autonomous contrast, debrief guide.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <p>Azure SRE Agent RVAS · Microsoft Real Value Acceleration Program</p>
+            <div class="footer-links">
+                <a href="README.md">Docs</a>
+                <a href="Coach/README.md">Coach Index</a>
+                <a href="https://github.com/microsoft/frontier-sre-agent-rvas" target="_blank" rel="noopener">GitHub ↗</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Drawer -->
+    <div id="drawer-overlay"></div>
+    <div id="drawer" role="dialog" aria-modal="true" aria-label="Challenge content">
+        <div class="drawer-header">
+            <div class="drawer-breadcrumb">CHALLENGE / <span id="drawer-title">–</span></div>
+            <div style="display:flex;align-items:center;gap:.75rem;">
+                <div class="drawer-nav">
+                    <button class="drawer-nav-btn" id="drawer-prev" title="Previous challenge">← prev</button>
+                    <button class="drawer-nav-btn" id="drawer-next" title="Next challenge">next →</button>
+                </div>
+                <button class="drawer-close" id="drawer-close" aria-label="Close">✕</button>
+            </div>
+        </div>
+        <div class="drawer-body">
+            <div id="drawer-content" class="md-content"></div>
+        </div>
+    </div>
+
+    <script>
+        // ── Challenge card staggered entrance ──────────────────────────────
+        const cardObserver = new IntersectionObserver(entries => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    const cards = document.querySelectorAll('.challenge-card');
+                    cards.forEach((card, i) => {
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(20px)';
+                        card.style.transition = `opacity .5s ease ${i * 0.07}s, transform .5s ease ${i * 0.07}s`;
+                        setTimeout(() => {
+                            card.style.opacity = '1';
+                            card.style.transform = 'translateY(0)';
+                        }, 50);
+                    });
+                    cardObserver.disconnect();
+                }
+            });
+        }, { threshold: 0.05 });
+
+        const grid = document.querySelector('.challenges-grid');
+        if (grid) cardObserver.observe(grid);
+
+        // ── Active nav highlight ────────────────────────────────────────────
+        const sections = document.querySelectorAll('section[id]');
+        const navLinks = document.querySelectorAll('.nav-links a:not(.cta):not(.gh)');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(s => {
+                if (window.scrollY >= s.offsetTop - 100) current = s.id;
+            });
+            navLinks.forEach(a => {
+                a.classList.toggle('active', a.getAttribute('href') === `#${current}`);
+            });
+        }, { passive: true });
+
+        // ── Drawer: markdown rendering ──────────────────────────────────────
+        const drawer        = document.getElementById('drawer');
+        const drawerOverlay = document.getElementById('drawer-overlay');
+        const drawerContent = document.getElementById('drawer-content');
+        const drawerTitle   = document.getElementById('drawer-title');
+        const drawerPrev    = document.getElementById('drawer-prev');
+        const drawerNext    = document.getElementById('drawer-next');
+        const drawerClose   = document.getElementById('drawer-close');
+
+        const STUDENT_FILES = [
+            { label: 'CH-00', file: 'Student/Challenge-00.md', title: 'Prerequisites & Lab Setup' },
+            { label: 'CH-01', file: 'Student/Challenge-01.md', title: 'Skills & Knowledge Docs' },
+            { label: 'CH-02', file: 'Student/Challenge-02.md', title: 'Subagents & Incident Filters' },
+            { label: 'CH-03', file: 'Student/Challenge-03.md', title: 'Connectors, Repos & Scheduled Tasks' },
+            { label: 'CH-04', file: 'Student/Challenge-04.md', title: 'Autonomous App Incident Response' },
+            { label: 'CH-05', file: 'Student/Challenge-05.md', title: 'Code Correlation & GitHub Integration' },
+            { label: 'CH-06', file: 'Student/Challenge-06.md', title: 'Proactive Workflow Automation' },
+            { label: 'CH-07', file: 'Student/Challenge-07.md', title: 'IaaS Service Recovery' },
+            { label: 'CH-08', file: 'Student/Challenge-08.md', title: 'Network Diagnostics (Interactive)' },
+            { label: 'CH-09', file: 'Student/Challenge-09.md', title: 'Autonomous NSG Remediation' },
+        ];
+
+        const COACH_FILES = [
+            { label: 'SOL-00', file: 'Coach/Solution-00.md', title: 'Coach · Prerequisites & Lab Setup' },
+            { label: 'SOL-01', file: 'Coach/Solution-01.md', title: 'Coach · Skills & Knowledge Docs' },
+            { label: 'SOL-02', file: 'Coach/Solution-02.md', title: 'Coach · Subagents & Incident Filters' },
+            { label: 'SOL-03', file: 'Coach/Solution-03.md', title: 'Coach · Connectors, Repos & Scheduled Tasks' },
+            { label: 'SOL-04', file: 'Coach/Solution-04.md', title: 'Coach · Autonomous App Incident Response' },
+            { label: 'SOL-05', file: 'Coach/Solution-05.md', title: 'Coach · Code Correlation & GitHub' },
+            { label: 'SOL-06', file: 'Coach/Solution-06.md', title: 'Coach · Proactive Workflow Automation' },
+            { label: 'SOL-07', file: 'Coach/Solution-07.md', title: 'Coach · IaaS Service Recovery' },
+            { label: 'SOL-08', file: 'Coach/Solution-08.md', title: 'Coach · Network Diagnostics (Interactive)' },
+            { label: 'SOL-09', file: 'Coach/Solution-09.md', title: 'Coach · Autonomous NSG Remediation' },
+        ];
+
+        let currentIdx = -1;
+        let activeFiles = STUDENT_FILES;
+
+        function openDrawer(mdFile) {
+            const sIdx = STUDENT_FILES.findIndex(f => f.file === mdFile);
+            const cIdx = COACH_FILES.findIndex(f => f.file === mdFile);
+            if      (sIdx !== -1) { activeFiles = STUDENT_FILES; currentIdx = sIdx; }
+            else if (cIdx !== -1) { activeFiles = COACH_FILES;   currentIdx = cIdx; }
+            else                  { activeFiles = STUDENT_FILES; currentIdx = 0; }
+            loadAndRender(currentIdx);
+            drawer.classList.add('open');
+            drawerOverlay.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDrawer() {
+            drawer.classList.remove('open');
+            drawerOverlay.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        async function loadAndRender(idx) {
+            const entry = activeFiles[idx];
+            drawerTitle.textContent = entry.title;
+            drawerPrev.disabled = idx <= 0;
+            drawerNext.disabled = idx >= activeFiles.length - 1;
+            drawerContent.innerHTML = '<div class="drawer-loading">LOADING</div>';
+            drawer.querySelector('.drawer-body').scrollTop = 0;
+
+            try {
+                const res = await fetch(entry.file);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const text = await res.text();
+                drawerContent.innerHTML = marked.parse(text);
+                drawerContent.querySelectorAll('a[href]').forEach(a => {
+                    const href = a.getAttribute('href');
+                    if (href && href.endsWith('.md')) {
+                        a.addEventListener('click', e => {
+                            e.preventDefault();
+                            const base = entry.file.replace(/\/[^\/]+$/, '/');
+                            const resolved = new URL(href, 'http://x/' + base).pathname.replace(/^\//, '');
+                            const sMatch = STUDENT_FILES.findIndex(f => f.file === resolved);
+                            const cMatch = COACH_FILES.findIndex(f => f.file === resolved);
+                            if (sMatch !== -1) { activeFiles = STUDENT_FILES; currentIdx = sMatch; loadAndRender(sMatch); }
+                            else if (cMatch !== -1) { activeFiles = COACH_FILES; currentIdx = cMatch; loadAndRender(cMatch); }
+                        });
+                    } else if (href && (href.startsWith('http') || href.startsWith('//'))) {
+                        a.setAttribute('target', '_blank');
+                        a.setAttribute('rel', 'noopener noreferrer');
+                    }
+                });
+            } catch (err) {
+                drawerContent.innerHTML = `<p style="color:var(--stretch-color,#f43f5e);font-size:.8rem;">Failed to load ${entry.file}: ${err.message}</p>`;
+            }
+        }
+
+        drawerClose.addEventListener('click', closeDrawer);
+        drawerOverlay.addEventListener('click', closeDrawer);
+        drawerPrev.addEventListener('click', () => { if (currentIdx > 0) { currentIdx--; loadAndRender(currentIdx); } });
+        drawerNext.addEventListener('click', () => { if (currentIdx < activeFiles.length - 1) { currentIdx++; loadAndRender(currentIdx); } });
+
+        // ── Coach toast ─────────────────────────────────────────────────────
+        const coachToast = document.getElementById('coach-toast');
+        let toastTimer = null;
+        function showCoachToast(msg) {
+            coachToast.textContent = msg;
+            coachToast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => coachToast.classList.remove('show'), 2500);
+        }
+
+        if (sessionStorage.getItem('coachMode') === 'on') {
+            document.getElementById('coach').classList.remove('coach-hidden');
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeDrawer();
+            if (e.key === 'C' && e.shiftKey && !drawer.classList.contains('open')) {
+                const coachEl = document.getElementById('coach');
+                const nowHidden = coachEl.classList.toggle('coach-hidden');
+                sessionStorage.setItem('coachMode', nowHidden ? 'off' : 'on');
+                showCoachToast(nowHidden ? 'Coach mode disabled' : 'Coach mode enabled');
+                return;
+            }
+            if (!drawer.classList.contains('open')) return;
+            if (e.key === 'ArrowLeft' && currentIdx > 0)                      { currentIdx--; loadAndRender(currentIdx); }
+            if (e.key === 'ArrowRight' && currentIdx < activeFiles.length - 1) { currentIdx++; loadAndRender(currentIdx); }
+        });
+
+        // Intercept ALL .md links on the page
+        document.addEventListener('click', e => {
+            const link = e.target.closest('a[href]');
+            if (!link) return;
+            const href = link.getAttribute('href');
+            if (!href || !href.endsWith('.md')) return;
+            e.preventDefault();
+            openDrawer(href);
+        });
+    </script>
+    <script src="assets/js/shell.js"></script>
+    <div id="coach-toast"></div>
+
+</body>
+</html>
