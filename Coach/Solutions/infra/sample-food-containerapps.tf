@@ -1,26 +1,3 @@
-resource "azurerm_container_registry" "sample_food" {
-  name                          = local.sample_food_names.acr
-  resource_group_name           = azurerm_resource_group.sample_food.name
-  location                      = azurerm_resource_group.sample_food.location
-  sku                           = "Basic"
-  admin_enabled                 = false
-  public_network_access_enabled = true
-  tags                          = local.sample_food_tags
-}
-
-resource "azurerm_user_assigned_identity" "sample_food_container_app_pull" {
-  name                = local.sample_food_names.pull_identity
-  location            = azurerm_resource_group.sample_food.location
-  resource_group_name = azurerm_resource_group.sample_food.name
-  tags                = local.sample_food_tags
-}
-
-resource "azurerm_role_assignment" "sample_food_acr_pull" {
-  scope                = azurerm_container_registry.sample_food.id
-  role_definition_name = "AcrPull"
-  principal_id         = azurerm_user_assigned_identity.sample_food_container_app_pull.principal_id
-}
-
 resource "azurerm_container_app_environment" "sample_food" {
   name                       = local.sample_food_names.container_apps_environment
   location                   = azurerm_resource_group.sample_food.location
@@ -44,16 +21,6 @@ resource "azurerm_container_app" "sample_food_api" {
   revision_mode                = "Single"
   workload_profile_name        = "Consumption"
   tags                         = local.sample_food_tags
-
-  identity {
-    type         = "UserAssigned"
-    identity_ids = [azurerm_user_assigned_identity.sample_food_container_app_pull.id]
-  }
-
-  registry {
-    server   = azurerm_container_registry.sample_food.login_server
-    identity = azurerm_user_assigned_identity.sample_food_container_app_pull.id
-  }
 
   ingress {
     external_enabled           = true
@@ -104,10 +71,6 @@ resource "azurerm_container_app" "sample_food_api" {
       template[0].container[0].env,
     ]
   }
-
-  depends_on = [
-    azurerm_role_assignment.sample_food_acr_pull,
-  ]
 }
 
 resource "azurerm_container_app" "sample_food_frontend" {
@@ -117,16 +80,6 @@ resource "azurerm_container_app" "sample_food_frontend" {
   revision_mode                = "Single"
   workload_profile_name        = "Consumption"
   tags                         = local.sample_food_tags
-
-  identity {
-    type         = "UserAssigned"
-    identity_ids = [azurerm_user_assigned_identity.sample_food_container_app_pull.id]
-  }
-
-  registry {
-    server   = azurerm_container_registry.sample_food.login_server
-    identity = azurerm_user_assigned_identity.sample_food_container_app_pull.id
-  }
 
   ingress {
     external_enabled           = true
@@ -159,10 +112,7 @@ resource "azurerm_container_app" "sample_food_frontend" {
 
   lifecycle {
     ignore_changes = [
+      template[0].container[0].env,
     ]
   }
-
-  depends_on = [
-    azurerm_role_assignment.sample_food_acr_pull,
-  ]
 }

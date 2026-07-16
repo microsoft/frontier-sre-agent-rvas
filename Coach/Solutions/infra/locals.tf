@@ -125,8 +125,6 @@ locals {
     container_apps_subnet      = "snet-food-aca-infra"
     probe_subnet               = "snet-food-probe"
     route_table                = "rt-food-probe-to-firewall"
-    acr                        = substr("acr${local.demo_suffix}food", 0, 50)
-    pull_identity              = "id-food-pull"
     container_apps_environment = "cae-food"
     api_container_app          = "ca-food-api"
     frontend_container_app     = "ca-food-frontend"
@@ -136,12 +134,6 @@ locals {
     http_5xx_alert             = "alert-food-http-5xx"
   }
 
-  sample_food_images = {
-    api      = "grubify-api"
-    frontend = "grubify-frontend"
-    tag      = "latest"
-  }
-
-  sample_food_api_placeholder_image      = "${local.sample_food_names.acr}.azurecr.io/grubify-api:v1.0.0"
-  sample_food_frontend_placeholder_image = "${local.sample_food_names.acr}.azurecr.io/grubify-frontend:v1.0.0"
+  sample_food_api_placeholder_image      = "ghcr.io/microsoft/frontier-sre-agent-rvas/grubify-api:latest"
+  sample_food_frontend_placeholder_image = "ghcr.io/microsoft/frontier-sre-agent-rvas/grubify-web:latest"
 }

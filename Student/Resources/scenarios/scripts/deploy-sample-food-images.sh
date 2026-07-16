@@ -1,31 +1,30 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Deploy (or restore) the Grubify Container Apps to the canonical GHCR images.
+# Use this after initial Terraform apply or after a fault-injection scenario.
+
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 
-skip_build=""
+GHCR_API_IMAGE="ghcr.io/microsoft/frontier-sre-agent-rvas/grubify-api:latest"
+GHCR_WEB_IMAGE="ghcr.io/microsoft/frontier-sre-agent-rvas/grubify-web:latest"
+
 status_only=""
 for arg in "$@"; do
   case "${arg}" in
-    --skip-build|--retry)
-      skip_build="true"
-      ;;
     --status)
       status_only="true"
       ;;
     *)
-      echo "Usage: $0 [--skip-build|--retry|--status]" >&2
+      echo "Usage: $0 [--status]" >&2
       exit 1
       ;;
   esac
 done
 
 resource_group="$(sample_food_resource_group_name)"
-acr_name="$(tf_output sample_food_container_registry_name)"
 api_app_name="$(tf_output sample_food_api_container_app_name)"
 frontend_app_name="$(tf_output sample_food_frontend_container_app_name)"
-source_repo="$(tf_output sample_food_app_source_repo)"
-source_ref="$(tf_output sample_food_app_source_ref)"
 
 container_app_url() {
   local app_name="$1"
@@ -47,7 +46,6 @@ frontend_url="$(container_app_url "${frontend_app_name}")"
 if [[ -n "${status_only}" ]]; then
   echo "Sample Food Ordering App status"
   echo "Resource group: ${resource_group}"
-  echo "ACR:            ${acr_name}"
   echo "API app:        ${api_app_name}"
   echo "Frontend app:   ${frontend_app_name}"
   echo "API URL:        ${api_url:-not available}"
@@ -55,37 +53,11 @@ if [[ -n "${status_only}" ]]; then
   exit 0
 fi
 
-acr_login_server="$(az acr show --name "${acr_name}" --query loginServer --output tsv)"
-api_image="${acr_login_server}/grubify-api:latest"
-frontend_image="${acr_login_server}/grubify-frontend:latest"
-
-if [[ -z "${skip_build}" ]]; then
-  echo "Building API image from ${source_repo}#${source_ref}:GrubifyApi"
-  az acr build \
-    --registry "${acr_name}" \
-    --image "grubify-api:latest" \
-    --file "Dockerfile" \
-    "${source_repo}#${source_ref}:GrubifyApi" \
-    --no-logs \
-    --output none
-
-  echo "Building frontend image from ${source_repo}#${source_ref}:grubify-frontend"
-  az acr build \
-    --registry "${acr_name}" \
-    --image "grubify-frontend:latest" \
-    --file "Dockerfile" \
-    "${source_repo}#${source_ref}:grubify-frontend" \
-    --no-logs \
-    --output none
-else
-  echo "Skipping image builds; deploying existing latest tags from ${acr_login_server}"
-fi
-
-echo "Updating API Container App image"
+echo "Deploying API from ${GHCR_API_IMAGE}"
 az containerapp update \
   --name "${api_app_name}" \
   --resource-group "${resource_group}" \
-  --image "${api_image}" \
+  --image "${GHCR_API_IMAGE}" \
   --output none
 
 api_url="$(container_app_url "${api_app_name}")"
@@ -94,11 +66,11 @@ if [[ -z "${api_url}" ]]; then
   exit 1
 fi
 
-echo "Updating frontend Container App image and API endpoint"
+echo "Deploying frontend from ${GHCR_WEB_IMAGE}"
 az containerapp update \
   --name "${frontend_app_name}" \
   --resource-group "${resource_group}" \
-  --image "${frontend_image}" \
+  --image "${GHCR_WEB_IMAGE}" \
   --set-env-vars "REACT_APP_API_BASE_URL=${api_url}/api" \
   --output none
 

@@ -185,7 +185,6 @@ output "sample_food_resource_names" {
     resource_group             = azurerm_resource_group.sample_food.name
     vnet                       = azurerm_virtual_network.sample_food.name
     container_apps_environment = azurerm_container_app_environment.sample_food.name
-    acr                        = azurerm_container_registry.sample_food.name
     api_container_app          = azurerm_container_app.sample_food_api.name
     frontend_container_app     = azurerm_container_app.sample_food_frontend.name
     app_insights               = azurerm_application_insights.sample_food.name
@@ -214,15 +213,6 @@ output "sample_food_network" {
   }
 }
 
-output "sample_food_container_registry_name" {
-  description = "Azure Container Registry name used for Sample Food Ordering App images."
-  value       = azurerm_container_registry.sample_food.name
-}
-
-output "sample_food_container_registry_login_server" {
-  description = "Azure Container Registry login server used for Sample Food Ordering App images."
-  value       = azurerm_container_registry.sample_food.login_server
-}
 
 output "sample_food_api_container_app_name" {
   description = "Sample Food Ordering API Container App name."
@@ -254,12 +244,3 @@ output "sample_food_application_insights_app_id" {
   value       = azurerm_application_insights.sample_food.app_id
 }
 
-output "sample_food_app_source_repo" {
-  description = "Git repository that hosts the Sample Food / Grubify application source (under Student/Resources/grubify/)."
-  value       = "https://github.com/microsoft/frontier-sre-agent-rvas.git"
-}
-
-output "sample_food_app_source_ref" {
-  description = "Git ref used by Sample Food Ordering App image deployment scripts."
-  value       = "main"
-}
