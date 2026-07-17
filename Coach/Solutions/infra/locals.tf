@@ -135,5 +135,5 @@ locals {
   }
 
   sample_food_api_placeholder_image      = "ghcr.io/microsoft/frontier-sre-agent-rvas/grubify-api:latest"
-  sample_food_frontend_placeholder_image = "ghcr.io/microsoft/frontier-sre-agent-rvas/grubify-web:latest"
+  sample_food_frontend_placeholder_image = "ghcr.io/microsoft/frontier-sre-agent-rvas/grubify-frontend:latest"
 }

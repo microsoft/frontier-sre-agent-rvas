@@ -27,7 +27,7 @@ resource "azurerm_application_insights" "agent" {
   resource_group_name           = azurerm_resource_group.agent.name
   application_type              = "web"
   workspace_id                  = azurerm_log_analytics_workspace.agent.id
-  local_authentication_disabled = true
+  local_authentication_enabled  = false
   tags                          = local.resource_tags
 }
 

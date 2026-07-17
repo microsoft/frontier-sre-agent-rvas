@@ -244,3 +244,65 @@ output "sample_food_application_insights_app_id" {
   value       = azurerm_application_insights.sample_food.app_id
 }
 
+# ─── Parking App Outputs ───────────────────────────────────────────────────────
+
+output "parking_lisbon_url" {
+  description = "HTTPS URL for the Lisbon Parking API Container App."
+  value       = "https://${azurerm_container_app.parking_lisbon.ingress[0].fqdn}"
+}
+
+output "parking_berlin_url" {
+  description = "HTTPS URL for the Berlin Parking API Container App."
+  value       = "https://${azurerm_container_app.parking_berlin.ingress[0].fqdn}"
+}
+
+output "parking_chaos_control_url" {
+  description = "HTTPS URL for the Chaos Control Container App."
+  value       = "https://${azurerm_container_app.chaos_control.ingress[0].fqdn}"
+}
+
+output "parking_vm_health_control_url" {
+  description = "HTTPS URL for the VM Health Control Container App."
+  value       = "https://${azurerm_container_app.vm_health_control.ingress[0].fqdn}"
+}
+
+output "parking_madrid_vm_name" {
+  description = "Name of the Madrid Windows Server VM (parking API on port 3002)."
+  value       = var.deploy_madrid_vm ? azurerm_windows_virtual_machine.madrid[0].name : ""
+}
+
+output "parking_madrid_vm_private_ip" {
+  description = "Private IP address of the Madrid VM."
+  value       = var.deploy_madrid_vm ? azurerm_network_interface.madrid[0].private_ip_address : ""
+}
+
+output "parking_madrid_api_url" {
+  description = "Madrid Parking API URL (private IP, accessible within the VNet on port 3002)."
+  value       = var.deploy_madrid_vm ? "http://${azurerm_network_interface.madrid[0].private_ip_address}:3002" : ""
+}
+
+output "parking_paris_vm_name" {
+  description = "Name of the Paris Ubuntu Server VM (parking API on port 3003)."
+  value       = var.deploy_paris_vm ? azurerm_linux_virtual_machine.paris[0].name : ""
+}
+
+output "parking_paris_vm_private_ip" {
+  description = "Private IP address of the Paris VM."
+  value       = var.deploy_paris_vm ? azurerm_network_interface.paris[0].private_ip_address : ""
+}
+
+output "parking_paris_api_url" {
+  description = "Paris Parking API URL (private IP, accessible within the VNet on port 3003)."
+  value       = var.deploy_paris_vm ? "http://${azurerm_network_interface.paris[0].private_ip_address}:3003" : ""
+}
+
+output "parking_resource_groups" {
+  description = "Resource group names for each parking app component."
+  value = {
+    lisbon  = azurerm_resource_group.parking_lisbon.name
+    berlin  = azurerm_resource_group.parking_berlin.name
+    madrid  = azurerm_resource_group.parking_madrid.name
+    paris   = azurerm_resource_group.parking_paris.name
+    chaos   = azurerm_resource_group.parking_chaos.name
+  }
+}
