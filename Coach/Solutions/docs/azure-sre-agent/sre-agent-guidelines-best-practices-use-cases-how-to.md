@@ -113,7 +113,7 @@ Key principle that must not be violated:
   (network/infra/app) ⇒ *1 agent per layer* (destroys cross-layer correlation); stream-aligned
   teams (1 team = 1 workload) ⇒ *1 agent per app* (always-on ×N). Team expertise maps to
   **subagents** (the internal axis, *Inverse Conway Maneuver*), not to the number of agents.
-  Details: [fleet §4.1](architectural-guide-lines/azure-sre-agent-fleet-architecture-guidelines.md#41-un-agent-per-team-anti-pattern-strutturale-legge-di-conway).
+  Details: [fleet §4.1](architectural-guide-lines/azure-sre-agent-fleet-architecture-guidelines.md#41-one-agent-per-team-a-structural-anti-pattern-conways-law).
   Sources: [Conway's Law](https://martinfowler.com/bliki/ConwaysLaw.html),
   [sub-agents](https://learn.microsoft.com/en-us/azure/sre-agent/sub-agents),
   [Team Topologies](https://teamtopologies.com/key-concepts).
@@ -299,14 +299,14 @@ kind: Skill
 metadata:
   name: traffic-analytics-kql-analysis
 spec:
-  description: Query and interpret Traffic Analytics records...   # ← la description guida il caricamento automatico
-  content_file: ./traffic-analytics-kql-analysis.md              # ← il SKILL.md con la procedura
-  tools:                                                          # ← least-privilege: SOLO read
+  description: Query and interpret Traffic Analytics records...   # ← the description drives automatic loading
+  content_file: ./traffic-analytics-kql-analysis.md              # ← the SKILL.md with the procedure
+  tools:                                                          # ← least-privilege: read ONLY
     - RunAzCliReadCommands
     - QueryLogAnalyticsByWorkspaceId
     - GetAzCliHelp
   safety:
-    default_mode: read_only                                      # ← guardrail a livello skill
+    default_mode: read_only                                      # ← skill-level guardrail
     requires_approval_for_actions: true
 ```
 
@@ -361,9 +361,9 @@ kind: SubAgent
 metadata:
   name: network-traffic-analyst
 spec:
-  agent_type: Autonomous            # capability dichiarata (vedi nota governance)
+  agent_type: Autonomous            # declared capability (see governance note)
   enable_skills: true
-  allowed_skills:                   # ← scoping: le 5 skill di dominio rete (cap ufficiale: max 5 attive)
+  allowed_skills:                   # ← scoping: the 5 network-domain skills (official cap: max 5 active)
     - vnet-flow-logs-and-ingestion
     - traffic-analytics-kql-analysis
     - connectivity-diagnostics
@@ -373,13 +373,13 @@ spec:
   system_prompt: |-
     You are the networking specialist... investigate first, then apply the smallest
     reversible remediation and verify... NGINX/web-tier is OUT OF SCOPE → defer to iaas-vm-incident-handler.
-  tools:                            # ← qui c'è il write: è un remediation-capable subagent
+  tools:                            # ← here is the write: it's a remediation-capable subagent
     - RunAzCliReadCommands
     - RunAzCliWriteCommands
     - GetAzCliHelp
     - QueryLogAnalyticsByWorkspaceId
   mcp_tools:
-    - microsoft-learn-mcp/*         # ← grant per-subagent (NON basta la visibilità meta-agent)
+    - microsoft-learn-mcp/*         # ← per-subagent grant (the meta-agent visibility is NOT enough)
   handoffs: []
 ```
 
@@ -477,10 +477,10 @@ Source: [Connectors — individual vs wildcard](https://learn.microsoft.com/en-u
 `network-traffic-analyst` combines **Subagent + 7 Skills + Tool read/write + MCP + Knowledge**:
 
 ```text
-Subagent (Domain Expert "rete")
- ├─ system_prompt ......... persona + confini (nginx fuori scope → defer)
+Subagent (Domain Expert "network")
+ ├─ system_prompt ......... persona + boundaries (nginx out of scope → defer)
  ├─ tools ................. read (evidence) + RunAzCliWriteCommands (remediation P3)
- ├─ allowed_skills (7) .... procedure di dominio, auto-caricate (P2) — ma max 5 attive!
+ ├─ allowed_skills (7) .... domain procedures, auto-loaded (P2) — but max 5 active!
  ├─ mcp_tools ............. microsoft-learn-mcp/* → grounding docs (P5)
  └─ (Knowledge vnet-flow-logs) .. architecture.md, kql-catalog.md via SearchMemory (P1 grounding)
 ```
@@ -513,12 +513,12 @@ The reactive chain is the operational core of SRE Agent: it turns an **alert** i
 ```mermaid
 flowchart LR
   ALERT["Alert / Incident"] --> PLAT["Incident platform<br/>scanner 1 min, ack, merge"]
-  PLAT --> RP["Response plan / Incident filter<br/>severita x titolo x servizio -> subagent + mode"]
+  PLAT --> RP["Response plan / Incident filter<br/>severity x title x service -> subagent + mode"]
   RP --> SA["Subagent handler<br/>tools read/write, skills, knowledge, connectors"]
   SA --> GATE{"Permission gate<br/>mode Review / tool access policy / hook"}
   GATE -->|allow| ACT["Remediation + verify"]
-  GATE -->|deny / approva| HUMAN["Approvazione umana (SRE Admin)"]
-  ACT --> WB["Write-back incidente (ack/close)<br/>+ notifica (Teams/Outlook) + ticket/issue"]
+  GATE -->|deny / approve| HUMAN["Human approval (SRE Admin)"]
+  ACT --> WB["Write-back incident (ack/close)<br/>+ notification (Teams/Outlook) + ticket/issue"]
 ```
 
 Validated steps: the agent (1) **acknowledges** the alert, (2) **queries** observability, (3) **correlates**
@@ -572,11 +572,11 @@ metadata:
 spec:
   incidentPlatform: AzMonitor
   isEnabled: true
-  priorities: [Sev2]                        # ← dimensione 1: severità
-  titleContains: nginx                       # ← dimensione 2: titolo (case-insensitive, single-token)
-  handlingAgent: iaas-vm-incident-handler    # ← a chi instrada
-  agentMode: Autonomous                       # ← autonomia (qui, NON nel subagent)
-  maxAutomatedInvestigationAttempts: 2        # ← retry prima dell'escalation umana
+  priorities: [Sev2]                        # ← dimension 1: severity
+  titleContains: nginx                       # ← dimension 2: title (case-insensitive, single-token)
+  handlingAgent: iaas-vm-incident-handler    # ← where to route
+  agentMode: Autonomous                       # ← autonomy (here, NOT in the subagent)
+  maxAutomatedInvestigationAttempts: 2        # ← retry before human escalation
   customInstructions: >-
     Investigate Sev2 web-tier alerts where NGINX is down... restart autonomously and verify...
 ```
@@ -763,12 +763,12 @@ metadata:
   name: flow-log-ingestion-freshness
 spec:
   description: Read-only check that VNet Flow Logs and Traffic Analytics produce recent data.
-  schedule: "0 */6 * * *"         # ← cron 5 campi: min hour day-of-month month day-of-week (qui: ogni 6 ore)
-  time_zone: UTC                   # ← fuso del cron
-  enabled: true                    # ← on/off (Off = task disattivato)
-  agent: network-traffic-analyst   # ← QUALE subagent esegue
-  mode: Autonomous                 # ← autonomia (qui, come per i response plan)
-  prompt: >-                       # ← il "cosa fare" in linguaggio naturale
+  schedule: "0 */6 * * *"         # ← 5-field cron: min hour day-of-month month day-of-week (here: every 6 hours)
+  time_zone: UTC                   # ← cron time zone
+  enabled: true                    # ← on/off (Off = task disabled)
+  agent: network-traffic-analyst   # ← WHICH subagent runs
+  mode: Autonomous                 # ← autonomy (here, as for response plans)
+  prompt: >-                       # ← the "what to do" in natural language
     Check whether VNet Flow Logs are producing recent data... Do not change resources.
 ```
 
@@ -785,11 +785,11 @@ spec:
 
 ```mermaid
 flowchart LR
-  CRON["Scheduled task: cron + prompt + mode"] --> SA["Subagent esecutore (agent)"]
+  CRON["Scheduled task: cron + prompt + mode"] --> SA["Executor subagent (agent)"]
   SA --> SK["Skill allow-listed"]
-  SA --> KB["Knowledge: baseline, runbook, profili"]
-  SA --> TL["Tool e connettori (per lo piu read-only)"]
-  SA --> OUT["Report a Teams, Outlook o incident platform"]
+  SA --> KB["Knowledge: baseline, runbook, profiles"]
+  SA --> TL["Tools and connectors (mostly read-only)"]
+  SA --> OUT["Report to Teams, Outlook, or incident platform"]
 ```
 
 **Proactive security principle**: **most** proactive tasks are **read-only**
@@ -937,13 +937,13 @@ SRE Agent evaluates every tool call through a **priority control chain** (valida
 
 ```mermaid
 flowchart TB
-  CALL["Tool call proposta"] --> H{"1. Hook (Stop / PostToolUse)"}
-  H -->|allow| RUN["Esegue"]
-  H -->|deny| BLK["Bloccata"]
-  H -->|nessuna opinione| P{"2. Tool access policy"}
-  P -->|deny globale| BLK
+  CALL["Proposed tool call"] --> H{"1. Hook (Stop / PostToolUse)"}
+  H -->|allow| RUN["Executes"]
+  H -->|deny| BLK["Blocked"]
+  H -->|no opinion| P{"2. Tool access policy"}
+  P -->|global deny| BLK
   P -->|allow| RUN
-  P -->|ask| ASKP["Approvazione"]
+  P -->|ask| ASKP["Approval"]
   P -->|no match| DEF{"3. Default approval (connector Ask)"}
   DEF -->|ask| ASKP
   DEF -->|no| M{"4. Run mode"}
@@ -1218,19 +1218,19 @@ The target state that combines everything:
 flowchart TB
   subgraph CP["Control plane (Terraform)"]
     AG["Agent + UAMI (Reader + OBO)"]
-    RB["RBAC su RG selezionati"]
+    RB["RBAC on selected RGs"]
     IP["Incident platform (Azure Monitor)"]
     TC["Telemetry connectors (LA + App Insights)"]
   end
   subgraph DP["Data plane (YAML + API)"]
-    SUB["Subagents per dominio"]
-    SK["Skills per dominio"]
+    SUB["Subagents by domain"]
+    SK["Skills by domain"]
     KB["Knowledge base"]
     CN["Connectors (MCP, GitHub, Teams)"]
-    RPL["Response plans (dominio x severita)"]
-    STK["Scheduled tasks (proattivi)"]
+    RPL["Response plans (domain x severity)"]
+    STK["Scheduled tasks (proactive)"]
   end
-  subgraph GOV["Governance trasversale"]
+  subgraph GOV["Cross-cutting governance"]
     TAP["Tool access policy (global deny)"]
     HK["Hooks (audit)"]
     RM["Run modes (Review in prod)"]

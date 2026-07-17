@@ -164,23 +164,23 @@ Two orthogonal axes govern the entire architecture:
 
 ```mermaid
 flowchart LR
-  subgraph ASSE_ESTERNO["Asse esterno — SEGMENTAZIONE (quanti agent)"]
+  subgraph ASSE_ESTERNO["External axis — SEGMENTATION (how many agents)"]
     direction TB
-    B1["Confine: Platform vs Application (CAF)"]
-    B2["Confine: Prod vs Non-Prod"]
-    B3["Confine: Regione / Residency"]
-    B4["Confine: Autorita di approvazione indipendente (BU/governance)"]
-    B5["Confine: Postura permessi (Reader vs Privileged)"]
+    B1["Boundary: Platform vs Application (CAF)"]
+    B2["Boundary: Prod vs Non-Prod"]
+    B3["Boundary: Region / Residency"]
+    B4["Boundary: Independent approval authority (BU/governance)"]
+    B5["Boundary: Permission posture (Reader vs Privileged)"]
   end
-  subgraph ASSE_INTERNO["Asse interno — SPECIALIZZAZIONE (dentro 1 agent)"]
+  subgraph ASSE_INTERNO["Internal axis — SPECIALIZATION (inside 1 agent)"]
     direction TB
-    D1["Subagent per dominio: rete / IaaS / PaaS / dati / AI / RCA-codice / FinOps / security"]
-    D2["Response plan: routing per severità / servizio / keyword"]
-    D3["Skill + Knowledge: scoping per app / dominio"]
+    D1["Subagent by domain: network / IaaS / PaaS / data / AI / RCA-code / FinOps / security"]
+    D2["Response plan: routing by severity / service / keyword"]
+    D3["Skill + Knowledge: scoping by app / domain"]
     D4["Run mode per plan/task + Tool access policy"]
   end
-  ASSE_ESTERNO -->|"determina il NUMERO di agent"| FLEET["Flotta di agent (piccola)"]
-  ASSE_INTERNO -->|"determina la RICCHEZZA di ciascun agent"| FLEET
+  ASSE_ESTERNO -->|"determines the NUMBER of agents"| FLEET["Fleet of agents (small)"]
+  ASSE_INTERNO -->|"determines the RICHNESS of each agent"| FLEET
 ```
 
 - **External axis (segmentation → *how many*):** add an agent **only** when you cross a non-collapsible
@@ -255,11 +255,11 @@ That is why the worksheet (§[5.2](#52-agent-counting-method-worksheet)) counts 
 
 ```mermaid
 flowchart TD
-  T["Un team va coperto (network / infra / app / DB / sec / BU)"] --> Q1{"Il team e un'AUTORITA DI APPROVAZIONE indipendente che, per SoD, non deve approvare azioni altrui?"}
-  Q1 -->|"No (competenza tecnica)"| INT["ASSE INTERNO: aggiungi un SUBAGENT di dominio nell'agent esistente (stesso thread, handoff). Ownership via ruoli SRE Agent per-agent + routing"]
-  Q1 -->|Si| Q2{"...e attraversa anche un confine DURO/FORTE? (residency, Prod vs Non-Prod, postura permessi)"}
-  Q2 -->|No| INT2["Ancora ASSE INTERNO: un solo agent, con ruoli SRE Agent per separare CHI approva COSA"]
-  Q2 -->|Si| EXT["ASSE ESTERNO: nuovo agent, ma il driver e il CONFINE di governance, non il team"]
+  T["A team needs to be covered (network / infra / app / DB / sec / BU)"] --> Q1{"Is the team an independent APPROVAL AUTHORITY that, for SoD, must not approve others' actions?"}
+  Q1 -->|"No (technical competence)"| INT["INTERNAL AXIS: add a domain SUBAGENT to the existing agent (same thread, handoff). Ownership via per-agent SRE Agent roles + routing"]
+  Q1 -->|Yes| Q2{"...and does it also cross a HARD/STRONG boundary? (residency, Prod vs Non-Prod, permission posture)"}
+  Q2 -->|No| INT2["Still INTERNAL AXIS: a single agent, with SRE Agent roles to separate WHO approves WHAT"]
+  Q2 -->|Yes| EXT["EXTERNAL AXIS: new agent, but the driver is the governance BOUNDARY, not the team"]
 ```
 
 **Pros / cons and trade-offs of the resolution:**
@@ -402,16 +402,16 @@ Given an agent, richness is achieved **inside**, not by multiplying agents. Laye
 
 ```mermaid
 flowchart TB
-  ALERT["Incident platform (Azure Monitor / PagerDuty / ServiceNow)"] --> RP["Response plans (routing per severità/servizio/keyword)"]
-  SCHED["Scheduled tasks (proattivo)"] --> ORCH
-  RP --> ORCH["Orchestrator (agent principale)"]
-  ORCH -->|handoff| SANET["Subagent: Rete"]
+  ALERT["Incident platform (Azure Monitor / PagerDuty / ServiceNow)"] --> RP["Response plans (routing by severity/service/keyword)"]
+  SCHED["Scheduled tasks (proactive)"] --> ORCH
+  RP --> ORCH["Orchestrator (main agent)"]
+  ORCH -->|handoff| SANET["Subagent: Network"]
   ORCH -->|handoff| SAIAAS["Subagent: IaaS/VM"]
   ORCH -->|handoff| SAPAAS["Subagent: PaaS/Container"]
-  ORCH -->|handoff| SADATA["Subagent: Dati/DB"]
-  ORCH -->|handoff| SARCA["Subagent: RCA/Codice"]
+  ORCH -->|handoff| SADATA["Subagent: Data/DB"]
+  ORCH -->|handoff| SARCA["Subagent: RCA/Code"]
   ORCH -->|handoff| SAFIN["Subagent: FinOps"]
-  SANET & SAIAAS & SAPAAS & SADATA & SARCA & SAFIN --> SK["Skill + Knowledge scoping per dominio/app"]
+  SANET & SAIAAS & SAPAAS & SADATA & SARCA & SAFIN --> SK["Skill + Knowledge scoping by domain/app"]
   SK --> GATE["Guardrail: Run mode (Review/Autonomous) + Tool access policy + Hook (Stop/PostToolUse)"]
 ```
 
@@ -470,7 +470,7 @@ Diagram of the single agent with the entire catalog (grouped by family):
 
 ```mermaid
 flowchart TB
-  TRIG["Ingresso: response plan (routing per servizio/keyword) · /agent · scheduled task"] --> ROUTER["incident-triage-router (Workflow Executor)"]
+  TRIG["Entry point: response plan (routing by service/keyword) · /agent · scheduled task"] --> ROUTER["incident-triage-router (Workflow Executor)"]
   ROUTER --> COMPUTE
   ROUTER --> DATA
   ROUTER --> NETSTORE
@@ -481,18 +481,18 @@ flowchart TB
     C3["container-apps-expert"]
     C4["appservice-functions-expert"]
   end
-  subgraph DATA["Dati & Messaging"]
+  subgraph DATA["Data & Messaging"]
     E1["sql-database-expert"]
     E2["postgresql-mysql-expert"]
     E3["cosmos-nosql-expert"]
     E4["cache-redis-expert"]
     E5["messaging-integration-expert"]
   end
-  subgraph NETSTORE["Rete & Storage"]
+  subgraph NETSTORE["Network & Storage"]
     N1["network-expert"]
     N2["storage-expert"]
   end
-  subgraph XCUT["Trasversali"]
+  subgraph XCUT["Cross-cutting"]
     X1["observability-expert"]
     X2["identity-security-expert"]
     X3["config-compliance-auditor"]
@@ -501,8 +501,8 @@ flowchart TB
     X6["ai-platform-expert / data-platform-expert"]
   end
   C2 -.->|handoff RCA| X5
-  C1 -.->|handoff rete| N1
-  E3 -.->|handoff metriche| X1
+  C1 -.->|handoff network| N1
+  E3 -.->|handoff metrics| X1
 ```
 
 Definition examples (official YAML schema: `name`, `system_prompt`, `handoff_description`,
@@ -512,13 +512,13 @@ Definition examples (official YAML schema: `name`, `system_prompt`, `handoff_des
 ```yaml
 name: aks-kubernetes-expert
 system_prompt: |
-  Sei uno specialista Azure Kubernetes Service. Diagnostichi CrashLoopBackOff,
-  pod Pending, nodi NotReady, errori di image pull, saturazione risorse e problemi
-  di HPA/ingress; correli eventi del control plane con i workload. Proponi (e, se il
-  response plan è Autonomous, applichi) remediation: restart di deployment, scale dei
-  node pool, rollback di release. Non uscire dal dominio AKS: per RCA del codice fai
-  handoff a rca-source-code-expert, per problemi di rete a network-expert.
-handoff_description: Tutti i problemi AKS/Kubernetes (cluster, node pool, pod, ingress, HPA)
+  You are an Azure Kubernetes Service specialist. You diagnose CrashLoopBackOff,
+  pod Pending, NotReady nodes, image pull errors, resource saturation, and HPA/ingress
+  problems; you correlate control plane events with workloads. You propose (and, if the
+  response plan is Autonomous, apply) remediation: deployment restart, node pool scaling,
+  release rollback. Do not leave the AKS domain: for code RCA hand off to
+  rca-source-code-expert, for network problems to network-expert.
+handoff_description: All AKS/Kubernetes problems (cluster, node pool, pod, ingress, HPA)
 tools:
   - RunAzCliReadCommands
   - RunAzCliWriteCommands
@@ -533,11 +533,11 @@ handoffs:
 ```yaml
 name: cosmos-nosql-expert
 system_prompt: |
-  Sei uno specialista Azure Cosmos DB. Diagnostichi throttling 429 (RU/s), hot
-  partition, latenza di lettura/scrittura, problemi di consistenza e di replica
-  multi-region. Analizzi metriche di RU e chiavi di partizione. Sei read-only:
-  proponi mitigazioni (aumento RU, revisione partition key) senza applicarle.
-handoff_description: Tutti i problemi Cosmos DB (RU throttling, partizioni, consistenza, multi-region)
+  You are an Azure Cosmos DB specialist. You diagnose 429 throttling (RU/s), hot
+  partition, read/write latency, consistency and multi-region replication problems.
+  You analyze RU metrics and partition keys. You are read-only:
+  you propose mitigations (RU increase, partition key revision) without applying them.
+handoff_description: All Cosmos DB problems (RU throttling, partitions, consistency, multi-region)
 tools:
   - RunAzCliReadCommands
   - QueryLogAnalyticsByWorkspaceId
@@ -620,12 +620,12 @@ flowchart TB
     IDN["Identity"]
   end
   subgraph APP["Application Landing Zones (N spoke)"]
-    A1["App 1..k — Prod (IaaS/PaaS/container/dati/AI)"]
+    A1["App 1..k — Prod (IaaS/PaaS/container/data/AI)"]
     A2["App 1..m — Non-Prod"]
   end
-  PLATAG["🅰 Platform SRE Agent (Review sulla rete cross-spoke)"] --- CONN & MGMT & IDN
+  PLATAG["🅰 Platform SRE Agent (Review on the cross-spoke network)"] --- CONN & MGMT & IDN
   APPPROD["🅱 Application SRE Agent — PROD"] --- A1
-  APPNP["🅲 Application SRE Agent — NON-PROD (più Autonomous)"] --- A2
+  APPNP["🅲 Application SRE Agent — NON-PROD (more Autonomous)"] --- A2
   PLATAG -.->|"subagent: network / monitoring / identity"| CONN
   APPPROD -.->|"subagent: iaas / paas / data / ai / rca / finops"| A1
 ```
@@ -663,7 +663,7 @@ When to **split the Application agents further** (for large *N*, 50-100+ apps):
 ```mermaid
 flowchart LR
   C["Crawl: 1 agent (Non-Prod, Reader)"] --> W["Walk: 2-4 agent (Platform + App-Prod + Non-Prod)"]
-  W --> R["Run: flotta 4-8 agent governata (per confine, non per app)"]
+  W --> R["Run: governed fleet of 4-8 agents (by boundary, not by app)"]
 ```
 
 Source for the gradual path (Reader → Review actions → tested Autonomous): [permissions](https://learn.microsoft.com/en-us/azure/sre-agent/permissions),
@@ -694,19 +694,19 @@ Decision tree: "should I create a **new** agent for this estate?":
 
 ```mermaid
 flowchart TD
-  START["Nuova estate da coprire (app/RG/subscription)"] --> Q1{"Regione/residency diversa dagli agent esistenti?"}
-  Q1 -->|Sì| NEW["➕ Nuovo agent (confine HARD S1)"]
-  Q1 -->|No| Q2{"Ambiente diverso? (Prod vs Non-Prod da isolare)"}
-  Q2 -->|Sì| NEW
-  Q2 -->|No| Q3{"Autorità di approvazione/ownership diversa? (team che non deve approvare altrui)"}
-  Q3 -->|Sì| NEW
-  Q3 -->|No| Q4{"Postura di permessi incompatibile? (Reader-only vs Privileged)"}
-  Q4 -->|Sì| NEW
-  Q4 -->|No| Q5{"Serve chargeback/isolamento sicurezza non ottenibile coi tag/RBAC?"}
-  Q5 -->|Sì| NEW
-  Q5 -->|No| Q6{"L'agent esistente satura i limiti? (5 skill attive, ~80 tool, sprawl RG)"}
-  Q6 -->|Sì| NEW
-  Q6 -->|No| REUSE["♻️ Riusa un agent esistente: aggiungi RG allo scope + subagent/skill/knowledge + routing"]
+  START["New estate to cover (app/RG/subscription)"] --> Q1{"Region/residency different from existing agents?"}
+  Q1 -->|Yes| NEW["➕ New agent (HARD boundary S1)"]
+  Q1 -->|No| Q2{"Different environment? (Prod vs Non-Prod to isolate)"}
+  Q2 -->|Yes| NEW
+  Q2 -->|No| Q3{"Different approval/ownership authority? (team that must not approve others)"}
+  Q3 -->|Yes| NEW
+  Q3 -->|No| Q4{"Incompatible permission posture? (Reader-only vs Privileged)"}
+  Q4 -->|Yes| NEW
+  Q4 -->|No| Q5{"Need chargeback/security isolation not achievable with tags/RBAC?"}
+  Q5 -->|Yes| NEW
+  Q5 -->|No| Q6{"Does the existing agent saturate the limits? (5 active skills, ~80 tools, RG sprawl)"}
+  Q6 -->|Yes| NEW
+  Q6 -->|No| REUSE["♻️ Reuse an existing agent: add RG to scope + subagent/skill/knowledge + routing"]
 ```
 
 Fleet design checklist (one-page):
@@ -872,15 +872,15 @@ to most custom):
 
 ```mermaid
 flowchart TD
-  A["Problema/incidente che tocca più scope o team"] --> Q1{"Gli incidenti cross-scope sono frequenti e ad alto impatto?"}
-  Q1 -->|No| P4["Agent per-team vanno bene · cooperazione minima (Pattern 4: Slack/Teams)"]
-  Q1 -->|Sì| Q2{"Vincolo SoD/compliance: ogni team DEVE approvare solo il proprio perimetro?"}
-  Q2 -->|No| CONS["CONSOLIDA · pochi agent per confine · subagent per team/dominio · handoff nello stesso thread (Topologia A)"]
-  Q2 -->|Sì| Q3{"Serve handoff automatico o basta mediato da umano?"}
-  Q3 -->|Umano ok| B1["Federata + incident platform condivisa (Pattern 1) — Topologia B"]
-  Q3 -->|Automatico| Q4{"Serve scambio dati strutturato e ricco tra agent?"}
-  Q4 -->|No| B2["Pattern 1 + Stop hook (Pattern 3) — Topologia B automatizzata"]
-  Q4 -->|Sì| C1["Pattern 1 + MCP bus condiviso (Pattern 2) — Topologia C"]
+  A["Problem/incident that touches multiple scopes or teams"] --> Q1{"Are cross-scope incidents frequent and high-impact?"}
+  Q1 -->|No| P4["Per-team agents are fine · minimal cooperation (Pattern 4: Slack/Teams)"]
+  Q1 -->|Yes| Q2{"SoD/compliance constraint: must each team approve only its own perimeter?"}
+  Q2 -->|No| CONS["CONSOLIDATE · few agents by boundary · subagents by team/domain · handoff in the same thread (Topology A)"]
+  Q2 -->|Yes| Q3{"Is automatic handoff needed or is human-mediated enough?"}
+  Q3 -->|Human OK| B1["Federated + shared incident platform (Pattern 1) — Topology B"]
+  Q3 -->|Automatic| Q4{"Is rich, structured data exchange between agents needed?"}
+  Q4 -->|No| B2["Pattern 1 + Stop hook (Pattern 3) — automated Topology B"]
+  Q4 -->|Yes| C1["Pattern 1 + shared MCP bus (Pattern 2) — Topology C"]
 ```
 
 Reading: the **first** question filters out cases where cooperation is not really needed; the **second**
@@ -899,14 +899,14 @@ Hybrid blueprint (Topology B/C):
 
 ```mermaid
 flowchart TB
-  INC["Incidente cross-scope"] --> IP["Incident platform CONDIVISA (ServiceNow/PagerDuty)"]
-  IP -->|assegna scope A| AGA["Agent Team A (subagent del dominio A)"]
-  AGA -->|scrive note: RCA + azioni| IP
-  AGA -.->|Stop hook: segnala follow-up cross-scope| IP
-  IP -->|assegna scope B| AGB["Agent Team B (subagent del dominio B)"]
-  AGB -->|scrive note: RCA + azioni| IP
-  AGA <-->|scambio strutturato opzionale| BUS["MCP bus condiviso (store Azure)"]
-  AGB <-->|scambio strutturato opzionale| BUS
+  INC["Cross-scope incident"] --> IP["SHARED incident platform (ServiceNow/PagerDuty)"]
+  IP -->|assign scope A| AGA["Agent Team A (subagent of domain A)"]
+  AGA -->|writes notes: RCA + actions| IP
+  AGA -.->|Stop hook: signals cross-scope follow-up| IP
+  IP -->|assign scope B| AGB["Agent Team B (subagent of domain B)"]
+  AGB -->|writes notes: RCA + actions| IP
+  AGA <-->|optional structured exchange| BUS["Shared MCP bus (Azure store)"]
+  AGB <-->|optional structured exchange| BUS
 ```
 
 **Recommendation:** if teams truly need separate approvals (SoD),
@@ -995,16 +995,16 @@ single* agent yes/no), this one produces the **entire fleet** — number **and**
 
 ```mermaid
 flowchart TD
-  START["Input cliente: estate Azure (subscription, RG, ambienti, team, residency)"] --> S1["1) Conta le RESIDENCY distinte (R)"]
-  S1 --> S2["2) Separi PROD da NON-PROD? (di solito sì)"]
-  S2 --> S3["3) Separi PLATFORM (hub/rete/identità) da APPLICATION? (CAF: sì)"]
-  S3 --> S4["4) In PROD, quanti DOMINI DI APPROVAZIONE indipendenti? (SRE centrale = 1; K BU autonome = K)"]
-  S4 --> CALC["NUMERO = R × (1 Platform-Prod + K App-Prod + 1 App-NonProd)"]
-  CALC --> ORG["ORGANIZZAZIONE: assegna ogni RG al suo agent per (residency × Platform/App × ambiente × ownership)"]
-  ORG --> SPEC["SPECIALIZZAZIONE: dentro ogni agent, subagent per dominio + response-plan routing + skill/knowledge"]
-  SPEC --> COOP{"Restano agent separati che devono cooperare su incidenti cross-scope?"}
-  COOP -->|No| DONE["Flotta definita"]
-  COOP -->|Sì| COOPP["Aggiungi cooperazione (Parte XI): incident platform condivisa (+ Stop hook)"]
+  START["Customer input: Azure estate (subscription, RG, environments, teams, residency)"] --> S1["1) Count the distinct RESIDENCIES (R)"]
+  S1 --> S2["2) Do you separate PROD from NON-PROD? (usually yes)"]
+  S2 --> S3["3) Do you separate PLATFORM (hub/network/identity) from APPLICATION? (CAF: yes)"]
+  S3 --> S4["4) In PROD, how many independent APPROVAL DOMAINS? (central SRE = 1; K autonomous BUs = K)"]
+  S4 --> CALC["NUMBER = R × (1 Platform-Prod + K App-Prod + 1 App-NonProd)"]
+  CALC --> ORG["ORGANIZATION: assign each RG to its agent by (residency × Platform/App × environment × ownership)"]
+  ORG --> SPEC["SPECIALIZATION: inside each agent, subagents by domain + response-plan routing + skill/knowledge"]
+  SPEC --> COOP{"Are there separate agents that must cooperate on cross-scope incidents?"}
+  COOP -->|No| DONE["Fleet defined"]
+  COOP -->|Yes| COOPP["Add cooperation (Part XI): shared incident platform (+ Stop hook)"]
   COOPP --> DONE
 ```
 
@@ -1062,18 +1062,18 @@ Typical fleet (single-residency enterprise, central SRE — typical output: 3 ag
 
 ```mermaid
 flowchart TB
-  subgraph FLOTTA["Flotta tipo (3 agent)"]
+  subgraph FLOTTA["Typical fleet (3 agents)"]
     PA["Platform-Prod agent"]
     APA["Application-Prod agent"]
     ANA["Application-NonProd agent"]
   end
-  IPS["Incident platform condivisa (Azure Monitor / ServiceNow / PagerDuty)"]
+  IPS["Shared incident platform (Azure Monitor / ServiceNow / PagerDuty)"]
   PA --- IPS
   APA --- IPS
   ANA --- IPS
-  PA -.->|"subagent: rete / identità / monitoring"| HUB["Platform LZ (hub)"]
-  APA -.->|"subagent per dominio + routing"| APPP["Application LZ — Prod (N spoke)"]
-  ANA -.->|"subagent per dominio"| APPN["Application LZ — Non-Prod"]
+  PA -.->|"subagent: network / identity / monitoring"| HUB["Platform LZ (hub)"]
+  APA -.->|"subagent by domain + routing"| APPP["Application LZ — Prod (N spoke)"]
+  ANA -.->|"subagent by domain"| APPN["Application LZ — Non-Prod"]
 ```
 
 Golden rule to leave with the customer: **the number of agents follows your boundaries (residency,
