@@ -4,10 +4,10 @@ This document maps every Azure Monitor alert defined in the demo-lab desired sta
 
 The project defines **three** Azure Monitor alerts, and each has a unique mapping:
 
-| Alerts Defined | Incidente Response Plan (matchato) | SubAgent |
+| Alerts Defined | Incident Response Plan (matched) | Sub-agent |
 |---|---|---|
-| `alert-vflta-food-http-5xx` (Sev1, metric alert HTTP 5xx su Container Apps API) | `sample-food-http-errors` (match per severità Sev1 + `titleContains: food`) | `aca-app-incident-handler` |
-| `alert-vflta-nginx-down` (Sev2, display name: “NGINX service down on web tier”) | `web-tier-nginx` (match per severità Sev2 + `titleContains: nginx`) | `iaas-vm-incident-handler` |
-| `alert-vflta-denied-flow-spike` (Sev2, display name: “Denied VNet flow spike”) | `network-observability-review` (match per severità Sev2 + esclusione `titleNotContains: nginx`) | `network-traffic-analyst` |
+| `alert-vflta-food-http-5xx` (Sev1, metric alert for HTTP 5xx on Container Apps API) | `sample-food-http-errors` (match by severity Sev1 + `titleContains: food`) | `aca-app-incident-handler` |
+| `alert-vflta-nginx-down` (Sev2, display name: “NGINX service down on web tier”) | `web-tier-nginx` (match by severity Sev2 + `titleContains: nginx`) | `iaas-vm-incident-handler` |
+| `alert-vflta-denied-flow-spike` (Sev2, display name: “Denied VNet flow spike”) | `network-observability-review` (match by severity Sev2 + exclusion `titleNotContains: nginx`) | `network-traffic-analyst` |
 
-Nota di completezza: nel progetto risultano definiti **3 alert Azure Monitor** in totale, e ciascuno ha un mapping univoco al relativo incident response plan e sub-agent.
+Completeness note: the project defines **3 Azure Monitor alerts** in total, and each has a unique mapping to its incident response plan and sub-agent.
