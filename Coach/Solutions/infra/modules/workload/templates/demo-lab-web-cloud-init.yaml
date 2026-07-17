@@ -1,0 +1,17 @@
+#cloud-config
+package_update: true
+packages:
+  - nginx
+  - curl
+  - netcat-openbsd
+  - iperf3
+write_files:
+  - path: /var/www/html/index.html
+    permissions: '0644'
+    content: |
+      vnet-flow-logs-demo
+runcmd:
+  - systemctl enable nginx
+  - systemctl restart nginx
+  - nohup sh -c 'while true; do echo "HTTP/1.1 200 OK\r\n\r\ndemo-db" | nc -l -p 5432 -q 1; done' >/var/log/demo-db-listener.log 2>&1 &
+  - nohup sh -c 'while true; do echo "HTTP/1.1 200 OK\r\n\r\ndemo-api" | nc -l -p 8080 -q 1; done' >/var/log/demo-api-listener.log 2>&1 &

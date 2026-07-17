@@ -16,5 +16,3 @@ provider "azurerm" {
 provider "azapi" {
   enable_preflight = false
 }
-
-data "azurerm_client_config" "current" {}

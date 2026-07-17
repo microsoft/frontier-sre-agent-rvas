@@ -1,8 +1,9 @@
 PARKING_MANAGER_ROOT := Student/Resources/parking-manager
+INFRA_DIR  := Student/Resources/infra
 
 .DEFAULT_GOAL := build
 
-.PHONY: build image build-web clean-web apm
+.PHONY: build image build-web clean-web apm deploy
 
 build:
 	@set -e; \
@@ -42,3 +43,8 @@ clean-web:
 
 apm:
 	apm install --target copilot
+
+## infra: run terraform init + apply in the infra directory
+deploy:
+	terraform -chdir="$(INFRA_DIR)" init
+	terraform -chdir="$(INFRA_DIR)" apply $(TF_VARS)

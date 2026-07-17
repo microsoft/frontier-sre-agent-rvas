@@ -28,6 +28,59 @@ APPLY_FAILURES=()
 # subshells created by $() command substitution can read the cached file path.
 export _TOKEN_FILE=""
 
+# ── 1b. Output formatting ─────────────────────────────────────────────────────
+
+# Auto-detect color support; suppressed when stdout is not a tty or NO_COLOR is set.
+if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
+  C_GREEN='\033[0;32m'; C_RED='\033[0;31m'; C_YELLOW='\033[1;33m'
+  C_CYAN='\033[0;36m';  C_BOLD='\033[1m';   C_DIM='\033[2m'; C_RESET='\033[0m'
+else
+  C_GREEN=''; C_RED=''; C_YELLOW=''; C_CYAN=''; C_BOLD=''; C_DIM=''; C_RESET=''
+fi
+
+_PASS_COUNT=0
+_FAIL_COUNT=0
+_WARN_COUNT=0
+
+_hr() { printf '%s\n' "$(printf '─%.0s' $(seq 1 62))"; }
+
+print_header() {
+  printf "\n${C_BOLD}%s${C_RESET}\n" "$*"
+  _hr
+}
+
+# print_check <ok|warn|fail> <label> [detail]
+print_check() {
+  local status="$1" label="$2" detail="${3:-}"
+  case "${status}" in
+    ok)
+      _PASS_COUNT=$((_PASS_COUNT + 1))
+      printf "  ${C_GREEN}✓${C_RESET}  %-32s ${C_DIM}%s${C_RESET}\n" "${label}" "${detail}"
+      ;;
+    warn)
+      _WARN_COUNT=$((_WARN_COUNT + 1))
+      printf "  ${C_YELLOW}⚠${C_RESET}  %-32s ${C_DIM}%s${C_RESET}\n" "${label}" "${detail}"
+      ;;
+    fail)
+      _FAIL_COUNT=$((_FAIL_COUNT + 1))
+      printf "  ${C_RED}✗${C_RESET}  %-32s %s\n" "${label}" "${detail}"
+      ;;
+  esac
+}
+
+print_summary() {
+  local total=$((_PASS_COUNT + _FAIL_COUNT + _WARN_COUNT))
+  printf '\n'
+  _hr
+  if [[ "${_FAIL_COUNT}" -eq 0 ]]; then
+    printf "${C_GREEN}${C_BOLD}  ✓  All checks passed${_WARN_COUNT:+ (${_WARN_COUNT} warning(s))}.${C_RESET}\n"
+  else
+    printf "${C_RED}${C_BOLD}  ✗  %d of %d check(s) failed.${C_RESET}\n" "${_FAIL_COUNT}" "${total}" >&2
+  fi
+  _hr
+  [[ "${_FAIL_COUNT}" -eq 0 ]]
+}
+
 # ── 2. Config resolution ──────────────────────────────────────────────────────
 
 usage() {
@@ -175,14 +228,14 @@ resolve_config_dir() {
 
 # ── 3. Utilities ──────────────────────────────────────────────────────────────
 
-log() { printf '%s\n' "$*"; }
+log()  { printf "  ${C_CYAN}→${C_RESET}  %s\n" "$*"; }
 
-die() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
+die() { printf "${C_RED}ERROR:${C_RESET} %s\n" "$*" >&2; exit 1; }
 
 record_apply_failure() {
   local label="$1" exit_code="$2"
   APPLY_FAILURES+=("${label} (exit ${exit_code})")
-  printf 'ERROR: %s failed with exit code %s; continuing full apply.\n' "${label}" "${exit_code}" >&2
+  printf "  ${C_RED}✗${C_RESET}  %s failed (exit %s) — continuing.\n" "${label}" "${exit_code}" >&2
 }
 
 run_apply_step() {
@@ -200,11 +253,18 @@ run_apply_step() {
 
 finish_full_apply() {
   local failure
-  [[ "${#APPLY_FAILURES[@]}" -eq 0 ]] && return 0
-  printf '\nERROR: Full desired-state apply completed with %s failure(s):\n' "${#APPLY_FAILURES[@]}" >&2
+  printf '\n'
+  _hr
+  if [[ "${#APPLY_FAILURES[@]}" -eq 0 ]]; then
+    printf "${C_GREEN}${C_BOLD}  ✓  Apply completed — all steps succeeded.${C_RESET}\n"
+    _hr
+    return 0
+  fi
+  printf "${C_RED}${C_BOLD}  ✗  Apply completed with %d failure(s):${C_RESET}\n" "${#APPLY_FAILURES[@]}" >&2
   for failure in "${APPLY_FAILURES[@]}"; do
-    printf '  - %s\n' "${failure}" >&2
+    printf "       ${C_RED}•${C_RESET}  %s\n" "${failure}" >&2
   done
+  _hr
   return 1
 }
 
@@ -1101,13 +1161,14 @@ validate_config() {
   if selection_requested; then
     if [[ "${TARGET}" == "knowledge-files" ]]; then
       [[ -n "${RESOURCE_FILE}" && -f "${RESOURCE_FILE}" ]] \
-        && { log "Configuration validation succeeded: ${RESOURCE_FILE}"; return 0; }
+        && { print_check ok "$(basename "${RESOURCE_FILE}")" ""; print_summary; return; }
       while IFS= read -r file; do
         [[ -z "${file}" ]] && continue
         count=$((count + 1))
       done < <(selected_or_all_knowledge_files)
       [[ "${count}" -gt 0 ]] || die "No knowledge file matched target ${TARGET} name ${RESOURCE_NAME:-<all>}"
-      log "Configuration validation succeeded: ${TARGET}${RESOURCE_NAME:+/${RESOURCE_NAME}}"
+      print_check ok "${TARGET}${RESOURCE_NAME:+/${RESOURCE_NAME}}" "${count} file(s)"
+      print_summary
       return 0
     fi
 
@@ -1116,18 +1177,25 @@ validate_config() {
       [[ -z "${file}" ]] && continue
       count=$((count + 1))
       validate_manifest "${file}"
+      print_check ok "$(basename "${file}")" ""
     done < <(selected_or_all_yaml_files "${dir}")
     [[ "${count}" -gt 0 ]] || die "No manifest matched target ${TARGET} name ${RESOURCE_NAME:-<all>}"
-    log "Configuration validation succeeded: ${TARGET}${RESOURCE_NAME:+/${RESOURCE_NAME}}"
+    print_summary
     return 0
   fi
 
+  print_header "Validating: ${CONFIG_DIR}"
   while IFS= read -r file; do
     [[ -z "${file}" ]] && continue
+    count=$((count + 1))
     validate_manifest "${file}"
+    print_check ok "${file#"${CONFIG_DIR}/"}" ""
   done < <(find_all_yaml_files)
 
-  log "Configuration validation succeeded: ${CONFIG_DIR}"
+  if [[ "${count}" -eq 0 ]]; then
+    print_check warn "No YAML files found" ""
+  fi
+  print_summary
 }
 
 apply_all_config() {
@@ -1334,45 +1402,97 @@ verify_live() {
     return 0
   fi
 
-  log "Agent ARM state:"
-  az rest --method GET \
+  _PASS_COUNT=0; _FAIL_COUNT=0; _WARN_COUNT=0
+
+  print_header "Azure SRE Agent — Live Configuration"
+  printf "  ${C_DIM}%s  /  %s  /  %s${C_RESET}\n" \
+    "${SUBSCRIPTION_ID}" "${RESOURCE_GROUP}" "${AGENT_NAME}"
+
+  # ── ARM: agent state ────────────────────────────────────────────────────────
+  print_header "ARM State"
+  local arm_json provisioning_state power_state endpoint_val
+  if arm_json="$(az rest --method GET \
     --url "$(arm_agent_base_url)?api-version=${ARM_API_VERSION}" \
-    --query '{name:name,provisioningState:properties.provisioningState,powerState:properties.powerState,endpoint:properties.agentEndpoint}' \
-    --output table
+    --query '{p:properties.provisioningState,s:properties.powerState,e:properties.agentEndpoint}' \
+    --output json 2>/dev/null)"; then
+    provisioning_state="$(jq -r '.p // "unknown"' <<< "${arm_json}")"
+    power_state="$(jq  -r '.s // "unknown"' <<< "${arm_json}")"
+    endpoint_val="$(jq  -r '.e // "unknown"' <<< "${arm_json}")"
+    [[ "${provisioning_state}" == "Succeeded" ]] \
+      && print_check ok   "Provisioning state" "${provisioning_state}" \
+      || print_check fail "Provisioning state" "${provisioning_state}"
+    [[ "${power_state}" == "Running" ]] \
+      && print_check ok   "Power state" "${power_state}" \
+      || print_check warn "Power state" "${power_state}"
+    print_check ok "Endpoint" "${endpoint_val}"
+  else
+    print_check fail "ARM GET" "failed — verify --subscription / --resource-group / --agent"
+  fi
 
-  log "ARM sub-resource checks:"
-  log "- DataConnectors"
-  az rest --method GET \
+  local connectors_json connector_names
+  if connectors_json="$(az rest --method GET \
     --url "$(arm_agent_base_url)/DataConnectors?api-version=${ARM_API_VERSION}" \
-    --query 'value[].name' \
-    --output tsv || true
+    --output json 2>/dev/null)"; then
+    connector_names="$(jq -r '[.value[].name] | join(", ")' <<< "${connectors_json}")"
+    [[ -n "${connector_names}" ]] \
+      && print_check ok   "DataConnectors" "${connector_names}" \
+      || print_check warn "DataConnectors" "(none configured)"
+  else
+    print_check fail "DataConnectors" "query failed"
+  fi
 
-  log "Data-plane knowledge status:"
-  curl -fsS -H "Authorization: Bearer $(data_plane_token)" \
-    "${ENDPOINT}/api/v1/agentmemory/status" | jq '.' || true
+  # ── Data-plane: extended configuration ──────────────────────────────────────
+  print_header "Data-Plane Configuration"
+  local token
+  token="$(data_plane_token)"
 
-  log "Data-plane extended config checks:"
-  local path
-  for path in \
-    /api/v2/repos \
-    /api/v2/extendedAgent/skills \
-    /api/v2/extendedAgent/agents \
-    /api/v2/extendedAgent/tools \
-    /api/v2/extendedAgent/commonprompts \
-    /api/v2/extendedAgent/scheduledtasks \
-    /api/v2/extendedAgent/incidentFilters \
-    /api/v2/extendedAgent/connectors \
-    /api/v2/extendedAgent/hooks \
-    /api/v2/extendedAgent/plugins \
-    /api/v2/plugins/marketplaces \
-    /api/v2/plugins/installations \
-    /api/v1/httptriggers; do
-    log "- ${path}"
-    curl -fsS -H "Authorization: Bearer $(data_plane_token)" "${ENDPOINT}${path}" \
-      | jq -r '(if type == "object" and has("value") then .value elif type == "array" then . else [] end)
-               | .[]? | (.name // .metadata.name // empty)' || true
-  done
+  _dp_check() {
+    local label="$1" path="$2" names
+    if names="$(curl -fsS -H "Authorization: Bearer ${token}" "${ENDPOINT}${path}" 2>/dev/null \
+      | jq -r '
+          (if type=="object" and has("value") then .value elif type=="array" then . else [] end)
+          | map(.name // .metadata.name // empty)
+          | map(select(length > 0))
+          | if length > 0 then join(", ") else "" end' 2>/dev/null)"; then
+      [[ -n "${names}" ]] \
+        && print_check ok   "${label}" "${names}" \
+        || print_check warn "${label}" "(none)"
+    else
+      print_check fail "${label}" "request failed"
+    fi
+  }
+
+  _dp_check "Skills"               /api/v2/extendedAgent/skills
+  _dp_check "Subagents"            /api/v2/extendedAgent/agents
+  _dp_check "Tools"                /api/v2/extendedAgent/tools
+  _dp_check "Common prompts"       /api/v2/extendedAgent/commonprompts
+  _dp_check "Scheduled tasks"      /api/v2/extendedAgent/scheduledtasks
+  _dp_check "Incident filters"     /api/v2/extendedAgent/incidentFilters
+  _dp_check "Connectors"           /api/v2/extendedAgent/connectors
+  _dp_check "Hooks"                /api/v2/extendedAgent/hooks
+  _dp_check "Plugin configs"       /api/v2/extendedAgent/plugins
+  _dp_check "Repos"                /api/v2/repos
+  _dp_check "Plugin marketplaces"  /api/v2/plugins/marketplaces
+  _dp_check "Plugin installations" /api/v2/plugins/installations
+  _dp_check "HTTP triggers"        /api/v1/httptriggers
+
+  # ── Knowledge base ───────────────────────────────────────────────────────────
+  print_header "Knowledge Base"
+  local kb_json kb_status
+  if kb_json="$(curl -fsS -H "Authorization: Bearer ${token}" \
+    "${ENDPOINT}/api/v1/agentmemory/status" 2>/dev/null)"; then
+    kb_status="$(jq -r '.status // .indexingStatus // "unknown"' <<< "${kb_json}" 2>/dev/null \
+      || printf 'unknown')"
+    [[ "${kb_status}" =~ ^(Ready|Indexed|Completed)$ ]] \
+      && print_check ok   "Status" "${kb_status}" \
+      || print_check warn "Status" "${kb_status}"
+  else
+    print_check warn "Status" "endpoint not available"
+  fi
+
+  print_summary
 }
+
 
 # ── 13. Entry point ───────────────────────────────────────────────────────────
 

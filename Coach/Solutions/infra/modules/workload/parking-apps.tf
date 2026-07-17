@@ -1,12 +1,3 @@
-locals {
-  parking_images = {
-    lisbon        = "ghcr.io/microsoft/frontier-sre-agent-rvas/lisbon-parking-api:latest"
-    berlin        = "ghcr.io/microsoft/frontier-sre-agent-rvas/berlin-parking-api:latest"
-    chaos_control = "ghcr.io/microsoft/frontier-sre-agent-rvas/chaos-control:latest"
-    vm_health     = "ghcr.io/microsoft/frontier-sre-agent-rvas/vm-health-control:latest"
-  }
-}
-
 # ─── Resource Groups ───────────────────────────────────────────────────────────
 
 resource "azurerm_resource_group" "parking_lisbon" {

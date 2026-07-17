@@ -8,65 +8,6 @@ locals {
     repository  = "azure-sre-agent"
   }
 
-  managed_resource_ids = distinct([
-    "/subscriptions/${data.azurerm_client_config.current.subscription_id}",
-    azurerm_resource_group.hub.id,
-    azurerm_resource_group.spoke_web_api.id,
-    azurerm_resource_group.spoke_data.id,
-    azurerm_resource_group.sample_food.id,
-    azurerm_log_analytics_workspace.demo.id
-  ])
-
-  managed_scope_roles = [
-    "Reader",
-    "Log Analytics Reader",
-    "Monitoring Reader"
-  ]
-
-  managed_scope_role_assignments = merge(
-    {
-      for role in local.managed_scope_roles :
-      "/subscriptions/${data.azurerm_client_config.current.subscription_id}|${role}" => {
-        scope = "/subscriptions/${data.azurerm_client_config.current.subscription_id}"
-        role  = role
-      }
-    },
-    {
-      for role in local.managed_scope_roles :
-      "hub-resource-group|${role}" => {
-        scope = azurerm_resource_group.hub.id
-        role  = role
-      }
-    },
-    {
-      for role in local.managed_scope_roles :
-      "web-api-resource-group|${role}" => {
-        scope = azurerm_resource_group.spoke_web_api.id
-        role  = role
-      }
-    },
-    {
-      for role in local.managed_scope_roles :
-      "data-resource-group|${role}" => {
-        scope = azurerm_resource_group.spoke_data.id
-        role  = role
-      }
-    },
-    {
-      for role in local.managed_scope_roles :
-      "sample-food-resource-group|${role}" => {
-        scope = azurerm_resource_group.sample_food.id
-        role  = role
-      }
-    },
-    {
-      for role in local.managed_scope_roles :
-      "demo-log-analytics|${role}" => {
-        scope = azurerm_log_analytics_workspace.demo.id
-        role  = role
-      }
-    }
-  )
   demo_tags = merge(
     {
       workload    = "vnet-flow-logs-traffic-analytics-demo"
@@ -104,6 +45,10 @@ locals {
   demo_nva_cloud_init    = base64encode(templatefile("${path.module}/templates/demo-lab-nva-cloud-init.yaml", {}))
   demo_client_cloud_init = base64encode(templatefile("${path.module}/templates/demo-lab-client-cloud-init.yaml", {}))
 
+  # Suffix shared by all globally-unique resource names (storage account, Log Analytics).
+  # Sourced from random_string.suffix so every fresh deployment gets its own unique set.
+  demo_suffix = random_string.suffix.result
+
   sample_food_tags = merge(
     local.demo_tags,
     {
@@ -114,10 +59,6 @@ locals {
 
   sample_food_address_spaces = ["10.40.0.0/16"]
   sample_food_location       = lower(replace(var.location, " ", ""))
-
-  # Suffix shared by all globally-unique resource names (ACR, storage, Log Analytics).
-  # Sourced from random_string.suffix so every fresh deployment gets its own unique set.
-  demo_suffix = random_string.suffix.result
 
   sample_food_names = {
     resource_group             = var.rg_sample_food
@@ -136,4 +77,11 @@ locals {
 
   sample_food_api_placeholder_image      = "ghcr.io/microsoft/frontier-sre-agent-rvas/grubify-api:latest"
   sample_food_frontend_placeholder_image = "ghcr.io/microsoft/frontier-sre-agent-rvas/grubify-frontend:latest"
+
+  parking_images = {
+    lisbon        = "ghcr.io/microsoft/frontier-sre-agent-rvas/lisbon-parking-api:latest"
+    berlin        = "ghcr.io/microsoft/frontier-sre-agent-rvas/berlin-parking-api:latest"
+    chaos_control = "ghcr.io/microsoft/frontier-sre-agent-rvas/chaos-control:latest"
+    vm_health     = "ghcr.io/microsoft/frontier-sre-agent-rvas/vm-health-control:latest"
+  }
 }
