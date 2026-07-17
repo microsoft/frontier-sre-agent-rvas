@@ -118,7 +118,7 @@ Official sources: [API reference - authentication](https://learn.microsoft.com/e
 
 # Quick operational CRUD per resource
 
-This section shows raw API examples for Create, Read, Update, and Delete. The [SRE Agent Config Script Guide](sre-agent-config-script-guide.md) shows the same flows using `03-scripts/sre-agent-config.sh`.
+This section shows raw API examples for Create, Read, Update, and Delete. The [SRE Agent Config Script Guide](sre-agent-config-script-guide.md) shows the same flows using `infra/scripts/sre-agent-config.sh`.
 
 In data-plane examples, `Create` and `Update` often use the same `PUT`: if the resource does not exist it is created; if it exists it is updated.
 
@@ -588,7 +588,7 @@ Create:
 ```bash
 curl -fsS -X POST \
   -H "Authorization: Bearer ${TOKEN}" \
-  -F "files=@06-sre-agent-configuration/knowledge/files/example-runbook.md" \
+  -F "files=@azure-sre-agent-config/knowledge/files/example-runbook.md" \
   "${ENDPOINT}/api/v1/agentmemory/upload"
 ```
 
@@ -606,7 +606,7 @@ Update by re-uploading the same filename.
 ```bash
 curl -fsS -X POST \
   -H "Authorization: Bearer ${TOKEN}" \
-  -F "files=@06-sre-agent-configuration/knowledge/files/example-runbook.md" \
+  -F "files=@azure-sre-agent-config/knowledge/files/example-runbook.md" \
   "${ENDPOINT}/api/v1/agentmemory/upload"
 ```
 
@@ -1062,7 +1062,7 @@ Official sources: [Deploy IaC - config directory skills](https://learn.microsoft
 Create/update IaC:
 
 ```bash
-terraform -chdir=04-terraform apply
+terraform -chdir=infra apply
 ```
 
 Equivalent API create/update:
@@ -1171,7 +1171,7 @@ Official sources: [Deploy IaC - config directory subagents](https://learn.micros
 ## CRUD and deployment
 
 ```bash
-terraform -chdir=04-terraform apply
+terraform -chdir=infra apply
 
 az rest --method PUT \
   --url "${ARM_BASE}/subagents/alert-investigator?api-version=${ARM_API_VERSION}" \
@@ -1246,7 +1246,7 @@ Official sources: [API reference - sub-resource body formats](https://learn.micr
 ## CRUD and deployment
 
 ```bash
-terraform -chdir=04-terraform apply
+terraform -chdir=infra apply
 
 az rest --method PUT --url "${ARM_BASE}/tools/azure-resource-graph-readonly?api-version=${ARM_API_VERSION}" --body "{\"properties\":{\"value\":\"<base64-json-tool-spec>\"}}"
 az rest --method GET --url "${ARM_BASE}/tools/azure-resource-graph-readonly?api-version=${ARM_API_VERSION}"
@@ -1329,7 +1329,7 @@ Official sources: [Deploy IaC - scheduled tasks directory](https://learn.microso
 Control-plane ARM envelope:
 
 ```bash
-terraform -chdir=04-terraform apply
+terraform -chdir=infra apply
 
 az rest --method PUT --url "${ARM_BASE}/scheduledTasks/daily-health-check?api-version=${ARM_API_VERSION}" --body "{\"properties\":{\"value\":\"<base64-json-from-automations/scheduled-tasks/daily-health-check.yaml>\"}}"
 az rest --method GET --url "${ARM_BASE}/scheduledTasks/daily-health-check?api-version=${ARM_API_VERSION}"
@@ -1427,7 +1427,7 @@ Official sources: [Deploy IaC - incident filters directory](https://learn.micros
 ## CRUD and deployment
 
 ```bash
-terraform -chdir=04-terraform apply
+terraform -chdir=infra apply
 
 az rest --method PUT --url "${ARM_BASE}/incidentFilters/azmon-sev0-sev1?api-version=${ARM_API_VERSION}" --body "{\"properties\":{\"value\":\"<base64-json-from-automations/incident-filters/azmon-sev0-sev1.yaml>\"}}"
 az rest --method GET --url "${ARM_BASE}/incidentFilters/azmon-sev0-sev1?api-version=${ARM_API_VERSION}"
@@ -1513,7 +1513,7 @@ Official sources: [Deploy IaC - hooks YAML and Phase 2](https://learn.microsoft.
 Control-plane ARM:
 
 ```bash
-terraform -chdir=04-terraform apply
+terraform -chdir=infra apply
 
 az rest --method PUT --url "${ARM_BASE}/hooks/deny-production-delete?api-version=${ARM_API_VERSION}" --body "{\"properties\":{\"value\":\"<base64-json-from-config/hooks/deny-production-delete.yaml>\"}}"
 az rest --method GET --url "${ARM_BASE}/hooks/deny-production-delete?api-version=${ARM_API_VERSION}"
@@ -1599,7 +1599,7 @@ Official sources: [Deploy IaC - common prompts directory](https://learn.microsof
 ## CRUD and deployment
 
 ```bash
-terraform -chdir=04-terraform apply
+terraform -chdir=infra apply
 
 az rest --method PUT --url "${ARM_BASE}/commonPrompts/production-safety-rules?api-version=${ARM_API_VERSION}" --body "{\"properties\":{\"value\":\"<base64-json-from-config/common-prompts/production-safety-rules.yaml>\"}}"
 az rest --method GET --url "${ARM_BASE}/commonPrompts/production-safety-rules?api-version=${ARM_API_VERSION}"

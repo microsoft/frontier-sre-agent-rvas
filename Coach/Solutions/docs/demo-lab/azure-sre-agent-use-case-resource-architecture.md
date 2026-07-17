@@ -799,11 +799,11 @@ Signal-chain (Azure Monitor / networking):
 
 Repository sources of truth:
 
-- Agent body — [04-terraform/main.tf](../04-terraform/main.tf)
-- Alerts / DCR / AMA — `04-terraform/*.tf`
-- Data-plane desired state — [06-sre-agent-configuration/](../06-sre-agent-configuration)
+- Agent body — [infra/main.tf](../../infra/main.tf)
+- Alerts / DCR / AMA — `infra/*.tf`
+- Data-plane desired state — [azure-sre-agent-config/](../../azure-sre-agent-config)
 - Alert → plan → subagent mapping — [mapping-alerts-incidentrespplan-subagent.md](mapping-alerts-incidentrespplan-subagent.md)
-- Enterprise how/when/why for every sub-resource — [sre-agent-guidelines-best-practices-use-cases-how-to.md](../01-documentation-azure-sre-agent/sre-agent-guidelines-best-practices-use-cases-how-to.md)
+- Enterprise how/when/why for every sub-resource — [sre-agent-guidelines-best-practices-use-cases-how-to.md](../azure-sre-agent/sre-agent-guidelines-best-practices-use-cases-how-to.md)
 
 ---
 

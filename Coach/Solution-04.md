@@ -35,7 +35,7 @@ Cover:
 
 ### Agent routes to wrong subagent
 - Should not happen — `sample-food-http-errors` filter uses `titleContains: "food"` and the alert title is `[Grubify] food-5xx`. If wrong routing occurs, check the incident filter config in portal
-- Run `./Infra/scripts/sre-agent-config.sh verify --target incident-filters` to confirm filter is applied
+- Run `./infra/scripts/sre-agent-config.sh verify --target incident-filters` to confirm filter is applied
 
 ### Agent investigation is shallow (only queries, no remediation)
 - The subagent is `Autonomous` + `RunAzCliWriteCommands` granted. If remediation doesn't happen, the agent may not have found a clear action

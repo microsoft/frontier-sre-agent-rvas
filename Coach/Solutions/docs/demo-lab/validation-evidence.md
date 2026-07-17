@@ -17,8 +17,8 @@ Azure SRE Agent: `contoso-sre-agent-dev` in `rg-contoso-sre-agent-dev`.
 | Check | Result | Notes |
 | --- | --- | --- |
 | `Student/Resources/scenarios/scripts/check-terraform-direct-values.sh` | Passed | `terraform direct-values check ok` |
-| `terraform -chdir=04-terraform fmt -check -recursive` | Passed | No formatting drift after deployment fixes |
-| `terraform -chdir=04-terraform validate` | Passed | `Success! The configuration is valid.` |
+| `terraform -chdir=infra fmt -check -recursive` | Passed | No formatting drift after deployment fixes |
+| `terraform -chdir=infra validate` | Passed | `Success! The configuration is valid.` |
 | `bash -n Student/Resources/scenarios/scripts/*.sh` | Passed | Demo scripts syntax validated |
 | `Student/Resources/scenarios/scripts/sre-agent-config.sh validate --target skills` | Passed | All skill manifests validated |
 | `Student/Resources/scenarios/scripts/sre-agent-config.sh validate --target subagents` | Passed | Subagent manifests validated |
@@ -63,7 +63,7 @@ Azure SRE Agent: `contoso-sre-agent-dev` in `rg-contoso-sre-agent-dev`.
 
 ## Azure SRE Agent Final Desired-State Convergence
 
-Updated 2026-06-12. The interim "SRE Agent skills/subagents applied" rows above captured the state before the Sample Food / Grubify lab and VNet Flow Logs configurations were merged into a single desired state. The rows below supersede them and record the converged, certified effective state on `contoso-sre-agent-dev`. All apply and supported deletes were executed with `Student/Resources/scenarios/scripts/sre-agent-config.sh`; full detail is in [crud-validation-report.md](../01-documentation-azure-sre-agent/crud-validation-report.md).
+Updated 2026-06-12. The interim "SRE Agent skills/subagents applied" rows above captured the state before the Sample Food / Grubify lab and VNet Flow Logs configurations were merged into a single desired state. The rows below supersede them and record the converged, certified effective state on `contoso-sre-agent-dev`. All apply and supported deletes were executed with `Student/Resources/scenarios/scripts/sre-agent-config.sh`; full detail is in [crud-validation-report.md](../azure-sre-agent/crud-validation-report.md).
 
 | Check | Result | Evidence |
 | --- | --- | --- |
@@ -79,7 +79,7 @@ Updated 2026-06-12. The interim "SRE Agent skills/subagents applied" rows above 
 
 ## VNet Flow Logs Guide Sub-Resources and Demo Alerts (Plan 3)
 
-Updated 2026-06-12. Imported the SRE Agent sub-resources that previously existed only in the EMU project's portal-oriented guide, deployed them with `Student/Resources/scenarios/scripts/sre-agent-config.sh`, and enabled the Terraform demo alerts that drive incident routing. Full detail in [crud-validation-report.md](../01-documentation-azure-sre-agent/crud-validation-report.md).
+Updated 2026-06-12. Imported the SRE Agent sub-resources that previously existed only in the EMU project's portal-oriented guide, deployed them with `Student/Resources/scenarios/scripts/sre-agent-config.sh`, and enabled the Terraform demo alerts that drive incident routing. Full detail in [crud-validation-report.md](../azure-sre-agent/crud-validation-report.md).
 
 | Check | Result | Evidence |
 | --- | --- | --- |
@@ -96,7 +96,7 @@ Updated 2026-06-12. Imported the SRE Agent sub-resources that previously existed
 Updated 2026-06-12. Added the NGINX service-down scenario (S4) end to end: guest-OS
 observability via Azure Monitor Agent, a Sev2 log search alert, and Autonomous
 routing with a human-in-the-loop gate on remediation (Option B1). Terraform changes
-are in [nginx-observability.tf](../04-terraform/nginx-observability.tf);
+are in [nginx-observability.tf](../../infra/nginx-observability.tf);
 the scenario is documented in [azure-sre-agent-demo-runbook.md](azure-sre-agent-demo-runbook.md).
 
 | Check | Result | Evidence |
@@ -155,7 +155,7 @@ changes were applied live to `contoso-sre-agent-dev` and verified.
 Governance note: with the hook removed, least-privilege RBAC is the only blast-radius boundary
 (the identity holds Contributor over the demo scopes). To re-harden, redeploy the hook, add a
 global tool access policy, or set the filters back to `Review`. See
-[ADR 0001](../01-documentation-azure-sre-agent/adr/0001-sre-agent-iac-boundaries.md).
+[ADR 0001](../azure-sre-agent/adr/0001-sre-agent-iac-boundaries.md).
 
 ## Domain-Routing Re-Architecting (2026-06-14)
 
@@ -187,7 +187,7 @@ resource group whose suffix differs from the current lab apply; it is wired as a
 target so Sev1 coverage is complete. (2) Fire tests (autonomous remediation) were **not** re-run in
 this change; routing and autonomy were verified by live `GET`. (3) The production-posture exception
 (gate the cross-spoke networking domain) is recorded in
-[ADR 0001](../01-documentation-azure-sre-agent/adr/0001-sre-agent-iac-boundaries.md).
+[ADR 0001](../azure-sre-agent/adr/0001-sre-agent-iac-boundaries.md).
 
 ## Subagent Rename — `incident-handler` → `aca-app-incident-handler` (2026-06-14)
 
@@ -210,8 +210,8 @@ rows above for the live Sev1 ACA-app owner.
 | Old subagent deleted | Passed | direct data-plane `DELETE .../agents/incident-handler` → HTTP 2xx; `GET .../agents` no longer lists `incident-handler` (only `aca-app-incident-handler` and `iaas-vm-incident-handler`) |
 | Live routing matrix | Passed | `GET .../incidentFilters`: 5 plans, all `Autonomous`, disjoint; Sev1 `food` → `aca-app-incident-handler`, `afw` → `network-traffic-analyst`; Sev2 `nginx` → `iaas-vm-incident-handler`, not-`nginx` → `network-traffic-analyst`; Sev3 → `azure-resource-config-auditor` |
 
-Notes: documentation across `01-documentation-azure-sre-agent/` and `02-documentation-demo-lab-env/`
-and `06-sre-agent-configuration/README.md` was updated to the new name; the Terraform comment in
+Notes: documentation across `docs/azure-sre-agent/` and `docs/demo-lab/`
+and `azure-sre-agent-config/README.md` was updated to the new name; the Terraform comment in
 `sample-food-observability.tf` was updated for accuracy (no resource change). Historical rows
 above that read `incident-handler` are point-in-time records and are intentionally left intact.
 

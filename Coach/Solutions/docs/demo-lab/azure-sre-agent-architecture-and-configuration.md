@@ -20,10 +20,10 @@ This is a reference/architecture document. It does not repeat the resource inven
 ownership matrix, the deployment command model, or the scenario talk tracks that already
 exist elsewhere; instead it links to them:
 
-- Full resource inventory: [azure-sre-agent-complete-resource-reference.md](../01-documentation-azure-sre-agent/azure-sre-agent-complete-resource-reference.md)
-- Ownership (Terraform vs YAML+API): [resource-support-matrix.md](../01-documentation-azure-sre-agent/resource-support-matrix.md)
-- Deployment commands: [sre-agent-config-script-guide.md](../01-documentation-azure-sre-agent/sre-agent-config-script-guide.md)
-- IaC boundary decision: [adr/0001-sre-agent-iac-boundaries.md](../01-documentation-azure-sre-agent/adr/0001-sre-agent-iac-boundaries.md)
+- Full resource inventory: [azure-sre-agent-complete-resource-reference.md](../azure-sre-agent/azure-sre-agent-complete-resource-reference.md)
+- Ownership (Terraform vs YAML+API): [resource-support-matrix.md](../azure-sre-agent/resource-support-matrix.md)
+- Deployment commands: [sre-agent-config-script-guide.md](../azure-sre-agent/sre-agent-config-script-guide.md)
+- IaC boundary decision: [adr/0001-sre-agent-iac-boundaries.md](../azure-sre-agent/adr/0001-sre-agent-iac-boundaries.md)
 - Live, scenario-by-scenario demo: [azure-sre-agent-demo-runbook.md](azure-sre-agent-demo-runbook.md)
 
 ---
@@ -38,17 +38,17 @@ subagents**, and **external integrations** (monitoring, incident management, sou
 control). Source: [Overview of Azure SRE Agent](https://learn.microsoft.com/en-us/azure/sre-agent/overview).
 
 In this project the agent's behavior is treated as **desired state under Git**, split across
-two layers (see [ADR 0001](../01-documentation-azure-sre-agent/adr/0001-sre-agent-iac-boundaries.md)):
+two layers (see [ADR 0001](../azure-sre-agent/adr/0001-sre-agent-iac-boundaries.md)):
 
 | Layer | What it owns | Where | Mechanism |
 | --- | --- | --- | --- |
-| ARM (control plane) | The agent resource, its identity, model, incident platform, telemetry connectors, RBAC | [04-terraform/](../04-terraform) | Terraform (`azapi` + `azurerm`) |
-| Data plane (behavior) | Connectors, subagents, skills, knowledge, incident filters, scheduled tasks, repos | [06-sre-agent-configuration/](../06-sre-agent-configuration) | YAML+Markdown applied by [sre-agent-config.sh](Student/Resources/scenarios/scripts/sre-agent-config.sh) |
+| ARM (control plane) | The agent resource, its identity, model, incident platform, telemetry connectors, RBAC | [infra/](../../infra) | Terraform (`azapi` + `azurerm`) |
+| Data plane (behavior) | Connectors, subagents, skills, knowledge, incident filters, scheduled tasks, repos | [azure-sre-agent-config/](../../azure-sre-agent-config) | YAML+Markdown applied by [sre-agent-config.sh](Student/Resources/scenarios/scripts/sre-agent-config.sh) |
 
 ### 1.1 How this desired state was composed
 
 The effective configuration is the integration of three sources (recorded in
-[06-sre-agent-configuration/README.md](../06-sre-agent-configuration/README.md)):
+[azure-sre-agent-config/README.md](../../azure-sre-agent-config/README.md)):
 
 1. **VNet Flow Logs + Traffic Analytics layer** (imported from the EMU project guide,
    branch `feature/app-sample-food-container-app`): the 10 networking/observability skills,
@@ -72,7 +72,7 @@ The effective configuration is the integration of three sources (recorded in
 
 ### 1.2 The agent resource (ARM)
 
-The agent itself is provisioned in [04-terraform/main.tf](../04-terraform/main.tf) as
+The agent itself is provisioned in [infra/main.tf](../../infra/main.tf) as
 `Microsoft.App/agents@2026-01-01`:
 
 | Property | Value | Why |
@@ -162,8 +162,8 @@ flow to the agent); **connectors** are outbound (the agent reaches out to system
 investigate). Source: [Incident platforms — Incident platforms vs. connectors](https://learn.microsoft.com/en-us/azure/sre-agent/incident-platforms).
 
 For the authoritative per-object deployment route (PUT/PATCH/POST) see the directory map in
-[06-sre-agent-configuration/README.md](../06-sre-agent-configuration/README.md) and the
-[resource-support-matrix.md](../01-documentation-azure-sre-agent/resource-support-matrix.md).
+[azure-sre-agent-config/README.md](../../azure-sre-agent-config/README.md) and the
+[resource-support-matrix.md](../azure-sre-agent/resource-support-matrix.md).
 
 ---
 
@@ -175,7 +175,7 @@ two categories.
 
 ### 3.1 ARM telemetry connectors (Terraform-owned)
 
-Defined in [04-terraform/main.tf](../04-terraform/main.tf) as
+Defined in [infra/main.tf](../../infra/main.tf) as
 `Microsoft.App/agents/connectors@2026-01-01`. They wire the agent to its **own** telemetry and
 are part of the control plane, not the data-plane desired state.
 
@@ -187,7 +187,7 @@ are part of the control plane, not the data-plane desired state.
 
 ### 3.2 Data-plane investigation connectors (YAML-owned)
 
-Defined under [06-sre-agent-configuration/connectors/](../06-sre-agent-configuration/connectors).
+Defined under [azure-sre-agent-config/connectors/](../../azure-sre-agent-config/connectors).
 All three use `kind: AgentConnector` — the data-plane object `type` is derived from `kind`,
 and the API rejects `type: Connector` with HTTP 400 `InvalidObjectType` (verified live).
 
@@ -250,7 +250,7 @@ investigate and recommend without changing resources. Under the **domain-routing
 app), `iaas-vm-incident-handler` (IaaS web tier), `network-traffic-analyst` (hub
 networking/firewall).
 
-Defined under [06-sre-agent-configuration/subagents/](../06-sre-agent-configuration/subagents).
+Defined under [azure-sre-agent-config/subagents/](../../azure-sre-agent-config/subagents).
 
 ### 4.1 Networking and configuration specialists (VNet Flow Logs layer)
 
@@ -301,7 +301,7 @@ Defined under [06-sre-agent-configuration/subagents/](../06-sre-agent-configurat
   Azure Advisor against each workload's criticality, SLA, resiliency, performance, and budget;
   read-only recommendations with trade-offs. Supersedes the lab-scoped
   `cost-and-retention-advisor` (full spec:
-  [cost-optimization-agent.md](../01-documentation-azure-sre-agent/cost-optimization-agent.md)).
+  [cost-optimization-agent.md](../azure-sre-agent/cost-optimization-agent.md)).
 
 ### 4.2 Grubify / Sample Food operational specialists
 
@@ -359,7 +359,7 @@ loaded only by the subagents that allow-list them (Section 4), and at most **fiv
 at once (official cap:
 [Skills - Limits and constraints](https://learn.microsoft.com/en-us/azure/sre-agent/skills)).
 Defined under
-[06-sre-agent-configuration/skills/](../06-sre-agent-configuration/skills).
+[azure-sre-agent-config/skills/](../../azure-sre-agent-config/skills).
 
 **`vnet-flow-logs-and-ingestion`** *(2026-07-02 merge of `vnet-flow-logs-troubleshooting` + `storage-flow-log-ingestion-check`)*
 
@@ -431,7 +431,7 @@ In Azure SRE Agent, **tools** are the concrete capabilities a subagent invokes d
 Source: [Tools](https://learn.microsoft.com/en-us/azure/sre-agent/tools). This project does
 **not** define custom `Tool` objects (the current preview API rejects the documented Tool
 object type in this tenant; see
-[resource-support-matrix.md](../01-documentation-azure-sre-agent/resource-support-matrix.md)).
+[resource-support-matrix.md](../azure-sre-agent/resource-support-matrix.md)).
 Instead it relies on the built-in canonical tools, referenced by name in the subagent specs:
 
 | Tool | What it does | When it intervenes |
@@ -477,7 +477,7 @@ that denies `RunAzCliWriteCommands(az * delete *)` and similar patterns.
 Knowledge files are uploaded into agent memory and retrieved at runtime via `SearchMemory`;
 this is how the agent "remembers" runbooks, templates, and architecture context across
 sessions. Source: [Memory and knowledge](https://learn.microsoft.com/en-us/azure/sre-agent/memory).
-Stored under [06-sre-agent-configuration/knowledge/files/](../06-sre-agent-configuration/knowledge/files)
+Stored under [azure-sre-agent-config/knowledge/files/](../../azure-sre-agent-config/knowledge/files)
 and uploaded via `/api/v1/agentmemory/upload`. Fifteen documents in two groups.
 
 ### 8.1 Sample Food / Grubify group (4)
@@ -576,7 +576,7 @@ flowchart TB
 ### 9.2 Incident platform
 
 **`azmonitor`** — owned by Terraform (2026-06-14) in the agent body
-[04-terraform/main.tf](../04-terraform/main.tf) as
+[infra/main.tf](../../infra/main.tf) as
 `body.properties.incidentManagementConfiguration`.
 
 - How it works: `{ type = "AzMonitor", connectionName = "azmonitor" }` on the
@@ -598,7 +598,7 @@ All three are defined in Terraform and are **enabled**. (Terraform addresses are
 traceability; the **alert name** is what appears in Azure.)
 
 **`alert-vflta-food-http-5xx`** — Sev1, metric alert
-([sample-food-observability.tf](../04-terraform/sample-food-observability.tf))
+([sample-food-observability.tf](../../infra/sample-food-observability.tf))
 
 - Criteria: namespace `microsoft.app/containerapps`, metric `Requests`, aggregation `Total`,
   `GreaterThan 5`, dimension `statusCodeCategory = ["5xx"]`; `frequency PT1M`,
@@ -613,7 +613,7 @@ traceability; the **alert name** is what appears in Azure.)
 - Routes to: `sample-food-http-errors` → `aca-app-incident-handler`.
 
 **`alert-vflta-denied-flow-spike`** — Sev2, log search alert
-([monitoring.tf](../04-terraform/monitoring.tf))
+([monitoring.tf](../../infra/monitoring.tf))
 
 - KQL:
 
@@ -638,7 +638,7 @@ traceability; the **alert name** is what appears in Azure.)
 - Routes to: `network-observability-review` → `network-traffic-analyst`.
 
 **`alert-vflta-nginx-down`** — Sev2, log search alert
-([nginx-observability.tf](../04-terraform/nginx-observability.tf))
+([nginx-observability.tf](../../infra/nginx-observability.tf))
 
 - KQL:
 
@@ -677,7 +677,7 @@ radius. Title matching is **case-insensitive** (the data-plane rejects case-inse
 duplicate tokens, so single keywords are used). The three plans are **disjoint by construction**
 at every severity. (Delete the portal quickstart default plan `quickstart_handler` if present —
 it covers Sev0–Sev2 Autonomous and would double-route.) Defined under
-[06-sre-agent-configuration/automations/incident-filters/](../06-sre-agent-configuration/automations/incident-filters).
+[azure-sre-agent-config/automations/incident-filters/](../../azure-sre-agent-config/automations/incident-filters).
 
 | Filter | Sev | Title match | Domain | Handling agent | Mode | Max | Enabled |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -736,7 +736,7 @@ A scheduled task is **not a cron job running a script**. On the schedule you def
 plans its approach and uses its connectors, tools, knowledge, and memory to reason across
 sources — catching trends before they breach a threshold — and produces an actionable summary.
 Source: [Schedule tasks with Azure SRE Agent](https://learn.microsoft.com/en-us/azure/sre-agent/scheduled-tasks).
-Defined under [06-sre-agent-configuration/automations/scheduled-tasks/](../06-sre-agent-configuration/automations/scheduled-tasks).
+Defined under [azure-sre-agent-config/automations/scheduled-tasks/](../../azure-sre-agent-config/automations/scheduled-tasks).
 
 ```mermaid
 flowchart LR
@@ -783,7 +783,7 @@ human-in-the-loop gate for speed. It is a non-production demo lab and every faul
 a restore script. The posture and how to re-harden:
 
 1. **Global Autonomous** — the agent's `actionConfiguration.mode` is `Autonomous` and
-   `accessLevel` is `High` ([main.tf](../04-terraform/main.tf)). The agent investigates and
+   `accessLevel` is `High` ([main.tf](../../infra/main.tf)). The agent investigates and
    acts with no approval prompt. Microsoft recommends Autonomous for non-production / trusted
    tasks ([run modes](https://learn.microsoft.com/en-us/azure/sre-agent/run-modes#recommendations)).
 2. **All incident handlers Autonomous** — the five domain-routed filters and their subagents run
@@ -801,7 +801,7 @@ a restore script. The posture and how to re-harden:
    denying `RunAzCliWriteCommands(az * delete *)` (and similar), or set individual filters back
    to `Review`.
 4. **Least-privilege RBAC still applies** — the user-assigned identity is granted (in
-   [main.tf](../04-terraform/main.tf) / [locals.tf](../04-terraform/locals.tf)) only the scopes
+   [main.tf](../../infra/main.tf) / [locals.tf](../../infra/locals.tf)) only the scopes
    below; RBAC, not an approval gate, is now the outer boundary on blast radius:
 
    | Role | Scope | Purpose |
@@ -812,7 +812,7 @@ a restore script. The posture and how to re-harden:
    | SRE Agent Administrator | the agent | Operator (current user) management |
 
 5. **Secret hygiene** — `${GITHUB_PAT}` is never committed; it is injected at apply time via
-   `envsubst` (see [06-sre-agent-configuration/README.md — Secrets](../06-sre-agent-configuration/README.md)).
+   `envsubst` (see [azure-sre-agent-config/README.md — Secrets](../../azure-sre-agent-config/README.md)).
 
 ---
 
@@ -827,7 +827,7 @@ Student/Resources/scenarios/scripts/sre-agent-config.sh apply  --subscription <s
 Student/Resources/scenarios/scripts/sre-agent-config.sh verify --subscription <sub> --resource-group <rg> --agent <agent>
 ```
 
-Full target reference and selective deployment: [sre-agent-config-script-guide.md](../01-documentation-azure-sre-agent/sre-agent-config-script-guide.md).
+Full target reference and selective deployment: [sre-agent-config-script-guide.md](../azure-sre-agent/sre-agent-config-script-guide.md).
 Live validation evidence: [validation-evidence.md](validation-evidence.md).
 
 ---
@@ -839,10 +839,10 @@ Live validation evidence: [validation-evidence.md](validation-evidence.md).
 | Live scenario walkthrough (6 scenarios) | [azure-sre-agent-demo-runbook.md](azure-sre-agent-demo-runbook.md) |
 | What the lab deploys + commands | [README.md](README.md) |
 | KQL queries | [kql-catalog.md](kql-catalog.md) |
-| Resource ownership (TF vs YAML+API) | [resource-support-matrix.md](../01-documentation-azure-sre-agent/resource-support-matrix.md) |
-| Full resource inventory | [azure-sre-agent-complete-resource-reference.md](../01-documentation-azure-sre-agent/azure-sre-agent-complete-resource-reference.md) |
-| Deployment script guide | [sre-agent-config-script-guide.md](../01-documentation-azure-sre-agent/sre-agent-config-script-guide.md) |
-| IaC boundary decision | [adr/0001-sre-agent-iac-boundaries.md](../01-documentation-azure-sre-agent/adr/0001-sre-agent-iac-boundaries.md) |
+| Resource ownership (TF vs YAML+API) | [resource-support-matrix.md](../azure-sre-agent/resource-support-matrix.md) |
+| Full resource inventory | [azure-sre-agent-complete-resource-reference.md](../azure-sre-agent/azure-sre-agent-complete-resource-reference.md) |
+| Deployment script guide | [sre-agent-config-script-guide.md](../azure-sre-agent/sre-agent-config-script-guide.md) |
+| IaC boundary decision | [adr/0001-sre-agent-iac-boundaries.md](../azure-sre-agent/adr/0001-sre-agent-iac-boundaries.md) |
 
 ---
 
@@ -882,7 +882,7 @@ GitHub MCP:
 - **Azure SRE Agent**: Microsoft's AI service that automates site-reliability operations on
   Azure by connecting observability, incident, and source-control systems.
 - **Desired state**: the Git-declared target configuration applied to the agent (here, the
-  YAML+Markdown under `06-sre-agent-configuration/` plus the Terraform ARM layer).
+  YAML+Markdown under `azure-sre-agent-config/` plus the Terraform ARM layer).
 - **Data plane / control plane**: control plane = ARM resources (agent, identity, RBAC); data
   plane = the agent's behavioral config (connectors, subagents, skills, hooks, etc.).
 - **Connector**: an outbound integration that gives the agent tools/data (e.g., GitHub, MCP).

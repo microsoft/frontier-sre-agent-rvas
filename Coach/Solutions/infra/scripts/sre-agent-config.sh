@@ -109,12 +109,12 @@ Options:
   -h, --help              Show help.
 
 Examples:
-  ./Infra/scripts/sre-agent-config.sh validate
-  ./Infra/scripts/sre-agent-config.sh plan --subscription <sub> --resource-group <rg> --agent <agent>
-  ./Infra/scripts/sre-agent-config.sh apply --subscription <sub> --resource-group <rg> --agent <agent>
-  ./Infra/scripts/sre-agent-config.sh plan --target skills --name sre-diagnostics-baseline --subscription <sub> --resource-group <rg> --agent <agent>
-  ./Infra/scripts/sre-agent-config.sh verify --target skills --name sre-diagnostics-baseline --subscription <sub> --resource-group <rg> --agent <agent>
-  ./Infra/scripts/sre-agent-config.sh delete --target skills --name sre-diagnostics-baseline --subscription <sub> --resource-group <rg> --agent <agent> --yes
+  ./infra/scripts/sre-agent-config.sh validate
+  ./infra/scripts/sre-agent-config.sh plan --subscription <sub> --resource-group <rg> --agent <agent>
+  ./infra/scripts/sre-agent-config.sh apply --subscription <sub> --resource-group <rg> --agent <agent>
+  ./infra/scripts/sre-agent-config.sh plan --target skills --name sre-diagnostics-baseline --subscription <sub> --resource-group <rg> --agent <agent>
+  ./infra/scripts/sre-agent-config.sh verify --target skills --name sre-diagnostics-baseline --subscription <sub> --resource-group <rg> --agent <agent>
+  ./infra/scripts/sre-agent-config.sh delete --target skills --name sre-diagnostics-baseline --subscription <sub> --resource-group <rg> --agent <agent> --yes
 USAGE
 }
 
@@ -208,9 +208,8 @@ resolve_config_dir() {
   fi
 
   for candidate in \
-    "${SCRIPT_DIR}/../../AZ-SRE-Agent-Configuration" \
-    "${REPO_ROOT}/AZ-SRE-Agent-Configuration" \
-    "${REPO_ROOT}/06-sre-agent-configuration" \
+    "${SCRIPT_DIR}/../../azure-sre-agent-config" \
+    "${REPO_ROOT}/azure-sre-agent-config" \
     "${REPO_ROOT}/configuration"; do
     checked+=("${candidate}")
     if discovered="$(canonical_dir "${candidate}")" && config_dir_has_expected_shape "${discovered}"; then

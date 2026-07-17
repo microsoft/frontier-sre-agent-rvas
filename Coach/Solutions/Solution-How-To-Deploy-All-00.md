@@ -8,10 +8,10 @@ All the pieces live under `Coach/Solutions/`:
 
 | Folder | What it is | Deployment path |
 | --- | --- | --- |
-| [`Infra/`](Infra/) | Terraform: hub-spoke network, IaaS spokes, monitoring, ACR + Container Apps, and the SRE Agent resource + connectors + RBAC | `terraform apply` |
-| [`Infra/scripts/`](Infra/scripts/) | SRE Agent config scripts: `sre-agent-config.sh` (data-plane) and `.sre-agent-apply-all.sh` (validate → plan → apply → verify wrapper) | bash |
+| [`infra/`](infra/) | Terraform: hub-spoke network, IaaS spokes, monitoring, ACR + Container Apps, and the SRE Agent resource + connectors + RBAC | `terraform apply` |
+| [`infra/scripts/`](infra/scripts/) | SRE Agent config scripts: `sre-agent-config.sh` (data-plane) and `.sre-agent-apply-all.sh` (validate → plan → apply → verify wrapper) | bash |
 | [`Student/Resources/scenarios/scripts/`](../../Student/Resources/scenarios/scripts/) | Demo scenario scripts: trigger/restore faults, generate traffic, validate, run KQL queries | bash |
-| [`AZ-SRE-Agent-Configuration/`](AZ-SRE-Agent-Configuration/) | SRE Agent **desired state** (skills, subagents, tools, connectors, knowledge, incident filters, scheduled tasks, repos) applied via the data-plane API | `sre-agent-config.sh apply` |
+| [`azure-sre-agent-config/`](azure-sre-agent-config/) | SRE Agent **desired state** (skills, subagents, tools, connectors, knowledge, incident filters, scheduled tasks, repos) applied via the data-plane API | `sre-agent-config.sh apply` |
 | [`Student/Resources/grubify/`](../../Student/Resources/grubify/) | The Grubify / Sample Food application (backend + frontend) deployed to Container Apps | `az acr build` (run by Terraform) |
 | [`docs/`](docs/) | Deep-dive reference docs (ADRs, KQL catalog, resource references, use-case maps) | — |
 
@@ -32,9 +32,9 @@ Ownership boundary (see [ADR 0001](docs/azure-sre-agent/adr/0001-sre-agent-iac-b
 
 | Area | Source of truth | Mechanism |
 | --- | --- | --- |
-| Resource group, managed identity, RBAC, Log Analytics, App Insights | `Infra/` | AzureRM provider |
-| SRE Agent resource + Azure Monitor incident platform + telemetry connectors | `Infra/` | AzAPI `Microsoft.App/agents@2026-01-01` |
-| Skills, subagents, tools, common prompts, scheduled tasks, incident filters, repos, knowledge | `AZ-SRE-Agent-Configuration/` | Data-plane REST API via `sre-agent-config.sh` |
+| Resource group, managed identity, RBAC, Log Analytics, App Insights | `infra/` | AzureRM provider |
+| SRE Agent resource + Azure Monitor incident platform + telemetry connectors | `infra/` | AzAPI `Microsoft.App/agents@2026-01-01` |
+| Skills, subagents, tools, common prompts, scheduled tasks, incident filters, repos, knowledge | `azure-sre-agent-config/` | Data-plane REST API via `sre-agent-config.sh` |
 | Grubify container images | `Student/Resources/grubify/` | `az acr build`, run by Terraform before the Container Apps are created |
 
 Official references: Azure SRE Agent IaC — <https://learn.microsoft.com/en-us/azure/sre-agent/deploy-iac> ·
@@ -92,16 +92,16 @@ one **Azure Bastion**, and Container Apps (Consumption).
 ## Deterministic naming (pinned suffix)
 
 This solution **pins** the naming suffix so a from-clean `terraform apply` is reproducible:
-`local.demo_suffix = "4iebz8"` in [`Infra/locals.tf`](Infra/locals.tf) produces the
+`local.demo_suffix = "4iebz8"` in [`infra/locals.tf`](infra/locals.tf) produces the
 exact names the solution expects — ACR `acrvflta4iebz8food`, flow-log storage `vflta4iebz8flow`,
 workspace `law-vflta-4iebz8`. This keeps the ACR name hardcoded in
 [`Student/Resources/grubify/scripts/build-and-push.sh`](../../Student/Resources/grubify/scripts/build-and-push.sh) valid with no manual step.
 
 > **Deploying an isolated instance / a brand-new environment?** Change these **four** places so the
 > names stay consistent and globally unique:
-> 1. `local.demo_suffix` in `Infra/locals.tf` (e.g. a new 6-char lowercase-alphanumeric value).
+> 1. `local.demo_suffix` in `infra/locals.tf` (e.g. a new 6-char lowercase-alphanumeric value).
 > 2. `ACR_NAME` (and, if needed, `RESOURCE_GROUP`/`SUBSCRIPTION_ID`) in `Student/Resources/grubify/scripts/build-and-push.sh` — it must equal `acrvflta<suffix>food`.
-> 3. The subscription ID in `Infra/main.tf` and `Infra/locals.tf`.
+> 3. The subscription ID in `infra/main.tf` and `infra/locals.tf`.
 > 4. `SUB` (and `RG`/`AGENT` if you rename them) are resolved automatically from `terraform output` by `.sre-agent-apply-all.sh`.
 
 ---
@@ -130,9 +130,9 @@ and pushes the two Grubify images** (via a `terraform_data` `local-exec` that ru
 Monitor incident platform, telemetry connectors and RBAC.
 
 ```bash
-terraform -chdir=Infra init
-terraform -chdir=Infra plan
-terraform -chdir=Infra apply
+terraform -chdir=infra init
+terraform -chdir=infra plan
+terraform -chdir=infra apply
 ```
 
 > The image build runs **before** the Container Apps are created (they pull
@@ -141,8 +141,8 @@ terraform -chdir=Infra apply
 Capture the values you will need next:
 
 ```bash
-terraform -chdir=Infra output agent_portal_url
-terraform -chdir=Infra output -raw sample_food_resource_group_name
+terraform -chdir=infra output agent_portal_url
+terraform -chdir=infra output -raw sample_food_resource_group_name
 ```
 
 ---
@@ -150,7 +150,7 @@ terraform -chdir=Infra output -raw sample_food_resource_group_name
 ## Step 3: Configure the Azure SRE Agent (data plane)
 
 The agent's **behavior** (skills, subagents, tools, connectors, knowledge, incident filters,
-scheduled tasks, repos) lives in [`AZ-SRE-Agent-Configuration/`](AZ-SRE-Agent-Configuration/) and is
+scheduled tasks, repos) lives in [`azure-sre-agent-config/`](azure-sre-agent-config/) and is
 applied with `sre-agent-config.sh`. See [Solution 03](Solution-How-To-Azure-SRE-Agent-Config-03.md)
 for the full command model.
 
@@ -161,14 +161,14 @@ export AGENT="contoso-sre-agent-dev"
 export GITHUB_PAT="$(gh auth token)"   # for the github-mcp connector
 
 # Validate locally (no Azure writes), then apply the full desired state:
-./Infra/scripts/sre-agent-config.sh validate
-./Infra/scripts/sre-agent-config.sh apply --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh validate
+./infra/scripts/sre-agent-config.sh apply --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Or run the whole `validate → plan → apply → verify` cycle with the wrapper (it reads `SUB`/`RG`/`AGENT` from `terraform output` automatically):
 
 ```bash
-./Infra/scripts/.sre-agent-apply-all.sh
+./infra/scripts/.sre-agent-apply-all.sh
 ```
 
 > The GitHub **OAuth** connector (`connectors/github.yaml`) is applied automatically; after the first apply, complete the one-time OAuth authorization in the SRE Agent portal (Connectors → github → Authorize). The Outlook/Teams notification connectors are OAuth-interactive and stay `example-`-prefixed (excluded from apply).
@@ -178,8 +178,8 @@ Or run the whole `validate → plan → apply → verify` cycle with the wrapper
 ## Step 4: Verify
 
 ```bash
-./Infra/scripts/sre-agent-config.sh verify --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-terraform -chdir=Infra output agent_portal_url   # open this in the browser
+./infra/scripts/sre-agent-config.sh verify --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+terraform -chdir=infra output agent_portal_url   # open this in the browser
 Student/Resources/scenarios/scripts/validate.sh             # end-to-end lab sanity check
 Student/Resources/scenarios/scripts/validate-sample-food-app.sh
 ```
@@ -205,11 +205,11 @@ Then restart the Container Apps revisions (or `az containerapp update`) to pick 
 ## Teardown
 
 ```bash
-terraform -chdir=Infra destroy
+terraform -chdir=infra destroy
 ```
 
 This removes all Azure resources created by the solution. The data-plane configuration lives on the
-agent; delete individual items with `./Infra/scripts/sre-agent-config.sh delete --target <t> --name <n> --yes`
+agent; delete individual items with `./infra/scripts/sre-agent-config.sh delete --target <t> --name <n> --yes`
 before destroying the agent if you need a clean slate.
 
 ---
@@ -219,7 +219,7 @@ before destroying the agent if you need a clean slate.
 - **[Solution 01 — Architecture](Solution-Architecture-01.md)** — the lab and the agent's desired-state design, object by object.
 - **[Solution 02 — Demo Runbook](Solution-Demo-Runbook-02.md)** — the 6 live demo scenarios end to end.
 - **[Solution 03 — SRE Agent Config script guide](Solution-How-To-Azure-SRE-Agent-Config-03.md)** — every `sre-agent-config.sh` command.
-- **[Infra README](Infra/README.md)** — the Terraform layer.
+- **[Infra README](infra/README.md)** — the Terraform layer.
 - **[docs/](docs/)** — ADRs, KQL catalog, resource references, use-case maps.
 
 ## References

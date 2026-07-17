@@ -2,7 +2,7 @@
 
 Store plugin marketplace and installation manifests here when a plugin is not supported by Terraform or documented AzAPI resource types.
 
-Use `AZ-SRE-Agent-Configuration/plugin-configs/` for `/api/v2/extendedAgent/plugins/{name}` plugin configuration resources.
+Use `azure-sre-agent-config/plugin-configs/` for `/api/v2/extendedAgent/plugins/{name}` plugin configuration resources.
 
 Expected manifest shape:
 
