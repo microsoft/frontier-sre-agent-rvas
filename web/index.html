@@ -16,25 +16,27 @@
         :root {
             /* Pillar-mapped scenario colors */
             --autonomous-color: #1A77E3;
-            --scheduled-color:  #504092;
-            --interactive-color:#14868A;
-            --setup-color:      #6B7280;
-            --config-color:     #7c3aed;
+            --scheduled-color: #504092;
+            --interactive-color: #14868A;
+            --setup-color: #6B7280;
+            --config-color: #7c3aed;
 
             /* Legacy aliases for inline use */
-            --cyan:         #1A77E3;
-            --cyan-dim:     rgba(26, 119, 227, .12);
-            --amber:        #0078D4;
+            --cyan: #1A77E3;
+            --cyan-dim: rgba(26, 119, 227, .12);
+            --amber: #0078D4;
             --deploy-color: #14868A;
-            --stretch-color:#f43f5e;
+            --stretch-color: #f43f5e;
 
             /* Kept from shell.css */
-            --border:    #E3E6ED;
-            --border-2:  #c8d0de;
+            --border: #E3E6ED;
+            --border-2: #c8d0de;
         }
 
         /* ─── Challenges ────────────────────────────────────────────────── */
-        #challenges { border-bottom: 1px solid var(--border); }
+        #challenges {
+            border-bottom: 1px solid var(--border);
+        }
 
         .challenges-header {
             display: flex;
@@ -55,8 +57,13 @@
             overflow: hidden;
         }
 
-        .challenge-card.full  { grid-column: span 3; }
-        .challenge-card.half  { grid-column: span 1; }
+        .challenge-card.full {
+            grid-column: span 3;
+        }
+
+        .challenge-card.half {
+            grid-column: span 1;
+        }
 
         .challenge-card {
             position: relative;
@@ -82,25 +89,42 @@
         .challenge-card::before {
             content: '';
             position: absolute;
-            top: 0; left: 0; right: 0;
+            top: 0;
+            left: 0;
+            right: 0;
             height: 2px;
             background: var(--c-color);
         }
 
-        .challenge-card[data-phase="00"] { --c-color: var(--setup-color); }
+        .challenge-card[data-phase="00"] {
+            --c-color: var(--setup-color);
+        }
+
         .challenge-card[data-phase="01"],
         .challenge-card[data-phase="02"],
-        .challenge-card[data-phase="03"] { --c-color: var(--config-color, #7c3aed); }
+        .challenge-card[data-phase="03"] {
+            --c-color: var(--config-color, #7c3aed);
+        }
+
         .challenge-card[data-phase="04"],
         .challenge-card[data-phase="05"],
         .challenge-card[data-phase="07"],
-        .challenge-card[data-phase="09"] { --c-color: var(--autonomous-color); }
-        .challenge-card[data-phase="06"] { --c-color: var(--scheduled-color); }
-        .challenge-card[data-phase="08"] { --c-color: var(--interactive-color); }
+        .challenge-card[data-phase="09"] {
+            --c-color: var(--autonomous-color);
+        }
+
+        .challenge-card[data-phase="06"] {
+            --c-color: var(--scheduled-color);
+        }
+
+        .challenge-card[data-phase="08"] {
+            --c-color: var(--interactive-color);
+        }
 
         .card-bg-number {
             position: absolute;
-            right: -.1em; top: -.15em;
+            right: -.1em;
+            top: -.15em;
             font-family: var(--font-display, "Outfit", sans-serif);
             font-size: clamp(5rem, 10vw, 8rem);
             font-weight: 700;
@@ -271,10 +295,25 @@
             border-radius: 3px;
         }
 
-        .ab-write  { background: rgba(209,52,56,.08);  color: #D13438; }
-        .ab-github { background: rgba(80,64,146,.08);  color: #504092; }
-        .ab-sched  { background: rgba(26,119,227,.08); color: #1A77E3; }
-        .ab-kql    { background: rgba(20,134,138,.08); color: #14868A; }
+        .ab-write {
+            background: rgba(209, 52, 56, .08);
+            color: #D13438;
+        }
+
+        .ab-github {
+            background: rgba(80, 64, 146, .08);
+            color: #504092;
+        }
+
+        .ab-sched {
+            background: rgba(26, 119, 227, .08);
+            color: #1A77E3;
+        }
+
+        .ab-kql {
+            background: rgba(20, 134, 138, .08);
+            color: #14868A;
+        }
 
         /* ─── Coach section ─────────────────────────────────────────────── */
         #coach {
@@ -286,8 +325,8 @@
             display: flex;
             align-items: center;
             gap: .75rem;
-            background: rgba(0,120,212,.06);
-            border: 1px solid rgba(0,120,212,.18);
+            background: rgba(0, 120, 212, .06);
+            border: 1px solid rgba(0, 120, 212, .18);
             border-radius: 6px;
             padding: .6rem 1rem;
             margin-bottom: 2rem;
@@ -312,8 +351,8 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 1px;
-            background: rgba(0,120,212,.18);
-            border: 1px solid rgba(0,120,212,.18);
+            background: rgba(0, 120, 212, .18);
+            border: 1px solid rgba(0, 120, 212, .18);
             border-radius: 12px;
             overflow: hidden;
         }
@@ -321,7 +360,7 @@
         .coach-card {
             position: relative;
             background: #fff;
-            border: 1px solid rgba(0,120,212,.14);
+            border: 1px solid rgba(0, 120, 212, .14);
             padding: 1.5rem;
             text-decoration: none;
             color: var(--c-fg, #111827);
@@ -331,11 +370,16 @@
             transition: background .2s;
         }
 
-        .coach-card:hover { background: #F5F8FE; }
+        .coach-card:hover {
+            background: #F5F8FE;
+        }
+
         .coach-card::before {
             content: '';
             position: absolute;
-            top: 0; left: 0; right: 0;
+            top: 0;
+            left: 0;
+            right: 0;
             height: 2px;
             background: #0078D4;
         }
@@ -389,11 +433,16 @@
             transition: opacity .3s ease;
         }
 
-        #drawer-overlay.open { opacity: 1; pointer-events: all; }
+        #drawer-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
 
         #drawer {
             position: fixed;
-            top: 0; right: 0; bottom: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
             width: min(760px, 100vw);
             background: #fff;
             border-left: 1px solid var(--border);
@@ -405,7 +454,9 @@
             overflow: hidden;
         }
 
-        #drawer.open { transform: translateX(0); }
+        #drawer.open {
+            transform: translateX(0);
+        }
 
         .drawer-header {
             display: flex;
@@ -418,7 +469,10 @@
             flex-shrink: 0;
         }
 
-        .drawer-nav { display: flex; gap: .5rem; }
+        .drawer-nav {
+            display: flex;
+            gap: .5rem;
+        }
 
         .drawer-nav-btn {
             background: #F5F8FE;
@@ -439,7 +493,10 @@
             border-color: var(--cyan);
         }
 
-        .drawer-nav-btn:disabled { opacity: .3; cursor: not-allowed; }
+        .drawer-nav-btn:disabled {
+            opacity: .3;
+            cursor: not-allowed;
+        }
 
         .drawer-close {
             background: none;
@@ -474,7 +531,9 @@
             text-overflow: ellipsis;
         }
 
-        .drawer-breadcrumb span { color: var(--cyan); }
+        .drawer-breadcrumb span {
+            color: var(--cyan);
+        }
 
         .drawer-body {
             flex: 1;
@@ -484,9 +543,18 @@
             scrollbar-color: var(--border) transparent;
         }
 
-        .drawer-body::-webkit-scrollbar { width: 4px; }
-        .drawer-body::-webkit-scrollbar-track { background: transparent; }
-        .drawer-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+        .drawer-body::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .drawer-body::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .drawer-body::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 2px;
+        }
 
         /* Rendered markdown */
         .md-content h1 {
@@ -525,7 +593,8 @@
             margin-bottom: 1rem;
         }
 
-        .md-content ul, .md-content ol {
+        .md-content ul,
+        .md-content ol {
             padding-left: 1.25rem;
             margin-bottom: 1rem;
         }
@@ -537,7 +606,9 @@
             margin-bottom: .25rem;
         }
 
-        .md-content li::marker { color: var(--cyan); }
+        .md-content li::marker {
+            color: var(--cyan);
+        }
 
         .md-content code {
             font-family: var(--font-mono, monospace);
@@ -576,7 +647,11 @@
             border-radius: 6px;
         }
 
-        .md-content blockquote p { color: #111827; margin-bottom: 0; font-size: .85rem; }
+        .md-content blockquote p {
+            color: #111827;
+            margin-bottom: 0;
+            font-size: .85rem;
+        }
 
         .md-content a {
             color: var(--cyan);
@@ -585,7 +660,9 @@
             transition: border-color .2s;
         }
 
-        .md-content a:hover { border-color: var(--cyan); }
+        .md-content a:hover {
+            border-color: var(--cyan);
+        }
 
         .md-content table {
             width: 100%;
@@ -619,9 +696,9 @@
             margin: 2rem 0;
         }
 
-        .md-content > p:first-child a[href*="Solution"],
-        .md-content > p:first-child a[href*="Challenge"],
-        .md-content > p:first-child a[href*="README"] {
+        .md-content>p:first-child a[href*="Solution"],
+        .md-content>p:first-child a[href*="Challenge"],
+        .md-content>p:first-child a[href*="README"] {
             display: inline-flex;
             align-items: center;
             gap: .3rem;
@@ -656,10 +733,16 @@
             animation: spin .7s linear infinite;
         }
 
-        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
 
         /* ─── Coach mode ─────────────────────────────────────────────────── */
-        .coach-hidden { display: none; }
+        .coach-hidden {
+            display: none;
+        }
 
         #coach-toast {
             position: fixed;
@@ -688,17 +771,39 @@
 
         /* ─── Responsive ─────────────────────────────────────────────────── */
         @media (max-width: 900px) {
-            .challenges-grid  { grid-template-columns: 1fr 1fr; }
-            .challenge-card.full { grid-column: span 2; }
-            .challenge-card.full .card-inner { grid-template-columns: 1fr; }
-            .coach-card-grid { grid-template-columns: 1fr 1fr; }
+            .challenges-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .challenge-card.full {
+                grid-column: span 2;
+            }
+
+            .challenge-card.full .card-inner {
+                grid-template-columns: 1fr;
+            }
+
+            .coach-card-grid {
+                grid-template-columns: 1fr 1fr;
+            }
         }
 
         @media (max-width: 600px) {
-            .challenges-grid  { grid-template-columns: 1fr; }
-            .challenge-card.full { grid-column: span 1; }
-            .coach-card-grid { grid-template-columns: 1fr; }
-            .agent-grid { grid-template-columns: 1fr; }
+            .challenges-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .challenge-card.full {
+                grid-column: span 1;
+            }
+
+            .coach-card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .agent-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
     <link rel="stylesheet" href="assets/css/brand.css" />
@@ -718,13 +823,16 @@
                 <a href="#agents">Subagents</a>
                 <a href="README.md">Docs</a>
                 <a class="cta" href="#challenges">Start the Lab →</a>
-                <a class="gh" href="https://github.com/microsoft/frontier-sre-agent-rvas" target="_blank" rel="noopener">GitHub ↗</a>
+                <a class="gh" href="https://github.com/microsoft/frontier-sre-agent-rvas" target="_blank"
+                    rel="noopener">GitHub ↗</a>
             </nav>
             <div class="nav-actions">
                 <button class="icon-btn nav-toggle" type="button" aria-label="Open navigation menu"
                     aria-expanded="false" aria-controls="navLinks">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round">
+                        <path d="M3 6h18M3 12h18M3 18h18" />
+                    </svg>
                 </button>
             </div>
         </div>
@@ -733,42 +841,59 @@
     <main>
         <!-- Hero -->
         <section class="hero" id="hero" aria-labelledby="heroHeading">
-            <svg class="hero-compass" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                <circle cx="200" cy="200" r="180" stroke="currentColor" stroke-width="0.6" stroke-opacity="0.15" stroke-dasharray="4 8"/>
-                <circle cx="200" cy="200" r="140" stroke="currentColor" stroke-width="0.4" stroke-opacity="0.10"/>
-                <circle cx="200" cy="200" r="80"  stroke="currentColor" stroke-width="0.4" stroke-opacity="0.12"/>
-                <path d="M200 60 A140 140 0 0 1 340 200" stroke="#38bdf8" stroke-width="2" stroke-opacity="0.5" stroke-linecap="round"/>
-                <path d="M340 200 A140 140 0 0 1 200 340" stroke="#f87171" stroke-width="2" stroke-opacity="0.5" stroke-linecap="round"/>
-                <path d="M200 340 A140 140 0 0 1 60 200"  stroke="#a78bfa" stroke-width="2" stroke-opacity="0.5" stroke-linecap="round"/>
-                <path d="M60 200 A140 140 0 0 1 200 60"   stroke="#fb923c" stroke-width="2" stroke-opacity="0.5" stroke-linecap="round"/>
-                <line x1="200" y1="20"  x2="200" y2="380" stroke="currentColor" stroke-width="0.5" stroke-opacity="0.10"/>
-                <line x1="20"  y1="200" x2="380" y2="200" stroke="currentColor" stroke-width="0.5" stroke-opacity="0.10"/>
-                <circle cx="200" cy="200" r="5"  fill="#1A77E3" fill-opacity="0.8"/>
-                <circle cx="200" cy="200" r="12" stroke="#1A77E3" stroke-width="1" stroke-opacity="0.3"/>
-                <circle cx="200" cy="60"  r="5"  fill="#38bdf8" fill-opacity="0.7"/>
-                <circle cx="340" cy="200" r="5"  fill="#f87171" fill-opacity="0.7"/>
-                <circle cx="200" cy="340" r="5"  fill="#a78bfa" fill-opacity="0.7"/>
-                <circle cx="60"  cy="200" r="5"  fill="#fb923c" fill-opacity="0.7"/>
+            <svg class="hero-compass" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true" focusable="false">
+                <circle cx="200" cy="200" r="180" stroke="currentColor" stroke-width="0.6" stroke-opacity="0.15"
+                    stroke-dasharray="4 8" />
+                <circle cx="200" cy="200" r="140" stroke="currentColor" stroke-width="0.4" stroke-opacity="0.10" />
+                <circle cx="200" cy="200" r="80" stroke="currentColor" stroke-width="0.4" stroke-opacity="0.12" />
+                <path d="M200 60 A140 140 0 0 1 340 200" stroke="#38bdf8" stroke-width="2" stroke-opacity="0.5"
+                    stroke-linecap="round" />
+                <path d="M340 200 A140 140 0 0 1 200 340" stroke="#f87171" stroke-width="2" stroke-opacity="0.5"
+                    stroke-linecap="round" />
+                <path d="M200 340 A140 140 0 0 1 60 200" stroke="#a78bfa" stroke-width="2" stroke-opacity="0.5"
+                    stroke-linecap="round" />
+                <path d="M60 200 A140 140 0 0 1 200 60" stroke="#fb923c" stroke-width="2" stroke-opacity="0.5"
+                    stroke-linecap="round" />
+                <line x1="200" y1="20" x2="200" y2="380" stroke="currentColor" stroke-width="0.5"
+                    stroke-opacity="0.10" />
+                <line x1="20" y1="200" x2="380" y2="200" stroke="currentColor" stroke-width="0.5"
+                    stroke-opacity="0.10" />
+                <circle cx="200" cy="200" r="5" fill="#1A77E3" fill-opacity="0.8" />
+                <circle cx="200" cy="200" r="12" stroke="#1A77E3" stroke-width="1" stroke-opacity="0.3" />
+                <circle cx="200" cy="60" r="5" fill="#38bdf8" fill-opacity="0.7" />
+                <circle cx="340" cy="200" r="5" fill="#f87171" fill-opacity="0.7" />
+                <circle cx="200" cy="340" r="5" fill="#a78bfa" fill-opacity="0.7" />
+                <circle cx="60" cy="200" r="5" fill="#fb923c" fill-opacity="0.7" />
             </svg>
             <div class="wrap hero-grid">
                 <div>
                     <span class="eyebrow">Azure SRE Agent · Real Value Acceleration Program</span>
                     <h1 id="heroHeading">Autonomous SRE with <span class="accent">Azure SRE Agent</span></h1>
                     <p class="lede">
-                        Ten hands-on challenges: configure SRE Agent building blocks (skills, subagents, connectors, scheduled tasks), then trigger and observe 6 autonomous incident scenarios. Finish with a capstone where you build your own production-ready SRE agent.
+                        Ten hands-on challenges: configure SRE Agent building blocks (skills, subagents, connectors,
+                        scheduled tasks), then trigger and observe 6 autonomous incident scenarios. Finish with a
+                        capstone where you build your own production-ready SRE agent.
                     </p>
                     <div class="hero-actions">
                         <a class="btn btn-primary" href="#challenges">
                             Start the Lab
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 12h14M13 6l6 6-6 6" />
+                            </svg>
                         </a>
                         <a class="btn btn-ghost" href="README.md">Read the Briefing</a>
                     </div>
                     <div class="stats stats-4" aria-label="Lab statistics">
-                        <div class="stat"><span class="stat-num" data-count="11">11</span><span class="stat-lbl">Challenges</span></div>
-                        <div class="stat"><span class="stat-num" data-count="6">6</span><span class="stat-lbl">Subagents</span></div>
-                        <div class="stat"><span class="stat-num" data-count="8">8</span><span class="stat-lbl">Skills</span></div>
-                        <div class="stat"><span class="stat-num" data-count="5">5</span><span class="stat-lbl">Scheduled Tasks</span></div>
+                        <div class="stat"><span class="stat-num" data-count="11">11</span><span
+                                class="stat-lbl">Challenges</span></div>
+                        <div class="stat"><span class="stat-num" data-count="6">6</span><span
+                                class="stat-lbl">Subagents</span></div>
+                        <div class="stat"><span class="stat-num" data-count="8">8</span><span
+                                class="stat-lbl">Skills</span></div>
+                        <div class="stat"><span class="stat-num" data-count="5">5</span><span class="stat-lbl">Scheduled
+                                Tasks</span></div>
                     </div>
                 </div>
                 <div class="hero-modules" aria-label="Scenario overview">
@@ -801,11 +926,15 @@
             <div class="wrap">
                 <div class="challenges-header">
                     <div>
-                        <div class="section-label">Hands-On Lab</div>
+                        <div class="section-label"></div>
                         <h2 class="section-title display reveal">Challenges</h2>
                         <p class="section-desc reveal">
-                            Challenges 00–03 cover SRE Agent configuration primitives. Challenges 04–09 are live incident scenarios. Challenge 10 is the capstone: bring your own use case and build a production-ready agent.
-                            Coaches: press <kbd style="font-family:var(--font-mono);font-size:.75em;background:#F5F8FE;border:1px solid #E3E6ED;padding:.1em .4em;border-radius:3px;">Shift+C</kbd> to unlock solution guides.
+                            Challenges 00–03 cover SRE Agent configuration primitives. Challenges 04–09 are live
+                            incident scenarios. Challenge 10 is the capstone: bring your own use case and build a
+                            production-ready agent.
+                            Coaches: press <kbd
+                                style="font-family:var(--font-mono);font-size:.75em;background:#F5F8FE;border:1px solid #E3E6ED;padding:.1em .4em;border-radius:3px;">Shift+C</kbd>
+                            to unlock solution guides.
                         </p>
                     </div>
                 </div>
@@ -1046,33 +1175,33 @@
                     <a class="challenge-card full" data-phase="10" href="Student/Challenge-10.md">
                         <div class="card-bg-number display">10</div>
                         <div class="card-inner">
-                        <div class="card-top">
-                            <span class="card-phase-badge">Capstone</span>
-                            <span class="card-num mono">CH — 10</span>
-                        </div>
-                        <h3 class="card-title display">Build Your Own<br>Production-Ready SRE Agent</h3>
-                        <p class="card-desc">
-                            Bring a real reliability problem from your own environment. Design and implement
-                            a custom subagent — skills, knowledge docs, incident filter or scheduled trigger —
-                            then demo it end-to-end to the group and defend its production readiness.
-                        </p>
-                        <div class="card-footer">
-                            <div class="card-tags">
-                                <span class="card-tag">Capstone</span>
-                                <span class="card-tag">Custom subagent</span>
-                                <span class="card-tag">Your use case</span>
+                            <div class="card-top">
+                                <span class="card-phase-badge">Capstone</span>
+                                <span class="card-num mono">CH — 10</span>
                             </div>
-                            <div class="card-arrow mono">Open →</div>
-                        </div>
+                            <h3 class="card-title display">Build Your Own<br>Production-Ready SRE Agent</h3>
+                            <p class="card-desc">
+                                Bring a real reliability problem from your own environment. Design and implement
+                                a custom subagent — skills, knowledge docs, incident filter or scheduled trigger —
+                                then demo it end-to-end to the group and defend its production readiness.
+                            </p>
+                            <div class="card-footer">
+                                <div class="card-tags">
+                                    <span class="card-tag">Capstone</span>
+                                    <span class="card-tag">Custom subagent</span>
+                                    <span class="card-tag">Your use case</span>
+                                </div>
+                                <div class="card-arrow mono">Open →</div>
+                            </div>
                         </div>
                     </a>
-            </div>
+                </div>
         </section>
 
         <!-- Subagents -->
         <section id="agents">
             <div class="wrap">
-                <div class="section-label">Architecture</div>
+                <div class="section-label"></div>
                 <h2 class="section-title display reveal">Subagents</h2>
                 <p class="section-desc reveal">
                     Each subagent is a specialist with its own system prompt, tool grants, and incident routing.
@@ -1082,7 +1211,9 @@
                     <div class="agent-card">
                         <div class="agent-name">aca-app-incident-handler</div>
                         <div class="agent-role">PaaS Incident Handler</div>
-                        <div class="agent-desc">Investigates Grubify Container Apps 5xx incidents. Queries App Insights, identifies bad revisions, deactivates or rolls back, optionally analyzes source code and opens GitHub PRs.</div>
+                        <div class="agent-desc">Investigates Grubify Container Apps 5xx incidents. Queries App Insights,
+                            identifies bad revisions, deactivates or rolls back, optionally analyzes source code and
+                            opens GitHub PRs.</div>
                         <div class="agent-badges">
                             <span class="agent-badge ab-write">Write CLI</span>
                             <span class="agent-badge ab-github">GitHub OAuth</span>
@@ -1092,7 +1223,8 @@
                     <div class="agent-card">
                         <div class="agent-name">iaas-vm-incident-handler</div>
                         <div class="agent-role">IaaS VM Recovery Agent</div>
-                        <div class="agent-desc">Handles NGINX and other VM service failures detected via Syslog. Uses az vm run-command to restart services and verify recovery.</div>
+                        <div class="agent-desc">Handles NGINX and other VM service failures detected via Syslog. Uses az
+                            vm run-command to restart services and verify recovery.</div>
                         <div class="agent-badges">
                             <span class="agent-badge ab-write">Write CLI</span>
                             <span class="agent-badge ab-kql">Log Analytics</span>
@@ -1101,7 +1233,8 @@
                     <div class="agent-card">
                         <div class="agent-name">network-traffic-analyst</div>
                         <div class="agent-role">Network Observability &amp; Remediation</div>
-                        <div class="agent-desc">Analyzes VNet Flow Logs, Traffic Analytics KQL, and NSG/UDR configs. Supports interactive investigation (S5) and autonomous remediation (S6).</div>
+                        <div class="agent-desc">Analyzes VNet Flow Logs, Traffic Analytics KQL, and NSG/UDR configs.
+                            Supports interactive investigation (S5) and autonomous remediation (S6).</div>
                         <div class="agent-badges">
                             <span class="agent-badge ab-write">Write CLI</span>
                             <span class="agent-badge ab-kql">NTANetAnalytics</span>
@@ -1110,7 +1243,8 @@
                     <div class="agent-card">
                         <div class="agent-name">issue-triager</div>
                         <div class="agent-role">GitHub Issue Classifier</div>
-                        <div class="agent-desc">Runs on a schedule to triage [Customer Issue] GitHub issues. Classifies as Bug/Performance/Feature/Question, adds labels, and posts a structured bot comment.</div>
+                        <div class="agent-desc">Runs on a schedule to triage [Customer Issue] GitHub issues. Classifies
+                            as Bug/Performance/Feature/Question, adds labels, and posts a structured bot comment.</div>
                         <div class="agent-badges">
                             <span class="agent-badge ab-github">GitHub OAuth</span>
                             <span class="agent-badge ab-sched">Scheduled</span>
@@ -1119,7 +1253,8 @@
                     <div class="agent-card">
                         <div class="agent-name">cost-optimization-agent</div>
                         <div class="agent-role">Cost &amp; Efficiency Analyst</div>
-                        <div class="agent-desc">Reviews Azure resource costs on a weekly schedule. Queries Cost Management, correlates with workload usage, and reports optimization opportunities.</div>
+                        <div class="agent-desc">Reviews Azure resource costs on a weekly schedule. Queries Cost
+                            Management, correlates with workload usage, and reports optimization opportunities.</div>
                         <div class="agent-badges">
                             <span class="agent-badge ab-sched">Scheduled</span>
                             <span class="agent-badge ab-kql">Cost Management</span>
@@ -1128,7 +1263,8 @@
                     <div class="agent-card">
                         <div class="agent-name">azure-resource-config-auditor</div>
                         <div class="agent-role">Compliance &amp; Config Auditor</div>
-                        <div class="agent-desc">Audits Azure resource configuration against best practices. Checks SKU selection, redundancy settings, diagnostic settings, and security posture on demand.</div>
+                        <div class="agent-desc">Audits Azure resource configuration against best practices. Checks SKU
+                            selection, redundancy settings, diagnostic settings, and security posture on demand.</div>
                         <div class="agent-badges">
                             <span class="agent-badge ab-kql">Read-only</span>
                         </div>
@@ -1155,77 +1291,88 @@
                         <div class="card-bg-number display">00</div>
                         <div class="coach-num mono">SOL — 00</div>
                         <div class="coach-title">Prerequisites &amp; Lab Setup</div>
-                        <div class="coach-desc">TF deploy walkthrough, config-sre-agent pitfalls, OAuth authorization, pre-flight checks.</div>
+                        <div class="coach-desc">TF deploy walkthrough, config-sre-agent pitfalls, OAuth authorization,
+                            pre-flight checks.</div>
                         <div class="coach-arrow mono">Open →</div>
                     </a>
                     <a class="coach-card" href="Coach/Solution-01.md">
                         <div class="card-bg-number display">01</div>
                         <div class="coach-num mono">SOL — 01</div>
                         <div class="coach-title">Skills &amp; Knowledge Docs</div>
-                        <div class="coach-desc">Skill YAML anatomy, knowledge doc conventions, apply targeting, portal verification steps.</div>
+                        <div class="coach-desc">Skill YAML anatomy, knowledge doc conventions, apply targeting, portal
+                            verification steps.</div>
                         <div class="coach-arrow mono">Open →</div>
                     </a>
                     <a class="coach-card" href="Coach/Solution-02.md">
                         <div class="card-bg-number display">02</div>
                         <div class="coach-num mono">SOL — 02</div>
                         <div class="coach-title">Subagents &amp; Incident Filters</div>
-                        <div class="coach-desc">SubAgent YAML anatomy, IncidentFilter routing logic, write-capability governance discussion.</div>
+                        <div class="coach-desc">SubAgent YAML anatomy, IncidentFilter routing logic, write-capability
+                            governance discussion.</div>
                         <div class="coach-arrow mono">Open →</div>
                     </a>
                     <a class="coach-card" href="Coach/Solution-03.md">
                         <div class="card-bg-number display">03</div>
                         <div class="coach-num mono">SOL — 03</div>
                         <div class="coach-title">Connectors, Repos &amp; Scheduled Tasks</div>
-                        <div class="coach-desc">Connector chain, repo link auth, scheduled task cron, manual portal trigger, debrief prompts.</div>
+                        <div class="coach-desc">Connector chain, repo link auth, scheduled task cron, manual portal
+                            trigger, debrief prompts.</div>
                         <div class="coach-arrow mono">Open →</div>
                     </a>
                     <a class="coach-card" href="Coach/Solution-04.md">
                         <div class="card-bg-number display">04</div>
                         <div class="coach-num mono">SOL — 04</div>
                         <div class="coach-title">Autonomous App Incident Response</div>
-                        <div class="coach-desc">Incident routing architecture, expected agent behavior, debrief: autonomous vs. manual.</div>
+                        <div class="coach-desc">Incident routing architecture, expected agent behavior, debrief:
+                            autonomous vs. manual.</div>
                         <div class="coach-arrow mono">Open →</div>
                     </a>
                     <a class="coach-card" href="Coach/Solution-05.md">
                         <div class="card-bg-number display">05</div>
                         <div class="coach-num mono">SOL — 05</div>
                         <div class="coach-title">Code Correlation &amp; GitHub</div>
-                        <div class="coach-desc">Inline code-analyzer architecture, OAuth prereq check, PR governance discussion.</div>
+                        <div class="coach-desc">Inline code-analyzer architecture, OAuth prereq check, PR governance
+                            discussion.</div>
                         <div class="coach-arrow mono">Open →</div>
                     </a>
                     <a class="coach-card" href="Coach/Solution-06.md">
                         <div class="card-bg-number display">06</div>
                         <div class="coach-num mono">SOL — 06</div>
                         <div class="coach-title">Proactive Workflow Automation</div>
-                        <div class="coach-desc">Sample issue titles, expected triage behavior, idempotency check, production path discussion.</div>
+                        <div class="coach-desc">Sample issue titles, expected triage behavior, idempotency check,
+                            production path discussion.</div>
                         <div class="coach-arrow mono">Open →</div>
                     </a>
                     <a class="coach-card" href="Coach/Solution-07.md">
                         <div class="card-bg-number display">07</div>
                         <div class="coach-num mono">SOL — 07</div>
                         <div class="coach-title">IaaS Service Recovery</div>
-                        <div class="coach-desc">AMA/Syslog path, run-command extension, expected remediation, write-capable agent governance.</div>
+                        <div class="coach-desc">AMA/Syslog path, run-command extension, expected remediation,
+                            write-capable agent governance.</div>
                         <div class="coach-arrow mono">Open →</div>
                     </a>
                     <a class="coach-card" href="Coach/Solution-08.md">
                         <div class="card-bg-number display">08</div>
                         <div class="coach-num mono">SOL — 08</div>
                         <div class="coach-title">Network Diagnostics (Interactive)</div>
-                        <div class="coach-desc">TA timing warning, expected prompts, IsFlowCapturedAtUDRHop KQL, interactive vs. autonomous debrief.</div>
+                        <div class="coach-desc">TA timing warning, expected prompts, IsFlowCapturedAtUDRHop KQL,
+                            interactive vs. autonomous debrief.</div>
                         <div class="coach-arrow mono">Open →</div>
                     </a>
                     <a class="coach-card" href="Coach/Solution-09.md">
                         <div class="card-bg-number display">09</div>
                         <div class="coach-num mono">SOL — 09</div>
                         <div class="coach-title">Autonomous NSG Remediation</div>
-                        <div class="coach-desc">NSG delete blast radius, governance provocation, interactive↔autonomous contrast, debrief guide.</div>
+                        <div class="coach-desc">NSG delete blast radius, governance provocation, interactive↔autonomous
+                            contrast, debrief guide.</div>
                         <div class="coach-arrow mono">Open →</div>
                     </a>
                     <a class="coach-card" href="Coach/Solution-10.md">
                         <div class="card-bg-number display">10</div>
                         <div class="coach-num mono">SOL — 10</div>
                         <div class="coach-title">Build Your Own SRE Agent (Capstone)</div>
-                        <div class="coach-desc">Use-case approval checklist, design review guide, production-readiness criteria, demo facilitation, and full debrief discussion guide.</div>
+                        <div class="coach-desc">Use-case approval checklist, design review guide, production-readiness
+                            criteria, demo facilitation, and full debrief discussion guide.</div>
                         <div class="coach-arrow mono">Open →</div>
                     </a>
                 </div>
@@ -1241,7 +1388,8 @@
             <div class="footer-links">
                 <a href="README.md">Docs</a>
                 <a href="Coach/README.md">Coach Index</a>
-                <a href="https://github.com/microsoft/frontier-sre-agent-rvas" target="_blank" rel="noopener">GitHub ↗</a>
+                <a href="https://github.com/microsoft/frontier-sre-agent-rvas" target="_blank" rel="noopener">GitHub
+                    ↗</a>
             </div>
         </div>
     </footer>
@@ -1302,13 +1450,13 @@
         }, { passive: true });
 
         // ── Drawer: markdown rendering ──────────────────────────────────────
-        const drawer        = document.getElementById('drawer');
+        const drawer = document.getElementById('drawer');
         const drawerOverlay = document.getElementById('drawer-overlay');
         const drawerContent = document.getElementById('drawer-content');
-        const drawerTitle   = document.getElementById('drawer-title');
-        const drawerPrev    = document.getElementById('drawer-prev');
-        const drawerNext    = document.getElementById('drawer-next');
-        const drawerClose   = document.getElementById('drawer-close');
+        const drawerTitle = document.getElementById('drawer-title');
+        const drawerPrev = document.getElementById('drawer-prev');
+        const drawerNext = document.getElementById('drawer-next');
+        const drawerClose = document.getElementById('drawer-close');
 
         const STUDENT_FILES = [
             { label: 'CH-00', file: 'Student/Challenge-00.md', title: 'Prerequisites & Lab Setup' },
@@ -1344,9 +1492,9 @@
         function openDrawer(mdFile) {
             const sIdx = STUDENT_FILES.findIndex(f => f.file === mdFile);
             const cIdx = COACH_FILES.findIndex(f => f.file === mdFile);
-            if      (sIdx !== -1) { activeFiles = STUDENT_FILES; currentIdx = sIdx; }
-            else if (cIdx !== -1) { activeFiles = COACH_FILES;   currentIdx = cIdx; }
-            else                  { activeFiles = STUDENT_FILES; currentIdx = 0; }
+            if (sIdx !== -1) { activeFiles = STUDENT_FILES; currentIdx = sIdx; }
+            else if (cIdx !== -1) { activeFiles = COACH_FILES; currentIdx = cIdx; }
+            else { activeFiles = STUDENT_FILES; currentIdx = 0; }
             loadAndRender(currentIdx);
             drawer.classList.add('open');
             drawerOverlay.classList.add('open');
@@ -1423,7 +1571,7 @@
                 return;
             }
             if (!drawer.classList.contains('open')) return;
-            if (e.key === 'ArrowLeft' && currentIdx > 0)                      { currentIdx--; loadAndRender(currentIdx); }
+            if (e.key === 'ArrowLeft' && currentIdx > 0) { currentIdx--; loadAndRender(currentIdx); }
             if (e.key === 'ArrowRight' && currentIdx < activeFiles.length - 1) { currentIdx++; loadAndRender(currentIdx); }
         });
 
@@ -1441,4 +1589,5 @@
     <div id="coach-toast"></div>
 
 </body>
+
 </html>
