@@ -1,6 +1,6 @@
 [< Previous Challenge](./Challenge-05.md) — **[Home](../README.md)** — [Next Challenge >](./Challenge-07.md)
 
-# Challenge 03 — Proactive Workflow Automation
+# Challenge 06 — Proactive Workflow Automation
 
 ## Introduction
 

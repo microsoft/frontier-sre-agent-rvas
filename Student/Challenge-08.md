@@ -1,6 +1,6 @@
 [< Previous Challenge](./Challenge-07.md) — **[Home](../README.md)** — [Next Challenge >](./Challenge-09.md)
 
-# Challenge 05 — Network Diagnostics: Asymmetric Routing
+# Challenge 08 — Network Diagnostics: Asymmetric Routing
 
 ## Introduction
 

@@ -1,6 +1,6 @@
 [< Previous Challenge](./Challenge-04.md) — **[Home](../README.md)** — [Next Challenge >](./Challenge-06.md)
 
-# Challenge 02 — Code Correlation & GitHub Integration
+# Challenge 05 — Code Correlation & GitHub Integration
 
 ## Introduction
 

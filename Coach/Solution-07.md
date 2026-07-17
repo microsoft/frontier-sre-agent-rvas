@@ -1,6 +1,6 @@
 [< Previous Solution](./Solution-06.md) | **[Home](./README.md)** | [Next Solution >](./Solution-08.md)
 
-# Coach Guide — Challenge 04: IaaS Service Recovery (VM + NGINX)
+# Coach Guide — Challenge 07: IaaS Service Recovery (VM + NGINX)
 
 ## Purpose
 

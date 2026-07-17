@@ -1,6 +1,6 @@
-[< Previous Solution](./Solution-08.md) | **[Home](./README.md)**
+[< Previous Solution](./Solution-08.md) | **[Home](./README.md)** | [Next Solution >](./Solution-10.md)
 
-# Coach Guide — Challenge 06: Autonomous NSG Remediation
+# Coach Guide — Challenge 09: Autonomous NSG Remediation
 
 ## Purpose
 
@@ -65,7 +65,7 @@ NTANetAnalytics
 
 ## Autonomous vs Interactive Contrast (Debrief)
 
-This is the central debrief topic — use Challenge 05 and 06 together as a case study:
+This is the central debrief topic — use Challenge 08 and 09 together as a case study:
 
 | Dimension | S5 Interactive | S6 Autonomous |
 |---|---|---|

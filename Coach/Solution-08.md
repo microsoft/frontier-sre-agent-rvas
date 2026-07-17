@@ -1,6 +1,6 @@
 [< Previous Solution](./Solution-07.md) | **[Home](./README.md)** | [Next Solution >](./Solution-09.md)
 
-# Coach Guide — Challenge 05: Network Diagnostics (Interactive Mode)
+# Coach Guide — Challenge 08: Network Diagnostics (Interactive Mode)
 
 ## Purpose
 

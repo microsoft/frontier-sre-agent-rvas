@@ -1,6 +1,6 @@
 [< Previous Challenge](./Challenge-06.md) — **[Home](../README.md)** — [Next Challenge >](./Challenge-08.md)
 
-# Challenge 04 — IaaS Service Recovery
+# Challenge 07 — IaaS Service Recovery
 
 ## Introduction
 

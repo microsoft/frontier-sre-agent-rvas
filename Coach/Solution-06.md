@@ -1,6 +1,6 @@
 [< Previous Solution](./Solution-05.md) | **[Home](./README.md)** | [Next Solution >](./Solution-07.md)
 
-# Coach Guide — Challenge 03: Proactive Workflow Automation
+# Coach Guide — Challenge 06: Proactive Workflow Automation
 
 ## Purpose
 

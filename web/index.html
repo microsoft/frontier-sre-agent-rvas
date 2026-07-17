@@ -755,7 +755,7 @@
                     <span class="eyebrow">Azure SRE Agent · Real Value Acceleration Program</span>
                     <h1 id="heroHeading">Autonomous SRE with <span class="accent">Azure SRE Agent</span></h1>
                     <p class="lede">
-                        Ten hands-on challenges: configure SRE Agent building blocks (skills, subagents, connectors, scheduled tasks), then trigger and observe 6 autonomous incident scenarios.
+                        Ten hands-on challenges: configure SRE Agent building blocks (skills, subagents, connectors, scheduled tasks), then trigger and observe 6 autonomous incident scenarios. Finish with a capstone where you build your own production-ready SRE agent.
                     </p>
                     <div class="hero-actions">
                         <a class="btn btn-primary" href="#challenges">
@@ -765,7 +765,7 @@
                         <a class="btn btn-ghost" href="README.md">Read the Briefing</a>
                     </div>
                     <div class="stats stats-4" aria-label="Lab statistics">
-                        <div class="stat"><span class="stat-num" data-count="10">10</span><span class="stat-lbl">Challenges</span></div>
+                        <div class="stat"><span class="stat-num" data-count="11">11</span><span class="stat-lbl">Challenges</span></div>
                         <div class="stat"><span class="stat-num" data-count="6">6</span><span class="stat-lbl">Subagents</span></div>
                         <div class="stat"><span class="stat-num" data-count="8">8</span><span class="stat-lbl">Skills</span></div>
                         <div class="stat"><span class="stat-num" data-count="5">5</span><span class="stat-lbl">Scheduled Tasks</span></div>
@@ -788,6 +788,10 @@
                         <div class="mod-name">Network diagnostics &amp; remediation</div>
                         <div class="mod-count">S5–S6 · VNet Flow Logs · NSG · UDR</div>
                     </a>
+                    <a href="#challenges" class="hero-mod-card" style="--mod-color:#107C41">
+                        <div class="mod-name">Capstone: Build your own agent</div>
+                        <div class="mod-count">C10 · Your use case · End-to-end demo</div>
+                    </a>
                 </div>
             </div>
         </section>
@@ -800,8 +804,7 @@
                         <div class="section-label">Hands-On Lab</div>
                         <h2 class="section-title display reveal">Challenges</h2>
                         <p class="section-desc reveal">
-                            Challenges 00–03 cover SRE Agent configuration primitives. Challenges 04–09 are live incident scenarios.
-                            Complete in order for the full learning arc, or jump to any scenario after Challenge 03.
+                            Challenges 00–03 cover SRE Agent configuration primitives. Challenges 04–09 are live incident scenarios. Challenge 10 is the capstone: bring your own use case and build a production-ready agent.
                             Coaches: press <kbd style="font-family:var(--font-mono);font-size:.75em;background:#F5F8FE;border:1px solid #E3E6ED;padding:.1em .4em;border-radius:3px;">Shift+C</kbd> to unlock solution guides.
                         </p>
                     </div>
@@ -1039,7 +1042,30 @@
                         </div>
                     </a>
 
-                </div>
+                    <!-- CH-10 -->
+                    <a class="challenge-card full" data-phase="10" href="Student/Challenge-10.md">
+                        <div class="card-bg-number display">10</div>
+                        <div class="card-inner">
+                        <div class="card-top">
+                            <span class="card-phase-badge">Capstone</span>
+                            <span class="card-num mono">CH — 10</span>
+                        </div>
+                        <h3 class="card-title display">Build Your Own<br>Production-Ready SRE Agent</h3>
+                        <p class="card-desc">
+                            Bring a real reliability problem from your own environment. Design and implement
+                            a custom subagent — skills, knowledge docs, incident filter or scheduled trigger —
+                            then demo it end-to-end to the group and defend its production readiness.
+                        </p>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="card-tag">Capstone</span>
+                                <span class="card-tag">Custom subagent</span>
+                                <span class="card-tag">Your use case</span>
+                            </div>
+                            <div class="card-arrow mono">Open →</div>
+                        </div>
+                        </div>
+                    </a>
             </div>
         </section>
 
@@ -1195,6 +1221,13 @@
                         <div class="coach-desc">NSG delete blast radius, governance provocation, interactive↔autonomous contrast, debrief guide.</div>
                         <div class="coach-arrow mono">Open →</div>
                     </a>
+                    <a class="coach-card" href="Coach/Solution-10.md">
+                        <div class="card-bg-number display">10</div>
+                        <div class="coach-num mono">SOL — 10</div>
+                        <div class="coach-title">Build Your Own SRE Agent (Capstone)</div>
+                        <div class="coach-desc">Use-case approval checklist, design review guide, production-readiness criteria, demo facilitation, and full debrief discussion guide.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
                 </div>
             </div>
         </section>
@@ -1288,6 +1321,7 @@
             { label: 'CH-07', file: 'Student/Challenge-07.md', title: 'IaaS Service Recovery' },
             { label: 'CH-08', file: 'Student/Challenge-08.md', title: 'Network Diagnostics (Interactive)' },
             { label: 'CH-09', file: 'Student/Challenge-09.md', title: 'Autonomous NSG Remediation' },
+            { label: 'CH-10', file: 'Student/Challenge-10.md', title: 'Build Your Own Production-Ready SRE Agent' },
         ];
 
         const COACH_FILES = [
@@ -1301,6 +1335,7 @@
             { label: 'SOL-07', file: 'Coach/Solution-07.md', title: 'Coach · IaaS Service Recovery' },
             { label: 'SOL-08', file: 'Coach/Solution-08.md', title: 'Coach · Network Diagnostics (Interactive)' },
             { label: 'SOL-09', file: 'Coach/Solution-09.md', title: 'Coach · Autonomous NSG Remediation' },
+            { label: 'SOL-10', file: 'Coach/Solution-10.md', title: 'Coach · Build Your Own SRE Agent (Capstone)' },
         ];
 
         let currentIdx = -1;

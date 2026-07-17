@@ -1,6 +1,6 @@
-[< Previous Challenge](./Challenge-08.md) — **[Home](../README.md)**
+[< Previous Challenge](./Challenge-08.md) — **[Home](../README.md)** — [Next Challenge >](./Challenge-10.md)
 
-# Challenge 06 — Autonomous Network Security Remediation
+# Challenge 09 — Autonomous Network Security Remediation
 
 ## Introduction
 
@@ -79,5 +79,5 @@ To complete this challenge, demonstrate:
 
 - VNet Flow Logs have a **processing delay** before they appear in Traffic Analytics and trigger alerts. If the alert doesn't fire after 10 minutes, use the portal chat to manually trigger the investigation: "Check for denied flows to port 5432 in the last 30 minutes and fix any NSG rules causing them."
 - The key KQL evidence: `NTANetAnalytics | where FlowStatus == "D" and DestPort == 5432` — share this with attendees if they want to understand what the agent is looking at.
-- Compare this challenge with Challenge 05: both involve the network, but S5 is interactive and exploratory while S6 is autonomous and corrective. This contrast is one of the most valuable discussion points in the hack.
+- Compare this challenge with Challenge 08: both involve the network, but S5 is interactive and exploratory while S6 is autonomous and corrective. This contrast is one of the most valuable discussion points in the hack.
 - After restore, re-run `generate-baseline-traffic.sh` to confirm the DB flows are allowed again.

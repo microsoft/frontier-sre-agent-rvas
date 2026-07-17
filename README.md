@@ -21,6 +21,7 @@ Open `web/index.html` in a browser for the interactive UI (coach mode: **Shift+C
 | [07](Student/Challenge-07.md) | IaaS Service Recovery | Scenario | `iaas-vm-incident-handler`, VM run-command |
 | [08](Student/Challenge-08.md) | Network Diagnostics (Interactive) | Scenario | UDR asymmetry, Traffic Analytics KQL |
 | [09](Student/Challenge-09.md) | Autonomous NSG Remediation | Scenario | NSG deny flow, autonomous rule removal |
+| [10](Student/Challenge-10.md) | Build Your Own Production-Ready SRE Agent | Capstone | Design, implement & demo a custom agent for your own use case |
 
 **Coaches:** see [Coach/README.md](Coach/README.md) for solution guides, mini-lectures, and debrief discussion guides.
 

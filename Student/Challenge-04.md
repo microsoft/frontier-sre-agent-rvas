@@ -1,6 +1,6 @@
 [< Previous Challenge](./Challenge-03.md) — **[Home](../README.md)** — [Next Challenge >](./Challenge-05.md)
 
-# Challenge 01 — Autonomous App Incident Response (PaaS)
+# Challenge 04 — Autonomous App Incident Response (PaaS)
 
 ## Introduction
 

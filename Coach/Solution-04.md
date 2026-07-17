@@ -1,6 +1,6 @@
 [< Previous Solution](./Solution-03.md) | **[Home](./README.md)** | [Next Solution >](./Solution-05.md)
 
-# Coach Guide — Challenge 01: Autonomous App Incident Response (PaaS)
+# Coach Guide — Challenge 04: Autonomous App Incident Response (PaaS)
 
 ## Purpose
 

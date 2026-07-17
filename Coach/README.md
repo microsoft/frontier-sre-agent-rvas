@@ -18,6 +18,7 @@ This index links each student challenge to the corresponding coach guide. Soluti
 | 07 | [Challenge 07 — IaaS Service Recovery](../Student/Challenge-07.md) | [Solution 07](./Solution-07.md) | NGINX down → `iaas-vm-incident-handler` + run-command | Scenario |
 | 08 | [Challenge 08 — Network Diagnostics (Interactive)](../Student/Challenge-08.md) | [Solution 08](./Solution-08.md) | UDR asymmetry → VNet Flow Logs interactive diagnosis | Scenario |
 | 09 | [Challenge 09 — Autonomous NSG Remediation](../Student/Challenge-09.md) | [Solution 09](./Solution-09.md) | NSG deny → autonomous NSG rule removal | Scenario |
+| 10 | [Challenge 10 — Build Your Own Production-Ready SRE Agent](../Student/Challenge-10.md) | [Solution 10](./Solution-10.md) | Design, implement & demo a custom agent for your own use case | Capstone |
 
 ## Incident Routing Architecture
 
