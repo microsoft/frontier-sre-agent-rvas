@@ -59,11 +59,11 @@ Resource names that depend on the random suffix are always resolved through
 Terraform outputs or the demo scripts, never hardcoded:
 
 ```bash
-terraform -chdir=04-terraform output demo_lab_vm_names
-terraform -chdir=04-terraform output -raw hub_resource_group_name
-terraform -chdir=04-terraform output -raw web_api_resource_group_name
-terraform -chdir=04-terraform output -raw data_resource_group_name
-terraform -chdir=04-terraform output -raw sample_food_resource_group_name
+terraform -chdir=infra output demo_lab_vm_names
+terraform -chdir=infra output -raw hub_resource_group_name
+terraform -chdir=infra output -raw web_api_resource_group_name
+terraform -chdir=infra output -raw data_resource_group_name
+terraform -chdir=infra output -raw sample_food_resource_group_name
 ```
 
 ---
@@ -246,7 +246,7 @@ this lab) remediates autonomously**.
 
 ### 3.2 The agent resource (control plane)
 
-Provisioned in [04-terraform/main.tf](../04-terraform/main.tf) as
+Provisioned in [infra/main.tf](../../infra/main.tf) as
 `Microsoft.App/agents@2026-01-01`:
 
 | Property | Value | Why |
@@ -263,7 +263,7 @@ Provisioned in [04-terraform/main.tf](../04-terraform/main.tf) as
 ### 3.3 The desired-state configuration (data plane)
 
 The agent's behaviour is Git-managed YAML+Markdown under
-[06-sre-agent-configuration/](../06-sre-agent-configuration) and applied by
+[azure-sre-agent-config/](../../azure-sre-agent-config) and applied by
 [sre-agent-config.sh](.Student/Resources/scenarios/scripts/sre-agent-config.sh):
 
 | Object | Count | Role in the demo |
@@ -298,7 +298,7 @@ The **7 subagents**, grouped by the role they play in the demo:
   remediates without a human gate. The blast-radius control is therefore **least-privilege
   RBAC** (the UAMI is Contributor only over the demo scopes), not an approval step. This is a
   deliberate non-production posture justified by restore scripts; to re-harden, see §12.1 and
-  [ADR 0001](../01-documentation-azure-sre-agent/adr/0001-sre-agent-iac-boundaries.md).
+  [ADR 0001](../azure-sre-agent/adr/0001-sre-agent-iac-boundaries.md).
 - **Domain routing, not severity-only.** Each of the three incident filters owns one **failure
   domain**, keyed by incident title across severities, so the right specialist (ACA app, IaaS
   web tier, hub networking) always handles the incident. This is what makes the agent's choice
@@ -409,8 +409,8 @@ Before any scenario:
 1. **Infrastructure deployed.**
 
    ```bash
-   terraform -chdir=04-terraform plan
-   terraform -chdir=04-terraform apply
+   terraform -chdir=infra plan
+   terraform -chdir=infra apply
    ```
 
 2. **SRE Agent configuration applied** (subagents, incident filters, hooks,
@@ -468,7 +468,7 @@ Student/Resources/scenarios/scripts/break-sample-food-app.sh
 Confirm errors in logs (same data the agent uses):
 
 ```bash
-api="$(terraform -chdir=04-terraform output -json sample_food_resource_names | jq -r '.api_container_app')"
+api="$(terraform -chdir=infra output -json sample_food_resource_names | jq -r '.api_container_app')"
 Student/Resources/scenarios/scripts/run-kql.sh "ContainerAppHTTPLogs
 | where TimeGenerated > ago(15m)
 | where ContainerAppName == '$api'
@@ -679,9 +679,9 @@ Syslog
   the declared desired state:
 
   ```bash
-  rg="$(terraform -chdir=04-terraform output -raw web_api_resource_group_name)"
+  rg="$(terraform -chdir=infra output -raw web_api_resource_group_name)"
   for key in web_1 web_2; do
-    vm="$(terraform -chdir=04-terraform output -json demo_lab_vm_names | jq -r ".$key")"
+    vm="$(terraform -chdir=infra output -json demo_lab_vm_names | jq -r ".$key")"
     az vm run-command invoke -g "$rg" -n "$vm" --command-id RunShellScript \
       --scripts "which nginx || (apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y nginx); systemctl enable --now nginx; systemctl is-active nginx"
   done
@@ -696,11 +696,11 @@ failure. Resolve the IPs from Terraform outputs and run three simple curls **on 
 client** via Run Command:
 
 ```bash
-LB="$(terraform -chdir=04-terraform output -json demo_lab_vm_private_ips | jq -r '.ilb')"
-W1="$(terraform -chdir=04-terraform output -json demo_lab_vm_private_ips | jq -r '.web_1')"
-W2="$(terraform -chdir=04-terraform output -json demo_lab_vm_private_ips | jq -r '.web_2')"
-rg="$(terraform -chdir=04-terraform output -raw web_api_resource_group_name)"
-client="$(terraform -chdir=04-terraform output -json demo_lab_vm_names | jq -r '.client')"
+LB="$(terraform -chdir=infra output -json demo_lab_vm_private_ips | jq -r '.ilb')"
+W1="$(terraform -chdir=infra output -json demo_lab_vm_private_ips | jq -r '.web_1')"
+W2="$(terraform -chdir=infra output -json demo_lab_vm_private_ips | jq -r '.web_2')"
+rg="$(terraform -chdir=infra output -raw web_api_resource_group_name)"
+client="$(terraform -chdir=infra output -json demo_lab_vm_names | jq -r '.client')"
 
 az vm run-command invoke -g "$rg" -n "$client" --command-id RunShellScript \
   --scripts "curl -v http://$LB/ ; curl -v http://$W1/ ; curl -v http://$W2/" \
@@ -912,7 +912,7 @@ re-create the `block-unsafe-remediation` hook manifest (recoverable from Git his
 `sre-agent-config.sh apply --target hooks`, or add a global
 [tool access policy](https://learn.microsoft.com/en-us/azure/sre-agent/tool-access-policies)
 denying `RunAzCliWriteCommands(az * delete *)` and similar, or set the incident filters back to
-`Review`. See [ADR 0001](../01-documentation-azure-sre-agent/adr/0001-sre-agent-iac-boundaries.md).
+`Review`. See [ADR 0001](../azure-sre-agent/adr/0001-sre-agent-iac-boundaries.md).
 
 ### 12.2 Subagents
 
@@ -1003,7 +1003,7 @@ Student/Resources/scenarios/scripts/validate.sh
 **Full teardown** (destroys the lab infrastructure):
 
 ```bash
-terraform -chdir=04-terraform destroy
+terraform -chdir=infra destroy
 ```
 
 SRE Agent configuration is desired-state; remove specific surfaces with
@@ -1052,9 +1052,9 @@ In-repository references:
 
 - [KQL catalog](kql-catalog.md)
 - [Sample Food Ordering App lab](sample-food-ordering-app-lab.md)
-- [SRE Agent configuration](../06-sre-agent-configuration/README.md)
-- [SRE Agent config script guide](../01-documentation-azure-sre-agent/sre-agent-config-script-guide.md)
-- [ADR 0001 — SRE Agent IaC boundaries](../01-documentation-azure-sre-agent/adr/0001-sre-agent-iac-boundaries.md)
+- [SRE Agent configuration](../../azure-sre-agent-config/README.md)
+- [SRE Agent config script guide](../azure-sre-agent/sre-agent-config-script-guide.md)
+- [ADR 0001 — SRE Agent IaC boundaries](../azure-sre-agent/adr/0001-sre-agent-iac-boundaries.md)
 
 ---
 

@@ -16,7 +16,7 @@ Audience: cloud/platform engineers, SRE leads, FinOps practitioners, technical d
 This is a capability/reference document. It does not repeat the global resource inventory,
 ownership matrix, or deployment command model that already exist elsewhere; it links to them:
 
-- Whole-agent architecture: [../02-documentation-demo-lab-env/azure-sre-agent-architecture-and-configuration.md](../02-documentation-demo-lab-env/azure-sre-agent-architecture-and-configuration.md)
+- Whole-agent architecture: [../docs/demo-lab/azure-sre-agent-architecture-and-configuration.md](../demo-lab/azure-sre-agent-architecture-and-configuration.md)
 - Ownership (Terraform vs YAML+API): [resource-support-matrix.md](resource-support-matrix.md)
 - Deployment commands: [sre-agent-config-script-guide.md](sre-agent-config-script-guide.md)
 - IaC boundary decision: [adr/0001-sre-agent-iac-boundaries.md](adr/0001-sre-agent-iac-boundaries.md)
@@ -79,11 +79,11 @@ The agent's behavior is desired state under Git, split across two layers (see
 
 | Layer | Owns | Where | Mechanism |
 | --- | --- | --- | --- |
-| ARM (control plane) | Agent resource, UAMI, model, RBAC, managed scope | [../04-terraform/](../04-terraform) | Terraform (`azapi` + `azurerm`) |
-| Data plane (behavior) | This sub-agent, its skill, knowledge files, scheduled task | [../06-sre-agent-configuration/](../06-sre-agent-configuration) | YAML + Markdown applied by [sre-agent-config.sh](../03-scripts/sre-agent-config.sh) |
+| ARM (control plane) | Agent resource, UAMI, model, RBAC, managed scope | [infra/](../../infra) | Terraform (`azapi` + `azurerm`) |
+| Data plane (behavior) | This sub-agent, its skill, knowledge files, scheduled task | [azure-sre-agent-config/](../../azure-sre-agent-config) | YAML + Markdown applied by [sre-agent-config.sh](../../infra/scripts/sre-agent-config.sh) |
 
 `cost-optimization-agent` is entirely a **data-plane** capability. It attaches to the existing
-agent resource provisioned in [../04-terraform/main.tf](../04-terraform/main.tf):
+agent resource provisioned in [../infra/main.tf](../../infra/main.tf):
 
 | Agent property | Value | Relevance to cost optimization |
 | --- | --- | --- |
@@ -141,7 +141,7 @@ The scheduled task name is intentionally **cadence-neutral** (`cost-optimization
 
 ## 4. The sub-agent (`cost-optimization-agent`)
 
-File: `../06-sre-agent-configuration/subagents/cost-optimization-agent.yaml`
+File: `../azure-sre-agent-config/subagents/cost-optimization-agent.yaml`
 
 ```yaml
 api_version: azuresre.ai/v1
@@ -233,7 +233,7 @@ Two files: the manifest `cost-optimization.yaml` and the procedure `cost-optimiz
 
 ### 5.1 Manifest
 
-File: `../06-sre-agent-configuration/skills/cost-optimization.yaml`
+File: `../azure-sre-agent-config/skills/cost-optimization.yaml`
 
 ```yaml
 api_version: azuresre.ai/v1
@@ -396,7 +396,7 @@ This knowledge file is the keystone that makes the agent context-aware. Without 
 would optimize the bill blindly; with it, the agent weighs every recommendation against what each
 workload actually requires.
 
-File: `../06-sre-agent-configuration/knowledge/files/cost/workload-cost-profiles.md`
+File: `../azure-sre-agent-config/knowledge/files/cost/workload-cost-profiles.md`
 
 Per-workload schema (one row per application/project):
 
@@ -454,7 +454,7 @@ comparable over time:
 
 ## 10. The scheduled task (`cost-optimization-review`)
 
-File: `../06-sre-agent-configuration/automations/scheduled-tasks/cost-optimization-review.yaml`
+File: `../azure-sre-agent-config/automations/scheduled-tasks/cost-optimization-review.yaml`
 
 ```yaml
 api_version: azuresre.ai/v1
@@ -511,7 +511,7 @@ work-item creation and autonomous execution are intentionally **out of scope**. 
 
 These notification connectors are created through the **portal wizard** (OAuth + managed
 identity), not a data-plane manifest - complete enablement runbooks live at
-`../06-sre-agent-configuration/connectors/example-outlook.yaml` and `example-teams.yaml`
+`../azure-sre-agent-config/connectors/example-outlook.yaml` and `example-teams.yaml`
 (excluded from deployment by necessity: they cannot be created by a data-plane apply).
 
 Prerequisites: an SRE Agent Administrator with **Contributor** on the agent resource group
@@ -566,24 +566,24 @@ export RG="rg-sec-sreagent"
 export AGENT="contoso-sre-agent-dev"
 
 # 1) Knowledge files (new)
-./03-scripts/sre-agent-config.sh apply --target knowledge-files \
+./infra/scripts/sre-agent-config.sh apply --target knowledge-files \
   --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 
 # 2) Skill (create cost-optimization)
-./03-scripts/sre-agent-config.sh apply --target skills --name cost-optimization \
+./infra/scripts/sre-agent-config.sh apply --target skills --name cost-optimization \
   --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 
 # 3) Sub-agent (create cost-optimization-agent)
-./03-scripts/sre-agent-config.sh apply --target subagents --name cost-optimization-agent \
+./infra/scripts/sre-agent-config.sh apply --target subagents --name cost-optimization-agent \
   --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 
 # 4) Scheduled task (create cost-optimization-review, points to the new agent)
-./03-scripts/sre-agent-config.sh apply --target scheduled-tasks --name cost-optimization-review \
+./infra/scripts/sre-agent-config.sh apply --target scheduled-tasks --name cost-optimization-review \
   --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 
 # 5) Delete the superseded objects (the script deletes by local file; old names no longer exist
 #    in Git, so delete the old task via the script and the old sub-agent/skill by direct curl).
-./03-scripts/sre-agent-config.sh delete --target scheduled-tasks --name weekly-cost-retention-review --yes \
+./infra/scripts/sre-agent-config.sh delete --target scheduled-tasks --name weekly-cost-retention-review --yes \
   --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 # Old sub-agent and skill: DELETE ${EP}/api/v2/extendedAgent/agents/cost-and-retention-advisor
 #                          DELETE ${EP}/api/v2/extendedAgent/skills/cost-retention-optimization
@@ -596,7 +596,7 @@ Migration guardrails:
   cost task.
 - If a `PUT /api/v2/extendedAgent/*` returns a transient `404`, do not change paths or audience:
   `GET` the collection to confirm it is warm, then re-run the same apply.
-- Gates after edits: `./03-scripts/sre-agent-config.sh validate` (with a dummy `GITHUB_PAT`),
+- Gates after edits: `./infra/scripts/sre-agent-config.sh validate` (with a dummy `GITHUB_PAT`),
   editor diagnostics clean, Markdown lint clean. Terraform direct-values check is not applicable
   (YAML/Markdown only).
 
@@ -629,8 +629,8 @@ Source: [Azure SRE Agent pricing and billing](https://learn.microsoft.com/en-us/
 
 ## 14. Cross-references
 
-- Whole-agent architecture and the reactive/proactive paths: [../02-documentation-demo-lab-env/azure-sre-agent-architecture-and-configuration.md](../02-documentation-demo-lab-env/azure-sre-agent-architecture-and-configuration.md)
-- Configuration directory map and conventions: [../06-sre-agent-configuration/README.md](../06-sre-agent-configuration/README.md)
+- Whole-agent architecture and the reactive/proactive paths: [../docs/demo-lab/azure-sre-agent-architecture-and-configuration.md](../demo-lab/azure-sre-agent-architecture-and-configuration.md)
+- Configuration directory map and conventions: [../azure-sre-agent-config/README.md](../../azure-sre-agent-config/README.md)
 - Deployment script manual: [sre-agent-config-script-guide.md](sre-agent-config-script-guide.md)
 - Ownership matrix: [resource-support-matrix.md](resource-support-matrix.md)
 - Autonomy/governance decision: [adr/0001-sre-agent-iac-boundaries.md](adr/0001-sre-agent-iac-boundaries.md)

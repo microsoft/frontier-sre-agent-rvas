@@ -10,15 +10,15 @@ Read [](Student/Resources/scenarios/scripts/validate-sample-food-app.sh)
 
 I'll do a quick check in the lab documents to confirm the expected mechanism (because this script does not directly "break" components: it generates load on a specific endpoint).
 
-Searched for regex `break-sample-food-app.sh|/api/cart/demo-user/items|5xx|HTTP 5xx|Sample Food` (`**/02-documentation-demo-lab-env/**/*.md`), 88 results
+Searched for regex `break-sample-food-app.sh|/api/cart/demo-user/items|5xx|HTTP 5xx|Sample Food` (`**/docs/demo-lab/**/*.md`), 88 results
 
-Searched for regex `break-sample-food-app.sh|/api/cart/demo-user/items|5xx|HTTP 5xx|sample food` (`**/README.md|01-documentation-azure-sre-agent/**/*.md`), no results
+Searched for regex `break-sample-food-app.sh|/api/cart/demo-user/items|5xx|HTTP 5xx|sample food` (`**/README.md|docs/azure-sre-agent/**/*.md`), no results
 
-Read [](file:///home/lpassaretta/platform/projects/azure-sre-agent/02-documentation-demo-lab-env/azure-sre-agent-demo-runbook.md#148-148), lines 148 to 185
+Read [](file:///home/lpassaretta/platform/projects/azure-sre-agent/docs/demo-lab/azure-sre-agent-demo-runbook.md#148-148), lines 148 to 185
 
-Read [](file:///home/lpassaretta/platform/projects/azure-sre-agent/02-documentation-demo-lab-env/validation-evidence.md#52-52), lines 52 to 68
+Read [](file:///home/lpassaretta/platform/projects/azure-sre-agent/docs/demo-lab/validation-evidence.md#52-52), lines 52 to 68
 
-Read [](file:///home/lpassaretta/platform/projects/azure-sre-agent/02-documentation-demo-lab-env/sample-food-ordering-app-lab.md#40-40), lines 40 to 65
+Read [](file:///home/lpassaretta/platform/projects/azure-sre-agent/docs/demo-lab/sample-food-ordering-app-lab.md#40-40), lines 40 to 65
 
 Good question: in reality the script does not directly "break" the app.  
 It only performs targeted application stress, and 5xx errors only emerge if the backend fails under that load.

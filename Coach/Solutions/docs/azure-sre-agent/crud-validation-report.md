@@ -2,9 +2,9 @@
 
 Date: 2026-06-11
 
-Scope: `06-sre-agent-configuration/` desired state for Azure SRE Agent `contoso-sre-agent-dev` in `rg-contoso-sre-agent-dev`.
+Scope: `azure-sre-agent-config/` desired state for Azure SRE Agent `contoso-sre-agent-dev` in `rg-contoso-sre-agent-dev`.
 
-> **Current-state note (2026-07-03).** This is a historical CRUD validation record from 2026-06-11. The instance names below (`sre-diagnostics-baseline`, `observability-investigator`, `example-service`, `example-plugin-config`, `example-runbook.md`, ...) were the `example-*` manifests used for that test run; those manifests have since been removed from the repository. The current live inventory is **7 subagents, 8 skills, 3 incident filters** - see [azure-sre-agent-architecture-and-configuration.md](../02-documentation-demo-lab-env/azure-sre-agent-architecture-and-configuration.md) for the authoritative current state.
+> **Current-state note (2026-07-03).** This is a historical CRUD validation record from 2026-06-11. The instance names below (`sre-diagnostics-baseline`, `observability-investigator`, `example-service`, `example-plugin-config`, `example-runbook.md`, ...) were the `example-*` manifests used for that test run; those manifests have since been removed from the repository. The current live inventory is **7 subagents, 8 skills, 3 incident filters** - see [azure-sre-agent-architecture-and-configuration.md](../demo-lab/azure-sre-agent-architecture-and-configuration.md) for the authoritative current state.
 
 ## Summary
 
@@ -60,7 +60,7 @@ The current live state was restored for resources that were deleted during tests
 
 Date: 2026-06-12.
 
-Scope: full desired state for Azure SRE Agent `contoso-sre-agent-dev` in `rg-contoso-sre-agent-dev` (subscription `<Your Subscription ID>`, region `swedencentral`), after integrating the Sample Food / Grubify lab and the VNet Flow Logs configuration into a single desired state. All apply and DELETE-supported purge operations were executed with `03-scripts/sre-agent-config.sh`.
+Scope: full desired state for Azure SRE Agent `contoso-sre-agent-dev` in `rg-contoso-sre-agent-dev` (subscription `<Your Subscription ID>`, region `swedencentral`), after integrating the Sample Food / Grubify lab and the VNet Flow Logs configuration into a single desired state. All apply and DELETE-supported purge operations were executed with `infra/scripts/sre-agent-config.sh`.
 
 ### Deployed (apply via script, staged per target, verified after each)
 
@@ -93,7 +93,7 @@ GitHub OAuth authorization must be completed once in the SRE Agent portal; then 
 
 ## VNet Flow Logs Guide Sub-Resources and Demo Alerts (Plan 3)
 
-Scope: import the SRE Agent sub-resources that existed only in the EMU project's portal-oriented guide (`azure-sre-agent-implementation-guide.md`) into the repo standard, deploy them with `03-scripts/sre-agent-config.sh`, and enable the demo alerts that drive the incident-routing scenarios. Target unchanged (`contoso-sre-agent-dev`).
+Scope: import the SRE Agent sub-resources that existed only in the EMU project's portal-oriented guide (`azure-sre-agent-implementation-guide.md`) into the repo standard, deploy them with `infra/scripts/sre-agent-config.sh`, and enable the demo alerts that drive the incident-routing scenarios. Target unchanged (`contoso-sre-agent-dev`).
 
 ### Deployed (apply via script, staged per target, verified after each)
 
@@ -131,8 +131,8 @@ Scope: add the NGINX service-down scenario (guest-OS observability via Azure
 Monitor Agent and Syslog, a Sev2 log search alert) and reconfigure Sev2 network
 routing to **Option B1** — Autonomous investigation with a human-in-the-loop gate
 on remediation. Terraform changes are in
-[nginx-observability.tf](../../04-terraform/nginx-observability.tf);
-the demo script is [azure-sre-agent-demo-runbook.md](../../02-documentation-demo-lab-env/azure-sre-agent-demo-runbook.md).
+[nginx-observability.tf](../../infra/nginx-observability.tf);
+the demo script is [azure-sre-agent-demo-runbook.md](../../docs/demo-lab/azure-sre-agent-demo-runbook.md).
 Target unchanged (`contoso-sre-agent-dev`).
 
 ### Applied (data-plane PUT via script, verified after each)
@@ -153,7 +153,7 @@ prompt (defense in depth).
 > (restart/NSG delete/route change) with no approval gate. Least-privilege RBAC is the
 > remaining boundary. The Azure Monitor incident platform was also migrated into the Terraform
 > agent body (`incidentManagementConfiguration`). See
-> [validation-evidence.md — Maximum-Autonomy Reconfiguration](../02-documentation-demo-lab-env/validation-evidence.md)
+> [validation-evidence.md — Maximum-Autonomy Reconfiguration](../demo-lab/validation-evidence.md)
 > and [ADR 0001](adr/0001-sre-agent-iac-boundaries.md).
 
 ### Terraform (targeted apply)

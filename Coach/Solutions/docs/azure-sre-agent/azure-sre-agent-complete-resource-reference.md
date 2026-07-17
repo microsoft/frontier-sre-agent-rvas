@@ -125,7 +125,7 @@ Line-by-line:
 Deploy command:
 
 ```bash
-terraform -chdir=04-terraform apply
+terraform -chdir=infra apply
 ```
 
 ### 3.2 `azurerm_user_assigned_identity`
@@ -157,7 +157,7 @@ Line-by-line:
 Deploy command:
 
 ```bash
-terraform -chdir=04-terraform apply
+terraform -chdir=infra apply
 ```
 
 ### 3.3 `azurerm_role_assignment`
@@ -205,7 +205,7 @@ Azure SRE Agent role semantics:
 Deploy command:
 
 ```bash
-terraform -chdir=04-terraform apply
+terraform -chdir=infra apply
 ```
 
 ### 3.4 `azurerm_log_analytics_workspace`
@@ -246,7 +246,7 @@ Parameters:
 Deploy command:
 
 ```bash
-terraform -chdir=04-terraform apply
+terraform -chdir=infra apply
 ```
 
 ### 3.5 `azurerm_application_insights`
@@ -288,7 +288,7 @@ Parameters:
 Deploy command:
 
 ```bash
-terraform -chdir=04-terraform apply
+terraform -chdir=infra apply
 ```
 
 ## 4. `Microsoft.App/agents` Root Resource
@@ -390,7 +390,7 @@ Deploy with Terraform:
 
 ```bash
 check-terraform-direct-values
-terraform -chdir=04-terraform apply
+terraform -chdir=infra apply
 ```
 
 Deploy with ARM REST:
@@ -463,7 +463,7 @@ Known connector type semantics:
 Deploy with Terraform:
 
 ```bash
-terraform -chdir=04-terraform apply
+terraform -chdir=infra apply
 ```
 
 Deploy with ARM REST direct properties:
@@ -919,7 +919,7 @@ Upload command:
 ```bash
 curl -fsS -X POST \
   -H "Authorization: Bearer ${TOKEN}" \
-  -F "files=@06-sre-agent-configuration/knowledge/files/example-runbook.md" \
+  -F "files=@azure-sre-agent-config/knowledge/files/example-runbook.md" \
   "${ENDPOINT}/api/v1/agentmemory/upload"
 ```
 
@@ -1068,9 +1068,9 @@ Official source: https://learn.microsoft.com/en-us/azure/sre-agent/deploy-iac
 ```bash
 # Terraform-managed resources
 check-terraform-direct-values
-terraform -chdir=04-terraform init
-terraform -chdir=04-terraform plan
-terraform -chdir=04-terraform apply
+terraform -chdir=infra init
+terraform -chdir=infra plan
+terraform -chdir=infra apply
 
 # ARM agent read
 ARM_BASE="https://management.azure.com/subscriptions/${SUB}/resourceGroups/${RG}/providers/Microsoft.App/agents/${AGENT}"

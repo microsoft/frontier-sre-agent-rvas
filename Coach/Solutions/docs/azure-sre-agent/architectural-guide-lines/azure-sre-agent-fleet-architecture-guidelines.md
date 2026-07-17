@@ -204,7 +204,7 @@ step by step:
 **Step 2 — The two (and only two) real ways enterprise teams are organized:**
 
 - **(a) Functional silos** (*functional silo / activity-oriented* = division by technical
-  competence): Network, Cloud Infra/Platform, Compute/Systems, Database, Application, Security. This is the
+  competence): Network, Cloud infra/Platform, Compute/Systems, Database, Application, Security. This is the
   dominant model in enterprises.
 - **(b) Stream-aligned** (*Team Topologies* = a team aligned to an end-to-end value stream, "you
   build it, you run it"): **1 team per workload**. Source:

@@ -43,7 +43,7 @@ specialization, not by value stream), also called **activity-oriented** (organiz
 
 | Real org model (Conway) | "1 agent per team" becomes | Documented anti-pattern | Certification |
 |---|---|---|---|
-| **Functional silos** (Network/Infra/Compute/DB/App/Sec) | 1 agent per **layer** | ❌ *"1 agent per every layer" = worst anti-pattern* — destroys cross-layer correlation | Fleet guide §1; [Overview — investigation in a **single thread**](https://learn.microsoft.com/en-us/azure/sre-agent/overview); [Fowler — problematic layer teams](https://martinfowler.com/bliki/ConwaysLaw.html) |
+| **Functional silos** (Network/infra/Compute/DB/App/Sec) | 1 agent per **layer** | ❌ *"1 agent per every layer" = worst anti-pattern* — destroys cross-layer correlation | Fleet guide §1; [Overview — investigation in a **single thread**](https://learn.microsoft.com/en-us/azure/sre-agent/overview); [Fowler — problematic layer teams](https://martinfowler.com/bliki/ConwaysLaw.html) |
 | **Stream-aligned** (1 team per workload, "you build it you run it") | 1 agent per **application** | ❌ *"Do not segment by application"* — always-on cost explodes, you lose cross-workload correlation | Fleet guide §1; [Pricing FAQ — *"consolidating workloads under one agent reduces always-on costs"*](https://learn.microsoft.com/en-us/azure/sre-agent/pricing-billing#frequently-asked-questions); [Permissions — one agent covers many RG/subscription](https://learn.microsoft.com/en-us/azure/sre-agent/permissions) |
 
 **Both paths lead to a documented anti-pattern ⇒ "1 agent per team" is void. QED.** Furthermore, **no: stream-aligned teams do NOT save the rule**: "1 agent per workload" is also wrong at scale, because (a) always-on is a fixed cost of 4 AAU/agent-hour from creation to deletion ([Pricing](https://learn.microsoft.com/en-us/azure/sre-agent/pricing-billing)), (b) a single agent already covers many resource groups and multiple subscriptions ([Permissions](https://learn.microsoft.com/en-us/azure/sre-agent/permissions)), and (c) a shared dependency that breaks (hub firewall, APIM, shared DB) impacts *N* workloads and an agent-per-workload does not correlate them. The fleet guide certifies this: with 20 or 100 apps the number of agents **does not change**.
@@ -89,7 +89,7 @@ drivers, and counted `K = independent approval domains`, not teams). The followi
 
 | Question | Certified answer |
 |---|---|
-| How are enterprise teams divided? | Functional silos (Network/Infra/Compute/DB/App/Sec) + central SRE |
+| How are enterprise teams divided? | Functional silos (Network/infra/Compute/DB/App/Sec) + central SRE |
 | Does "1 agent per team" make sense? | **No** — category error |
 | Functional silos → | ❌ 1 agent per layer (worst anti-pattern) |
 | Stream-aligned → | ❌ 1 agent per app (anti-pattern) |

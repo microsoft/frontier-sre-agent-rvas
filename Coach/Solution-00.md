@@ -41,7 +41,7 @@ The Container Apps ingress provisioning can take up to 5 minutes after `terrafor
 - **7 subagents** expected: `aca-app-incident-handler`, `azure-resource-config-auditor`, `code-analyzer`, `cost-optimization-agent`, `iaas-vm-incident-handler`, `issue-triager`, `network-traffic-analyst`
 - **8 skills** expected: `connectivity-diagnostics`, `cost-optimization`, `nsg-deny-flow-investigation`, `rbac-and-resource-access-check`, `sample-food-container-app-incident-analysis`, `traffic-analytics-kql-analysis`, `udr-asymmetry-investigation`, `vnet-flow-logs-and-ingestion`
 - **3 incident filters** expected: `network-observability-review`, `sample-food-http-errors`, `web-tier-nginx`
-- If a subagent or skill count is off, run `./Infra/scripts/sre-agent-config.sh verify` from `Coach/Solutions/` to see what's missing
+- If a subagent or skill count is off, run `./infra/scripts/sre-agent-config.sh verify` from `Coach/Solutions/` to see what's missing
 
 ## ARM vs. Data-Plane Discussion
 

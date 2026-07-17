@@ -13,9 +13,9 @@ Use this checklist before sharing a customer-ready release.
 
 - [ ] No root `variables.tf`, `.tfvars`, or pass-through locals were introduced for project literals.
 - [ ] `Student/Resources/scenarios/scripts/check-terraform-direct-values.sh`
-- [ ] `terraform -chdir=04-terraform fmt -recursive`
-- [ ] `terraform -chdir=04-terraform init -backend=false`
-- [ ] `terraform -chdir=04-terraform validate`
+- [ ] `terraform -chdir=infra fmt -recursive`
+- [ ] `terraform -chdir=infra init -backend=false`
+- [ ] `terraform -chdir=infra validate`
 - [ ] `Student/Resources/scenarios/scripts/sre-agent-config.sh validate`
 - [ ] `bash -n Student/Resources/scenarios/scripts/*.sh`
 - [ ] `shellcheck Student/Resources/scenarios/scripts/*.sh` when available in the execution environment.

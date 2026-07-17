@@ -10,7 +10,7 @@ configure, and implement SRE Agent according to best practices, to meet enterpri
 governance, security, resilience, cost, and business impact.
 
 This is the **single master document** for the initiative. It does not repeat the demo walkthroughs
-(those live in [../02-documentation-demo-lab-env/](../02-documentation-demo-lab-env/)) nor the raw
+(those live in [../docs/demo-lab/](../demo-lab/)) nor the raw
 API inventory ([azure-sre-agent-complete-resource-reference.md](azure-sre-agent-complete-resource-reference.md)):
 it integrates them into a decision-oriented operational guide.
 
@@ -61,11 +61,11 @@ management platforms, and code repositories, and automates operational work end-
 In this project, agent behavior is treated as **desired state under Git**, with two clear
 ownership boundaries:
 
-- **Control plane → Terraform** ([../04-terraform/](../04-terraform/)): agent resource
+- **Control plane → Terraform** ([infra/](../../infra/)): agent resource
   `Microsoft.App/agents@2026-01-01`, identity, model, incident platform, telemetry
   connectors, RBAC.
 - **Data plane (behavior) → YAML/Markdown + `sre-agent-config.sh`**
-  ([../06-sre-agent-configuration/](../06-sre-agent-configuration/)): subagent, skill,
+  ([azure-sre-agent-config/](../../azure-sre-agent-config/)): subagent, skill,
   connectors, knowledge, incident filter, scheduled task, repo, hook.
 
 ### 1.2 The two official mental models
@@ -86,13 +86,13 @@ Two **validated** lenses govern all subsequent decisions.
 
 | Layer | What it owns | Where | Mechanism |
 | --- | --- | --- | --- |
-| ARM (control plane) | Agent resource, identity, model, incident platform, telemetry connectors, RBAC | [../04-terraform/](../04-terraform/) | Terraform (`azapi` + `azurerm`) |
-| Data plane (behavior) | Connectors, subagents, skills, knowledge, incident filter, scheduled task, repo, hook | [../06-sre-agent-configuration/](../06-sre-agent-configuration/) | YAML+Markdown applied by [sre-agent-config.sh](../03-scripts/sre-agent-config.sh) |
+| ARM (control plane) | Agent resource, identity, model, incident platform, telemetry connectors, RBAC | [infra/](../../infra/) | Terraform (`azapi` + `azurerm`) |
+| Data plane (behavior) | Connectors, subagents, skills, knowledge, incident filter, scheduled task, repo, hook | [azure-sre-agent-config/](../../azure-sre-agent-config/) | YAML+Markdown applied by [sre-agent-config.sh](../../infra/scripts/sre-agent-config.sh) |
 
 Change principle (Day-3):
 
-- **Infrastructure change** → edit `04-terraform/`, `terraform plan`, `terraform apply`.
-- **Agent behavior change** → edit `06-sre-agent-configuration/`, then
+- **Infrastructure change** → edit `infra/`, `terraform plan`, `terraform apply`.
+- **Agent behavior change** → edit `azure-sre-agent-config/`, then
   `sre-agent-config.sh plan`/`apply`/`verify`.
 
 ### 1.4 How many agents and how to segment them (boundary ≠ team)
@@ -143,11 +143,11 @@ Organized into 7 families. For each item: type/API, role, repo owner, official s
 
 | # | Primitive | What it is | Activation | Owner/API | Source |
 | --- | --- | --- | --- | --- | --- |
-| B1 | Skills | Reusable procedural playbook (`SKILL.md` + tool + file) | Automatic; max 5 active | data-plane `/skills` — [../06-sre-agent-configuration/skills/](../06-sre-agent-configuration/skills/) | [Skills](https://learn.microsoft.com/en-us/azure/sre-agent/skills) |
-| B2 | Subagents (custom agents) | Domain specialist | Explicit `/agent` or routed by filter/task; handoff chains | data-plane `/agents` — [../06-sre-agent-configuration/subagents/](../06-sre-agent-configuration/subagents/) | [Custom agents](https://learn.microsoft.com/en-us/azure/sre-agent/sub-agents) |
+| B1 | Skills | Reusable procedural playbook (`SKILL.md` + tool + file) | Automatic; max 5 active | data-plane `/skills` — [../azure-sre-agent-config/skills/](../../azure-sre-agent-config/skills/) | [Skills](https://learn.microsoft.com/en-us/azure/sre-agent/skills) |
+| B2 | Subagents (custom agents) | Domain specialist | Explicit `/agent` or routed by filter/task; handoff chains | data-plane `/agents` — [../azure-sre-agent-config/subagents/](../../azure-sre-agent-config/subagents/) | [Custom agents](https://learn.microsoft.com/en-us/azure/sre-agent/sub-agents) |
 | B3 | Tools | Atomic capability (see Family C) | Invoked by the subagent during the run | built-in / MCP / custom | [Tools](https://learn.microsoft.com/en-us/azure/sre-agent/tools) |
-| B4 | MCP servers (connectors) | Extension via Model Context Protocol (Streamable-HTTP or stdio) | On demand when a subagent calls the tool | data-plane connectors — [../06-sre-agent-configuration/connectors/](../06-sre-agent-configuration/connectors/) | [MCP connectors](https://learn.microsoft.com/en-us/azure/sre-agent/mcp-connectors) |
-| B5 | Agent hooks | Checkpoint that intercepts behavior; executor command or prompt | On the **Stop** or **PostToolUse** event | data-plane `/hooks` — [../06-sre-agent-configuration/hooks/](../06-sre-agent-configuration/hooks/) | [Agent hooks](https://learn.microsoft.com/en-us/azure/sre-agent/agent-hooks) |
+| B4 | MCP servers (connectors) | Extension via Model Context Protocol (Streamable-HTTP or stdio) | On demand when a subagent calls the tool | data-plane connectors — [../azure-sre-agent-config/connectors/](../../azure-sre-agent-config/connectors/) | [MCP connectors](https://learn.microsoft.com/en-us/azure/sre-agent/mcp-connectors) |
+| B5 | Agent hooks | Checkpoint that intercepts behavior; executor command or prompt | On the **Stop** or **PostToolUse** event | data-plane `/hooks` — [../azure-sre-agent-config/hooks/](../../azure-sre-agent-config/hooks/) | [Agent hooks](https://learn.microsoft.com/en-us/azure/sre-agent/agent-hooks) |
 | B6 | Permission gate / Tool access policies | Pre-execution security layer: approves, applies policy, blocks | Before every tool call | control on agent + policy | [Tool access policies](https://learn.microsoft.com/en-us/azure/sre-agent/tool-access-policies), [Run modes](https://learn.microsoft.com/en-us/azure/sre-agent/run-modes) |
 
 > **Built-in subagents (out of the box): 5** — architecture, logs and metrics, source code, root cause
@@ -179,7 +179,7 @@ Organized into 7 families. For each item: type/API, role, repo owner, official s
 
 | # | Source | What it contains | Management | Source |
 | --- | --- | --- | --- | --- |
-| D1 | Knowledge base (documents) | Runbooks, architectures, templates (MD/PDF/DOCX…, max 16 MB) | `POST /agentmemory/upload` — [../06-sre-agent-configuration/knowledge/files/](../06-sre-agent-configuration/knowledge/files/) | [Upload knowledge documents](https://learn.microsoft.com/en-us/azure/sre-agent/upload-knowledge-document) |
+| D1 | Knowledge base (documents) | Runbooks, architectures, templates (MD/PDF/DOCX…, max 16 MB) | `POST /agentmemory/upload` — [../azure-sre-agent-config/knowledge/files/](../../azure-sre-agent-config/knowledge/files/) | [Upload knowledge documents](https://learn.microsoft.com/en-us/azure/sre-agent/upload-knowledge-document) |
 | D2 | Past incidents / Session insights | Symptoms, resolution steps, root cause, pitfalls extracted at thread end | Automatic (30 min) | [Memory](https://learn.microsoft.com/en-us/azure/sre-agent/memory) |
 | D3 | User memories | Environment facts saved explicitly | `#remember` / `#retrieve` / `#forget` | [Memory](https://learn.microsoft.com/en-us/azure/sre-agent/memory) |
 | D4 | Synthesized knowledge | `memories/synthesizedKnowledge/overview.md` (always in the system prompt) + topic file | Automatic/on demand | [Memory](https://learn.microsoft.com/en-us/azure/sre-agent/memory) |
@@ -202,12 +202,12 @@ Organized into 7 families. For each item: type/API, role, repo owner, official s
 | # | Surface | Data-plane / owner | Role | Source |
 | --- | --- | --- | --- | --- |
 | F1 | Incident platform | `incidentManagementConfiguration` (Terraform) — Azure Monitor / PagerDuty / ServiceNow | Inbound: where alerts come from; with Azure Monitor no webhook (pull via RBAC) | [Incident platforms](https://learn.microsoft.com/en-us/azure/sre-agent/incident-platforms), [Azure Monitor Alerts](https://learn.microsoft.com/en-us/azure/sre-agent/azure-monitor-alerts) |
-| F2 | Incident filters (response plans) | `/incidentFilters` — [../06-sre-agent-configuration/automations/incident-filters/](../06-sre-agent-configuration/automations/incident-filters/) | Incident routing → subagent + mode | [Incident response](https://learn.microsoft.com/en-us/azure/sre-agent/incident-response) |
-| F3 | Scheduled tasks | `/scheduledtasks` — [../06-sre-agent-configuration/automations/scheduled-tasks/](../06-sre-agent-configuration/automations/scheduled-tasks/) | Recurring proactive work on cron | [Scheduled tasks](https://learn.microsoft.com/en-us/azure/sre-agent/scheduled-tasks) |
-| F4 | Repositories | `/repos` — [../06-sre-agent-configuration/repos/](../06-sre-agent-configuration/repos/) | Source code for deploy/RCA correlation and triage | [API reference](https://learn.microsoft.com/en-us/azure/sre-agent/api-reference) |
+| F2 | Incident filters (response plans) | `/incidentFilters` — [../azure-sre-agent-config/automations/incident-filters/](../../azure-sre-agent-config/automations/incident-filters/) | Incident routing → subagent + mode | [Incident response](https://learn.microsoft.com/en-us/azure/sre-agent/incident-response) |
+| F3 | Scheduled tasks | `/scheduledtasks` — [../azure-sre-agent-config/automations/scheduled-tasks/](../../azure-sre-agent-config/automations/scheduled-tasks/) | Recurring proactive work on cron | [Scheduled tasks](https://learn.microsoft.com/en-us/azure/sre-agent/scheduled-tasks) |
+| F4 | Repositories | `/repos` — [../azure-sre-agent-config/repos/](../../azure-sre-agent-config/repos/) | Source code for deploy/RCA correlation and triage | [API reference](https://learn.microsoft.com/en-us/azure/sre-agent/api-reference) |
 | F5 | HTTP triggers | `/httptriggers` | Custom inbound webhook | [API reference](https://learn.microsoft.com/en-us/azure/sre-agent/api-reference) |
-| F6 | Common prompts | `/commonprompts` — [../06-sre-agent-configuration/common-prompts/](../06-sre-agent-configuration/common-prompts/) | Reusable shared prompts | [API reference](https://learn.microsoft.com/en-us/azure/sre-agent/api-reference) |
-| F7 | Plugins (marketplaces + installations) | `/plugins/*` — [../06-sre-agent-configuration/plugins/](../06-sre-agent-configuration/plugins/) | Marketplace registration/plugin installations | [complete-resource-reference](azure-sre-agent-complete-resource-reference.md) |
+| F6 | Common prompts | `/commonprompts` — [../azure-sre-agent-config/common-prompts/](../../azure-sre-agent-config/common-prompts/) | Reusable shared prompts | [API reference](https://learn.microsoft.com/en-us/azure/sre-agent/api-reference) |
+| F7 | Plugins (marketplaces + installations) | `/plugins/*` — [../azure-sre-agent-config/plugins/](../../azure-sre-agent-config/plugins/) | Marketplace registration/plugin installations | [complete-resource-reference](azure-sre-agent-complete-resource-reference.md) |
 
 ### Family G — Runtime-only surfaces (not desired-state)
 
@@ -224,11 +224,11 @@ Source G1–G3: [API reference](https://learn.microsoft.com/en-us/azure/sre-agen
 | Family | Content | Plane | Repo owner |
 | --- | --- | --- | --- |
 | A — Core & support | Agent, UAMI, RBAC, LAW, App Insights, telemetry connectors | Control | Terraform |
-| B — Extension primitives | Skills, Subagents, Tools, MCP, Hooks + Permission gate | Data (+control) | 06-config |
-| C — Tools | Built-in, MCP, code exec, knowledge, comms, incident/DevOps, custom | Data | 06-config |
-| D — Knowledge & Memory | Document KB, past incidents, user memories, synthesized, connected | Data | 06-config/knowledge |
-| E — Connectors | Data sources, source code/knowledge, collaboration, custom MCP | Data (+ARM) | 06-config/connectors |
-| F — Automation & I/O | Incident platform, response plan, scheduled task, repos, HTTP trigger, common prompt, plugin | Data (+control) | 06-config + Terraform |
+| B — Extension primitives | Skills, Subagents, Tools, MCP, Hooks + Permission gate | Data (+control) | azure-sre-agent-config |
+| C — Tools | Built-in, MCP, code exec, knowledge, comms, incident/DevOps, custom | Data | azure-sre-agent-config |
+| D — Knowledge & Memory | Document KB, past incidents, user memories, synthesized, connected | Data | azure-sre-agent-config/knowledge |
+| E — Connectors | Data sources, source code/knowledge, collaboration, custom MCP | Data (+ARM) | azure-sre-agent-config/connectors |
+| F — Automation & I/O | Incident platform, response plan, scheduled task, repos, HTTP trigger, common prompt, plugin | Data (+control) | azure-sre-agent-config + Terraform |
 | G — Runtime-only | Threads, approvals, SignalR | Runtime | n/a |
 
 ---
@@ -274,7 +274,7 @@ queries (“*Main agent can handle without delegation*” / “*Use skills inste
   reference architectures, runbooks, report templates, naming conventions, escalation paths,
   vetted KQL catalog.
 - **HOW (key aspects)**:
-  - Markdown files under [../06-sre-agent-configuration/knowledge/files/](../06-sre-agent-configuration/knowledge/files/),
+  - Markdown files under [../azure-sre-agent-config/knowledge/files/](../../azure-sre-agent-config/knowledge/files/),
     uploaded with `sre-agent-config.sh apply --target knowledge-files`. The server indexes by
     **basename** → unique, descriptive file name (`http-500-errors.md`, not `runbook.md`).
   - **Upload vs Connect**: static content → upload; live/changeable content (ADO wiki, code)
@@ -1394,7 +1394,7 @@ Internal references in the repo:
 - Raw API inventory: [azure-sre-agent-complete-resource-reference.md](azure-sre-agent-complete-resource-reference.md)
 - Ownership matrix: [resource-support-matrix.md](resource-support-matrix.md)
 - IaC boundaries ADR: [adr/0001-sre-agent-iac-boundaries.md](adr/0001-sre-agent-iac-boundaries.md)
-- Desired-state architecture: [../02-documentation-demo-lab-env/azure-sre-agent-architecture-and-configuration.md](../02-documentation-demo-lab-env/azure-sre-agent-architecture-and-configuration.md)
+- Desired-state architecture: [../docs/demo-lab/azure-sre-agent-architecture-and-configuration.md](../demo-lab/azure-sre-agent-architecture-and-configuration.md)
 
 ---
 
@@ -1404,14 +1404,14 @@ Internal references in the repo:
 | --- | ---: | --- |
 | Agent (mode=Autonomous, access=High, `claude-opus-4-6`, AAU 500) | 1 | Terraform |
 | Data-plane connectors / ARM telemetry | 3 / 2 | Family E / A2 |
-| Subagents | 8 | [../06-sre-agent-configuration/subagents/](../06-sre-agent-configuration/subagents/) |
-| Skills | 10 | [../06-sre-agent-configuration/skills/](../06-sre-agent-configuration/skills/) |
+| Subagents | 8 | [../azure-sre-agent-config/subagents/](../../azure-sre-agent-config/subagents/) |
+| Skills | 10 | [../azure-sre-agent-config/skills/](../../azure-sre-agent-config/skills/) |
 | Custom tools / Hooks | 0 / 0 | built-in only; max-autonomy |
-| Knowledge base (documents) | 15 | [../06-sre-agent-configuration/knowledge/files/](../06-sre-agent-configuration/knowledge/files/) |
+| Knowledge base (documents) | 15 | [../azure-sre-agent-config/knowledge/files/](../../azure-sre-agent-config/knowledge/files/) |
 | Incident platform | 1 (Azure Monitor) | Terraform |
-| Incident filters (response plan) | 5 | [../06-sre-agent-configuration/automations/incident-filters/](../06-sre-agent-configuration/automations/incident-filters/) |
-| Scheduled tasks | 5 | [../06-sre-agent-configuration/automations/scheduled-tasks/](../06-sre-agent-configuration/automations/scheduled-tasks/) |
-| Repos | 1 (`grubify`) | [../06-sre-agent-configuration/repos/](../06-sre-agent-configuration/repos/) |
+| Incident filters (response plan) | 5 | [../azure-sre-agent-config/automations/incident-filters/](../../azure-sre-agent-config/automations/incident-filters/) |
+| Scheduled tasks | 5 | [../azure-sre-agent-config/automations/scheduled-tasks/](../../azure-sre-agent-config/automations/scheduled-tasks/) |
+| Repos | 1 (`grubify`) | [../azure-sre-agent-config/repos/](../../azure-sre-agent-config/repos/) |
 
 > Posture note: the current state is **maximum-autonomy** (non-production lab). For production,
 > see Part VI (governance) and P3 patterns with Review/Hook/policy guardrails.

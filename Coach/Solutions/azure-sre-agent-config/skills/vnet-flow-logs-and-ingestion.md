@@ -63,9 +63,9 @@ If access fails, invoke or recommend `rbac-and-resource-access-check`.
 
 1. Identify the affected VNet scope: hub, spoke-app, spoke-data, subnet, NIC, or all VNets.
 2. Identify the Terraform source of truth:
-   - `Infra/monitoring.tf` for `azurerm_network_watcher_flow_log`.
-   - `Infra/outputs.tf` for workspace, storage, and Network Watcher outputs.
-   - `Infra/network.tf` for VNet/subnet topology.
+   - `infra/monitoring.tf` for `azurerm_network_watcher_flow_log`.
+   - `infra/outputs.tf` for workspace, storage, and Network Watcher outputs.
+   - `infra/network.tf` for VNet/subnet topology.
 3. Confirm the flow log resource exists and is enabled.
 4. Confirm the target resource ID is the expected VNet resource ID.
 5. Confirm the Storage Account is the configured flow-log destination, and validate account kind, SKU, and region against the Storage Requirements table.
@@ -81,9 +81,9 @@ If access fails, invoke or recommend `rbac-and-resource-access-check`.
 | --- | --- | --- | --- |
 | Healthy | Recent Storage blobs and recent `NTANetAnalytics` records. | None. | Continue at the Traffic Analytics / KQL layer (`traffic-analytics-kql-analysis`). |
 | Delayed | Raw blobs exist but `NTANetAnalytics` is not recent. | Traffic Analytics processing delay. | Wait one interval and re-query. |
-| No traffic | Flow log enabled but no new records after the traffic window. | Workload did not generate flows. | Run `Infra/scripts/generate-baseline-traffic.sh`. |
+| No traffic | Flow log enabled but no new records after the traffic window. | Workload did not generate flows. | Run `infra/scripts/generate-baseline-traffic.sh`. |
 | No raw blobs | No recent blobs after generated traffic. | Flow log not enabled, wrong Storage target, or region mismatch. | Check flow-log enabled state, Storage target, and region. |
-| Misconfigured target | Flow log target resource does not match the expected VNet. | Wrong VNet/resource scope. | Review `Infra/monitoring.tf`. |
+| Misconfigured target | Flow log target resource does not match the expected VNet. | Wrong VNet/resource scope. | Review `infra/monitoring.tf`. |
 | Storage issue | Flow log enabled but no raw blobs; Storage mismatch, unsupported SKU/region/key/network setting. | Storage account configuration or access problem. | Inspect Storage config and permissions. |
 | Workspace issue | Raw blobs exist but the configured workspace differs from the expected workspace. | Traffic Analytics workspace mismatch. | Compare Terraform output and flow-log config. |
 | Retention issue | Older data missing but current data healthy. | Storage/workspace retention or lifecycle policy. | Confirm expected retention and lifecycle policy. |

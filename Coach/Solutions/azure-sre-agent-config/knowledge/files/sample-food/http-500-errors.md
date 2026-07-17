@@ -35,7 +35,7 @@ expect HTTP 200 — **never** use `/health` or `/api/menu` to judge recovery.
 Resolve the API Container App name once, then run the queries (substitute it for `<api>` if you query the workspace directly):
 
 ```bash
-api="$(terraform -chdir=Infra output -json sample_food_resource_names | jq -r '.api_container_app')"
+api="$(terraform -chdir=infra output -json sample_food_resource_names | jq -r '.api_container_app')"
 ```
 
 Recent HTTP 5xx by path and revision:
@@ -86,7 +86,7 @@ ContainerAppSystemLogs_CL
 
 ## Baseline expectations (demo lab)
 
-- Healthy steady state: API 5xx ratio is ~0% on `/WeatherForecast`, `/api/FoodItems`, and `/api/Restaurants`; non-zero 5xx appears only after `./Infra/scripts/break-sample-food-app.sh` (the cart POST flood). Do not over-investigate benign latency. A 404 on `/health` or `/api/menu` is expected (those routes do not exist) and must not be read as an outage.
+- Healthy steady state: API 5xx ratio is ~0% on `/WeatherForecast`, `/api/FoodItems`, and `/api/Restaurants`; non-zero 5xx appears only after `./infra/scripts/break-sample-food-app.sh` (the cart POST flood). Do not over-investigate benign latency. A 404 on `/health` or `/api/menu` is expected (those routes do not exist) and must not be read as an outage.
 - Container Apps log ingestion is near real time (seconds to ~1-2 minutes). If `ContainerAppHTTPLogs` is empty for a known-bad window, suspect the diagnostic setting or workspace, not the app.
 - Do not use `NTANetAnalytics` for this workload: Azure Container Apps traffic is not captured by VNet Flow Logs (https://learn.microsoft.com/en-us/azure/network-watcher/vnet-flow-logs-overview).
 
@@ -114,15 +114,15 @@ ContainerAppSystemLogs_CL
 This lab runs the agent in maximum-autonomy mode (no human approval gate), so apply the smallest reversible fix directly, then verify. Resolve names from Terraform outputs first:
 
 ```bash
-rg="$(terraform -chdir=Infra output -raw sample_food_resource_group_name)"
-api="$(terraform -chdir=Infra output -json sample_food_resource_names | jq -r '.api_container_app')"
+rg="$(terraform -chdir=infra output -raw sample_food_resource_group_name)"
+api="$(terraform -chdir=infra output -json sample_food_resource_names | jq -r '.api_container_app')"
 rev="$(az containerapp revision list -g "$rg" -n "$api" --query "[?properties.active].name | [0]" -o tsv)"
 ```
 
 | Confirmed cause | Remediation command | Verify |
 | --- | --- | --- |
 | Transient crash / stuck revision | `az containerapp revision restart -g "$rg" -n "$api" --revision "$rev"` | `/WeatherForecast` and `/api/FoodItems` return 200; 5xx ratio drops |
-| Bad image / regression | `./Infra/scripts/deploy-sample-food-images.sh --skip-build` (redeploy known-good) | revision Healthy; `/api/FoodItems` returns 200 |
+| Bad image / regression | `./infra/scripts/deploy-sample-food-images.sh --skip-build` (redeploy known-good) | revision Healthy; `/api/FoodItems` returns 200 |
 | CPU / memory pressure under load | `az containerapp update -g "$rg" -n "$api" --max-replicas 5` | error rate declines as replicas scale out |
 | CORS mismatch | `az containerapp update -g "$rg" -n "$api" --set-env-vars AllowedOrigins__0=<frontend-url>` | frontend calls the API successfully |
 | Frontend API base URL wrong | redeploy frontend with `REACT_APP_API_BASE_URL=<api-url>/api` | frontend root loads and calls succeed |

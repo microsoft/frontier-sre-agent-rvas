@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Convenience wrapper: run the full validate -> plan -> apply -> verify cycle of the Azure SRE
-# Agent data-plane desired state (Coach/Solutions/AZ-SRE-Agent-Configuration/) against the live
+# Agent data-plane desired state (Coach/Solutions/azure-sre-agent-config/) against the live
 # agent. The script self-locates, so it can be run from any working directory.
 #
 # Prerequisites: az login (with access to the agent). GITHUB_PAT is optional until

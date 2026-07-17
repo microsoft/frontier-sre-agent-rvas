@@ -118,10 +118,10 @@ The script requires `jq` and either Python 3 with PyYAML or a compatible `yq`. P
 Run commands from the repository root. The script resolves this directory through `.sre-agent-layout.env` by default.
 
 ```bash
-./Infra/scripts/sre-agent-config.sh validate
-./Infra/scripts/sre-agent-config.sh plan --subscription <sub> --resource-group <rg> --agent <agent>
-./Infra/scripts/sre-agent-config.sh apply --subscription <sub> --resource-group <rg> --agent <agent>
-./Infra/scripts/sre-agent-config.sh verify --subscription <sub> --resource-group <rg> --agent <agent>
+./infra/scripts/sre-agent-config.sh validate
+./infra/scripts/sre-agent-config.sh plan --subscription <sub> --resource-group <rg> --agent <agent>
+./infra/scripts/sre-agent-config.sh apply --subscription <sub> --resource-group <rg> --agent <agent>
+./infra/scripts/sre-agent-config.sh verify --subscription <sub> --resource-group <rg> --agent <agent>
 ```
 
 By default, `plan` and `apply` process the full desired state under this directory. Use selective deployment when validating one surface or one manifest at a time.
@@ -129,10 +129,10 @@ By default, `plan` and `apply` process the full desired state under this directo
 Full desired-state deployment:
 
 ```bash
-./Infra/scripts/sre-agent-config.sh validate
-./Infra/scripts/sre-agent-config.sh plan --subscription <sub> --resource-group <rg> --agent <agent>
-./Infra/scripts/sre-agent-config.sh apply --subscription <sub> --resource-group <rg> --agent <agent>
-./Infra/scripts/sre-agent-config.sh verify --subscription <sub> --resource-group <rg> --agent <agent>
+./infra/scripts/sre-agent-config.sh validate
+./infra/scripts/sre-agent-config.sh plan --subscription <sub> --resource-group <rg> --agent <agent>
+./infra/scripts/sre-agent-config.sh apply --subscription <sub> --resource-group <rg> --agent <agent>
+./infra/scripts/sre-agent-config.sh verify --subscription <sub> --resource-group <rg> --agent <agent>
 ```
 
 The `connectors/example-github-mcp.yaml` connector (MCP/PAT alternative) is disabled. The active GitHub connector is `connectors/github.yaml` (OAuth). After the first apply, complete the **one-time OAuth authorization** in the SRE Agent portal (Connectors → github → Authorize) before GitHub tools become available to subagents. The Outlook and Teams notification connectors are portal-provisioned (`example-*`, excluded from apply) and need no repo secret.
@@ -144,23 +144,23 @@ Use `--target` to deploy one configuration surface, `--name` to deploy one manif
 Examples:
 
 ```bash
-./Infra/scripts/sre-agent-config.sh validate --target skills --name sre-diagnostics-baseline
+./infra/scripts/sre-agent-config.sh validate --target skills --name sre-diagnostics-baseline
 
-./Infra/scripts/sre-agent-config.sh plan \
+./infra/scripts/sre-agent-config.sh plan \
   --target skills \
   --name sre-diagnostics-baseline \
   --subscription <sub> \
   --resource-group <rg> \
   --agent <agent>
 
-./Infra/scripts/sre-agent-config.sh apply \
+./infra/scripts/sre-agent-config.sh apply \
   --target skills \
   --name sre-diagnostics-baseline \
   --subscription <sub> \
   --resource-group <rg> \
   --agent <agent>
 
-./Infra/scripts/sre-agent-config.sh verify \
+./infra/scripts/sre-agent-config.sh verify \
   --target skills \
   --name sre-diagnostics-baseline \
   --subscription <sub> \
@@ -171,8 +171,8 @@ Examples:
 Equivalent file-based example:
 
 ```bash
-./Infra/scripts/sre-agent-config.sh plan \
-  --file AZ-SRE-Agent-Configuration/skills/traffic-analytics-kql-analysis.yaml \
+./infra/scripts/sre-agent-config.sh plan \
+  --file azure-sre-agent-config/skills/traffic-analytics-kql-analysis.yaml \
   --subscription <sub> \
   --resource-group <rg> \
   --agent <agent>
@@ -207,7 +207,7 @@ Important shell note: multi-line commands require a trailing `\` on every contin
 For plain conversion, `yq` is enough:
 
 ```bash
-yq -o=json '.' AZ-SRE-Agent-Configuration/skills/traffic-analytics-kql-analysis.yaml
+yq -o=json '.' azure-sre-agent-config/skills/traffic-analytics-kql-analysis.yaml
 ```
 
 The deployment script does more than plain conversion: it renders environment placeholders, loads Markdown referenced by `spec.content_file`, writes it into `spec.content`, removes `spec.content_file`, and translates each manifest into the data-plane or ARM shape required by its target.
@@ -219,15 +219,15 @@ For `skills`, the script maps local `spec.content` into the service property `sk
 Selective local validation and planning were verified with:
 
 ```bash
-./Infra/scripts/sre-agent-config.sh validate --target skills --name traffic-analytics-kql-analysis
-./Infra/scripts/sre-agent-config.sh plan --target skills --name traffic-analytics-kql-analysis --subscription <sub> --resource-group <rg> --agent <agent>
-./Infra/scripts/sre-agent-config.sh plan --file AZ-SRE-Agent-Configuration/skills/traffic-analytics-kql-analysis.yaml --subscription <sub> --resource-group <rg> --agent <agent>
+./infra/scripts/sre-agent-config.sh validate --target skills --name traffic-analytics-kql-analysis
+./infra/scripts/sre-agent-config.sh plan --target skills --name traffic-analytics-kql-analysis --subscription <sub> --resource-group <rg> --agent <agent>
+./infra/scripts/sre-agent-config.sh plan --file azure-sre-agent-config/skills/traffic-analytics-kql-analysis.yaml --subscription <sub> --resource-group <rg> --agent <agent>
 ```
 
 Expected selective plan output:
 
 ```text
-PUT data-plane /api/v2/extendedAgent/skills/traffic-analytics-kql-analysis from .../AZ-SRE-Agent-Configuration/skills/traffic-analytics-kql-analysis.yaml
+PUT data-plane /api/v2/extendedAgent/skills/traffic-analytics-kql-analysis from .../azure-sre-agent-config/skills/traffic-analytics-kql-analysis.yaml
 ```
 
 Live apply and verify for `skills/traffic-analytics-kql-analysis` succeed through the data-plane route:

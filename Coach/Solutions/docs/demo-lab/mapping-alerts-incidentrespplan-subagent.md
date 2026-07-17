@@ -1,6 +1,6 @@
 # Mapping: Azure Monitor alert to incident response plan to sub-agent
 
-This document maps every Azure Monitor alert defined in the demo-lab desired state (Terraform) to the incident response plan that matches it and the sub-agent that handles it. It is derived deterministically from the alert rules in `04-terraform/` and the three response plans in `06-sre-agent-configuration/automations/incident-filters/`.
+This document maps every Azure Monitor alert defined in the demo-lab desired state (Terraform) to the incident response plan that matches it and the sub-agent that handles it. It is derived deterministically from the alert rules in `infra/` and the three response plans in `azure-sre-agent-config/automations/incident-filters/`.
 
 The project defines **three** Azure Monitor alerts, and each has a unique mapping:
 

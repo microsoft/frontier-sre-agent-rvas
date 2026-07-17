@@ -6,11 +6,11 @@ This runbook explains how to change a production Azure SRE Agent after the initi
 
 | Change type | Edit location | Command | Verification |
 | --- | --- | --- | --- |
-| Azure resource, identity, RBAC, telemetry | `04-terraform/` | `terraform plan`, `terraform apply` | Terraform outputs and Azure SRE Agent ARM state |
-| Skill, subagent, tool, prompt, automation | `06-sre-agent-configuration/` | `03-scripts/sre-agent-config.sh plan`, `apply` | `03-scripts/sre-agent-config.sh verify` |
-| Knowledge file | `06-sre-agent-configuration/knowledge/files` | `03-scripts/sre-agent-config.sh apply` | Agent memory status and indexer status |
-| Repository connection | `06-sre-agent-configuration/repos` | `03-scripts/sre-agent-config.sh apply` | Repo list and connectivity test in portal/API |
-| Hook or plugin | `06-sre-agent-configuration/hooks` or `06-sre-agent-configuration/plugins` | `03-scripts/sre-agent-config.sh apply` | Hook/plugin list and test thread |
+| Azure resource, identity, RBAC, telemetry | `infra/` | `terraform plan`, `terraform apply` | Terraform outputs and Azure SRE Agent ARM state |
+| Skill, subagent, tool, prompt, automation | `azure-sre-agent-config/` | `infra/scripts/sre-agent-config.sh plan`, `apply` | `infra/scripts/sre-agent-config.sh verify` |
+| Knowledge file | `azure-sre-agent-config/knowledge/files` | `infra/scripts/sre-agent-config.sh apply` | Agent memory status and indexer status |
+| Repository connection | `azure-sre-agent-config/repos` | `infra/scripts/sre-agent-config.sh apply` | Repo list and connectivity test in portal/API |
+| Hook or plugin | `azure-sre-agent-config/hooks` or `azure-sre-agent-config/plugins` | `infra/scripts/sre-agent-config.sh apply` | Hook/plugin list and test thread |
 
 ## Standard Change Flow
 
@@ -25,13 +25,13 @@ This runbook explains how to change a production Azure SRE Agent after the initi
 
 ## Infrastructure Change
 
-Edit concrete values directly in `04-terraform/*.tf`. Do not introduce `variables.tf`, `.tfvars`, or pass-through locals for one-off project values.
+Edit concrete values directly in `infra/*.tf`. Do not introduce `variables.tf`, `.tfvars`, or pass-through locals for one-off project values.
 
 ```bash
-terraform -chdir=04-terraform fmt -recursive
-terraform -chdir=04-terraform init
-terraform -chdir=04-terraform plan
-terraform -chdir=04-terraform apply
+terraform -chdir=infra fmt -recursive
+terraform -chdir=infra init
+terraform -chdir=infra plan
+terraform -chdir=infra apply
 ```
 
 Use this path for Azure resources and RBAC. Do not use the API script for Terraform-managed resources.

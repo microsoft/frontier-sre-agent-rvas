@@ -19,9 +19,9 @@ The customer needs a simple, reliable, resilient, and enterprise-ready method fo
 Use a two-layer model:
 
 1. Terraform is authoritative for AzureRM and documented AzAPI resources.
-2. YAML/Markdown under `06-sre-agent-configuration/` is authoritative for API-only Azure SRE Agent configuration.
+2. YAML/Markdown under `azure-sre-agent-config/` is authoritative for API-only Azure SRE Agent configuration.
 
-The API layer is applied by `03-scripts/sre-agent-config.sh`, which validates local manifests, converts them to JSON, and calls documented control-plane or data-plane APIs.
+The API layer is applied by `infra/scripts/sre-agent-config.sh`, which validates local manifests, converts them to JSON, and calls documented control-plane or data-plane APIs.
 
 Exception (2026-06-14): the Azure Monitor incident platform is owned by Terraform, not the API layer. It is a property of the `Microsoft.App/agents` resource (`body.properties.incidentManagementConfiguration`), which Terraform already manages through AzAPI; under principle 1 it therefore belongs to Terraform. The former data-plane manifest `incident-platforms/azure-monitor.yaml` has been removed (recoverable from Git history; Terraform is the single owner). This also removes a two-owner conflict: a full-body Terraform PUT did not declare `incidentManagementConfiguration`, so each `terraform apply` reset it to `None` and broke every incident filter until the platform was re-applied by the script. Incident platforms that require a secret (`connectionKey`, e.g. PagerDuty/ServiceNow) stay in the API layer to avoid putting secrets in Terraform state; only the credential-free AzMonitor platform is migrated.
 

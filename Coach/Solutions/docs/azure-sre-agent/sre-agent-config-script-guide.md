@@ -1,6 +1,6 @@
 # Azure SRE Agent Configuration Script Guide
 
-This guide explains how to use `03-scripts/sre-agent-config.sh` to validate, plan, apply, verify, and manage Azure SRE Agent configuration stored under `06-sre-agent-configuration/`.
+This guide explains how to use `infra/scripts/sre-agent-config.sh` to validate, plan, apply, verify, and manage Azure SRE Agent configuration stored under `azure-sre-agent-config/`.
 
 The script is the deployment entry point for Azure SRE Agent configuration that is not managed directly by Terraform. It reads YAML manifests, injects Markdown content referenced by `spec.content_file`, converts manifests into the correct API request shape, and calls either Azure Resource Manager or the Azure SRE Agent data-plane API.
 
@@ -61,7 +61,7 @@ If `--endpoint` is not passed, the script reads the endpoint from ARM.
 General syntax:
 
 ```bash
-./03-scripts/sre-agent-config.sh <command> [options]
+./infra/scripts/sre-agent-config.sh <command> [options]
 ```
 
 Commands:
@@ -81,7 +81,7 @@ Selection options:
 | --- | --- | --- |
 | `--target` | Select a configuration surface. | `--target skills` |
 | `--name` | Select a manifest by logical name. Requires `--target` or `--file`. | `--name sre-diagnostics-baseline` |
-| `--file` | Select a single manifest or knowledge file by path. The script infers the target when possible. | `--file 06-sre-agent-configuration/skills/traffic-analytics-kql-analysis.yaml` |
+| `--file` | Select a single manifest or knowledge file by path. The script infers the target when possible. | `--file azure-sre-agent-config/skills/traffic-analytics-kql-analysis.yaml` |
 
 Azure options:
 
@@ -101,7 +101,7 @@ The script does not hardcode a legacy `configuration/` folder. It resolves the c
 1. `--config <path>`.
 2. `SRE_AGENT_CONFIG_DIR` environment variable.
 3. `SRE_AGENT_CONFIG_DIR` inside the root `.sre-agent-layout.env` contract file.
-4. Controlled fallback discovery for `06-sre-agent-configuration/` and legacy `configuration/`.
+4. Controlled fallback discovery for `azure-sre-agent-config/` and legacy `configuration/`.
 
 Explicit inputs are authoritative: if `--config`, `SRE_AGENT_CONFIG_DIR`, or `.sre-agent-layout.env` points to a missing or invalid directory, the script fails instead of silently using another folder.
 
@@ -109,21 +109,21 @@ Explicit inputs are authoritative: if `--config`, `SRE_AGENT_CONFIG_DIR`, or `.s
 
 | Target | Source directory | API route used by script |
 | --- | --- | --- |
-| `skills` | `06-sre-agent-configuration/skills/` | `PUT /api/v2/extendedAgent/skills/{name}` |
-| `subagents` | `06-sre-agent-configuration/subagents/` | `PUT /api/v2/extendedAgent/agents/{name}` |
-| `tools` | `06-sre-agent-configuration/tools/` | Known preview-blocked in this tenant; script skips manifests marked `spec.deployment.status: api-preview-blocked` |
-| `common-prompts` | `06-sre-agent-configuration/common-prompts/` | `PUT /api/v2/extendedAgent/commonprompts/{name}` |
-| `scheduled-tasks` | `06-sre-agent-configuration/automations/scheduled-tasks/` | `PUT /api/v2/extendedAgent/scheduledtasks/{name}` |
-| `incident-filters` | `06-sre-agent-configuration/automations/incident-filters/` | `PUT /api/v2/extendedAgent/incidentFilters/{name}` |
-| `incident-platforms` | `06-sre-agent-configuration/incident-platforms/` | ARM PATCH on `properties.incidentManagementConfiguration` |
-| `connectors` | `06-sre-agent-configuration/connectors/` | `PUT /api/v2/extendedAgent/connectors/{name}` |
-| `repos` | `06-sre-agent-configuration/repos/` | `PUT /api/v2/repos/{name}` |
-| `hooks` | `06-sre-agent-configuration/hooks/` | `PUT /api/v2/extendedAgent/hooks/{name}` |
-| `plugin-configs` | `06-sre-agent-configuration/plugin-configs/` | `PUT /api/v2/extendedAgent/plugins/{name}` |
-| `http-triggers` | `06-sre-agent-configuration/automations/http-triggers/` | `POST /api/v1/httptriggers/create` |
-| `plugin-marketplaces` | `06-sre-agent-configuration/plugins/marketplaces/` | `POST /api/v2/plugins/marketplaces` |
-| `plugin-installations` | `06-sre-agent-configuration/plugins/installations/` | `POST /api/v2/plugins/installations` |
-| `knowledge-files` | `06-sre-agent-configuration/knowledge/files/` | `POST /api/v1/agentmemory/upload` |
+| `skills` | `azure-sre-agent-config/skills/` | `PUT /api/v2/extendedAgent/skills/{name}` |
+| `subagents` | `azure-sre-agent-config/subagents/` | `PUT /api/v2/extendedAgent/agents/{name}` |
+| `tools` | `azure-sre-agent-config/tools/` | Known preview-blocked in this tenant; script skips manifests marked `spec.deployment.status: api-preview-blocked` |
+| `common-prompts` | `azure-sre-agent-config/common-prompts/` | `PUT /api/v2/extendedAgent/commonprompts/{name}` |
+| `scheduled-tasks` | `azure-sre-agent-config/automations/scheduled-tasks/` | `PUT /api/v2/extendedAgent/scheduledtasks/{name}` |
+| `incident-filters` | `azure-sre-agent-config/automations/incident-filters/` | `PUT /api/v2/extendedAgent/incidentFilters/{name}` |
+| `incident-platforms` | `azure-sre-agent-config/incident-platforms/` | ARM PATCH on `properties.incidentManagementConfiguration` |
+| `connectors` | `azure-sre-agent-config/connectors/` | `PUT /api/v2/extendedAgent/connectors/{name}` |
+| `repos` | `azure-sre-agent-config/repos/` | `PUT /api/v2/repos/{name}` |
+| `hooks` | `azure-sre-agent-config/hooks/` | `PUT /api/v2/extendedAgent/hooks/{name}` |
+| `plugin-configs` | `azure-sre-agent-config/plugin-configs/` | `PUT /api/v2/extendedAgent/plugins/{name}` |
+| `http-triggers` | `azure-sre-agent-config/automations/http-triggers/` | `POST /api/v1/httptriggers/create` |
+| `plugin-marketplaces` | `azure-sre-agent-config/plugins/marketplaces/` | `POST /api/v2/plugins/marketplaces` |
+| `plugin-installations` | `azure-sre-agent-config/plugins/installations/` | `POST /api/v2/plugins/installations` |
+| `knowledge-files` | `azure-sre-agent-config/knowledge/files/` | `POST /api/v1/agentmemory/upload` |
 
 Do not use ARM child endpoints such as `/skills/{name}` operationally for Agent Extensions in external tenants. Live validation showed they return:
 
@@ -139,14 +139,14 @@ Files whose names start with `example-` are kept in Git as reference material bu
 
 ## Full Desired-State Deployment
 
-Use full deployment only after reviewing every file under `06-sre-agent-configuration/`, especially manifests that contain placeholders or secrets.
+Use full deployment only after reviewing every file under `azure-sre-agent-config/`, especially manifests that contain placeholders or secrets.
 
 Dry run:
 
 ```bash
-./03-scripts/sre-agent-config.sh validate
+./infra/scripts/sre-agent-config.sh validate
 
-./03-scripts/sre-agent-config.sh plan \
+./infra/scripts/sre-agent-config.sh plan \
   --subscription "$SUB" \
   --resource-group "$RG" \
   --agent "$AGENT"
@@ -155,7 +155,7 @@ Dry run:
 Apply all desired configuration:
 
 ```bash
-./03-scripts/sre-agent-config.sh apply \
+./infra/scripts/sre-agent-config.sh apply \
   --subscription "$SUB" \
   --resource-group "$RG" \
   --agent "$AGENT"
@@ -167,8 +167,8 @@ Example failure summary:
 
 ```text
 ERROR: Full desired-state apply completed with 2 failure(s):
-  - connectors: .../06-sre-agent-configuration/connectors/<name>.yaml (exit 1)
-  - incident-platforms: .../06-sre-agent-configuration/incident-platforms/<name>.yaml (exit 1)
+  - connectors: .../azure-sre-agent-config/connectors/<name>.yaml (exit 1)
+  - incident-platforms: .../azure-sre-agent-config/incident-platforms/<name>.yaml (exit 1)
 ```
 
 Selective `apply` with `--target`, `--name`, or `--file` remains fail-fast. Use selective apply when you want one manifest to succeed or fail as a single controlled operation.
@@ -176,7 +176,7 @@ Selective `apply` with `--target`, `--name`, or `--file` remains fail-fast. Use 
 Verify all configured surfaces:
 
 ```bash
-./03-scripts/sre-agent-config.sh verify \
+./infra/scripts/sre-agent-config.sh verify \
   --subscription "$SUB" \
   --resource-group "$RG" \
   --agent "$AGENT"
@@ -197,9 +197,9 @@ connectors are portal-provisioned (never applied by this script). Deploy any sin
 targeted apply, for example:
 
 ```bash
-./03-scripts/sre-agent-config.sh apply --target skills --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply --target subagents --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply --target incident-filters --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --target skills --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --target subagents --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --target incident-filters --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 ## One-By-One Deployment Commands
@@ -217,25 +217,25 @@ All delete examples require `--yes`. Blocks named after a **real manifest** (for
 Create:
 
 ```bash
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/skills/traffic-analytics-kql-analysis.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/skills/traffic-analytics-kql-analysis.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Read:
 
 ```bash
-./03-scripts/sre-agent-config.sh verify --target skills --name traffic-analytics-kql-analysis --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target skills --name traffic-analytics-kql-analysis --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Update:
 
 ```bash
-./03-scripts/sre-agent-config.sh apply --target skills --name traffic-analytics-kql-analysis --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --target skills --name traffic-analytics-kql-analysis --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Delete:
 
 ```bash
-./03-scripts/sre-agent-config.sh delete --target skills --name traffic-analytics-kql-analysis --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
+./infra/scripts/sre-agent-config.sh delete --target skills --name traffic-analytics-kql-analysis --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
 ```
 
 ### Subagent CRUD: `network-traffic-analyst`
@@ -243,25 +243,25 @@ Delete:
 Create:
 
 ```bash
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/subagents/network-traffic-analyst.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/subagents/network-traffic-analyst.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Read:
 
 ```bash
-./03-scripts/sre-agent-config.sh verify --target subagents --name network-traffic-analyst --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target subagents --name network-traffic-analyst --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Update:
 
 ```bash
-./03-scripts/sre-agent-config.sh apply --target subagents --name network-traffic-analyst --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --target subagents --name network-traffic-analyst --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Delete:
 
 ```bash
-./03-scripts/sre-agent-config.sh delete --target subagents --name network-traffic-analyst --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
+./infra/scripts/sre-agent-config.sh delete --target subagents --name network-traffic-analyst --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
 ```
 
 ### Tool CRUD (illustrative - this repo ships no custom tools)
@@ -269,10 +269,10 @@ Delete:
 Custom tool object types are rejected in external tenants (`InvalidObjectType`; see above), so `tools/` is empty and subagents use built-in tools only. The commands below show the pattern for a hypothetical `my-tool` once Microsoft enables an accepted tool schema:
 
 ```bash
-./03-scripts/sre-agent-config.sh apply  --file 06-sre-agent-configuration/tools/my-tool.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target tools --name my-tool --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply  --target tools --name my-tool --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh delete --target tools --name my-tool --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
+./infra/scripts/sre-agent-config.sh apply  --file azure-sre-agent-config/tools/my-tool.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target tools --name my-tool --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply  --target tools --name my-tool --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh delete --target tools --name my-tool --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
 ```
 
 ### Common Prompt CRUD (illustrative - this repo ships no common prompts)
@@ -280,10 +280,10 @@ Custom tool object types are rejected in external tenants (`InvalidObjectType`; 
 The `common-prompts/` directory is empty in this repository. The commands below show the pattern for a hypothetical `my-prompt`:
 
 ```bash
-./03-scripts/sre-agent-config.sh apply  --file 06-sre-agent-configuration/common-prompts/my-prompt.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target common-prompts --name my-prompt --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply  --target common-prompts --name my-prompt --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh delete --target common-prompts --name my-prompt --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
+./infra/scripts/sre-agent-config.sh apply  --file azure-sre-agent-config/common-prompts/my-prompt.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target common-prompts --name my-prompt --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply  --target common-prompts --name my-prompt --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh delete --target common-prompts --name my-prompt --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
 ```
 
 ### Scheduled Task CRUD: `flow-log-ingestion-freshness`
@@ -291,25 +291,25 @@ The `common-prompts/` directory is empty in this repository. The commands below 
 Create:
 
 ```bash
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/automations/scheduled-tasks/flow-log-ingestion-freshness.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/automations/scheduled-tasks/flow-log-ingestion-freshness.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Read:
 
 ```bash
-./03-scripts/sre-agent-config.sh verify --target scheduled-tasks --name flow-log-ingestion-freshness --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target scheduled-tasks --name flow-log-ingestion-freshness --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Update:
 
 ```bash
-./03-scripts/sre-agent-config.sh apply --target scheduled-tasks --name flow-log-ingestion-freshness --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --target scheduled-tasks --name flow-log-ingestion-freshness --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Delete:
 
 ```bash
-./03-scripts/sre-agent-config.sh delete --target scheduled-tasks --name flow-log-ingestion-freshness --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
+./infra/scripts/sre-agent-config.sh delete --target scheduled-tasks --name flow-log-ingestion-freshness --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
 ```
 
 ### Incident Filter CRUD: `network-observability-review`
@@ -319,25 +319,25 @@ Prerequisite: the agent incident platform must already be `AzMonitor`. If the pl
 Create:
 
 ```bash
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/automations/incident-filters/network-observability-review.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/automations/incident-filters/network-observability-review.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Read:
 
 ```bash
-./03-scripts/sre-agent-config.sh verify --target incident-filters --name network-observability-review --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target incident-filters --name network-observability-review --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Update:
 
 ```bash
-./03-scripts/sre-agent-config.sh apply --target incident-filters --name network-observability-review --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --target incident-filters --name network-observability-review --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Delete:
 
 ```bash
-./03-scripts/sre-agent-config.sh delete --target incident-filters --name network-observability-review --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
+./infra/scripts/sre-agent-config.sh delete --target incident-filters --name network-observability-review --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
 ```
 
 ### Incident Platform CRUD: `azure-monitor` (Terraform-owned in this repo)
@@ -347,13 +347,13 @@ In this repository the Azure Monitor incident platform is **owned by Terraform**
 Read:
 
 ```bash
-./03-scripts/sre-agent-config.sh verify --target incident-platforms --name azure-monitor --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target incident-platforms --name azure-monitor --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Delete (would clear the platform to `type: None`; in this repo that causes drift because Terraform re-applies AzMonitor - change platform state in Terraform instead):
 
 ```bash
-./03-scripts/sre-agent-config.sh delete --target incident-platforms --name azure-monitor --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
+./infra/scripts/sre-agent-config.sh delete --target incident-platforms --name azure-monitor --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
 ```
 
 ### Incident Platform CRUD: `pagerduty` (illustrative - not used in this lab)
@@ -362,9 +362,9 @@ This lab uses Azure Monitor (Terraform-owned). PagerDuty is a supported credenti
 
 ```bash
 # Create from your manifest (inject a real connectionKey first)
-./03-scripts/sre-agent-config.sh apply  --file 06-sre-agent-configuration/incident-platforms/pagerduty.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target incident-platforms --name pagerduty --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh delete --target incident-platforms --name pagerduty --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
+./infra/scripts/sre-agent-config.sh apply  --file azure-sre-agent-config/incident-platforms/pagerduty.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target incident-platforms --name pagerduty --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh delete --target incident-platforms --name pagerduty --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
 ```
 
 ### Connector CRUD: `microsoft-learn-mcp`
@@ -374,25 +374,25 @@ The `microsoft-learn-mcp` connector needs no secret (public no-auth MCP server).
 Create:
 
 ```bash
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/connectors/microsoft-learn-mcp.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/connectors/microsoft-learn-mcp.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Read:
 
 ```bash
-./03-scripts/sre-agent-config.sh verify --target connectors --name microsoft-learn-mcp --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target connectors --name microsoft-learn-mcp --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Update:
 
 ```bash
-./03-scripts/sre-agent-config.sh apply --target connectors --name microsoft-learn-mcp --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --target connectors --name microsoft-learn-mcp --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Delete:
 
 ```bash
-./03-scripts/sre-agent-config.sh delete --target connectors --name microsoft-learn-mcp --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
+./infra/scripts/sre-agent-config.sh delete --target connectors --name microsoft-learn-mcp --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
 ```
 
 ### Repository CRUD: `grubify`
@@ -400,25 +400,25 @@ Delete:
 Create:
 
 ```bash
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/repos/grubify.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/repos/grubify.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Read:
 
 ```bash
-./03-scripts/sre-agent-config.sh verify --target repos --name grubify --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target repos --name grubify --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Update:
 
 ```bash
-./03-scripts/sre-agent-config.sh apply --target repos --name grubify --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --target repos --name grubify --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Delete:
 
 ```bash
-./03-scripts/sre-agent-config.sh delete --target repos --name grubify --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
+./infra/scripts/sre-agent-config.sh delete --target repos --name grubify --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
 ```
 
 ### Hook CRUD (illustrative - this repo runs no hooks)
@@ -426,10 +426,10 @@ Delete:
 Hooks are removed in this lab for maximum autonomy (see ADR 0001); `hooks/` is empty. Pattern for a hypothetical `my-hook`:
 
 ```bash
-./03-scripts/sre-agent-config.sh apply  --file 06-sre-agent-configuration/hooks/my-hook.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target hooks --name my-hook --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply  --target hooks --name my-hook --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh delete --target hooks --name my-hook --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
+./infra/scripts/sre-agent-config.sh apply  --file azure-sre-agent-config/hooks/my-hook.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target hooks --name my-hook --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply  --target hooks --name my-hook --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh delete --target hooks --name my-hook --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
 ```
 
 ### Plugin Config CRUD (illustrative - this repo ships no plugin configs)
@@ -437,10 +437,10 @@ Hooks are removed in this lab for maximum autonomy (see ADR 0001); `hooks/` is e
 The `plugin-configs/` directory is empty. Pattern for a hypothetical `my-plugin-config`:
 
 ```bash
-./03-scripts/sre-agent-config.sh apply  --file 06-sre-agent-configuration/plugin-configs/my-plugin-config.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target plugin-configs --name my-plugin-config --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply  --target plugin-configs --name my-plugin-config --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh delete --target plugin-configs --name my-plugin-config --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
+./infra/scripts/sre-agent-config.sh apply  --file azure-sre-agent-config/plugin-configs/my-plugin-config.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target plugin-configs --name my-plugin-config --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply  --target plugin-configs --name my-plugin-config --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh delete --target plugin-configs --name my-plugin-config --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
 ```
 
 ### HTTP Trigger CRUD (illustrative - this repo ships no HTTP triggers)
@@ -448,9 +448,9 @@ The `plugin-configs/` directory is empty. Pattern for a hypothetical `my-plugin-
 The `automations/http-triggers/` directory is empty. HTTP trigger apply is idempotent (if a trigger with the same `name` exists, the create is skipped and the existing trigger reused, avoiding duplicate webhook URLs). Pattern for a hypothetical `my-trigger`:
 
 ```bash
-./03-scripts/sre-agent-config.sh apply  --file 06-sre-agent-configuration/automations/http-triggers/my-trigger.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target http-triggers --name my-trigger --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply  --target http-triggers --name my-trigger --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply  --file azure-sre-agent-config/automations/http-triggers/my-trigger.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target http-triggers --name my-trigger --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply  --target http-triggers --name my-trigger --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Delete is not implemented by this script because no stable DELETE route is documented here for HTTP triggers.
@@ -460,9 +460,9 @@ Delete is not implemented by this script because no stable DELETE route is docum
 The `plugins/marketplaces/` directory is empty. Pattern for a hypothetical `my-marketplace`:
 
 ```bash
-./03-scripts/sre-agent-config.sh apply  --file 06-sre-agent-configuration/plugins/marketplaces/my-marketplace.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target plugin-marketplaces --name my-marketplace --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply  --target plugin-marketplaces --name my-marketplace --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply  --file azure-sre-agent-config/plugins/marketplaces/my-marketplace.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target plugin-marketplaces --name my-marketplace --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply  --target plugin-marketplaces --name my-marketplace --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Delete is not implemented by this script because the marketplace POST surface does not have a stable DELETE route documented here.
@@ -472,9 +472,9 @@ Delete is not implemented by this script because the marketplace POST surface do
 The `plugins/installations/` directory is empty. Pattern for a hypothetical `my-installation`:
 
 ```bash
-./03-scripts/sre-agent-config.sh apply  --file 06-sre-agent-configuration/plugins/installations/my-installation.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target plugin-installations --name my-installation --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply  --target plugin-installations --name my-installation --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply  --file azure-sre-agent-config/plugins/installations/my-installation.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target plugin-installations --name my-installation --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply  --target plugin-installations --name my-installation --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Delete is not implemented by this script because the installation POST surface does not have a stable DELETE route documented here.
@@ -484,13 +484,13 @@ Delete is not implemented by this script because the installation POST surface d
 Create:
 
 ```bash
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/knowledge/files/sample-food/http-500-errors.md --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/knowledge/files/sample-food/http-500-errors.md --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Read:
 
 ```bash
-./03-scripts/sre-agent-config.sh verify --target knowledge-files --name http-500-errors --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target knowledge-files --name http-500-errors --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Update:
@@ -498,13 +498,13 @@ Update:
 Update by re-uploading the same file name.
 
 ```bash
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/knowledge/files/sample-food/http-500-errors.md --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/knowledge/files/sample-food/http-500-errors.md --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Delete:
 
 ```bash
-./03-scripts/sre-agent-config.sh delete --target knowledge-files --name http-500-errors --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
+./infra/scripts/sre-agent-config.sh delete --target knowledge-files --name http-500-errors --subscription "$SUB" --resource-group "$RG" --agent "$AGENT" --yes
 ```
 
 Use `--name http-500-errors.md` if the API requires the full filename in your environment.
@@ -519,16 +519,16 @@ Use `--name http-500-errors.md` if the API requires the full filename in your en
 Source:
 
 ```text
-06-sre-agent-configuration/skills/example-diagnostics-skill.yaml
-06-sre-agent-configuration/skills/example-diagnostics-skill.md
+azure-sre-agent-config/skills/example-diagnostics-skill.yaml
+azure-sre-agent-config/skills/example-diagnostics-skill.md
 ```
 
 Commands:
 
 ```bash
-./03-scripts/sre-agent-config.sh plan --file 06-sre-agent-configuration/skills/example-diagnostics-skill.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/skills/example-diagnostics-skill.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target skills --name sre-diagnostics-baseline --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh plan --file azure-sre-agent-config/skills/example-diagnostics-skill.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/skills/example-diagnostics-skill.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target skills --name sre-diagnostics-baseline --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Expected verify signal:
@@ -543,15 +543,15 @@ Skill
 Source:
 
 ```text
-06-sre-agent-configuration/subagents/example-observability-subagent.yaml
+azure-sre-agent-config/subagents/example-observability-subagent.yaml
 ```
 
 Commands:
 
 ```bash
-./03-scripts/sre-agent-config.sh plan --file 06-sre-agent-configuration/subagents/example-observability-subagent.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/subagents/example-observability-subagent.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target subagents --name observability-investigator --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh plan --file azure-sre-agent-config/subagents/example-observability-subagent.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/subagents/example-observability-subagent.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target subagents --name observability-investigator --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 ### Tool: `azure-resource-graph-readonly`
@@ -559,15 +559,15 @@ Commands:
 Source:
 
 ```text
-06-sre-agent-configuration/tools/example-arg-tool.yaml
+azure-sre-agent-config/tools/example-arg-tool.yaml
 ```
 
 Commands:
 
 ```bash
-./03-scripts/sre-agent-config.sh plan --file 06-sre-agent-configuration/tools/example-arg-tool.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/tools/example-arg-tool.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target tools --name azure-resource-graph-readonly --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh plan --file azure-sre-agent-config/tools/example-arg-tool.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/tools/example-arg-tool.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target tools --name azure-resource-graph-readonly --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 ### Common Prompt: `incident-summary-executive`
@@ -575,16 +575,16 @@ Commands:
 Source:
 
 ```text
-06-sre-agent-configuration/common-prompts/example-incident-summary.yaml
-06-sre-agent-configuration/common-prompts/example-incident-summary.md
+azure-sre-agent-config/common-prompts/example-incident-summary.yaml
+azure-sre-agent-config/common-prompts/example-incident-summary.md
 ```
 
 Commands:
 
 ```bash
-./03-scripts/sre-agent-config.sh plan --file 06-sre-agent-configuration/common-prompts/example-incident-summary.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/common-prompts/example-incident-summary.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target common-prompts --name incident-summary-executive --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh plan --file azure-sre-agent-config/common-prompts/example-incident-summary.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/common-prompts/example-incident-summary.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target common-prompts --name incident-summary-executive --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 ### Scheduled Task: `daily-health-check`
@@ -592,15 +592,15 @@ Commands:
 Source:
 
 ```text
-06-sre-agent-configuration/automations/scheduled-tasks/example-daily-health.yaml
+azure-sre-agent-config/automations/scheduled-tasks/example-daily-health.yaml
 ```
 
 Commands:
 
 ```bash
-./03-scripts/sre-agent-config.sh plan --file 06-sre-agent-configuration/automations/scheduled-tasks/example-daily-health.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/automations/scheduled-tasks/example-daily-health.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target scheduled-tasks --name daily-health-check --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh plan --file azure-sre-agent-config/automations/scheduled-tasks/example-daily-health.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/automations/scheduled-tasks/example-daily-health.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target scheduled-tasks --name daily-health-check --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 The example task is disabled in YAML. Keep it disabled until the prompt and cost profile are reviewed.
@@ -610,15 +610,15 @@ The example task is disabled in YAML. Keep it disabled until the prompt and cost
 Source:
 
 ```text
-06-sre-agent-configuration/automations/incident-filters/example-sev2-filter.yaml
+azure-sre-agent-config/automations/incident-filters/example-sev2-filter.yaml
 ```
 
 Commands:
 
 ```bash
-./03-scripts/sre-agent-config.sh plan --file 06-sre-agent-configuration/automations/incident-filters/example-sev2-filter.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/automations/incident-filters/example-sev2-filter.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target incident-filters --name sev2-production-only --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh plan --file azure-sre-agent-config/automations/incident-filters/example-sev2-filter.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/automations/incident-filters/example-sev2-filter.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target incident-filters --name sev2-production-only --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 The example filter is disabled in YAML. Enable it only after validating incident routing behavior.
@@ -628,15 +628,15 @@ The example filter is disabled in YAML. Enable it only after validating incident
 Source:
 
 ```text
-06-sre-agent-configuration/incident-platforms/example-azure-monitor.yaml
+azure-sre-agent-config/incident-platforms/example-azure-monitor.yaml
 ```
 
 Commands:
 
 ```bash
-./03-scripts/sre-agent-config.sh plan --file 06-sre-agent-configuration/incident-platforms/example-azure-monitor.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/incident-platforms/example-azure-monitor.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target incident-platforms --name azure-monitor --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh plan --file azure-sre-agent-config/incident-platforms/example-azure-monitor.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/incident-platforms/example-azure-monitor.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target incident-platforms --name azure-monitor --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 This PATCH changes the root agent `incidentManagementConfiguration`. Only one incident platform configuration is active at a time.
@@ -646,7 +646,7 @@ This PATCH changes the root agent `incidentManagementConfiguration`. Only one in
 Source:
 
 ```text
-06-sre-agent-configuration/incident-platforms/example-pagerduty.yaml
+azure-sre-agent-config/incident-platforms/example-pagerduty.yaml
 ```
 
 The file contains a secret placeholder:
@@ -660,9 +660,9 @@ Do not apply this manifest as-is. Inject a real secret through a secure process 
 Commands after secret injection:
 
 ```bash
-./03-scripts/sre-agent-config.sh plan --file 06-sre-agent-configuration/incident-platforms/example-pagerduty.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/incident-platforms/example-pagerduty.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target incident-platforms --name pagerduty --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh plan --file azure-sre-agent-config/incident-platforms/example-pagerduty.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/incident-platforms/example-pagerduty.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target incident-platforms --name pagerduty --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Applying this after `azure-monitor` replaces the active incident platform configuration.
@@ -672,7 +672,7 @@ Applying this after `azure-monitor` replaces the active incident platform config
 Source:
 
 ```text
-06-sre-agent-configuration/connectors/example-dynatrace-mcp.yaml
+azure-sre-agent-config/connectors/example-dynatrace-mcp.yaml
 ```
 
 The file contains a secret placeholder:
@@ -686,9 +686,9 @@ Do not apply this manifest as-is. Inject a real token through a secure process f
 Commands after secret injection:
 
 ```bash
-./03-scripts/sre-agent-config.sh plan --file 06-sre-agent-configuration/connectors/example-dynatrace-mcp.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/connectors/example-dynatrace-mcp.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target connectors --name dynatrace-mcp --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh plan --file azure-sre-agent-config/connectors/example-dynatrace-mcp.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/connectors/example-dynatrace-mcp.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target connectors --name dynatrace-mcp --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 ### Repository: `example-service`
@@ -696,15 +696,15 @@ Commands after secret injection:
 Source:
 
 ```text
-06-sre-agent-configuration/repos/example-repo.yaml
+azure-sre-agent-config/repos/example-repo.yaml
 ```
 
 Commands:
 
 ```bash
-./03-scripts/sre-agent-config.sh plan --file 06-sre-agent-configuration/repos/example-repo.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/repos/example-repo.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target repos --name example-service --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh plan --file azure-sre-agent-config/repos/example-repo.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/repos/example-repo.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target repos --name example-service --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Repository authentication must be configured according to the selected repository provider. Do not commit PATs.
@@ -714,15 +714,15 @@ Repository authentication must be configured according to the selected repositor
 Source:
 
 ```text
-06-sre-agent-configuration/hooks/example-stop-hook.yaml
+azure-sre-agent-config/hooks/example-stop-hook.yaml
 ```
 
 Commands:
 
 ```bash
-./03-scripts/sre-agent-config.sh plan --file 06-sre-agent-configuration/hooks/example-stop-hook.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/hooks/example-stop-hook.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target hooks --name block-unsafe-remediation --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh plan --file azure-sre-agent-config/hooks/example-stop-hook.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/hooks/example-stop-hook.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target hooks --name block-unsafe-remediation --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 ### Plugin Config: `example-plugin-config`
@@ -730,15 +730,15 @@ Commands:
 Source:
 
 ```text
-06-sre-agent-configuration/plugin-configs/example-plugin-config.yaml
+azure-sre-agent-config/plugin-configs/example-plugin-config.yaml
 ```
 
 Commands:
 
 ```bash
-./03-scripts/sre-agent-config.sh plan --file 06-sre-agent-configuration/plugin-configs/example-plugin-config.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/plugin-configs/example-plugin-config.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target plugin-configs --name example-plugin-config --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh plan --file azure-sre-agent-config/plugin-configs/example-plugin-config.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/plugin-configs/example-plugin-config.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target plugin-configs --name example-plugin-config --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 ### HTTP Trigger: `maintenance-window-start`
@@ -746,15 +746,15 @@ Commands:
 Source:
 
 ```text
-06-sre-agent-configuration/automations/http-triggers/example-maintenance-window.yaml
+azure-sre-agent-config/automations/http-triggers/example-maintenance-window.yaml
 ```
 
 Commands:
 
 ```bash
-./03-scripts/sre-agent-config.sh plan --file 06-sre-agent-configuration/automations/http-triggers/example-maintenance-window.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/automations/http-triggers/example-maintenance-window.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target http-triggers --name maintenance-window-start --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh plan --file azure-sre-agent-config/automations/http-triggers/example-maintenance-window.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/automations/http-triggers/example-maintenance-window.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target http-triggers --name maintenance-window-start --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 HTTP trigger creation can generate server-side identifiers and public webhook URLs. Treat generated URLs as sensitive operational entry points.
@@ -764,15 +764,15 @@ HTTP trigger creation can generate server-side identifiers and public webhook UR
 Source:
 
 ```text
-06-sre-agent-configuration/plugins/marketplaces/example-marketplace.yaml
+azure-sre-agent-config/plugins/marketplaces/example-marketplace.yaml
 ```
 
 Commands:
 
 ```bash
-./03-scripts/sre-agent-config.sh plan --file 06-sre-agent-configuration/plugins/marketplaces/example-marketplace.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/plugins/marketplaces/example-marketplace.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target plugin-marketplaces --name example-marketplace --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh plan --file azure-sre-agent-config/plugins/marketplaces/example-marketplace.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/plugins/marketplaces/example-marketplace.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target plugin-marketplaces --name example-marketplace --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 ### Plugin Installation: `example-plugin-installation`
@@ -780,15 +780,15 @@ Commands:
 Source:
 
 ```text
-06-sre-agent-configuration/plugins/installations/example-installation.yaml
+azure-sre-agent-config/plugins/installations/example-installation.yaml
 ```
 
 Commands:
 
 ```bash
-./03-scripts/sre-agent-config.sh plan --file 06-sre-agent-configuration/plugins/installations/example-installation.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/plugins/installations/example-installation.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target plugin-installations --name example-plugin-installation --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh plan --file azure-sre-agent-config/plugins/installations/example-installation.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/plugins/installations/example-installation.yaml --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target plugin-installations --name example-plugin-installation --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 ### Knowledge File: `example-runbook.md`
@@ -796,15 +796,15 @@ Commands:
 Source:
 
 ```text
-06-sre-agent-configuration/knowledge/files/example-runbook.md
+azure-sre-agent-config/knowledge/files/example-runbook.md
 ```
 
 Commands:
 
 ```bash
-./03-scripts/sre-agent-config.sh plan --file 06-sre-agent-configuration/knowledge/files/example-runbook.md --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh apply --file 06-sre-agent-configuration/knowledge/files/example-runbook.md --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
-./03-scripts/sre-agent-config.sh verify --target knowledge-files --name example-runbook --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh plan --file azure-sre-agent-config/knowledge/files/example-runbook.md --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh apply --file azure-sre-agent-config/knowledge/files/example-runbook.md --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --target knowledge-files --name example-runbook --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
 Do not upload secrets, personal data, or unapproved customer-sensitive data as knowledge files.
@@ -814,19 +814,19 @@ Do not upload secrets, personal data, or unapproved customer-sensitive data as k
 ### Validate All Local Configuration
 
 ```bash
-./03-scripts/sre-agent-config.sh validate
+./infra/scripts/sre-agent-config.sh validate
 ```
 
 ### Validate One Manifest
 
 ```bash
-./03-scripts/sre-agent-config.sh validate --file 06-sre-agent-configuration/skills/example-diagnostics-skill.yaml
+./infra/scripts/sre-agent-config.sh validate --file azure-sre-agent-config/skills/example-diagnostics-skill.yaml
 ```
 
 ### Verify One Target by Name
 
 ```bash
-./03-scripts/sre-agent-config.sh verify \
+./infra/scripts/sre-agent-config.sh verify \
   --target skills \
   --name sre-diagnostics-baseline \
   --subscription "$SUB" \
@@ -839,7 +839,7 @@ Do not upload secrets, personal data, or unapproved customer-sensitive data as k
 Every continued line must end with `\`:
 
 ```bash
-./03-scripts/sre-agent-config.sh plan \
+./infra/scripts/sre-agent-config.sh plan \
   --target skills \
   --name sre-diagnostics-baseline \
   --subscription "$SUB" \
@@ -903,7 +903,7 @@ The script is intentionally simple and deterministic. It does not dynamically di
 You can move or rename the configuration root by updating `.sre-agent-layout.env`, setting `SRE_AGENT_CONFIG_DIR`, or passing `--config`:
 
 ```bash
-./03-scripts/sre-agent-config.sh validate --config /path/to/customer/06-sre-agent-configuration
+./infra/scripts/sre-agent-config.sh validate --config /path/to/customer/azure-sre-agent-config
 ```
 
 The internal folder layout under that root is a contract. Full apply, target-based apply, verification, and delete expect these relative paths to keep their current meaning:
@@ -926,12 +926,12 @@ plugins/installations/
 knowledge/files/
 ```
 
-If you rename `06-sre-agent-configuration/skills` to `06-sre-agent-configuration/custom-skills`, full deployment no longer finds those skill manifests, `--target skills` no longer scans them, and `--file 06-sre-agent-configuration/custom-skills/name.yaml` can no longer infer the target automatically.
+If you rename `azure-sre-agent-config/skills` to `azure-sre-agent-config/custom-skills`, full deployment no longer finds those skill manifests, `--target skills` no longer scans them, and `--file azure-sre-agent-config/custom-skills/name.yaml` can no longer infer the target automatically.
 
 For one-off operations, a file outside the standard layout can still be processed when you pass both `--file` and the correct `--target`:
 
 ```bash
-./03-scripts/sre-agent-config.sh plan \
+./infra/scripts/sre-agent-config.sh plan \
   --file /tmp/customer-skill.yaml \
   --target skills \
   --subscription "$SUB" \
@@ -948,16 +948,16 @@ For most YAML-backed targets, the script scans only YAML files directly inside t
 For example, this file is applied:
 
 ```text
-06-sre-agent-configuration/skills/customer-diagnostics.yaml
+azure-sre-agent-config/skills/customer-diagnostics.yaml
 ```
 
 This file is not applied by full `apply` or `--target skills`:
 
 ```text
-06-sre-agent-configuration/skills/customer/customer-diagnostics.yaml
+azure-sre-agent-config/skills/customer/customer-diagnostics.yaml
 ```
 
-Full `validate` scans YAML files recursively under `06-sre-agent-configuration/`, so a nested file can pass validation while still being ignored by `apply`. Keep deployable manifests directly in the documented target directories.
+Full `validate` scans YAML files recursively under `azure-sre-agent-config/`, so a nested file can pass validation while still being ignored by `apply`. Keep deployable manifests directly in the documented target directories.
 
 ### Target Is the API Selector
 
@@ -965,8 +965,8 @@ The selected target determines the API route. The manifest `kind` is validated a
 
 Examples:
 
-- A file under `06-sre-agent-configuration/skills/` is treated as target `skills` and deployed to `/api/v2/extendedAgent/skills/{name}`.
-- A file under `06-sre-agent-configuration/repos/` is treated as target `repos` and deployed to `/api/v2/repos/{name}`.
+- A file under `azure-sre-agent-config/skills/` is treated as target `skills` and deployed to `/api/v2/extendedAgent/skills/{name}`.
+- A file under `azure-sre-agent-config/repos/` is treated as target `repos` and deployed to `/api/v2/repos/{name}`.
 - A file passed from outside the standard tree must use `--target` because the script cannot infer the API route from an arbitrary path.
 
 Changing `kind: Skill` to another value does not reroute the manifest. Moving the file or changing `--target` does.
@@ -1044,7 +1044,7 @@ The `tools` target is currently skipped for manifests marked with `spec.deployme
 
 ## Do Not Break The Toy Checklist
 
-Do not rename internal folders under `06-sre-agent-configuration/` unless you also update `03-scripts/sre-agent-config.sh`, this guide, and every command example that depends on the target-to-folder mapping.
+Do not rename internal folders under `azure-sre-agent-config/` unless you also update `infra/scripts/sre-agent-config.sh`, this guide, and every command example that depends on the target-to-folder mapping.
 
 Do not assume the manifest `kind` chooses the API route. The route comes from `--target` or from the file path inferred under the standard configuration layout.
 

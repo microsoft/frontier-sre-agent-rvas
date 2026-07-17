@@ -61,11 +61,11 @@ Resource names that depend on the random suffix are always resolved through
 Terraform outputs or the demo scripts, never hardcoded:
 
 ```bash
-terraform -chdir=Infra output demo_lab_vm_names
-terraform -chdir=Infra output -raw hub_resource_group_name
-terraform -chdir=Infra output -raw web_api_resource_group_name
-terraform -chdir=Infra output -raw data_resource_group_name
-terraform -chdir=Infra output -raw sample_food_resource_group_name
+terraform -chdir=infra output demo_lab_vm_names
+terraform -chdir=infra output -raw hub_resource_group_name
+terraform -chdir=infra output -raw web_api_resource_group_name
+terraform -chdir=infra output -raw data_resource_group_name
+terraform -chdir=infra output -raw sample_food_resource_group_name
 ```
 
 ---
@@ -248,7 +248,7 @@ this lab) remediates autonomously**.
 
 ### 3.2 The agent resource (control plane)
 
-Provisioned in [Infra/main.tf](Infra/main.tf) as
+Provisioned in [infra/main.tf](infra/main.tf) as
 `Microsoft.App/agents@2026-01-01`:
 
 | Property | Value | Why |
@@ -265,8 +265,8 @@ Provisioned in [Infra/main.tf](Infra/main.tf) as
 ### 3.3 The desired-state configuration (data plane)
 
 The agent's behaviour is Git-managed YAML+Markdown under
-[AZ-SRE-Agent-Configuration/](AZ-SRE-Agent-Configuration) and applied by
-[sre-agent-config.sh](Infra/scripts/sre-agent-config.sh):
+[azure-sre-agent-config/](azure-sre-agent-config) and applied by
+[sre-agent-config.sh](infra/scripts/sre-agent-config.sh):
 
 | Object | Count | Role in the demo |
 | --- | --- | --- |
@@ -411,8 +411,8 @@ Before any scenario:
 1. **Infrastructure deployed.**
 
    ```bash
-   terraform -chdir=Infra plan
-   terraform -chdir=Infra apply
+   terraform -chdir=infra plan
+   terraform -chdir=infra apply
    ```
 
 2. **SRE Agent configuration applied** (subagents, incident filters, hooks,
@@ -422,7 +422,7 @@ Before any scenario:
    SUB=<Your Subscription ID>
    RG=rg-sec-sreagent
    AGENT=contoso-sre-agent-dev
-   ./Infra/scripts/sre-agent-config.sh verify \
+   ./infra/scripts/sre-agent-config.sh verify \
      --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
    ```
 
@@ -470,7 +470,7 @@ Student/Resources/scenarios/scripts/break-sample-food-app.sh
 Confirm errors in logs (same data the agent uses):
 
 ```bash
-api="$(terraform -chdir=Infra output -json sample_food_resource_names | jq -r '.api_container_app')"
+api="$(terraform -chdir=infra output -json sample_food_resource_names | jq -r '.api_container_app')"
 Student/Resources/scenarios/scripts/run-kql.sh "ContainerAppHTTPLogs
 | where TimeGenerated > ago(15m)
 | where ContainerAppName == '$api'
@@ -502,7 +502,7 @@ Student/Resources/scenarios/scripts/validate-sample-food-app.sh
 the incident filter is live:
 
 ```bash
-./Infra/scripts/sre-agent-config.sh verify --target incident-filters \
+./infra/scripts/sre-agent-config.sh verify --target incident-filters \
   --name sample-food-http-errors \
   --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
@@ -556,7 +556,7 @@ every 12 hours, so the backlog never rots.
 **Run it.** Show the scheduled task and trigger it on demand for the demo:
 
 ```bash
-./Infra/scripts/sre-agent-config.sh verify --target scheduled-tasks \
+./infra/scripts/sre-agent-config.sh verify --target scheduled-tasks \
   --name triage-grubify-issues \
   --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
@@ -630,9 +630,9 @@ Syslog
   the declared desired state:
 
   ```bash
-  rg="$(terraform -chdir=Infra output -raw web_api_resource_group_name)"
+  rg="$(terraform -chdir=infra output -raw web_api_resource_group_name)"
   for key in web_1 web_2; do
-    vm="$(terraform -chdir=Infra output -json demo_lab_vm_names | jq -r ".$key")"
+    vm="$(terraform -chdir=infra output -json demo_lab_vm_names | jq -r ".$key")"
     az vm run-command invoke -g "$rg" -n "$vm" --command-id RunShellScript \
       --scripts "which nginx || (apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y nginx); systemctl enable --now nginx; systemctl is-active nginx"
   done
@@ -647,11 +647,11 @@ failure. Resolve the IPs from Terraform outputs and run three simple curls **on 
 client** via Run Command:
 
 ```bash
-LB="$(terraform -chdir=Infra output -json demo_lab_vm_private_ips | jq -r '.ilb')"
-W1="$(terraform -chdir=Infra output -json demo_lab_vm_private_ips | jq -r '.web_1')"
-W2="$(terraform -chdir=Infra output -json demo_lab_vm_private_ips | jq -r '.web_2')"
-rg="$(terraform -chdir=Infra output -raw web_api_resource_group_name)"
-client="$(terraform -chdir=Infra output -json demo_lab_vm_names | jq -r '.client')"
+LB="$(terraform -chdir=infra output -json demo_lab_vm_private_ips | jq -r '.ilb')"
+W1="$(terraform -chdir=infra output -json demo_lab_vm_private_ips | jq -r '.web_1')"
+W2="$(terraform -chdir=infra output -json demo_lab_vm_private_ips | jq -r '.web_2')"
+rg="$(terraform -chdir=infra output -raw web_api_resource_group_name)"
+client="$(terraform -chdir=infra output -json demo_lab_vm_names | jq -r '.client')"
 
 az vm run-command invoke -g "$rg" -n "$client" --command-id RunShellScript \
   --scripts "curl -v http://$LB/ ; curl -v http://$W1/ ; curl -v http://$W2/" \
@@ -894,7 +894,7 @@ Sample Food architecture, HTTP 500 runbook, GitHub issue triage guidance, and th
 incident report template. Show it with:
 
 ```bash
-./Infra/scripts/sre-agent-config.sh verify --target knowledge-files \
+./infra/scripts/sre-agent-config.sh verify --target knowledge-files \
   --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 ```
 
@@ -954,7 +954,7 @@ Student/Resources/scenarios/scripts/validate.sh
 **Full teardown** (destroys the lab infrastructure):
 
 ```bash
-terraform -chdir=Infra destroy
+terraform -chdir=infra destroy
 ```
 
 SRE Agent configuration is desired-state; remove specific surfaces with
@@ -1003,7 +1003,7 @@ In-repository references:
 
 - [KQL catalog](docs/demo-lab/kql-catalog.md)
 - [Sample Food Ordering App lab](docs/demo-lab/sample-food-ordering-app-lab.md)
-- [SRE Agent configuration](AZ-SRE-Agent-Configuration/README.md)
+- [SRE Agent configuration](azure-sre-agent-config/README.md)
 - [SRE Agent config script guide](Solution-How-To-Azure-SRE-Agent-Config-03.md)
 - [ADR 0001 — SRE Agent IaC boundaries](docs/azure-sre-agent/adr/0001-sre-agent-iac-boundaries.md)
 
@@ -1050,7 +1050,7 @@ RG=rg-sec-sreagent
 AGENT=contoso-sre-agent-dev
 
 # Verify live agent configuration
-./Infra/scripts/sre-agent-config.sh verify --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
+./infra/scripts/sre-agent-config.sh verify --subscription "$SUB" --resource-group "$RG" --agent "$AGENT"
 
 # Baseline data
 Student/Resources/scenarios/scripts/generate-baseline-traffic.sh

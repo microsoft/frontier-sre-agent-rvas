@@ -2,7 +2,7 @@
 
 This folder documents the customer demo lab integrated from `lpassaretta_microsoft/azure-vnet-flow-logs-and-traffic-analytics` branch `feature/app-sample-food-container-app`.
 
-The demo lab is implemented in the existing Terraform root, `04-terraform/`, while the existing Azure SRE Agent root remains authoritative. The lab provides observable Azure resources that the agent can inspect: hub/spoke networking, Azure Firewall, VM-based traffic, VNet Flow Logs, Traffic Analytics, and the Sample Food Ordering App on Azure Container Apps.
+The demo lab is implemented in the existing Terraform root, `infra/`, while the existing Azure SRE Agent root remains authoritative. The lab provides observable Azure resources that the agent can inspect: hub/spoke networking, Azure Firewall, VM-based traffic, VNet Flow Logs, Traffic Analytics, and the Sample Food Ordering App on Azure Container Apps.
 
 ## What The Lab Deploys
 
@@ -13,7 +13,7 @@ The demo lab is implemented in the existing Terraform root, `04-terraform/`, whi
 | VM workload | Client VM, two web VMs, API VM, DB VM, NVA VM, internal load balancer |
 | Observability | Flow log storage account, Log Analytics workspace, VNet Flow Logs, Traffic Analytics workbook; Azure Monitor Agent + Syslog Data Collection Rule on the web VMs |
 | Food sample | Azure Container Registry, Container Apps Environment, API app, frontend app, Application Insights |
-| Agent assets | Sample Food incident skill and Sample Food SRE subagent under `06-sre-agent-configuration/` |
+| Agent assets | Sample Food incident skill and Sample Food SRE subagent under `azure-sre-agent-config/` |
 
 ## Imported Legacy Azure SRE Agent Docs
 
@@ -31,9 +31,9 @@ Treat these as historical/source-reference documents. Current operational comman
 From the repository root:
 
 ```bash
-terraform -chdir=04-terraform init
-terraform -chdir=04-terraform plan
-terraform -chdir=04-terraform apply
+terraform -chdir=infra init
+terraform -chdir=infra plan
+terraform -chdir=infra apply
 ```
 
 The VM admin credential is intentionally kept inline for this demo lab:
@@ -187,7 +187,7 @@ Student/Resources/scenarios/scripts/sre-agent-config.sh apply \
 
 ## Important Boundaries
 
-- `04-terraform/` owns the lab Azure resources and the existing Azure SRE Agent root.
-- `06-sre-agent-configuration/` owns API-applied agent behavior such as skills and subagents.
-- `02-documentation-demo-lab-env/` owns demo-specific documentation.
-- `01-documentation-azure-sre-agent/` is intentionally not changed by this demo lab integration.
+- `infra/` owns the lab Azure resources and the existing Azure SRE Agent root.
+- `azure-sre-agent-config/` owns API-applied agent behavior such as skills and subagents.
+- `docs/demo-lab/` owns demo-specific documentation.
+- `docs/azure-sre-agent/` is intentionally not changed by this demo lab integration.
