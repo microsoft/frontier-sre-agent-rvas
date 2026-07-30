@@ -1,0 +1,24 @@
+# Berlin parking observability connector.
+#
+# After `make deploy`, `make connectors` exports BERLIN_MCP_URL from the
+# `parking_berlin_mcp_url` Terraform output automatically. If you need to override
+# it, set BERLIN_MCP_URL in Student/.env to your `parking_berlin_mcp_url`
+# Terraform output.
+#
+# Optional auth: set BERLIN_MCP_AUTH_TOKEN in Student/.env before `make infra` /
+# `make connectors`. Leave it empty to keep authentication disabled for the lab.
+api_version: azuresre.ai/v1
+kind: AgentConnector
+metadata:
+  name: berlin-monitoring-v6
+spec:
+  properties:
+    dataConnectorType: Mcp
+    dataSource: berlin-mcp
+    extendedProperties:
+      type: http
+      endpoint: ${BERLIN_MCP_URL}
+      authType: CustomHeaders
+      customHeaders:
+        Authorization: Bearer ${BERLIN_MCP_AUTH_TOKEN}
+    identity: system

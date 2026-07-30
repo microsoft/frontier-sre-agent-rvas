@@ -1,0 +1,16 @@
+# Response plan routing Sample Food (Grubify) HTTP 5xx alerts to aca-app-incident-handler.
+# titleContains: food matches the alert display name (the only Sev1 response plan in this lab).
+# Deployed via data-plane v2 /api/v2/extendedAgent/incidentFilters/{name}.
+api_version: azuresre.ai/v1
+kind: IncidentFilter
+metadata:
+  name: sample-food-http-errors
+spec:
+  incidentPlatform: AzMonitor
+  isEnabled: true
+  priorities:
+    - Sev1
+  titleContains: food
+  handlingAgent: aca-app-incident-handler
+  agentMode: Autonomous
+  maxAutomatedInvestigationAttempts: 3

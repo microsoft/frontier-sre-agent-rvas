@@ -1,0 +1,11 @@
+#cloud-config
+package_update: true
+packages:
+  - curl
+  - iptables-persistent
+  - tcpdump
+runcmd:
+  - sysctl -w net.ipv4.ip_forward=1
+  - sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf || true
+  - iptables -P FORWARD ACCEPT
+  - netfilter-persistent save || true

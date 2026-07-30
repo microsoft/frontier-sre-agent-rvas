@@ -1,0 +1,11 @@
+# Connect Azure Monitor as the incident management platform for this agent.
+# Applied via ARM PATCH (not data-plane) — sets incidentManagementConfiguration
+# on the Microsoft.App/agents resource before incident filters can be applied.
+# Deploy with: make incident-platforms
+api_version: azuresre.ai/v1
+kind: IncidentPlatform
+metadata:
+  name: azure-monitor
+spec:
+  platformType: AzMonitor
+  connectionName: azure-monitor

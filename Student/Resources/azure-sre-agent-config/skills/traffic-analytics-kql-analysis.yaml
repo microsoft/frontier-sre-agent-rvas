@@ -1,0 +1,14 @@
+api_version: azuresre.ai/v1
+kind: Skill
+metadata:
+  name: traffic-analytics-kql-analysis
+spec:
+  description: Query and interpret Traffic Analytics records for network troubleshooting in the VNet Flow Logs demo lab.
+  content_file: ./traffic-analytics-kql-analysis.md
+  tools:
+    - RunAzCliReadCommands
+    - QueryLogAnalyticsByWorkspaceId
+    - GetAzCliHelp
+  safety:
+    default_mode: read_only
+    requires_approval_for_actions: true

@@ -1,0 +1,17 @@
+# Parking Manager VM-health incident filter (severity band: Sev2, domain: IaaS parking VM).
+# titleContains: parking matches Parking Manager alerts like "VM vm-parking-{name} is reporting unhealthy status".
+# Routes to iaas-vm-incident-handler for autonomous diagnosis and remediation of unhealthy parking VMs.
+# Deployed via data-plane v2 /api/v2/extendedAgent/incidentFilters/{name}.
+api_version: azuresre.ai/v1
+kind: IncidentFilter
+metadata:
+  name: parking-vm-unhealthy
+spec:
+  incidentPlatform: AzMonitor
+  isEnabled: true
+  priorities:
+    - Sev2
+  titleContains: parking
+  handlingAgent: iaas-vm-incident-handler
+  agentMode: Autonomous
+  maxAutomatedInvestigationAttempts: 2

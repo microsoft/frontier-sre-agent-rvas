@@ -1,0 +1,51 @@
+# REFERENCE + ENABLEMENT RUNBOOK (excluded from data-plane apply).
+# Files prefixed `example-` are excluded from every sre-agent-config.sh discovery path
+# (validate / plan / apply / verify / delete). Here the prefix is REQUIRED, not a sign of an
+# unfinished stub: the Teams notification connector CANNOT be created by a data-plane PUT.
+# It is provisioned by the Builder portal wizard (OAuth sign-in + managed identity), which a
+# data-plane manifest cannot do. Same "authorize once in the portal" model as connectors/github.yaml.
+#
+# PURPOSE: give cost-optimization-agent (and any subagent) the built-in Teams tools so it can
+# post the executive FinOps value summary to a Teams channel from the cost-optimization-review
+# scheduled task. Official capability: Builder > Connectors > Notification > "Send notification
+# (Teams)". Sources:
+#   - Send notifications:     https://learn.microsoft.com/en-us/azure/sre-agent/send-notifications
+#   - Set up Teams connector: https://learn.microsoft.com/en-us/azure/sre-agent/teams-bot
+#   - Connectors overview:    https://learn.microsoft.com/en-us/azure/sre-agent/connectors
+#
+# PREREQUISITES (certified by send-notifications / connectors):
+#   - SRE Agent Administrator (only this role can configure connectors).
+#   - Contributor on the agent's resource group (Microsoft.Web/connections/write and
+#     Microsoft.Authorization/roleAssignments/write).
+#   - A Microsoft 365 account with Teams access.
+#   - A managed identity on the agent (System-assigned is simplest).
+#
+# SETUP (about 5 minutes; one Teams connector per agent):
+#   1. https://sre.azure.com > your agent > Builder > Connectors > Add connector.
+#   2. Select Microsoft Teams > sign in via OAuth > select managed identity > Review + add.
+#   3. Verify: ask the agent to post a test message to the channel.
+#   Note: outgoing messages are HTML (the agent formats them automatically) and carry a
+#   "Sent by Azure SRE Agent" footer with a UTC timestamp (togglable in connector settings).
+#
+# TOOLS EXPOSED after setup (certified by send-notifications): Post message, Reply to thread,
+# Get messages. Updates about the same issue stay in the same thread.
+#
+# WIRE INTO AUTOMATION (certified: "to set up automated notifications triggered by scheduled
+# tasks or incident response plans, configure the tools on the appropriate subagent"): after
+# setup, read the surfaced tool IDs from GET /api/v2/extendedAgent/connectors/<teams-id> and add
+# the "Post message" tool to subagents/cost-optimization-agent.yaml `tools:`. The
+# cost-optimization-review scheduled task already asks the agent to post the executive value
+# summary to the FinOps Teams channel. Outbound communication only; no Azure resource is
+# modified. Full recipe: docs/azure-sre-agent/cost-optimization-agent.md.
+#
+# BEST PRACTICES (certified by send-notifications): the agent only posts when asked; prefer a
+# scheduled digest over per-alert posts (the weekly cost-optimization-review is this pattern).
+#
+# The skeleton below is intentionally inert: spec.properties is populated by the portal wizard.
+# Do NOT guess dataConnectorType/dataSource; read them back from the live connector if needed.
+api_version: azuresre.ai/v1
+kind: AgentConnector
+metadata:
+  name: teams
+spec:
+  properties: {} # provisioned by the Builder portal wizard (OAuth + managed identity); not data-plane deployable

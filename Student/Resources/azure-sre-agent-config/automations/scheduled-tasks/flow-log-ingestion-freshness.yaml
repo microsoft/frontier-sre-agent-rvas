@@ -1,0 +1,20 @@
+# Flow-log ingestion freshness check. Imported from the EMU project guide
+# docs-azure-sre-agent/azure-sre-agent-implementation-guide.md (section 11).
+# Autonomous read-only; runs every 6 hours (useful during demo windows) via the
+# network-traffic-analyst specialist. Deployed via data-plane v2
+# /api/v2/extendedAgent/scheduledtasks/{name}.
+api_version: azuresre.ai/v1
+kind: ScheduledTask
+metadata:
+  name: flow-log-ingestion-freshness
+spec:
+  description: Read-only check that VNet Flow Logs and Traffic Analytics are producing recent data in Storage and Log Analytics.
+  schedule: "0 */6 * * *"
+  time_zone: UTC
+  enabled: true
+  agent: network-traffic-analyst
+  mode: Autonomous
+  prompt: >-
+    Check whether VNet Flow Logs are producing recent data in Storage and
+    Traffic Analytics. Compare expected VNets from Terraform outputs with
+    records in Log Analytics. Do not change resources.

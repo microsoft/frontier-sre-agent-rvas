@@ -1,0 +1,17 @@
+# Web-tier service-health incident filter (severity band: Sev2, domain: IaaS web VM).
+# titleContains: nginx matches the alert display name "NGINX service down on web tier".
+# Routes to iaas-vm-incident-handler for autonomous Syslog-based diagnosis and restart.
+# Deployed via data-plane v2 /api/v2/extendedAgent/incidentFilters/{name}.
+api_version: azuresre.ai/v1
+kind: IncidentFilter
+metadata:
+  name: web-tier-nginx
+spec:
+  incidentPlatform: AzMonitor
+  isEnabled: true
+  priorities:
+    - Sev2
+  titleContains: nginx
+  handlingAgent: iaas-vm-incident-handler
+  agentMode: Autonomous
+  maxAutomatedInvestigationAttempts: 2

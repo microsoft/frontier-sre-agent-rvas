@@ -1,0 +1,18 @@
+# Networking observability incident filter (severity band: Sev2, networking domain).
+# Routes Azure Monitor Sev2 "Denied VNet flow spike" alerts to the network-traffic-analyst specialist.
+# titleContains: Denied matches the alert display name "Denied VNet flow spike".
+# NGINX-down alerts are handled by the sibling web-tier-nginx filter (titleContains: nginx).
+# Deployed via data-plane v2 /api/v2/extendedAgent/incidentFilters/{name}.
+api_version: azuresre.ai/v1
+kind: IncidentFilter
+metadata:
+  name: network-observability-review
+spec:
+  incidentPlatform: AzMonitor
+  isEnabled: true
+  priorities:
+    - Sev2
+  titleContains: Denied
+  handlingAgent: network-traffic-analyst
+  agentMode: Autonomous
+  maxAutomatedInvestigationAttempts: 2

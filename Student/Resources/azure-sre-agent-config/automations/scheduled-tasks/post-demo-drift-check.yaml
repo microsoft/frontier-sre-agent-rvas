@@ -1,0 +1,22 @@
+# Post-demo drift check. Imported from the EMU project guide
+# docs-azure-sre-agent/azure-sre-agent-implementation-guide.md (section 11).
+# Review mode (write/restore must be approved). Disabled by default: this task is
+# meant to be run on demand after a demo rather than on a schedule, so enabled is
+# false and the cron is only a placeholder required by the schema. Run it manually
+# from the portal, or set enabled to true to activate the weekly cadence.
+# Deployed via data-plane v2 /api/v2/extendedAgent/scheduledtasks/{name}.
+api_version: azuresre.ai/v1
+kind: ScheduledTask
+metadata:
+  name: post-demo-drift-check
+spec:
+  description: On-demand drift check comparing Azure configuration with the Terraform source of truth after demo fault scenarios.
+  schedule: "0 8 * * 1"
+  time_zone: UTC
+  enabled: false
+  agent: azure-resource-config-auditor
+  mode: Review
+  prompt: >-
+    Check whether demo scripts left temporary NSG or UDR changes. Compare Azure
+    configuration with Terraform source of truth and recommend restore commands
+    if needed.
