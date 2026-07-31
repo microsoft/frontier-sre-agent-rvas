@@ -103,13 +103,15 @@
 
         .challenge-card[data-phase="01"],
         .challenge-card[data-phase="02"],
-        .challenge-card[data-phase="03"] {
+        .challenge-card[data-phase="03"],
+        .challenge-card[data-phase="04"],
+        .challenge-card[data-phase="05"],
+        .challenge-card[data-phase="06"] {
             --c-color: var(--config-color, #7c3aed);
         }
 
-        .challenge-card[data-phase="04"],
-        .challenge-card[data-phase="05"],
         .challenge-card[data-phase="07"],
+        .challenge-card[data-phase="08"],
         .challenge-card[data-phase="09"],
         .challenge-card[data-phase="10"],
         .challenge-card[data-phase="11"],
@@ -120,13 +122,11 @@
             --c-color: var(--autonomous-color);
         }
 
-        .challenge-card[data-phase="06"],
         .challenge-card[data-phase="16"],
         .challenge-card[data-phase="17"] {
             --c-color: var(--scheduled-color);
         }
 
-        .challenge-card[data-phase="08"],
         .challenge-card[data-phase="13"] {
             --c-color: var(--interactive-color);
         }
@@ -900,7 +900,7 @@
                         <a class="btn btn-ghost" href="README.md">Read the Briefing</a>
                     </div>
                     <div class="stats stats-4" aria-label="Lab statistics">
-                        <div class="stat"><span class="stat-num" data-count="22">22</span><span
+                        <div class="stat"><span class="stat-num" data-count="20">20</span><span
                                 class="stat-lbl">Challenges</span></div>
                         <div class="stat"><span class="stat-num" data-count="6">6</span><span
                                 class="stat-lbl">Subagents</span></div>
@@ -911,25 +911,25 @@
                     </div>
                 </div>
                 <div class="hero-modules" aria-label="Scenario overview">
-                    <a href="#challenges" class="hero-mod-card" style="--mod-color:#1A77E3">
-                        <div class="mod-name">Autonomous PaaS response</div>
-                        <div class="mod-count">S1–S2 · Container Apps · App Insights</div>
+                    <a href="#challenges" class="hero-mod-card" style="--mod-color:#7c3aed">
+                        <div class="mod-name">Agent configuration primitives</div>
+                        <div class="mod-count">CH-01–06 · Skills · Knowledge · MCP · Subagents</div>
                     </a>
-                    <a href="#challenges" class="hero-mod-card" style="--mod-color:#504092">
-                        <div class="mod-name">Proactive workflow automation</div>
-                        <div class="mod-count">S3 · GitHub issue triage · scheduled tasks</div>
+                    <a href="#challenges" class="hero-mod-card" style="--mod-color:#1A77E3">
+                        <div class="mod-name">Observability &amp; health reporting</div>
+                        <div class="mod-count">CH-07–09 · Telemetry · Dependency Mapping · SLI/SLO</div>
                     </a>
                     <a href="#challenges" class="hero-mod-card" style="--mod-color:#0078D4">
-                        <div class="mod-name">IaaS service recovery</div>
-                        <div class="mod-count">S4 · VMs · Syslog · az run-command</div>
+                        <div class="mod-name">Autonomous incident response</div>
+                        <div class="mod-count">CH-10–15 · PaaS · IaaS · Network · Root Cause</div>
                     </a>
-                    <a href="#challenges" class="hero-mod-card" style="--mod-color:#14868A">
-                        <div class="mod-name">Network diagnostics &amp; remediation</div>
-                        <div class="mod-count">S5–S6 · VNet Flow Logs · NSG · UDR</div>
+                    <a href="#challenges" class="hero-mod-card" style="--mod-color:#504092">
+                        <div class="mod-name">Proactive &amp; scheduled operations</div>
+                        <div class="mod-count">CH-16–18 · Network Health · FinOps · Cost Governance</div>
                     </a>
                     <a href="#challenges" class="hero-mod-card" style="--mod-color:#0F7B6C">
                         <div class="mod-name">Capstone: Build your own agent</div>
-                        <div class="mod-count">C21 · Your use case · End-to-end demo</div>
+                        <div class="mod-count">CH-19 · Your use case · End-to-end demo</div>
                     </a>
                 </div>
             </div>
@@ -943,7 +943,7 @@
                         <div class="section-label"></div>
                         <h2 class="section-title display reveal">Challenges</h2>
                         <p class="section-desc reveal">
-                            Challenges 00–03 cover SRE Agent configuration primitives. Challenges 04–15 are live
+                            Challenges 00–06 cover SRE Agent configuration primitives. Challenges 07–09 establish observability baselines. Challenges 10–15 are live
                             incident scenarios spanning PaaS, IaaS, and network layers. Challenges 16–18 are
                             advanced operational skills and automation tasks. Challenge 19 is the capstone: bring
                             your own use case and build a production-ready agent.
@@ -992,16 +992,16 @@
                             <span class="card-phase-badge">Config</span>
                             <span class="card-num mono">CH — 01</span>
                         </div>
-                        <h3 class="card-title display">Skills &amp;<br>Knowledge Docs</h3>
+                        <h3 class="card-title display">Connect Your<br>Codebase</h3>
                         <p class="card-desc">
-                            Write your own skill YAML and knowledge document from scratch, apply them
-                            to the SRE Agent, and verify the new capability appears in the portal.
+                            Your agent is running but isolated from source code. Connect a GitHub OAuth
+                            Connector and link your repository so the agent can read code and open pull requests.
                         </p>
                         <div class="card-footer">
                             <div class="card-tags">
-                                <span class="card-tag">skill YAML</span>
-                                <span class="card-tag">knowledge docs</span>
-                                <span class="card-tag">sre-agent-config</span>
+                                <span class="card-tag">GitHub OAuth</span>
+                                <span class="card-tag">repository</span>
+                                <span class="card-tag">oauth-connector</span>
                             </div>
                             <div class="card-arrow mono">Open →</div>
                         </div>
@@ -1014,16 +1014,16 @@
                             <span class="card-phase-badge">Config</span>
                             <span class="card-num mono">CH — 02</span>
                         </div>
-                        <h3 class="card-title display">Subagents &amp;<br>Incident Filters</h3>
+                        <h3 class="card-title display">Explore the<br>Knowledge Base</h3>
                         <p class="card-desc">
-                            Define a subagent YAML and pair it with an incident filter. Verify that
-                            matching alert titles are automatically routed to your new specialist agent.
+                            Your agent answers from training data alone — it knows nothing about your lab.
+                            Attach knowledge documents so it gives grounded, accurate answers about your environment.
                         </p>
                         <div class="card-footer">
                             <div class="card-tags">
-                                <span class="card-tag">SubAgent YAML</span>
-                                <span class="card-tag">IncidentFilter</span>
-                                <span class="card-tag">alert routing</span>
+                                <span class="card-tag">knowledge docs</span>
+                                <span class="card-tag">grounded responses</span>
+                                <span class="card-tag">sre-agent-config</span>
                             </div>
                             <div class="card-arrow mono">Open →</div>
                         </div>
@@ -1036,16 +1036,16 @@
                             <span class="card-phase-badge">Config</span>
                             <span class="card-num mono">CH — 03</span>
                         </div>
-                        <h3 class="card-title display">Connectors, Repos<br>&amp; Scheduled Tasks</h3>
+                        <h3 class="card-title display">Discover Operational<br>Skills</h3>
                         <p class="card-desc">
-                            Register a data connector, link a code repository, and create a scheduled
-                            task. Manually trigger the task from the portal to confirm execution.
+                            Your agent can answer questions but can't act. Author a skill YAML so it can
+                            execute KQL queries, inspect Container App health, and run operational runbooks.
                         </p>
                         <div class="card-footer">
                             <div class="card-tags">
-                                <span class="card-tag">DataConnector</span>
-                                <span class="card-tag">Repository</span>
-                                <span class="card-tag">ScheduledTask</span>
+                                <span class="card-tag">skill YAML</span>
+                                <span class="card-tag">runbooks</span>
+                                <span class="card-tag">KQL</span>
                             </div>
                             <div class="card-arrow mono">Open →</div>
                         </div>
@@ -1055,19 +1055,19 @@
                     <a class="challenge-card" data-phase="04" href="Student/Challenge-04.md">
                         <div class="card-bg-number display">04</div>
                         <div class="card-top">
-                            <span class="card-phase-badge">Autonomous</span>
+                            <span class="card-phase-badge">Config</span>
                             <span class="card-num mono">CH — 04</span>
                         </div>
-                        <h3 class="card-title display">Autonomous App<br>Incident Response</h3>
+                        <h3 class="card-title display">Discover Connected<br>Systems</h3>
                         <p class="card-desc">
-                            Inject a PaaS fault into the Grubify API and watch the SRE Agent detect the
-                            5xx spike, execute the investigation runbook, and remediate — no human prompt required.
+                            Your agent relies on stale training data for best practices. Connect MCP servers
+                            to give it access to live, curated knowledge and tools beyond its training cutoff.
                         </p>
                         <div class="card-footer">
                             <div class="card-tags">
-                                <span class="card-tag">Container Apps</span>
-                                <span class="card-tag">App Insights</span>
-                                <span class="card-tag">aca-incident-handler</span>
+                                <span class="card-tag">MCP connectors</span>
+                                <span class="card-tag">tool discovery</span>
+                                <span class="card-tag">live docs</span>
                             </div>
                             <div class="card-arrow mono">Open →</div>
                         </div>
@@ -1077,19 +1077,19 @@
                     <a class="challenge-card" data-phase="05" href="Student/Challenge-05.md">
                         <div class="card-bg-number display">05</div>
                         <div class="card-top">
-                            <span class="card-phase-badge">Autonomous</span>
+                            <span class="card-phase-badge">Config</span>
                             <span class="card-num mono">CH — 05</span>
                         </div>
-                        <h3 class="card-title display">Code Correlation<br>&amp; GitHub</h3>
+                        <h3 class="card-title display">Discover Specialist<br>Agents</h3>
                         <p class="card-desc">
-                            Push the agent from infrastructure diagnosis into developer territory: read source
-                            code, trace the 5xx to a specific file and line, and open a GitHub pull request.
+                            A generalist handles everything from one system prompt. Define specialist subagents —
+                            each with its own identity, tools, and runbooks — and route incidents to the right expert.
                         </p>
                         <div class="card-footer">
                             <div class="card-tags">
-                                <span class="card-tag">GitHub OAuth</span>
-                                <span class="card-tag">code-analyzer</span>
-                                <span class="card-tag">PR creation</span>
+                                <span class="card-tag">subagents</span>
+                                <span class="card-tag">agent routing</span>
+                                <span class="card-tag">specialist</span>
                             </div>
                             <div class="card-arrow mono">Open →</div>
                         </div>
@@ -1099,19 +1099,19 @@
                     <a class="challenge-card" data-phase="06" href="Student/Challenge-06.md">
                         <div class="card-bg-number display">06</div>
                         <div class="card-top">
-                            <span class="card-phase-badge">Scheduled</span>
+                            <span class="card-phase-badge">Config</span>
                             <span class="card-num mono">CH — 06</span>
                         </div>
-                        <h3 class="card-title display">Proactive Workflow<br>Automation</h3>
+                        <h3 class="card-title display">Understand<br>Response Plans</h3>
                         <p class="card-desc">
-                            Create customer GitHub issues and trigger the scheduled <code>issue-triager</code>
-                            subagent. Observe automatic classification, labeling, and structured bot comments.
+                            Everything so far is chat-driven — you ask, it answers. Configure incident filters
+                            and response plans so the agent acts autonomously when alerts fire at 3 AM.
                         </p>
                         <div class="card-footer">
                             <div class="card-tags">
-                                <span class="card-tag">issue-triager</span>
-                                <span class="card-tag">scheduled task</span>
-                                <span class="card-tag">GitHub</span>
+                                <span class="card-tag">response plans</span>
+                                <span class="card-tag">incident filters</span>
+                                <span class="card-tag">automation</span>
                             </div>
                             <div class="card-arrow mono">Open →</div>
                         </div>
@@ -1124,16 +1124,16 @@
                             <span class="card-phase-badge">Autonomous</span>
                             <span class="card-num mono">CH — 07</span>
                         </div>
-                        <h3 class="card-title display">IaaS Service<br>Recovery</h3>
+                        <h3 class="card-title display">Hybrid Ecosystem<br>Telemetry</h3>
                         <p class="card-desc">
-                            Stop NGINX on the web-tier VMs and let the agent detect the Syslog alert,
-                            SSH-equivalent into the VM via run-command, and restart the service.
+                            The Parking Manager spans Container Apps, VMs, and a third-party OpenTelemetry API.
+                            Use the agent to query all three platforms and produce a unified cross-system view.
                         </p>
                         <div class="card-footer">
                             <div class="card-tags">
-                                <span class="card-tag">VM run-command</span>
-                                <span class="card-tag">AMA / Syslog</span>
-                                <span class="card-tag">iaas-vm-handler</span>
+                                <span class="card-tag">Log Analytics</span>
+                                <span class="card-tag">Syslog</span>
+                                <span class="card-tag">OpenTelemetry</span>
                             </div>
                             <div class="card-arrow mono">Open →</div>
                         </div>
@@ -1143,20 +1143,20 @@
                     <a class="challenge-card" data-phase="08" href="Student/Challenge-08.md">
                         <div class="card-bg-number display">08</div>
                         <div class="card-top">
-                            <span class="card-phase-badge">Interactive</span>
+                            <span class="card-phase-badge">Autonomous</span>
                             <span class="card-num mono">CH — 08</span>
                         </div>
-                        <h3 class="card-title display">Network Diagnostics<br>(Interactive)</h3>
+                        <h3 class="card-title display">Application Dependency<br>Mapping</h3>
                         <p class="card-desc">
-                            Inject a UDR asymmetry fault and drive a diagnostic conversation with the
-                            <code>network-traffic-analyst</code> agent. Find the blackhole route using VNet
-                            Flow Logs and Traffic Analytics KQL.
+                            When an app fails, which dependency is the culprit? Drive the agent to map the
+                            full Parking Manager dependency graph using App Insights — the foundation for
+                            every root-cause investigation.
                         </p>
                         <div class="card-footer">
                             <div class="card-tags">
-                                <span class="card-tag">VNet Flow Logs</span>
-                                <span class="card-tag">Traffic Analytics</span>
-                                <span class="card-tag">UDR</span>
+                                <span class="card-tag">App Insights</span>
+                                <span class="card-tag">service topology</span>
+                                <span class="card-tag">dependency analysis</span>
                             </div>
                             <div class="card-arrow mono">Open →</div>
                         </div>
@@ -1169,17 +1169,17 @@
                             <span class="card-phase-badge">Autonomous</span>
                             <span class="card-num mono">CH — 09</span>
                         </div>
-                        <h3 class="card-title display">Autonomous NSG<br>Remediation</h3>
+                        <h3 class="card-title display">Daily Application<br>Health Report</h3>
                         <p class="card-desc">
-                            Block PostgreSQL traffic with an NSG deny rule and observe the agent
-                            autonomously identify the deny flow in NTANetAnalytics and remove the rule —
-                            no human in the loop.
+                            Ask the agent to generate a structured health report for all four Parking Manager
+                            APIs — CPU, memory, error rate, response time — with a health score and recommended
+                            remediation for any service falling below threshold.
                         </p>
                         <div class="card-footer">
                             <div class="card-tags">
-                                <span class="card-tag">NSG</span>
-                                <span class="card-tag">NTANetAnalytics</span>
-                                <span class="card-tag">network-analyst</span>
+                                <span class="card-tag">SLI/SLO</span>
+                                <span class="card-tag">health scoring</span>
+                                <span class="card-tag">operational reporting</span>
                             </div>
                             <div class="card-arrow mono">Open →</div>
                         </div>
@@ -1455,7 +1455,7 @@
                         <div class="agent-name">network-traffic-analyst</div>
                         <div class="agent-role">Network Observability &amp; Remediation</div>
                         <div class="agent-desc">Analyzes VNet Flow Logs, Traffic Analytics KQL, and NSG/UDR configs.
-                            Supports interactive investigation (S5) and autonomous remediation (S6).</div>
+                            Supports interactive investigation (CH-13) and autonomous remediation (CH-12).</div>
                         <div class="agent-badges">
                             <span class="agent-badge ab-write">Write CLI</span>
                             <span class="agent-badge ab-kql">NTANetAnalytics</span>
@@ -1681,30 +1681,48 @@
 
         const STUDENT_FILES = [
             { label: 'CH-00', file: 'Student/Challenge-00.md', title: 'Prerequisites & Lab Setup' },
-            { label: 'CH-01', file: 'Student/Challenge-01.md', title: 'Skills & Knowledge Docs' },
-            { label: 'CH-02', file: 'Student/Challenge-02.md', title: 'Subagents & Incident Filters' },
-            { label: 'CH-03', file: 'Student/Challenge-03.md', title: 'Connectors, Repos & Scheduled Tasks' },
-            { label: 'CH-04', file: 'Student/Challenge-04.md', title: 'Autonomous App Incident Response' },
-            { label: 'CH-05', file: 'Student/Challenge-05.md', title: 'Code Correlation & GitHub Integration' },
-            { label: 'CH-06', file: 'Student/Challenge-06.md', title: 'Proactive Workflow Automation' },
-            { label: 'CH-07', file: 'Student/Challenge-07.md', title: 'IaaS Service Recovery' },
-            { label: 'CH-08', file: 'Student/Challenge-08.md', title: 'Network Diagnostics (Interactive)' },
-            { label: 'CH-09', file: 'Student/Challenge-09.md', title: 'Autonomous NSG Remediation' },
-            { label: 'CH-10', file: 'Student/Challenge-10.md', title: 'Build Your Own Production-Ready SRE Agent' },
+            { label: 'CH-01', file: 'Student/Challenge-01.md', title: 'Connect Your Codebase' },
+            { label: 'CH-02', file: 'Student/Challenge-02.md', title: 'Explore the Knowledge Base' },
+            { label: 'CH-03', file: 'Student/Challenge-03.md', title: 'Discover Operational Skills' },
+            { label: 'CH-04', file: 'Student/Challenge-04.md', title: 'Discover Connected Systems' },
+            { label: 'CH-05', file: 'Student/Challenge-05.md', title: 'Discover Specialist Agents' },
+            { label: 'CH-06', file: 'Student/Challenge-06.md', title: 'Understand Response Plans' },
+            { label: 'CH-07', file: 'Student/Challenge-07.md', title: 'Hybrid Ecosystem Telemetry' },
+            { label: 'CH-08', file: 'Student/Challenge-08.md', title: 'Application Dependency Mapping' },
+            { label: 'CH-09', file: 'Student/Challenge-09.md', title: 'Daily Application Health Report' },
+            { label: 'CH-10', file: 'Student/Challenge-10.md', title: 'Incident to GitHub Issue' },
+            { label: 'CH-11', file: 'Student/Challenge-11.md', title: 'Guest OS Failure Investigation' },
+            { label: 'CH-12', file: 'Student/Challenge-12.md', title: 'Network Security Investigation' },
+            { label: 'CH-13', file: 'Student/Challenge-13.md', title: 'Routing Failure Investigation' },
+            { label: 'CH-14', file: 'Student/Challenge-14.md', title: 'Application Root Cause Analysis' },
+            { label: 'CH-15', file: 'Student/Challenge-15.md', title: 'Autonomous Remediation' },
+            { label: 'CH-16', file: 'Student/Challenge-16.md', title: 'Daily Network Health Report' },
+            { label: 'CH-17', file: 'Student/Challenge-17.md', title: 'Observability Freshness Verification' },
+            { label: 'CH-18', file: 'Student/Challenge-18.md', title: 'Subscription Cost Optimization Review' },
+            { label: 'CH-19', file: 'Student/Challenge-19.md', title: 'Build Your Own Production-Ready SRE Agent' },
         ];
 
         const COACH_FILES = [
             { label: 'SOL-00', file: 'Coach/Solution-00.md', title: 'Coach · Prerequisites & Lab Setup' },
-            { label: 'SOL-01', file: 'Coach/Solution-01.md', title: 'Coach · Skills & Knowledge Docs' },
-            { label: 'SOL-02', file: 'Coach/Solution-02.md', title: 'Coach · Subagents & Incident Filters' },
-            { label: 'SOL-03', file: 'Coach/Solution-03.md', title: 'Coach · Connectors, Repos & Scheduled Tasks' },
-            { label: 'SOL-04', file: 'Coach/Solution-04.md', title: 'Coach · Autonomous App Incident Response' },
-            { label: 'SOL-05', file: 'Coach/Solution-05.md', title: 'Coach · Code Correlation & GitHub' },
-            { label: 'SOL-06', file: 'Coach/Solution-06.md', title: 'Coach · Proactive Workflow Automation' },
-            { label: 'SOL-07', file: 'Coach/Solution-07.md', title: 'Coach · IaaS Service Recovery' },
-            { label: 'SOL-08', file: 'Coach/Solution-08.md', title: 'Coach · Network Diagnostics (Interactive)' },
-            { label: 'SOL-09', file: 'Coach/Solution-09.md', title: 'Coach · Autonomous NSG Remediation' },
-            { label: 'SOL-10', file: 'Coach/Solution-10.md', title: 'Coach · Build Your Own SRE Agent (Capstone)' },
+            { label: 'SOL-01', file: 'Coach/Solution-01.md', title: 'Coach · Connect Your Codebase' },
+            { label: 'SOL-02', file: 'Coach/Solution-02.md', title: 'Coach · Explore the Knowledge Base' },
+            { label: 'SOL-03', file: 'Coach/Solution-03.md', title: 'Coach · Discover Operational Skills' },
+            { label: 'SOL-04', file: 'Coach/Solution-04.md', title: 'Coach · Discover Connected Systems' },
+            { label: 'SOL-05', file: 'Coach/Solution-05.md', title: 'Coach · Discover Specialist Agents' },
+            { label: 'SOL-06', file: 'Coach/Solution-06.md', title: 'Coach · Understand Response Plans' },
+            { label: 'SOL-07', file: 'Coach/Solution-07.md', title: 'Coach · Hybrid Ecosystem Telemetry' },
+            { label: 'SOL-08', file: 'Coach/Solution-08.md', title: 'Coach · Application Dependency Mapping' },
+            { label: 'SOL-09', file: 'Coach/Solution-09.md', title: 'Coach · Daily Application Health Report' },
+            { label: 'SOL-10', file: 'Coach/Solution-10.md', title: 'Coach · Incident to GitHub Issue' },
+            { label: 'SOL-11', file: 'Coach/Solution-11.md', title: 'Coach · Guest OS Failure Investigation' },
+            { label: 'SOL-12', file: 'Coach/Solution-12.md', title: 'Coach · Network Security Investigation' },
+            { label: 'SOL-13', file: 'Coach/Solution-13.md', title: 'Coach · Routing Failure Investigation' },
+            { label: 'SOL-14', file: 'Coach/Solution-14.md', title: 'Coach · Application Root Cause Analysis' },
+            { label: 'SOL-15', file: 'Coach/Solution-15.md', title: 'Coach · Autonomous Remediation' },
+            { label: 'SOL-16', file: 'Coach/Solution-16.md', title: 'Coach · Daily Network Health Report' },
+            { label: 'SOL-17', file: 'Coach/Solution-17.md', title: 'Coach · Observability Freshness Verification' },
+            { label: 'SOL-18', file: 'Coach/Solution-18.md', title: 'Coach · Subscription Cost Optimization Review' },
+            { label: 'SOL-19', file: 'Coach/Solution-19.md', title: 'Coach · Build Your Own Production-Ready SRE Agent' },
         ];
 
         let currentIdx = -1;
@@ -1715,7 +1733,7 @@
             const cIdx = COACH_FILES.findIndex(f => f.file === mdFile);
             if (sIdx !== -1) { activeFiles = STUDENT_FILES; currentIdx = sIdx; }
             else if (cIdx !== -1) { activeFiles = COACH_FILES; currentIdx = cIdx; }
-            else { activeFiles = STUDENT_FILES; currentIdx = 0; }
+            else { return; } // unknown file — do nothing
             loadAndRender(currentIdx);
             drawer.classList.add('open');
             drawerOverlay.classList.add('open');
@@ -1746,6 +1764,7 @@
                     if (href && href.endsWith('.md')) {
                         a.addEventListener('click', e => {
                             e.preventDefault();
+                            e.stopPropagation();
                             const base = entry.file.replace(/\/[^\/]+$/, '/');
                             const resolved = new URL(href, 'http://x/' + base).pathname.replace(/^\//, '');
                             const sMatch = STUDENT_FILES.findIndex(f => f.file === resolved);
@@ -1796,10 +1815,12 @@
             if (e.key === 'ArrowRight' && currentIdx < activeFiles.length - 1) { currentIdx++; loadAndRender(currentIdx); }
         });
 
-        // Intercept ALL .md links on the page
+        // Intercept ALL .md links on the page — but not links inside the drawer
+        // (those are handled by per-link handlers in loadAndRender)
         document.addEventListener('click', e => {
             const link = e.target.closest('a[href]');
             if (!link) return;
+            if (link.closest('#drawer')) return;
             const href = link.getAttribute('href');
             if (!href || !href.endsWith('.md')) return;
             e.preventDefault();
