@@ -6,9 +6,9 @@ param(
     [switch]$Execute,
     [switch]$Restore,
     [string]$EnvironmentName = 'signalops',
-    [string]$Location = 'eastus2',
-    [string]$AgentResourceGroup = 'rg-signalops-agent',
-    [string]$AgentName = 'signalops-agent',
+    [string]$Location = 'swedencentral',
+    [string]$AgentResourceGroup = 'rg-sre-agent',
+    [string]$AgentName = 'contoso-sre-agent-dev',
     [string]$ResourceGroup,
     [string]$NicName,
     [string]$VmName,
@@ -21,7 +21,6 @@ param(
 $ErrorActionPreference = 'Stop'
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $GrubifyRoot = Join-Path $RepoRoot 'Student\Resources\grubify'
-$ConfigScript = Join-Path $RepoRoot 'Student\Resources\infra\scripts\sre-agent-config.sh'
 $Bash = 'C:\Program Files\Git\bin\bash.exe'
 
 function Assert-Command([string]$Name) {
@@ -66,60 +65,63 @@ function Write-Expected([string]$Text) {
 }
 
 Assert-Command az
-if (-not (az account show --query id -o tsv 2>$null)) {
+az account show --query id -o none 2>$null
+if ($LASTEXITCODE -ne 0) {
     throw 'Azure CLI is not authenticated. Run az login first.'
 }
 
 switch ($Challenge) {
     '00' {
-        Assert-Command azd
-        Assert-Command docker
-        Push-Location $GrubifyRoot
-        try {
-            $environmentNames = @(azd env list --output json | ConvertFrom-Json | ForEach-Object name)
-            if ($EnvironmentName -notin $environmentNames) {
-                Invoke-Native { azd env new $EnvironmentName }
-            } else {
-                Invoke-Native { azd env select $EnvironmentName }
-            }
-            $subscriptionId = (az account show --query id -o tsv).Trim()
-            Invoke-Native { azd env set AZURE_SUBSCRIPTION_ID $subscriptionId }
-            Invoke-Native { azd env set AZURE_LOCATION $Location }
-            if ($Execute) {
-                if ($PSCmdlet.ShouldProcess("azd environment $EnvironmentName", 'Provision and deploy Grubify')) {
-                    Invoke-Native { azd up }
-                }
-            } else {
-                Invoke-Native { azd provision --preview }
-                Write-Host 'Preview only. Add -Execute to deploy.' -ForegroundColor Yellow
-            }
-            azd env get-values
-        } finally { Pop-Location }
-        Write-Expected 'Preview completes, or deployment outputs include the resource group, API, frontend, Log Analytics, and Application Insights.'
+        if ($Execute -or $Restore) { throw 'Challenge 00 is read-only for the existing MCAPS lab. Do not use -Execute or -Restore.' }
+        $account = az account show | ConvertFrom-Json
+        if ($account.name -ne 'MCAPS-Hybrid-REQ-150072-2026-rakau') {
+            throw "Active subscription is '$($account.name)'; select MCAPS-Hybrid-REQ-150072-2026-rakau before continuing."
+        }
+        $workloadResourceGroup = 'rg-sre-spoke-foodapp-paas'
+        az group show --name $workloadResourceGroup --query '{name:name,location:location,state:properties.provisioningState}' -o table
+        az resource list --resource-group $workloadResourceGroup --query '[].{name:name,type:type,location:location}' -o table
+        $apps = az containerapp list --resource-group $workloadResourceGroup | ConvertFrom-Json
+        $apps | Select-Object name,@{n='State';e={$_.properties.runningStatus}},@{n='FQDN';e={$_.properties.configuration.ingress.fqdn}} | Format-Table -AutoSize
+        $frontend = $apps | Where-Object name -eq 'ca-food-frontend'
+        $frontendUrl = "https://$($frontend.properties.configuration.ingress.fqdn)"
+        Invoke-WebRequest -Uri $frontendUrl -UseBasicParsing | Select-Object StatusCode
+        az monitor app-insights component show --resource-group $workloadResourceGroup --app appi-food --query '{name:name,workspace:properties.WorkspaceResourceId}' -o table
+        az monitor log-analytics workspace show --resource-group rg-sre-hub-connectivity --workspace-name law-rgn3ao --query '{name:name,location:location,state:provisioningState}' -o table
+        Write-Expected 'The existing Sweden Central food workload is present, both Container Apps are Running, the frontend returns 200, and telemetry resources are visible.'
     }
     '01' {
+        if ($Execute -or $Restore) { throw 'Challenge 01 is read-only for the existing MCAPS lab. Do not use -Execute or -Restore.' }
         $subscriptionId = (az account show --query id -o tsv).Trim()
-        $workloadResourceGroup = Get-AzdValue 'AZURE_RESOURCE_GROUP'
-        if ($Execute -and $PSCmdlet.ShouldProcess($AgentResourceGroup, 'Create agent resource group and register Microsoft.App')) {
-            Invoke-Native { az group create --name $AgentResourceGroup --location $Location -o table }
-            Invoke-Native { az provider register --namespace Microsoft.App --wait }
-        }
         $agentId = "/subscriptions/$subscriptionId/resourceGroups/$AgentResourceGroup/providers/Microsoft.App/agents/$AgentName"
-        az rest --method GET --url "https://management.azure.com$agentId`?api-version=2025-05-01-preview" --query '{name:name,state:properties.provisioningState,endpoint:properties.agentEndpoint,managedResourceGroup:properties.managedResourceGroup}' -o table
-        Write-Host "Workload scope: $workloadResourceGroup"
-        Write-Expected 'The agent is Succeeded, has an azuresre endpoint, and is scoped to the Grubify resource group.'
-        Write-Prompt 'Verify this Azure SRE Agent is in Review mode, uses least privilege, and can read the Grubify resource group. Do not make changes.'
+        az rest --method GET --url "https://management.azure.com$agentId`?api-version=2025-05-01-preview" --query 'properties.{state:provisioningState,power:powerState,endpoint:agentEndpoint,mode:actionConfiguration.mode,access:actionConfiguration.accessLevel,managedResources:knowledgeGraphConfiguration.managedResources}' -o json
+        az role assignment list --scope $agentId --query '[].{role:roleDefinitionName,principal:principalName}' -o table
+        Write-Expected 'contoso-sre-agent-dev is Succeeded and Running in Sweden Central with Autonomous/High configuration and the deployed MCAPS managed scopes.'
+        Write-Prompt 'Audit this existing high-access autonomous lab agent and its managed scopes. Do not make changes or broaden permissions.'
     }
     '02' {
+        if ($Execute -or $Restore) { throw 'Challenge 02 is read-only for the existing MCAPS lab. Do not use -Execute or -Restore.' }
         $context = Get-AgentContext
         $headers = @{ Authorization = "Bearer $($context.Token)" }
-        Invoke-RestMethod -Uri "$($context.Endpoint)/api/v2/repos" -Headers $headers | ConvertTo-Json -Depth 6
-        Invoke-RestMethod -Uri "$($context.Endpoint)/api/v1/agentmemory/status" -Headers $headers | ConvertTo-Json -Depth 6
-        $workloadResourceGroup = Get-AzdValue 'AZURE_RESOURCE_GROUP'
+        az rest --method GET --url "https://management.azure.com$($context.AgentId)/DataConnectors?api-version=2025-05-01-preview" --query 'value[].{name:name,type:properties.dataConnectorType,source:properties.dataSource}' -o table
+        $repos = Invoke-RestMethod -Uri "$($context.Endpoint)/api/v2/repos" -Headers $headers
+        Write-Host 'Repositories:'
+        $repos | ConvertTo-Json -Depth 6
+        try {
+            $memory = Invoke-RestMethod -Uri "$($context.Endpoint)/api/v1/agentmemory/status" -Headers $headers
+            Write-Host 'Knowledge status:'
+            $memory | ConvertTo-Json -Depth 6
+            Write-Host 'Knowledge indexer status:'
+            Invoke-RestMethod -Uri "$($context.Endpoint)/api/v1/agentmemory/indexer-status" -Headers $headers | ConvertTo-Json -Depth 6
+            Write-Host 'Knowledge files:'
+            Invoke-RestMethod -Uri "$($context.Endpoint)/api/v1/AgentMemory/files" -Headers $headers | ConvertTo-Json -Depth 6
+        } catch {
+            Write-Warning "Knowledge status is unproven: $($_.Exception.Message)"
+        }
+        $workloadResourceGroup = 'rg-sre-spoke-foodapp-paas'
         az containerapp list --resource-group $workloadResourceGroup --query '[].{name:name,state:properties.runningStatus,fqdn:properties.configuration.ingress.fqdn}' -o table
-        az resource list --resource-group $workloadResourceGroup --resource-type Microsoft.Insights/components --query '[].{name:name,workspace:properties.WorkspaceResourceId}' -o table
-        Write-Expected 'Repository, memory status, Container Apps, and workspace-backed Application Insights are visible.'
-        Write-Prompt 'List the connected source-code, knowledge, and telemetry evidence planes. Label any source that is configured but not currently readable.'
+        az monitor app-insights component show --resource-group $workloadResourceGroup --app appi-food --query '{name:name,workspace:properties.WorkspaceResourceId}' -o table
+        Write-Expected 'Log Analytics and Application Insights connectors are visible; repositories and knowledge files are empty while Agent Memory and its indexer are healthy.'
+        Write-Prompt 'List the currently proven evidence planes. Distinguish healthy Agent Memory infrastructure from its empty document inventory; do not configure or upload anything.'
     }
     '03' {
         if (-not (Test-Path $Bash)) { throw "Git Bash not found at $Bash" }

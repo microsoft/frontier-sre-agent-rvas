@@ -6,15 +6,15 @@ Run these scripts from the repository root in PowerShell 7. Each challenge has a
 pwsh -File '.\SRE SignalOps\Scripts\Challenge-00.ps1'
 ```
 
-The default behavior is read-only, a deployment preview, or a configuration plan. Scripts that can change Azure require `-Execute`; the VM heartbeat action additionally supports `-Restore`. PowerShell confirmation remains enabled unless you pass `-Confirm:$false` deliberately.
+The default behavior is read-only or a configuration plan. Missions 00–02 are permanently read-only and validate the existing Terraform-deployed MCAPS lab; they reject `-Execute` and `-Restore`. Later scripts that can change Azure require `-Execute`; the VM heartbeat action additionally supports `-Restore`.
 
 ## Presenter Flow
 
 | Challenge | Default action | Opt-in action | Expected observation / fallback |
 |---|---|---|---|
-| 00 | Preview Grubify deployment | `-Execute` runs `azd up` | Use existing deployment if provisioning time is unsuitable |
-| 01 | Verify agent control plane | `-Execute` creates RG/registers provider | Create the preview agent in the portal if absent |
-| 02 | Verify evidence planes | Portal OAuth/knowledge setup | Show missing source as an explicit readiness gap |
+| 00 | Validate existing food workload and telemetry | None; mutation switches are rejected | Uses `rg-sre-spoke-foodapp-paas` in Sweden Central |
+| 01 | Verify existing agent, mode, access, and scopes | None; mutation switches are rejected | Uses `rg-sre-agent/contoso-sre-agent-dev` |
+| 02 | Audit current telemetry, repository, and knowledge evidence | None; mutation switches are rejected | Telemetry is connected; repositories and knowledge files are empty |
 | 03 | Plan four config targets | `-Execute` applies them | Never apply external connector examples blindly |
 | 04 | Inventory live connectors | None | Demonstrate configured versus proven connectivity |
 | 05 | Inventory specialists | None | Use local manifests if the data plane is slow |

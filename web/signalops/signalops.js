@@ -1,7 +1,7 @@
 const missions = [
-    ['00', 'Bootstrap', 'Launch the Workload', 'Deploy Grubify with azd and validate the application from PowerShell.', '20–30 min', ['azd', 'PowerShell', 'Container Apps']],
-    ['01', 'Bootstrap', 'Establish the Agent Core', 'Create the SRE Agent control plane and persist a reusable PowerShell context.', '15–20 min', ['Azure CLI', 'RBAC', 'Agent']],
-    ['02', 'Bootstrap', 'Connect Ground Truth', 'Attach source, knowledge, and observability context without exposing credentials.', '20–25 min', ['GitHub', 'Knowledge', 'Telemetry']],
+    ['00', 'Bootstrap', 'Validate the Existing Workload', 'Verify the Terraform-deployed MCAPS food workload without changing Azure.', '20–30 min', ['Terraform baseline', 'PowerShell', 'Container Apps']],
+    ['01', 'Bootstrap', 'Validate the Existing Agent Core', 'Audit the running agent, action configuration, RBAC, and managed scopes.', '15–20 min', ['Azure CLI', 'RBAC', 'Agent']],
+    ['02', 'Bootstrap', 'Validate Existing Ground Truth', 'Prove current telemetry and distinguish healthy memory services from empty source content.', '20–25 min', ['Evidence gaps', 'Knowledge', 'Telemetry']],
     ['03', 'Bootstrap', 'Arm the Operator', 'Load operational skills and verify read, write, and approval boundaries.', '20–25 min', ['Skills', 'Safety', 'PowerShell']],
     ['04', 'Wire', 'Discover Connected Systems', 'Inventory live connectors and prove which external systems are reachable.', '15–20 min', ['MCP', 'Connectors', 'Discovery']],
     ['05', 'Wire', 'Discover Specialist Agents', 'Inspect specialist identities, tool grants, and routing boundaries.', '15–20 min', ['Subagents', 'Routing', 'Least privilege']],

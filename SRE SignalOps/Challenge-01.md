@@ -1,48 +1,43 @@
 [< Previous Challenge](./Challenge-00.md) — **[Home](./README.md)** — [Next Challenge >](./Challenge-02.md)
 
-# Challenge 01 — Establish the Agent Core
+# Challenge 01 — Validate the Existing Agent Core
 
 > **Capabilities added in this challenge**: Azure SRE Agent · PowerShell Context · Least-Privilege Scope
 
 ## Introduction
 
-Create the control plane that will operate on the Grubify environment. This mission uses the Azure SRE Agent portal for the preview resource workflow and PowerShell for deterministic scope, identity, and readiness checks.
+Validate the Azure SRE Agent control plane already deployed by Terraform. Do not create a second agent, register resources, or change its action configuration during this mission.
 
 ## Description
 
-> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-01.ps1'`. Add `-Execute` only to create the agent resource group and register the provider. See the [presenter runbook](./Scripts/README.md).
+> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-01.ps1'`. This mission is read-only; `-Execute` is intentionally rejected. See the [presenter runbook](./Scripts/README.md).
 
-### 1. Restore the azd deployment context
+### 1. Set the deployed context
 
 ```powershell
-Set-Location '.\Student\Resources\grubify'
-azd env select signalops
+$SubscriptionId = (az account show --query id -o tsv).Trim()
+$AgentResourceGroup = 'rg-sre-agent'
+$AgentName = 'contoso-sre-agent-dev'
+$Location = 'swedencentral'
 
-$SubscriptionId = azd env get-value AZURE_SUBSCRIPTION_ID
-$WorkloadResourceGroup = azd env get-value AZURE_RESOURCE_GROUP
-$Location = 'eastus2'
-$AgentResourceGroup = 'rg-signalops-agent'
-$AgentName = 'signalops-agent'
-
-az account set --subscription $SubscriptionId
-az group create --name $AgentResourceGroup --location $Location -o table
-az provider register --namespace Microsoft.App --wait
+az group show --name $AgentResourceGroup --query '{Name:name,Location:location,State:properties.provisioningState}' -o table
 ```
 
-### 2. Create the agent
+### 2. Confirm the existing agent
 
-Open [Azure SRE Agent](https://sre.azure.com), select **Create agent**, and use:
+Open [Azure SRE Agent](https://sre.azure.com) and select the existing agent:
 
 | Setting | Value |
 |---|---|
 | Subscription | `$SubscriptionId` |
-| Resource group | `rg-signalops-agent` |
-| Name | `signalops-agent` |
-| Region | East US 2 |
-| Managed resource group | The value in `$WorkloadResourceGroup` |
-| Action mode | Review |
+| Resource group | `rg-sre-agent` |
+| Name | `contoso-sre-agent-dev` |
+| Region | Sweden Central |
+| Managed resources | MCAPS subscription, SRE workload resource groups, and `law-contoso-sre-agent-dev` |
+| Action mode | Autonomous |
+| Access level | High |
 
-Keep action mode at **Review**. Do not enable automatic writes during setup.
+These action settings describe the existing controlled lab. Do not change or broaden them during the mission; keep all demonstrations read-only or explicitly approval-gated.
 
 ### 3. Persist a reusable PowerShell context
 
@@ -65,7 +60,8 @@ $AgentUrl = "https://management.azure.com$AgentId?api-version=$($SignalOps.ApiVe
 
 ```powershell
 $Agent = az rest --method GET --url $AgentUrl | ConvertFrom-Json
-$Agent.properties | Select-Object provisioningState, powerState, agentEndpoint
+$Agent.properties | Select-Object provisioningState,powerState,agentEndpoint,actionConfiguration
+$Agent.properties.knowledgeGraphConfiguration.managedResources
 
 az role assignment list --scope $AgentId --all -o table
 ```
@@ -74,11 +70,11 @@ The provisioning state must be `Succeeded`, power state must be `Running`, and `
 
 ## Success Criteria
 
-- [ ] The provider is registered and the agent reaches `Succeeded`
-- [ ] The Grubify resource group is in the agent's managed scope
-- [ ] Action mode is `Review`
+- [ ] `contoso-sre-agent-dev` reaches `Succeeded` and `Running` in Sweden Central
+- [ ] The MCAPS subscription and all existing SRE workload resource groups are in managed scope
+- [ ] Action mode is `Autonomous` and access level is `High`, matching the deployed Terraform baseline
 - [ ] PowerShell retrieves the agent endpoint from ARM
-- [ ] **Explain to your coach** — why should the agent start in Review mode, and which later evidence would justify broader autonomy?
+- [ ] **Explain to your coach** — which controls keep a high-access autonomous lab agent from making unintended changes during a customer demonstration?
 
 ## Learning Resources
 
@@ -88,6 +84,6 @@ The provisioning state must be `Succeeded`, power state must be `Running`, and `
 
 ## Tips
 
-- Supported regions can change during preview; use a currently supported region if East US 2 is unavailable.
+- Do not run `az group create`, provider registration, or agent creation commands in this mission.
 - Do not paste access tokens into a file or chat.
 - A successful ARM deployment does not prove the data plane is ready; verify `agentEndpoint`.

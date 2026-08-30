@@ -6,9 +6,9 @@
 
 | Challenge | Title | Solution File |
 |---|---|---|
-| 00 | Launch the Workload | [Solution 00](./Solution-00.md) |
-| 01 | Establish the Agent Core | [Solution 01](./Solution-01.md) |
-| 02 | Connect Ground Truth | [Solution 02](./Solution-02.md) |
+| 00 | Validate the Existing Workload | [Solution 00](./Solution-00.md) |
+| 01 | Validate the Existing Agent Core | [Solution 01](./Solution-01.md) |
+| 02 | Validate Existing Ground Truth | [Solution 02](./Solution-02.md) |
 | 03 | Arm the Operator | [Solution 03](./Solution-03.md) |
 | 04 | Discover Connected Systems | [Solution 04](./Solution-04.md) |
 | 05 | Discover Specialist Agents | [Solution 05](./Solution-05.md) |
@@ -26,10 +26,10 @@
 | Resource | Requirement |
 |---|---|
 | Subscription | Contributor plus permission to assign required SRE Agent roles |
-| Grubify | Deployed from `Student/Resources/grubify` with `azd` |
-| Azure SRE Agent | Supported region, Review action mode for setup |
-| GitHub | OAuth authorization for the workshop repository |
-| Telemetry | Log Analytics and Application Insights data available |
+| Food workload | Existing Terraform deployment in `rg-sre-spoke-foodapp-paas`, Sweden Central |
+| Azure SRE Agent | Existing `rg-sre-agent/contoso-sre-agent-dev`, Autonomous mode, High access |
+| Source and knowledge | Repositories and knowledge files are currently empty; validation does not add them |
+| Telemetry | Existing Log Analytics and Application Insights connectors |
 | Network sandbox | Required only for Challenges 08–09; never inject faults into production |
 | Heartbeat VM | Required for live Challenge 10; otherwise provide a labeled evidence pack |
 | Backup and Teams | Required for live Challenge 13; otherwise use evidence-pack mode without claiming a post |
@@ -43,7 +43,7 @@
 ## Coaching Philosophy
 
 1. Ask for evidence before accepting confidence.
-2. Keep writes in Review mode unless the mission explicitly tests an approval.
+2. Keep demonstrations read-only or approval-gated; the existing agent is Autonomous with High access.
 3. Distinguish configured state from observed behavior.
 4. Stop any fault injection outside the disposable network sandbox.
 
@@ -51,9 +51,9 @@
 
 | Ch | Title | Key Concepts | Known Blockers & Hints | Est. Time | When to Intervene |
 |---|---|---|---|---|---|
-| 00 | Launch | azd environments | Docker and subscription context | **30 min** | `azd up` targets wrong scope |
-| 01 | Agent Core | ARM vs data plane | Provider registration | **20 min** | Endpoint remains empty |
-| 02 | Ground Truth | Source, knowledge, telemetry | OAuth and indexing | **25 min** | Secrets are exposed |
+| 00 | Existing workload | Inventory and health evidence | Wrong subscription or attempted redeployment | **30 min** | Any mutation command is proposed |
+| 01 | Existing agent core | ARM, action mode, RBAC, scope | Wrong agent name or inferred safety mode | **20 min** | Endpoint or managed scope differs |
+| 02 | Existing ground truth | Telemetry and evidence gaps | Empty source content mistaken for service failure | **25 min** | A participant attempts OAuth or upload |
 | 03 | Operator | Skills and grants | Git Bash path | **25 min** | Validation is skipped |
 | 04 | Systems | Connector state | Reachability vs configuration | **20 min** | Tokens appear in output |
 | 05 | Specialists | Routing and privilege | Overlapping descriptions | **20 min** | Writes lack approval |

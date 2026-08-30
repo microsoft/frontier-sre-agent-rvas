@@ -1,12 +1,12 @@
 [< Previous Challenge](./Challenge-01.md) — **[Home](./README.md)** — [Next Challenge >](./Challenge-03.md)
 
-# Challenge 02 — Connect Ground Truth
+# Challenge 02 — Validate Existing Ground Truth
 
 > **Capabilities added in this challenge**: GitHub Source · Knowledge Documents · Azure Telemetry
 
 ## Introduction
 
-An agent without context guesses. Connect three evidence planes: source code, operational knowledge, and live Azure telemetry. OAuth remains an interactive portal step; PowerShell proves the resulting configuration without exposing credentials.
+An agent without context guesses. Audit the evidence planes currently available to `contoso-sre-agent-dev` without adding connectors or uploading content. The deployed baseline has Azure telemetry; repository and knowledge readiness must be reported exactly as observed.
 
 ## Description
 
@@ -16,8 +16,8 @@ An agent without context guesses. Connect three evidence planes: source code, op
 
 ```powershell
 $SubscriptionId = az account show --query id -o tsv
-$AgentResourceGroup = 'rg-signalops-agent'
-$AgentName = 'signalops-agent'
+$AgentResourceGroup = 'rg-sre-agent'
+$AgentName = 'contoso-sre-agent-dev'
 $ApiVersion = '2025-05-01-preview'
 $AgentBase = "https://management.azure.com/subscriptions/$SubscriptionId/resourceGroups/$AgentResourceGroup/providers/Microsoft.App/agents/$AgentName"
 $Agent = az rest --method GET --url "$AgentBase`?api-version=$ApiVersion" | ConvertFrom-Json
@@ -26,54 +26,48 @@ $Token = az account get-access-token --resource https://azuresre.dev --query acc
 $Headers = @{ Authorization = "Bearer $Token" }
 ```
 
-### 2. Connect GitHub
+### 2. Inspect source connectivity
 
-In the SRE Agent portal:
-
-1. Open **Connectors**, add GitHub, and complete OAuth.
-2. Open **Repositories** and connect `https://github.com/microsoft/frontier-sre-agent-rvas`.
-3. Scope source questions to `Student/Resources/grubify/`.
-
-Validate from PowerShell:
+List the current repository configuration. The verified baseline currently returns no connected repositories; record that as a source-evidence gap rather than authorizing OAuth during the mission.
 
 ```powershell
 Invoke-RestMethod -Uri "$Endpoint/api/v2/repos" -Headers $Headers |
   ConvertTo-Json -Depth 8
 ```
 
-### 3. Add knowledge
+### 3. Inspect knowledge
 
-Upload the relevant architecture and runbook documents from:
-
-```text
-Student/Resources/azure-sre-agent-config/knowledge/files/
-```
-
-Use **Knowledge** in the portal. Never upload `.env`, token, state, or secret files.
+Query knowledge status without uploading or deleting documents:
 
 ```powershell
 Invoke-RestMethod -Uri "$Endpoint/api/v1/agentmemory/status" -Headers $Headers |
   ConvertTo-Json -Depth 8
 Invoke-RestMethod -Uri "$Endpoint/api/v1/agentmemory/indexer-status" -Headers $Headers |
   ConvertTo-Json -Depth 8
+Invoke-RestMethod -Uri "$Endpoint/api/v1/AgentMemory/files" -Headers $Headers |
+  ConvertTo-Json -Depth 8
 ```
 
-### 4. Verify Azure evidence
+The verified baseline has Agent Memory enabled, an indexer whose last execution succeeded, and zero uploaded files. Report the service as healthy but its document knowledge as empty.
 
-Ask the agent to list the Grubify Container Apps and identify their Log Analytics workspace. Require resource IDs and query timestamps, then compare them with:
+### 4. Verify the deployed Azure evidence
+
+Confirm the two deployed ARM connectors, then compare the food workload with live Azure state:
 
 ```powershell
-Set-Location '.\Student\Resources\grubify'
-$ResourceGroup = azd env get-value AZURE_RESOURCE_GROUP
+$ResourceGroup = 'rg-sre-spoke-foodapp-paas'
+az rest --method GET --url "$AgentBase/DataConnectors?api-version=$ApiVersion" --query 'value[].{Name:name,Type:properties.dataConnectorType,Source:properties.dataSource}' -o table
 az containerapp list --resource-group $ResourceGroup --query '[].{Name:name,State:properties.runningStatus,FQDN:properties.configuration.ingress.fqdn}' -o table
-az monitor log-analytics workspace list --resource-group $ResourceGroup -o table
+az monitor app-insights component show --resource-group $ResourceGroup --app appi-food --query '{Name:name,Workspace:properties.WorkspaceResourceId}' -o table
+az monitor log-analytics workspace show --resource-group rg-sre-hub-connectivity --workspace-name law-rgn3ao -o table
 ```
 
 ## Success Criteria
 
-- [ ] GitHub OAuth is authorized and the repository connectivity test succeeds
-- [ ] Knowledge status and indexer status are healthy
-- [ ] The agent identifies live Grubify resources with timestamps and resource IDs
+- [ ] The repository list is empty and is accurately reported as a current source-evidence gap
+- [ ] Agent Memory is enabled, the last indexer execution succeeded, and the zero-file document inventory is reported accurately
+- [ ] `log-analytics` and `application-insights` connectors are present
+- [ ] The agent identifies the live food workload and shared Log Analytics workspace with timestamps and resource IDs
 - [ ] No credentials or local state files are uploaded
 - [ ] **Explain to your coach** — how do source code, knowledge, and telemetry answer different parts of an incident investigation?
 
@@ -86,5 +80,5 @@ az monitor log-analytics workspace list --resource-group $ResourceGroup -o table
 ## Tips
 
 - Evidence has a timestamp; documentation has a publication date. Record both.
-- OAuth authorization cannot be replaced by copying a token into Markdown.
-- If indexing is still running, wait before judging response quality.
+- Do not authorize OAuth or upload knowledge during this validation mission.
+- An enabled memory service with zero files is healthy infrastructure, not populated document knowledge.
