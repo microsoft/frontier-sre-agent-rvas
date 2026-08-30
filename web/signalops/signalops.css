@@ -66,9 +66,17 @@ a {
     text-decoration: none;
 }
 
-.brand img {
-    width: 90px;
-    height: auto;
+.solution-logo {
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.solution-logo span {
+    color: var(--blue);
 }
 
 .brand-divider {
@@ -518,9 +526,8 @@ footer {
     font-size: .8rem;
 }
 
-footer img {
-    width: 82px;
-    height: auto;
+.footer-logo {
+    font-size: 1.2rem;
 }
 
 footer p {
