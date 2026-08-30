@@ -2,7 +2,7 @@
 
 # Challenge 01 — Validate the Existing Agent Core
 
-> **Capabilities added in this challenge**: Azure SRE Agent · PowerShell Context · Least-Privilege Scope
+> **Capabilities added in this challenge**: Existing Azure SRE Agent · PowerShell Context · Managed-Scope Audit
 
 ## Introduction
 
@@ -16,6 +16,7 @@ Validate the Azure SRE Agent control plane already deployed by Terraform. Do not
 
 ```powershell
 $SubscriptionId = (az account show --query id -o tsv).Trim()
+$WorkloadResourceGroup = 'rg-sre-spoke-foodapp-paas'
 $AgentResourceGroup = 'rg-sre-agent'
 $AgentName = 'contoso-sre-agent-dev'
 $Location = 'swedencentral'
@@ -63,7 +64,7 @@ $Agent = az rest --method GET --url $AgentUrl | ConvertFrom-Json
 $Agent.properties | Select-Object provisioningState,powerState,agentEndpoint,actionConfiguration
 $Agent.properties.knowledgeGraphConfiguration.managedResources
 
-az role assignment list --scope $AgentId --all -o table
+az role assignment list --scope $AgentId -o table
 ```
 
 The provisioning state must be `Succeeded`, power state must be `Running`, and `agentEndpoint` must be populated.

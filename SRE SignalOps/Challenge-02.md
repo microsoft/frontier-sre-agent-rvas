@@ -2,7 +2,7 @@
 
 # Challenge 02 — Validate Existing Ground Truth
 
-> **Capabilities added in this challenge**: GitHub Source · Knowledge Documents · Azure Telemetry
+> **Capabilities added in this challenge**: Evidence-Plane Audit · Agent Memory Health · Azure Telemetry
 
 ## Introduction
 
