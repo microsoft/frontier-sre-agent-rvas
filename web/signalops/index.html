@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SRE SignalOps is a mission-driven Azure SRE Agent track spanning setup, connected systems, specialist agents, topology, network incidents, RCA, optimization, and resilience.">
+    <title>SRE SignalOps — Azure SRE Agent</title>
+    <link rel="icon" type="image/png" href="../assets/img/logo-mark.png">
+    <script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js" integrity="sha384-948ahk4ZmxYVYOc+rxN1H2gM1EJ2Duhp7uHtZ4WSLkV4Vtx5MUqnV+l7u9B+jFv+" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js" integrity="sha384-JEyTNhjM6R1ElGoJns4U2Ln4ofPcqzSsynQkmEc/KGy6336qAZl70tDLufbkla+3" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="../assets/css/brand.css">
+    <link rel="stylesheet" href="./signalops.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <a class="brand" href="./" aria-label="SRE SignalOps home">
+            <img src="../assets/img/logo-full.png" alt="RVAP" width="108" height="38">
+            <span class="brand-divider" aria-hidden="true"></span>
+            <span class="brand-name">SRE SignalOps</span>
+        </a>
+        <nav aria-label="Primary navigation">
+            <a href="#challenges">Challenges</a>
+            <a href="../index.html">Main RVAS</a>
+            <label class="coach-toggle">
+                <span>Coach mode</span>
+                <input id="coach-toggle" type="checkbox" role="switch" aria-controls="coach-guides">
+                <span class="toggle-track" aria-hidden="true"><span></span></span>
+            </label>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero" aria-labelledby="page-title">
+            <div class="hero-grid">
+                <div class="hero-copy">
+                    <p class="eyebrow">RVAS field track · Azure SRE Agent</p>
+                    <h1 id="page-title">SRE <span>SignalOps</span></h1>
+                    <p class="hero-lede">Turn telemetry into decisions. Build the control plane, connect specialist intelligence, map the application, and investigate failures from signal to recovery.</p>
+                    <a class="primary-action" href="#challenges">Enter Mission 00 <span aria-hidden="true">→</span></a>
+                </div>
+                <div class="hero-status" aria-label="Track summary">
+                    <div><strong>14</strong><span>Missions</span></div>
+                    <div><strong>4</strong><span>Phases</span></div>
+                    <div><strong>1</strong><span>Signal chain</span></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="journey" aria-label="Learning journey">
+            <div class="section-inner">
+                <p class="section-kicker">Operational sequence</p>
+                <ol class="journey-steps">
+                    <li><span>00–03</span><strong>Bootstrap</strong><small>azd + PowerShell</small></li>
+                    <li><span>04–06</span><strong>Wire</strong><small>Systems + specialists + plans</small></li>
+                    <li><span>07–09</span><strong>Trace</strong><small>Dependencies + network</small></li>
+                    <li><span>10–13</span><strong>Operate</strong><small>RCA + learning + resilience</small></li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="challenge-section" id="challenges" aria-labelledby="challenges-title">
+            <div class="section-inner">
+                <div class="section-heading">
+                    <div>
+                        <p class="section-kicker">Mission board</p>
+                        <h2 id="challenges-title">Follow the signal</h2>
+                    </div>
+                    <p>A progressive operator path, not a clone of the main workshop. Configure once, then move through topology, evidence, decisions, and controlled action.</p>
+                </div>
+
+                <div class="challenge-grid" id="challenge-grid"></div>
+            </div>
+        </section>
+
+        <section class="coach-section" id="coach-guides" hidden aria-labelledby="coach-title">
+            <div class="section-inner">
+                <div class="section-heading">
+                    <div>
+                        <p class="section-kicker">Facilitator workspace</p>
+                        <h2 id="coach-title">Coach guides</h2>
+                    </div>
+                    <p>Reference outcomes, common failure modes, debrief prompts, and implementation details for each scenario.</p>
+                </div>
+                <div class="coach-list" id="coach-list"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <img src="../assets/img/logo-full.png" alt="RVAP" width="92" height="33">
+        <p>Build. Innovate. Scale real value.</p>
+        <a href="https://github.com/microsoft/frontier-sre-agent-rvas" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+    </footer>
+
+    <div class="reader-overlay" id="reader-overlay"></div>
+    <aside class="reader" id="reader" role="dialog" aria-modal="true" aria-labelledby="reader-title" aria-hidden="true">
+        <header class="reader-header">
+            <div>
+                <span id="reader-kind">Challenge</span>
+                <strong id="reader-title">Scenario</strong>
+            </div>
+            <div class="reader-controls">
+                <button id="reader-prev" title="Previous document" aria-label="Previous document">←</button>
+                <button id="reader-next" title="Next document" aria-label="Next document">→</button>
+                <button id="reader-close" class="reader-close" title="Close" aria-label="Close reader">×</button>
+            </div>
+        </header>
+        <div class="reader-body">
+            <div class="reader-content" id="reader-content"></div>
+        </div>
+    </aside>
+
+    <script src="./signalops.js?v=2"></script>
+</body>
+
+</html>

@@ -7,6 +7,7 @@ param containerRegistryName string
 param containerName string
 param containerImage string
 param targetPort int = 80
+param healthPath string = '/'
 param external bool = false
 param cpu string = '0.5'
 param memory string = '1.0Gi'
@@ -58,11 +59,6 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
       ingress: {
         external: external
         targetPort: targetPort
-        corsPolicy: {
-          allowedOrigins: ['*']
-          allowedMethods: ['*']
-          allowedHeaders: ['*']
-        }
       }
       registries: [
         {
@@ -81,6 +77,32 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
             cpu: json(cpu)
             memory: memory
           }
+          probes: [
+            {
+              type: 'Liveness'
+              httpGet: {
+                path: healthPath
+                port: targetPort
+                scheme: 'HTTP'
+              }
+              initialDelaySeconds: 10
+              periodSeconds: 30
+              timeoutSeconds: 5
+              failureThreshold: 3
+            }
+            {
+              type: 'Readiness'
+              httpGet: {
+                path: healthPath
+                port: targetPort
+                scheme: 'HTTP'
+              }
+              initialDelaySeconds: 5
+              periodSeconds: 10
+              timeoutSeconds: 5
+              failureThreshold: 3
+            }
+          ]
         }
       ]
       scale: {
