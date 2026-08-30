@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="An interactive presentation of Azure SRE Agent capabilities, from incident signal to governed action and operational learning.">
+    <title>Azure SRE Agent Capabilities — SRE SignalOps</title>
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+    <link rel="stylesheet" href="../assets/css/brand.css">
+    <link rel="stylesheet" href="./capabilities.css">
+</head>
+
+<body>
+    <header class="briefing-header">
+        <a class="briefing-brand" href="./" aria-label="Return to SRE SignalOps">
+            <span class="solution-logo" aria-label="RVAS">RVA<span>S</span></span>
+            <span class="brand-divider" aria-hidden="true"></span>
+            <span>SRE SignalOps</span>
+        </a>
+        <div class="header-actions">
+            <a class="header-link" href="./">Missions</a>
+            <a class="icon-action" href="https://learn.microsoft.com/en-us/azure/sre-agent/overview" target="_blank" rel="noopener noreferrer" title="Open Microsoft Learn" aria-label="Open Azure SRE Agent overview on Microsoft Learn">
+                <i data-lucide="book-open"></i>
+            </a>
+            <button class="icon-action" id="present-button" type="button" title="Enter presentation mode" aria-label="Enter presentation mode">
+                <i data-lucide="presentation"></i>
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <section class="briefing-intro" aria-labelledby="briefing-title">
+            <div>
+                <p class="overline"><span class="live-dot"></span> Capability briefing · Microsoft Azure</p>
+                <h1 id="briefing-title">The SRE engineer who is<br><span>already in the incident.</span></h1>
+            </div>
+            <div class="intro-side">
+                <p>Follow one production signal as Azure SRE Agent gathers evidence, forms a hypothesis, coordinates a governed response, and preserves what the team learned.</p>
+                <div class="intro-stat"><strong>7</strong><span>capabilities<br>one operating loop</span></div>
+            </div>
+        </section>
+
+        <section class="capability-console" aria-label="Azure SRE Agent capability explorer">
+            <div class="capability-rail">
+                <div class="rail-heading">
+                    <span>Operating loop</span>
+                    <small>Choose a capability</small>
+                </div>
+                <div id="capability-buttons" class="capability-buttons" role="tablist" aria-orientation="vertical"></div>
+                <p class="keyboard-hint"><kbd>↑</kbd><kbd>↓</kbd> Navigate <kbd>Enter</kbd> Expand</p>
+            </div>
+
+            <article class="capability-stage" id="capability-stage" aria-live="polite">
+                <div class="stage-topline">
+                    <div class="stage-index" id="stage-index">01 / 07</div>
+                    <div class="stage-status"><span></span> Agent online</div>
+                </div>
+
+                <div class="stage-heading">
+                    <div class="capability-icon" id="stage-icon" aria-hidden="true"></div>
+                    <div>
+                        <p id="stage-kicker">Ask the environment</p>
+                        <h2 id="stage-title">Investigate &amp; advise</h2>
+                    </div>
+                </div>
+
+                <div class="story-grid">
+                    <div class="situation-panel">
+                        <span class="panel-label">Situation</span>
+                        <p id="stage-situation"></p>
+                        <blockquote id="stage-prompt"></blockquote>
+                    </div>
+                    <div class="agent-panel">
+                        <span class="panel-label">Agent response</span>
+                        <p id="stage-response"></p>
+                        <div class="evidence-row" id="stage-evidence"></div>
+                    </div>
+                </div>
+
+                <div class="diagram-shell">
+                    <div class="diagram-header">
+                        <span>Signal path</span>
+                        <small id="diagram-caption">Grounded investigation across connected systems</small>
+                    </div>
+                    <div class="signal-diagram" id="signal-diagram"></div>
+                </div>
+
+                <div class="stage-footer">
+                    <div class="operator-note">
+                        <i data-lucide="message-square-quote"></i>
+                        <div><span>Say this</span><p id="stage-talk-track"></p></div>
+                    </div>
+                    <div class="outcome-strip" id="stage-outcomes"></div>
+                </div>
+            </article>
+        </section>
+
+        <section class="operating-model" aria-labelledby="model-title">
+            <div class="model-copy">
+                <p class="overline">The reliability operating model</p>
+                <h2 id="model-title">Signal to recovery,<br>without losing control.</h2>
+                <p>The agent can investigate broadly while every proposed tool call still passes through identity, RBAC, run mode, and tool-level policy. Automation speed and operational governance are designed into the same loop.</p>
+            </div>
+            <ol class="model-steps">
+                <li><span>01</span><div><strong>Observe</strong><small>Connect signals and context</small></div></li>
+                <li><span>02</span><div><strong>Reason</strong><small>Correlate and hypothesize</small></div></li>
+                <li><span>03</span><div><strong>Decide</strong><small>Propose the safest action</small></div></li>
+                <li><span>04</span><div><strong>Act</strong><small>Approve or automate</small></div></li>
+                <li><span>05</span><div><strong>Learn</strong><small>Retain verified context</small></div></li>
+            </ol>
+        </section>
+    </main>
+
+    <footer class="briefing-footer">
+        <span>RVAS · SRE SignalOps</span>
+        <p>Capability model based on Azure SRE Agent documentation, reviewed August 2026.</p>
+        <a href="https://learn.microsoft.com/en-us/azure/sre-agent/" target="_blank" rel="noopener noreferrer">Microsoft Learn <i data-lucide="arrow-up-right"></i></a>
+    </footer>
+
+    <script src="./capabilities.js"></script>
+</body>
+
+</html>
