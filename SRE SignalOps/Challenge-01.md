@@ -1,90 +1,100 @@
 [< Previous Challenge](./Challenge-00.md) — **[Home](./README.md)** — [Next Challenge >](./Challenge-02.md)
 
-# Challenge 01 — Validate the Existing Agent Core
+# Challenge 01 — Deploy the Agent Core with azd
 
-> **Capabilities added in this challenge**: Existing Azure SRE Agent · PowerShell Context · Managed-Scope Audit
+> **Capabilities added in this challenge**: Azure SRE Agent · Managed Identity · Governed RBAC · Managed Scope
 
 ## Introduction
 
-Validate the Azure SRE Agent control plane already deployed by Terraform. Do not create a second agent, register resources, or change its action configuration during this mission.
+Extend the same azd environment with an isolated Azure SRE Agent. This stage mirrors the Terraform agent configuration while narrowing Contributor access to the azd-created workload resource group. Subscription-wide access remains monitoring-only.
 
 ## Description
 
-> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-01.ps1'`. This mission is read-only; `-Execute` is intentionally rejected. See the [presenter runbook](./Scripts/README.md).
+Run this mission only after Mission 00 succeeds.
 
-### 1. Set the deployed context
-
-```powershell
-$SubscriptionId = (az account show --query id -o tsv).Trim()
-$WorkloadResourceGroup = 'rg-sre-spoke-foodapp-paas'
-$AgentResourceGroup = 'rg-sre-agent'
-$AgentName = 'contoso-sre-agent-dev'
-$Location = 'swedencentral'
-
-az group show --name $AgentResourceGroup --query '{Name:name,Location:location,State:properties.provisioningState}' -o table
-```
-
-### 2. Confirm the existing agent
-
-Open [Azure SRE Agent](https://sre.azure.com) and select the existing agent:
-
-| Setting | Value |
-|---|---|
-| Subscription | `$SubscriptionId` |
-| Resource group | `rg-sre-agent` |
-| Name | `contoso-sre-agent-dev` |
-| Region | Sweden Central |
-| Managed resources | MCAPS subscription, SRE workload resource groups, and `law-contoso-sre-agent-dev` |
-| Action mode | Autonomous |
-| Access level | High |
-
-These action settings describe the existing controlled lab. Do not change or broaden them during the mission; keep all demonstrations read-only or explicitly approval-gated.
-
-### 3. Persist a reusable PowerShell context
-
-Return to the repository root and create local session variables whenever you start a mission:
+### 1. Select and verify the azd environment
 
 ```powershell
-$SignalOps = @{
-  SubscriptionId = $SubscriptionId
-  WorkloadResourceGroup = $WorkloadResourceGroup
-  AgentResourceGroup = $AgentResourceGroup
-  AgentName = $AgentName
-  ApiVersion = '2025-05-01-preview'
+$ErrorActionPreference = 'Stop'
+$SubscriptionId = 'b1e100ca-fff5-4e0e-9847-2e44bf47b68c'
+$EnvironmentName = 'signalops-core'
+
+Push-Location '.\SRE SignalOps'
+azd env select $EnvironmentName
+azd env get-values
+
+if ((azd env get-value AZURE_SUBSCRIPTION_ID).Trim() -ne $SubscriptionId) {
+  throw 'The azd environment is not targeting the approved MCAPS subscription.'
 }
-
-$AgentId = "/subscriptions/$($SignalOps.SubscriptionId)/resourceGroups/$($SignalOps.AgentResourceGroup)/providers/Microsoft.App/agents/$($SignalOps.AgentName)"
-$AgentUrl = "https://management.azure.com$AgentId?api-version=$($SignalOps.ApiVersion)"
 ```
 
-### 4. Verify the live agent
+### 2. Enable the agent stage
 
 ```powershell
-$Agent = az rest --method GET --url $AgentUrl | ConvertFrom-Json
+azd env set DEPLOY_AGENT true
+azd env set DEPLOY_CONNECTORS false
+azd provision --preview
+```
+
+The preview must retain the Mission 00 workload and add an agent resource group, user-assigned identity, agent Log Analytics workspace, Application Insights, Azure SRE Agent, and role assignments. It must not add connectors yet.
+
+### 3. Provision the agent core
+
+```powershell
+azd provision
+```
+
+`azd provision` is intentional here: application images were already deployed in Mission 00, so there is no need to rebuild them.
+
+### 4. Verify the deployed agent and RBAC
+
+```powershell
+$AgentResourceGroup = (azd env get-value AGENT_RESOURCE_GROUP).Trim()
+$AgentName = (azd env get-value SRE_AGENT_NAME).Trim()
+$AgentId = (azd env get-value SRE_AGENT_ID).Trim()
+$ApiVersion = '2026-01-01'
+
+$Agent = az rest --method GET `
+  --url "https://management.azure.com$AgentId`?api-version=$ApiVersion" |
+  ConvertFrom-Json
+
 $Agent.properties | Select-Object provisioningState,powerState,agentEndpoint,actionConfiguration
 $Agent.properties.knowledgeGraphConfiguration.managedResources
 
-az role assignment list --scope $AgentId -o table
+$IdentityName = "uai-$AgentName"
+$Identity = az identity show --resource-group $AgentResourceGroup --name $IdentityName | ConvertFrom-Json
+az role assignment list --assignee-object-id $Identity.principalId --all `
+  --query '[].{Role:roleDefinitionName,Scope:scope}' -o table
+Pop-Location
 ```
 
-The provisioning state must be `Succeeded`, power state must be `Running`, and `agentEndpoint` must be populated.
+Expected configuration:
+
+| Setting | azd deployment |
+|---|---|
+| Action mode | `Autonomous` |
+| Access level | `High` |
+| Managed resources | Subscription, isolated workload resource group, workload Log Analytics workspace |
+| Workload write scope | Contributor on the isolated workload resource group only |
+| Subscription scope | Monitoring Contributor |
 
 ## Success Criteria
 
-- [ ] `contoso-sre-agent-dev` reaches `Succeeded` and `Running` in Sweden Central
-- [ ] The MCAPS subscription and all existing SRE workload resource groups are in managed scope
-- [ ] Action mode is `Autonomous` and access level is `High`, matching the deployed Terraform baseline
-- [ ] PowerShell retrieves the agent endpoint from ARM
-- [ ] **Explain to your coach** — which controls keep a high-access autonomous lab agent from making unintended changes during a customer demonstration?
+- [ ] The agent stage preview is reviewed before provisioning
+- [ ] The isolated agent reaches `Succeeded` and `Running`, with a populated endpoint
+- [ ] Action mode is `Autonomous` and access level is `High`, matching the Terraform reference
+- [ ] Managed resources include the subscription, isolated workload group, and workload Log Analytics workspace
+- [ ] Contributor is limited to the isolated workload group; subscription access is monitoring-only
+- [ ] **Explain to your coach** — why does the azd deployment preserve the lab capability while reducing the Terraform baseline's subscription-wide write blast radius?
 
 ## Learning Resources
 
 - [Create an Azure SRE Agent](https://learn.microsoft.com/en-us/azure/sre-agent/create-agent)
 - [Azure SRE Agent API reference](https://learn.microsoft.com/en-us/azure/sre-agent/api-reference)
-- [Azure SRE Agent RBAC roles](https://learn.microsoft.com/en-us/azure/sre-agent/api-reference#rbac-roles)
+- [Azure RBAC scope](https://learn.microsoft.com/en-us/azure/role-based-access-control/scope-overview)
 
 ## Tips
 
-- Do not run `az group create`, provider registration, or agent creation commands in this mission.
-- Do not paste access tokens into a file or chat.
-- A successful ARM deployment does not prove the data plane is ready; verify `agentEndpoint`.
+- Do not use `azd up` in this mission; only infrastructure changed.
+- If the endpoint is empty, wait for provisioning to reach `Succeeded` and query ARM again.
+- Treat Autonomous/High as a controlled workshop setting, not a production default.

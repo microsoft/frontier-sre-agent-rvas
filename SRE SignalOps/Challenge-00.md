@@ -1,100 +1,114 @@
 **[Home](./README.md)** — [Next Challenge >](./Challenge-01.md)
 
-# Challenge 00 — Validate the Existing Workload
+# Challenge 00 — Deploy the Workload with azd
 
-> **Capabilities added in this challenge**: Existing Grubify Workload · Azure Container Apps · Read-Only Validation
+> **Capabilities added in this challenge**: Azure Developer CLI · Azure Container Apps · Workspace-Backed Observability
 
 ## Introduction
 
-SignalOps begins with the existing MCAPS hybrid lab. The workload was deployed with Terraform and must not be redeployed during this track. Validate the live Grubify-compatible food application and its observability resources from Windows PowerShell.
+The original MCAPS lab was deployed with Terraform. In this track, that deployment is the parity reference, not the deployment tool. Use the SignalOps azd project to create a new isolated food workload with the same operational roles: API, frontend, Container Apps environment, registry, Log Analytics, and workspace-backed Application Insights.
 
 ## Description
 
-> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-00.ps1'`. This mission is read-only; `-Execute` is intentionally rejected. See the [presenter runbook](./Scripts/README.md).
+> **Deployment boundary:** This azd template deploys the approved SignalOps core subset. It does not reproduce the later hub/spoke IaaS, Firewall, Bastion, or parking-service scenarios.
 
-Open **PowerShell 7** at the repository root and run the following configuration sequence.
+Run these commands from **PowerShell 7** at the repository root.
 
-### 1. Verify the tools
+### 1. Verify tools and Azure context
 
 ```powershell
 $ErrorActionPreference = 'Stop'
+$SubscriptionId = 'b1e100ca-fff5-4e0e-9847-2e44bf47b68c'
+$TenantId = '16b3c013-d300-468d-ac64-7eda0820b6d3'
+$EnvironmentName = 'signalops-core'
+$Location = 'swedencentral'
+
+azd version
 az version
-git --version
-jq --version
-yq --version
+azd auth login --tenant-id $TenantId
+az login --tenant $TenantId
+az account set --subscription $SubscriptionId
+az account show --query '{Name:name,Id:id,Tenant:tenantId}' -o table
 ```
 
-If the configuration tools are missing, install them and open a new PowerShell window:
+The azd project uses remote container builds, so participants do not need a local Docker daemon.
+
+### 2. Create the isolated azd environment
 
 ```powershell
-winget install --id jqlang.jq --exact
-winget install --id MikeFarah.yq --exact
+Push-Location '.\SRE SignalOps'
+azd env new $EnvironmentName --subscription $SubscriptionId --location $Location
+azd env set DEPLOY_AGENT false
+azd env set DEPLOY_CONNECTORS false
+azd env get-values
 ```
 
-### 2. Verify the deployed subscription
+If the environment already exists, select it instead:
 
 ```powershell
-$ExpectedSubscription = 'MCAPS-Hybrid-REQ-150072-2026-rakau'
-$Account = az account show | ConvertFrom-Json
-if ($Account.name -ne $ExpectedSubscription) {
-	throw "Select $ExpectedSubscription before continuing. No resources were changed."
-}
-az account show --query '{Subscription:name, Id:id, Tenant:tenantId}' -o table
+azd env select $EnvironmentName
 ```
 
-### 3. Inventory the existing workload
+Do not rely on global azd defaults. The environment must show the MCAPS subscription ID and `swedencentral`.
+
+### 3. Preview and deploy the workload
 
 ```powershell
-$WorkloadResourceGroup = 'rg-sre-spoke-foodapp-paas'
-az group show --name $WorkloadResourceGroup --query '{Name:name,Location:location,State:properties.provisioningState}' -o table
-az resource list --resource-group $WorkloadResourceGroup --query '[].{Name:name,Type:type,Location:location}' -o table
+azd provision --preview
+azd up
 ```
 
-The expected workload includes `ca-food-api`, `ca-food-frontend`, `cae-food`, `appi-food`, `vnet-food`, NSGs, routes, and alerting resources in Sweden Central. Its shared Log Analytics workspace is `law-rgn3ao` in `rg-sre-hub-connectivity`.
+Review the preview before continuing. Mission 00 should create only the isolated workload resource group; the agent resource group is introduced in Mission 01.
 
-### 4. Validate the live services
+### 4. Verify workload parity
 
 ```powershell
-$Apps = az containerapp list --resource-group $WorkloadResourceGroup | ConvertFrom-Json
-$Apps | Select-Object name,@{n='State';e={$_.properties.runningStatus}},@{n='FQDN';e={$_.properties.configuration.ingress.fqdn}}
+$WorkloadResourceGroup = (azd env get-value AZURE_RESOURCE_GROUP).Trim()
+$FrontendUrl = (azd env get-value FRONTEND_URL).Trim()
 
-$Frontend = $Apps | Where-Object name -eq 'ca-food-frontend'
-$FrontendUrl = "https://$($Frontend.properties.configuration.ingress.fqdn)"
+az resource list --resource-group $WorkloadResourceGroup `
+  --query '[].{Name:name,Type:type,Location:location}' -o table
+az containerapp list --resource-group $WorkloadResourceGroup `
+  --query '[].{Name:name,State:properties.runningStatus,FQDN:properties.configuration.ingress.fqdn}' -o table
 Invoke-WebRequest -Uri $FrontendUrl -UseBasicParsing | Select-Object StatusCode
 
-az monitor app-insights component show --resource-group $WorkloadResourceGroup --app appi-food --query '{Name:name,Workspace:properties.WorkspaceResourceId}' -o table
-az monitor log-analytics workspace show --resource-group rg-sre-hub-connectivity --workspace-name law-rgn3ao --query '{Name:name,Location:location,State:provisioningState}' -o table
+$AppInsightsName = (azd env get-value APPLICATIONINSIGHTS_NAME).Trim()
+az monitor app-insights component show --resource-group $WorkloadResourceGroup --app $AppInsightsName `
+  --query '{Name:name,Workspace:properties.WorkspaceResourceId}' -o table
+Pop-Location
 ```
 
-The current API does not expose `/` or `/health`; HTTP `404` on those paths is not a deployment failure. Use Container App running state, frontend HTTP `200`, and telemetry resources as the baseline checks.
+The deployed names include the azd environment token so they cannot take ownership of the Terraform-managed `rg-sre-spoke-foodapp-paas` resources.
 
 ## Pre-flight Validation Checklist
 
 ```powershell
+azd version
+az version
+azd auth login --check-status
 az account show --query id -o tsv
-az account show --query name -o tsv
-az group show --name rg-sre-spoke-foodapp-paas --query properties.provisioningState -o tsv
-az containerapp list --resource-group rg-sre-spoke-foodapp-paas --query '[].{Name:name,State:properties.runningStatus}' -o table
-jq --version
-yq --version
+az account show --query tenantId -o tsv
+az bicep build --file '.\SRE SignalOps\infra\main.bicep' --stdout | Out-Null
 ```
 
 ## Success Criteria
 
-- [ ] The active subscription is `MCAPS-Hybrid-REQ-150072-2026-rakau`
-- [ ] The existing food workload resources are present in `rg-sre-spoke-foodapp-paas` in Sweden Central
-- [ ] `ca-food-api` and `ca-food-frontend` report `Running`, and the frontend returns HTTP `200`
-- [ ] `appi-food` is workspace-backed by `law-rgn3ao`
-- [ ] **Explain to your coach** — which checks prove the existing application is available without redeploying or changing it?
+- [ ] The active azd environment uses subscription `b1e100ca-fff5-4e0e-9847-2e44bf47b68c` and Sweden Central
+- [ ] `azd provision --preview` is reviewed before `azd up`
+- [ ] The isolated workload includes a registry, Container Apps environment, API, frontend, Log Analytics, and workspace-backed Application Insights
+- [ ] Both Container Apps report `Running` and the frontend returns HTTP `200`
+- [ ] The deployment does not modify the Terraform-managed resource groups
+- [ ] **Explain to your coach** — how do azd environment values, Bicep parameters, and post-deployment checks prove workload parity without taking over Terraform state?
 
 ## Learning Resources
 
+- [Azure Developer CLI environments](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/manage-environment-variables)
+- [Provision and deploy with azd](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/azd-templates)
 - [Azure Container Apps overview](https://learn.microsoft.com/en-us/azure/container-apps/overview)
-- [Monitor Azure Container Apps](https://learn.microsoft.com/en-us/azure/container-apps/observability)
-- [Workspace-based Application Insights](https://learn.microsoft.com/en-us/azure/azure-monitor/app/create-workspace-resource)
 
 ## Tips
 
-- Run all commands in PowerShell 7, not Command Prompt.
-- Treat Terraform state and credentials as sensitive; do not display or upload them.
-- Do not run `terraform apply`, `terraform destroy`, `azd up`, or `azd down` during this mission.
+- Use `azd env list` and `azd env select signalops-core` when returning to an existing environment.
+- If remote build is unavailable in the subscription, start Docker and set `remoteBuild: false` for both services.
+- A successful ARM deployment is not enough; verify running state and the frontend response.
+- Use `azd down` only when the coach explicitly authorizes removal of the isolated environment.

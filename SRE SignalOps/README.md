@@ -8,9 +8,9 @@ Open the [dashboard source](../web/signalops/index.html) or the [published Signa
 
 | Mission | Phase | Outcome | Time |
 |---|---|---|---|
-| [00](./Challenge-00.md) | Bootstrap | Validate the Existing Workload | 20–30 min |
-| [01](./Challenge-01.md) | Bootstrap | Validate the Existing Agent Core | 15–20 min |
-| [02](./Challenge-02.md) | Bootstrap | Validate Existing Ground Truth | 20–25 min |
+| [00](./Challenge-00.md) | Bootstrap | Deploy the Workload with azd | 30–40 min + deployment |
+| [01](./Challenge-01.md) | Bootstrap | Deploy the Agent Core with azd | 20–30 min + deployment |
+| [02](./Challenge-02.md) | Bootstrap | Deploy Evidence Connectors with azd | 20–25 min + deployment |
 | [03](./Challenge-03.md) | Bootstrap | Arm the Operator | 20–25 min |
 | [04](./Challenge-04.md) | Wire | Discover Connected Systems | 15–20 min |
 | [05](./Challenge-05.md) | Wire | Discover Specialist Agents | 15–20 min |
@@ -27,25 +27,26 @@ Open the [dashboard source](../web/signalops/index.html) or the [published Signa
 
 - PowerShell 7
 - Azure CLI
+- Azure Developer CLI (`azd`)
 - Git and Git for Windows
 - GitHub CLI for repository authorization
 - `jq` and `yq` for SRE Agent configuration validation
 
-The lab was deployed with Terraform, but participants do not run Terraform during Missions 00–02.
+The original lab was deployed with Terraform. Missions 00–02 use it as the parity reference while deploying an isolated SignalOps core through azd and Bicep.
 
 ## Infrastructure Readiness
 
 | Missions | Readiness | Source |
 |---|---|---|
-| 00 | Existing Terraform deployment | Validate `rg-sre-spoke-foodapp-paas`, its food Container Apps, `appi-food`, and shared `law-rgn3ao`; do not redeploy |
-| 01 | Existing Terraform deployment | Validate `rg-sre-agent/contoso-sre-agent-dev` in Sweden Central with its current Autonomous/High configuration and MCAPS managed scopes |
-| 02, 04 | Existing configuration audit | Log Analytics and Application Insights are connected; Agent Memory and its indexer are healthy, while repositories and knowledge files are empty |
+| 00 | azd workload stage | Create an isolated registry, Container Apps environment, food API/frontend, Log Analytics, and workspace-backed Application Insights |
+| 01 | azd agent stage | Add an isolated SRE Agent, managed identity, agent telemetry, managed scope, and governed RBAC |
+| 02, 04 | azd connector stage and audit | Add Log Analytics and Application Insights connectors, then audit repository, memory, and knowledge state |
 | 03, 05, 06, 12 | Applied by configuration client | CH-03 selectively validates, plans, applies, and verifies skills, subagents, Azure Monitor incident configuration, and incident filters |
 | 08, 09 | Coach-provided | Use a disposable hub-spoke network sandbox with Network Watcher and flow evidence, or a supplied incident snapshot |
 | 10, 11 | Coach-provided or simulated | Use a monitored VM with recent Heartbeat data, or the coach evidence pack |
 | 13 | Customer/coach-provided or simulated | Live mode requires a protected workload and authorized Teams connector; evidence-pack mode requires neither write access nor message delivery |
 
-The existing MCAPS Terraform lab includes the hub-spoke, food, parking, agent, and observability resources used by this track. Missions 00–02 do not mutate them.
+The existing MCAPS Terraform lab remains available for later hub-spoke and parking scenarios. Missions 00–02 deploy only the approved SignalOps core subset into environment-named resource groups and do not mutate Terraform-managed resources.
 
 Coach references are in the [Coach folder](./Coach/).
 

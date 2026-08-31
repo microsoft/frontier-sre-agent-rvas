@@ -6,9 +6,9 @@
 
 | Challenge | Title | Solution File |
 |---|---|---|
-| 00 | Validate the Existing Workload | [Solution 00](./Solution-00.md) |
-| 01 | Validate the Existing Agent Core | [Solution 01](./Solution-01.md) |
-| 02 | Validate Existing Ground Truth | [Solution 02](./Solution-02.md) |
+| 00 | Deploy the Workload with azd | [Solution 00](./Solution-00.md) |
+| 01 | Deploy the Agent Core with azd | [Solution 01](./Solution-01.md) |
+| 02 | Deploy Evidence Connectors with azd | [Solution 02](./Solution-02.md) |
 | 03 | Arm the Operator | [Solution 03](./Solution-03.md) |
 | 04 | Discover Connected Systems | [Solution 04](./Solution-04.md) |
 | 05 | Discover Specialist Agents | [Solution 05](./Solution-05.md) |
@@ -26,10 +26,10 @@
 | Resource | Requirement |
 |---|---|
 | Subscription | Contributor plus permission to assign required SRE Agent roles |
-| Food workload | Existing Terraform deployment in `rg-sre-spoke-foodapp-paas`, Sweden Central |
-| Azure SRE Agent | Existing `rg-sre-agent/contoso-sre-agent-dev`, Autonomous mode, High access |
-| Source and knowledge | Repositories and knowledge files are currently empty; validation does not add them |
-| Telemetry | Existing Log Analytics and Application Insights connectors |
+| Food workload | Isolated azd/Bicep deployment in Sweden Central, created in Challenge 00 |
+| Azure SRE Agent | Isolated environment-named agent, Autonomous mode, High access, created in Challenge 01 |
+| Source and knowledge | State is audited after deployment; Challenge 02 does not add OAuth credentials or documents |
+| Telemetry | Log Analytics and Application Insights connectors created in Challenge 02 |
 | Network sandbox | Required only for Challenges 08–09; never inject faults into production |
 | Heartbeat VM | Required for live Challenge 10; otherwise provide a labeled evidence pack |
 | Backup and Teams | Required for live Challenge 13; otherwise use evidence-pack mode without claiming a post |

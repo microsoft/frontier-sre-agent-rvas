@@ -1,31 +1,32 @@
 [< Previous Solution](./Solution-00.md) | **[Home](./README.md)** | [Next Solution >](./Solution-02.md)
 
-# Coach Guide — Challenge 01: Validate the Existing Agent Core
+# Coach Guide — Challenge 01: Deploy the Agent Core with azd
 
 ## Purpose
 
-Verify the existing Terraform-deployed agent control plane with a reusable PowerShell context. Expected time: 15–20 minutes.
+Extend the Mission 00 azd environment with an isolated SRE Agent, identity, observability, managed scope, and RBAC. Expected time: 20–30 minutes plus Azure provisioning time.
 
 ## Mini-Lecture (5 min before challenge)
 
-Separate ARM provisioning state from data-plane readiness. The controlled lab currently uses Autonomous mode with High access, so customer demonstrations must remain read-only or approval-gated.
+Separate ARM provisioning state from data-plane readiness. Highlight the deliberate parity choice of Autonomous/High and the safety improvement: Contributor is scoped to the isolated workload group instead of the whole subscription.
 
 ## Expected Student Output
 
-A running `contoso-sre-agent-dev`, populated endpoint, complete MCAPS managed-resource list, action configuration, and ARM/RBAC output.
+A running environment-named agent, populated endpoint, managed-resource list, Autonomous/High action configuration, and RBAC output proving workload-scoped write access.
 
 ## Common Issues and Hints
 
-- **Symptom:** A participant cannot find `signalops-agent`. **Fix:** use the deployed `rg-sre-agent/contoso-sre-agent-dev`; do not create another agent.
+- **Symptom:** Agent outputs are empty. **Fix:** select `signalops-core`, set `DEPLOY_AGENT=true`, keep `DEPLOY_CONNECTORS=false`, and provision after preview review.
 - **Symptom:** ARM returns NotFound. **Fix:** verify subscription, resource group, name, and API version.
 - **Symptom:** Endpoint is empty. **Fix:** wait for provisioning to reach `Succeeded` and query again.
+- **Symptom:** Subscription Contributor appears. **Fix:** stop; the isolated azd design should assign subscription Monitoring Contributor and workload-group Contributor only.
 
 ## Debrief Discussion Guide
 
 1. Why are control and data planes separate?
-2. Which controls are essential when Autonomous mode and High access are already configured?
-3. Which role should a participant receive?
+2. Why is a managed identity plus resource-group-scoped Contributor safer than subscription Contributor?
+3. Which settings match Terraform exactly, and which one intentionally narrows its blast radius?
 
 ## Success Criteria Notes
 
-Do not pass the mission if the endpoint is absent, scope differs from the deployed MCAPS resource set, or action mode/access level are reported inaccurately. Do not change those settings during validation.
+Do not pass if preview was skipped, the endpoint is absent, managed resources omit the isolated workload, action mode/access are inaccurate, or the identity receives subscription-wide Contributor.

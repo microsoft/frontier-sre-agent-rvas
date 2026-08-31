@@ -1,84 +1,102 @@
 [< Previous Challenge](./Challenge-01.md) — **[Home](./README.md)** — [Next Challenge >](./Challenge-03.md)
 
-# Challenge 02 — Validate Existing Ground Truth
+# Challenge 02 — Deploy Evidence Connectors with azd
 
-> **Capabilities added in this challenge**: Evidence-Plane Audit · Agent Memory Health · Azure Telemetry
+> **Capabilities added in this challenge**: Log Analytics Connector · Application Insights Connector · Evidence-Plane Validation
 
 ## Introduction
 
-An agent without context guesses. Audit the evidence planes currently available to `contoso-sre-agent-dev` without adding connectors or uploading content. The deployed baseline has Azure telemetry; repository and knowledge readiness must be reported exactly as observed.
+Complete the staged azd deployment by adding the two Azure telemetry connectors from the Terraform reference. Then validate what the agent can actually prove across telemetry, source, and knowledge. Infrastructure health and populated evidence are different outcomes.
 
 ## Description
 
-> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-02.ps1'` to verify source, knowledge, and telemetry evidence planes. See the [presenter runbook](./Scripts/README.md).
+Run this mission only after the agent endpoint from Mission 01 is available.
 
-### 1. Build the PowerShell API context
+### 1. Select the same environment and enable connectors
 
 ```powershell
-$SubscriptionId = az account show --query id -o tsv
-$AgentResourceGroup = 'rg-sre-agent'
-$AgentName = 'contoso-sre-agent-dev'
-$ApiVersion = '2025-05-01-preview'
-$AgentBase = "https://management.azure.com/subscriptions/$SubscriptionId/resourceGroups/$AgentResourceGroup/providers/Microsoft.App/agents/$AgentName"
-$Agent = az rest --method GET --url "$AgentBase`?api-version=$ApiVersion" | ConvertFrom-Json
-$Endpoint = $Agent.properties.agentEndpoint
-$Token = az account get-access-token --resource https://azuresre.dev --query accessToken -o tsv
-$Headers = @{ Authorization = "Bearer $Token" }
+$ErrorActionPreference = 'Stop'
+$EnvironmentName = 'signalops-core'
+
+Push-Location '.\SRE SignalOps'
+azd env select $EnvironmentName
+azd env set DEPLOY_AGENT true
+azd env set DEPLOY_CONNECTORS true
+azd provision --preview
 ```
 
-### 2. Inspect source connectivity
+The preview should add exactly two child resources beneath the existing agent: `log-analytics` and `application-insights`. It must not replace the workload or agent.
 
-List the current repository configuration. The verified baseline currently returns no connected repositories; record that as a source-evidence gap rather than authorizing OAuth during the mission.
+### 2. Provision the connector stage
 
 ```powershell
+azd provision
+```
+
+No connector secret is stored in the repository or azd environment. Both connectors use the agent's user-assigned identity and Azure resource IDs.
+
+### 3. Verify connector resources
+
+```powershell
+$AgentId = (azd env get-value SRE_AGENT_ID).Trim()
+$ApiVersion = '2026-01-01'
+$ConnectorUrl = "https://management.azure.com$AgentId/connectors?api-version=$ApiVersion"
+
+az rest --method GET --url $ConnectorUrl `
+  --query 'value[].{Name:name,Type:properties.dataConnectorType,Source:properties.dataSource}' -o table
+```
+
+Expected connectors:
+
+| Name | Type | Evidence source |
+|---|---|---|
+| `log-analytics` | `LogAnalytics` | Workload Log Analytics workspace |
+| `application-insights` | `AppInsights` | Agent Application Insights component, matching the Terraform reference |
+
+### 4. Validate data-plane ground truth
+
+```powershell
+$Agent = az rest --method GET `
+  --url "https://management.azure.com$AgentId`?api-version=$ApiVersion" |
+  ConvertFrom-Json
+$Endpoint = $Agent.properties.agentEndpoint.TrimEnd('/')
+$Token = (az account get-access-token --resource https://azuresre.dev --query accessToken -o tsv).Trim()
+$Headers = @{ Authorization = "Bearer $Token" }
+
 Invoke-RestMethod -Uri "$Endpoint/api/v2/repos" -Headers $Headers |
   ConvertTo-Json -Depth 8
-```
-
-### 3. Inspect knowledge
-
-Query knowledge status without uploading or deleting documents:
-
-```powershell
 Invoke-RestMethod -Uri "$Endpoint/api/v1/agentmemory/status" -Headers $Headers |
   ConvertTo-Json -Depth 8
 Invoke-RestMethod -Uri "$Endpoint/api/v1/agentmemory/indexer-status" -Headers $Headers |
   ConvertTo-Json -Depth 8
 Invoke-RestMethod -Uri "$Endpoint/api/v1/AgentMemory/files" -Headers $Headers |
   ConvertTo-Json -Depth 8
+
+$WorkloadResourceGroup = (azd env get-value AZURE_RESOURCE_GROUP).Trim()
+az containerapp list --resource-group $WorkloadResourceGroup `
+  --query '[].{Name:name,State:properties.runningStatus,FQDN:properties.configuration.ingress.fqdn}' -o table
+Pop-Location
 ```
 
-The verified baseline has Agent Memory enabled, an indexer whose last execution succeeded, and zero uploaded files. Report the service as healthy but its document knowledge as empty.
-
-### 4. Verify the deployed Azure evidence
-
-Confirm the two deployed ARM connectors, then compare the food workload with live Azure state:
-
-```powershell
-$ResourceGroup = 'rg-sre-spoke-foodapp-paas'
-az rest --method GET --url "$AgentBase/DataConnectors?api-version=$ApiVersion" --query 'value[].{Name:name,Type:properties.dataConnectorType,Source:properties.dataSource}' -o table
-az containerapp list --resource-group $ResourceGroup --query '[].{Name:name,State:properties.runningStatus,FQDN:properties.configuration.ingress.fqdn}' -o table
-az monitor app-insights component show --resource-group $ResourceGroup --app appi-food --query '{Name:name,Workspace:properties.WorkspaceResourceId}' -o table
-az monitor log-analytics workspace show --resource-group rg-sre-hub-connectivity --workspace-name law-rgn3ao -o table
-```
+An empty repository list or zero knowledge files is an evidence gap, not a failed connector deployment. Record the state accurately before adding source or documents in later missions.
 
 ## Success Criteria
 
-- [ ] The repository list is empty and is accurately reported as a current source-evidence gap
-- [ ] Agent Memory is enabled, the last indexer execution succeeded, and the zero-file document inventory is reported accurately
-- [ ] `log-analytics` and `application-insights` connectors are present
-- [ ] The agent identifies the live food workload and shared Log Analytics workspace with timestamps and resource IDs
-- [ ] No credentials or local state files are uploaded
-- [ ] **Explain to your coach** — how do source code, knowledge, and telemetry answer different parts of an incident investigation?
+- [ ] The connector-stage preview is reviewed before provisioning
+- [ ] `log-analytics` and `application-insights` exist beneath the azd-deployed agent
+- [ ] Connector data sources resolve to resources created by the same azd environment
+- [ ] Agent Memory and indexer status are reported separately from file count
+- [ ] Repository and knowledge gaps are disclosed without storing credentials or tokens
+- [ ] **Explain to your coach** — how do telemetry, source, and knowledge answer different questions, and which of those evidence planes were deployed by azd?
 
 ## Learning Resources
 
+- [Connect Azure data to Azure SRE Agent](https://learn.microsoft.com/en-us/azure/sre-agent/connect-data)
 - [Connect knowledge to Azure SRE Agent](https://learn.microsoft.com/en-us/azure/sre-agent/connect-knowledge)
 - [Azure SRE Agent API reference](https://learn.microsoft.com/en-us/azure/sre-agent/api-reference)
-- [Azure Container Apps log monitoring](https://learn.microsoft.com/en-us/azure/container-apps/log-monitoring)
 
 ## Tips
 
-- Evidence has a timestamp; documentation has a publication date. Record both.
-- Do not authorize OAuth or upload knowledge during this validation mission.
-- An enabled memory service with zero files is healthy infrastructure, not populated document knowledge.
+- Re-run `azd provision --preview` whenever Bicep or deployment flags change.
+- A healthy memory service with zero files is ready infrastructure, not populated knowledge.
+- Never persist the `azuresre.dev` access token in a file or azd environment value.

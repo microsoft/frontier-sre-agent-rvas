@@ -5,7 +5,7 @@ param(
     [string]$Challenge,
     [switch]$Execute,
     [switch]$Restore,
-    [string]$EnvironmentName = 'signalops',
+    [string]$EnvironmentName = 'signalops-core',
     [string]$Location = 'swedencentral',
     [string]$AgentResourceGroup = 'rg-sre-agent',
     [string]$AgentName = 'contoso-sre-agent-dev',
@@ -21,6 +21,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $GrubifyRoot = Join-Path $RepoRoot 'Student\Resources\grubify'
+$SignalOpsRoot = Join-Path $RepoRoot 'SRE SignalOps'
 $Bash = 'C:\Program Files\Git\bin\bash.exe'
 
 function Assert-Command([string]$Name) {
@@ -35,7 +36,7 @@ function Invoke-Native([scriptblock]$Command) {
 }
 
 function Get-AzdValue([string]$Name) {
-    Push-Location $GrubifyRoot
+    Push-Location $SignalOpsRoot
     try {
         $value = azd env get-value $Name 2>$null
         if ($LASTEXITCODE -eq 0) { return ($value | Out-String).Trim() }
@@ -72,12 +73,28 @@ if ($LASTEXITCODE -ne 0) {
 
 switch ($Challenge) {
     '00' {
-        if ($Execute -or $Restore) { throw 'Challenge 00 is read-only for the existing MCAPS lab. Do not use -Execute or -Restore.' }
+        if ($Restore) { throw 'Challenge 00 does not support -Restore. Use azd down only with explicit coach approval.' }
+        Assert-Command azd
         $account = az account show | ConvertFrom-Json
         if ($account.name -ne 'MCAPS-Hybrid-REQ-150072-2026-rakau') {
             throw "Active subscription is '$($account.name)'; select MCAPS-Hybrid-REQ-150072-2026-rakau before continuing."
         }
-        $workloadResourceGroup = 'rg-sre-spoke-foodapp-paas'
+        Push-Location (Join-Path $RepoRoot 'SRE SignalOps')
+        try {
+            Invoke-Native { azd env select $EnvironmentName }
+            Invoke-Native { azd env set DEPLOY_AGENT false }
+            Invoke-Native { azd env set DEPLOY_CONNECTORS false }
+            if ($Execute) {
+                if ($PSCmdlet.ShouldProcess($EnvironmentName, 'Provision workload and deploy applications with azd up')) {
+                    Invoke-Native { azd up }
+                }
+            } else {
+                Invoke-Native { azd provision --preview }
+                Write-Host 'Preview only. Re-run with -Execute after reviewing the changes.' -ForegroundColor Yellow
+            }
+        } finally { Pop-Location }
+        $workloadResourceGroup = Get-AzdValue 'AZURE_RESOURCE_GROUP'
+        if (-not $workloadResourceGroup) { return }
         az group show --name $workloadResourceGroup --query '{name:name,location:location,state:properties.provisioningState}' -o table
         az resource list --resource-group $workloadResourceGroup --query '[].{name:name,type:type,location:location}' -o table
         $apps = az containerapp list --resource-group $workloadResourceGroup | ConvertFrom-Json
@@ -85,24 +102,64 @@ switch ($Challenge) {
         $frontend = $apps | Where-Object name -eq 'ca-food-frontend'
         $frontendUrl = "https://$($frontend.properties.configuration.ingress.fqdn)"
         Invoke-WebRequest -Uri $frontendUrl -UseBasicParsing | Select-Object StatusCode
-        az monitor app-insights component show --resource-group $workloadResourceGroup --app appi-food --query '{name:name,workspace:properties.WorkspaceResourceId}' -o table
-        az monitor log-analytics workspace show --resource-group rg-sre-hub-connectivity --workspace-name law-rgn3ao --query '{name:name,location:location,state:provisioningState}' -o table
-        Write-Expected 'The existing Sweden Central food workload is present, both Container Apps are Running, the frontend returns 200, and telemetry resources are visible.'
+        $appInsightsName = Get-AzdValue 'APPLICATIONINSIGHTS_NAME'
+        az monitor app-insights component show --resource-group $workloadResourceGroup --app $appInsightsName --query '{name:name,workspace:properties.WorkspaceResourceId}' -o table
+        Write-Expected 'The isolated azd workload contains both running Container Apps, a reachable frontend, and workspace-backed telemetry.'
     }
     '01' {
-        if ($Execute -or $Restore) { throw 'Challenge 01 is read-only for the existing MCAPS lab. Do not use -Execute or -Restore.' }
-        $subscriptionId = (az account show --query id -o tsv).Trim()
-        $agentId = "/subscriptions/$subscriptionId/resourceGroups/$AgentResourceGroup/providers/Microsoft.App/agents/$AgentName"
-        az rest --method GET --url "https://management.azure.com$agentId`?api-version=2025-05-01-preview" --query 'properties.{state:provisioningState,power:powerState,endpoint:agentEndpoint,mode:actionConfiguration.mode,access:actionConfiguration.accessLevel,managedResources:knowledgeGraphConfiguration.managedResources}' -o json
-        az role assignment list --scope $agentId --query '[].{role:roleDefinitionName,principal:principalName}' -o table
-        Write-Expected 'contoso-sre-agent-dev is Succeeded and Running in Sweden Central with Autonomous/High configuration and the deployed MCAPS managed scopes.'
-        Write-Prompt 'Audit this existing high-access autonomous lab agent and its managed scopes. Do not make changes or broaden permissions.'
+        if ($Restore) { throw 'Challenge 01 does not support -Restore.' }
+        Assert-Command azd
+        Push-Location (Join-Path $RepoRoot 'SRE SignalOps')
+        try {
+            Invoke-Native { azd env select $EnvironmentName }
+            Invoke-Native { azd env set DEPLOY_AGENT true }
+            Invoke-Native { azd env set DEPLOY_CONNECTORS false }
+            if ($Execute) {
+                if ($PSCmdlet.ShouldProcess($EnvironmentName, 'Provision the SRE Agent core with azd')) {
+                    Invoke-Native { azd provision }
+                }
+            } else {
+                Invoke-Native { azd provision --preview }
+                Write-Host 'Preview only. Re-run with -Execute after reviewing the changes.' -ForegroundColor Yellow
+            }
+        } finally { Pop-Location }
+        $agentId = Get-AzdValue 'SRE_AGENT_ID'
+        if (-not $agentId) { return }
+        $resolvedAgentName = Get-AzdValue 'SRE_AGENT_NAME'
+        $resolvedAgentResourceGroup = Get-AzdValue 'AGENT_RESOURCE_GROUP'
+        az rest --method GET --url "https://management.azure.com$agentId`?api-version=2026-01-01" --query 'properties.{state:provisioningState,power:powerState,endpoint:agentEndpoint,mode:actionConfiguration.mode,access:actionConfiguration.accessLevel,managedResources:knowledgeGraphConfiguration.managedResources}' -o json
+        $principalId = (az identity show --resource-group $resolvedAgentResourceGroup --name "uai-$resolvedAgentName" --query principalId -o tsv).Trim()
+        az role assignment list --assignee-object-id $principalId --all --query '[].{role:roleDefinitionName,scope:scope}' -o table
+        Write-Expected 'The azd agent is Succeeded and Running with Autonomous/High configuration, workload-scoped Contributor, and subscription Monitoring Contributor.'
+        Write-Prompt 'Audit this isolated autonomous lab agent and prove that write access does not extend beyond its workload resource group.'
     }
     '02' {
-        if ($Execute -or $Restore) { throw 'Challenge 02 is read-only for the existing MCAPS lab. Do not use -Execute or -Restore.' }
-        $context = Get-AgentContext
+        if ($Restore) { throw 'Challenge 02 does not support -Restore.' }
+        Assert-Command azd
+        Push-Location (Join-Path $RepoRoot 'SRE SignalOps')
+        try {
+            Invoke-Native { azd env select $EnvironmentName }
+            Invoke-Native { azd env set DEPLOY_AGENT true }
+            Invoke-Native { azd env set DEPLOY_CONNECTORS true }
+            if ($Execute) {
+                if ($PSCmdlet.ShouldProcess($EnvironmentName, 'Provision SRE Agent evidence connectors with azd')) {
+                    Invoke-Native { azd provision }
+                }
+            } else {
+                Invoke-Native { azd provision --preview }
+                Write-Host 'Preview only. Re-run with -Execute after reviewing the changes.' -ForegroundColor Yellow
+            }
+        } finally { Pop-Location }
+        $agentId = Get-AzdValue 'SRE_AGENT_ID'
+        if (-not $agentId) { return }
+        $agent = az rest --method GET --url "https://management.azure.com$agentId`?api-version=2026-01-01" | ConvertFrom-Json
+        $context = [pscustomobject]@{
+            AgentId = $agentId
+            Endpoint = $agent.properties.agentEndpoint.TrimEnd('/')
+            Token = (az account get-access-token --resource https://azuresre.dev --query accessToken -o tsv).Trim()
+        }
         $headers = @{ Authorization = "Bearer $($context.Token)" }
-        az rest --method GET --url "https://management.azure.com$($context.AgentId)/DataConnectors?api-version=2025-05-01-preview" --query 'value[].{name:name,type:properties.dataConnectorType,source:properties.dataSource}' -o table
+        az rest --method GET --url "https://management.azure.com$($context.AgentId)/connectors?api-version=2026-01-01" --query 'value[].{name:name,type:properties.dataConnectorType,source:properties.dataSource}' -o table
         $repos = Invoke-RestMethod -Uri "$($context.Endpoint)/api/v2/repos" -Headers $headers
         Write-Host 'Repositories:'
         $repos | ConvertTo-Json -Depth 6
@@ -117,11 +174,10 @@ switch ($Challenge) {
         } catch {
             Write-Warning "Knowledge status is unproven: $($_.Exception.Message)"
         }
-        $workloadResourceGroup = 'rg-sre-spoke-foodapp-paas'
+        $workloadResourceGroup = Get-AzdValue 'AZURE_RESOURCE_GROUP'
         az containerapp list --resource-group $workloadResourceGroup --query '[].{name:name,state:properties.runningStatus,fqdn:properties.configuration.ingress.fqdn}' -o table
-        az monitor app-insights component show --resource-group $workloadResourceGroup --app appi-food --query '{name:name,workspace:properties.WorkspaceResourceId}' -o table
-        Write-Expected 'Log Analytics and Application Insights connectors are visible; repositories and knowledge files are empty while Agent Memory and its indexer are healthy.'
-        Write-Prompt 'List the currently proven evidence planes. Distinguish healthy Agent Memory infrastructure from its empty document inventory; do not configure or upload anything.'
+        Write-Expected 'The two azd-managed Azure telemetry connectors are visible; repository and knowledge state is reported independently.'
+        Write-Prompt 'List the currently proven evidence planes. Distinguish deployed connector infrastructure from populated source and knowledge evidence.'
     }
     '03' {
         if (-not (Test-Path $Bash)) { throw "Git Bash not found at $Bash" }
