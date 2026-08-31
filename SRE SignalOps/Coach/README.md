@@ -44,7 +44,7 @@
 
 1. Ask for evidence before accepting confidence.
 2. Keep demonstrations read-only or approval-gated; the existing agent is Autonomous with High access.
-3. Start Missions 03–13 with the operational issue, not the product feature used to investigate it.
+3. Before Mission 03, explain the Grubify request, telemetry, incident, and control paths and record the normal baseline; then start Missions 03–13 with the operational issue, not the product feature used to investigate it.
 4. Accept `not confirmed` or `not reproduced` when that is what current evidence supports.
 5. Stop any fault injection outside the disposable network sandbox.
 
@@ -53,7 +53,7 @@
 | Missions | Check before students begin | Coach response when blocked |
 |---|---|---|
 | 00–02 | azd environment targets the approved subscription and `swedencentral` | Stop before provisioning; select the correct environment and rerun preview |
-| 03 | Git Bash, `jq`, and `yq` are available; plan-only simulation lists 8 skills, 11 subagents, 1 platform, and 4 filters | Use `Challenge-03.ps1` without `-Execute`; resolve prerequisites before applying |
+| 03 | Grubify architecture is understood; scope, revisions, routes, telemetry, and agent access have a timestamped baseline; Git Bash, `jq`, and `yq` are available | Stop on unexplained baseline failures; use `Challenge-03.ps1` without `-Execute` and resolve prerequisites before applying |
 | 04–06 | Connector authorization, specialist manifests, and incident routing are inspectable | Use unverified labels or a labeled exercise; never invent connectivity or incidents |
 | 07 | Recent Application Insights request/dependency telemetry exists | Generate harmless baseline traffic or label unsupported edges unobserved |
 | 08–09 | A disposable network sandbox and restoration procedure are ready | Use the supplied evidence pack; do not inject faults into production |
@@ -68,7 +68,7 @@
 | 00 | Existing workload | Inventory and health evidence | Wrong subscription or attempted redeployment | **30 min** | Any mutation command is proposed |
 | 01 | Existing agent core | ARM, action mode, RBAC, scope | Wrong agent name or inferred safety mode | **20 min** | Endpoint or managed scope differs |
 | 02 | Existing ground truth | Telemetry and evidence gaps | Empty source content mistaken for service failure | **25 min** | A participant attempts OAuth or upload |
-| 03 | First incident | Evidence-led triage and guarded action | Git Bash path or unconfirmed symptom | **25 min** | Diagnosis lacks current evidence |
+| 03 | First incident | Architecture, normal baseline, evidence-led triage, and guarded action | Missing deployment outputs, baseline failure, Git Bash path, or unconfirmed symptom | **45 min** | Configuration begins before the system and baseline are understood |
 | 04 | Evidence blind spot | Source failure, fallback, and escalation | Reachability vs configuration | **20 min** | Missing evidence is silently assumed |
 | 05 | Cross-domain incident | Evidence-led routing and one incident owner | Overlapping descriptions | **20 min** | Handoffs fragment the timeline |
 | 06 | HTTP-error response | Intake, action gate, and recovery proof | Alert mismatch | **25 min** | Action precedes evidence |

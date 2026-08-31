@@ -11,7 +11,7 @@ Open the [dashboard source](../web/signalops/index.html) or the [published Signa
 | [00](./Challenge-00.md) | Bootstrap | Deploy the Workload with azd | 30–40 min + deployment |
 | [01](./Challenge-01.md) | Bootstrap | Deploy the Agent Core with azd | 20–30 min + deployment |
 | [02](./Challenge-02.md) | Bootstrap | Deploy Evidence Connectors with azd | 20–25 min + deployment |
-| [03](./Challenge-03.md) | Bootstrap | Triage the First Grubify Incident | 20–25 min |
+| [03](./Challenge-03.md) | Bootstrap | Understand the architecture, baseline Grubify, and triage the first incident | 35–45 min |
 | [04](./Challenge-04.md) | Wire | Investigate an Evidence Blind Spot | 15–20 min |
 | [05](./Challenge-05.md) | Wire | Route a Cross-Domain Incident | 15–20 min |
 | [06](./Challenge-06.md) | Wire | Exercise a Guarded HTTP-Error Response | 20–25 min |
