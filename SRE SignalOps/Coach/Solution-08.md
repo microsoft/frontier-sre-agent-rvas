@@ -4,11 +4,13 @@
 
 ## Purpose
 
-Diagnose a lab NSG failure without weakening unrelated controls. Expected time: 25–30 minutes.
+Coach a Grubify dependency timeout from symptom to an evidence-backed NSG diagnosis, narrow recovery, and control regression check. Expected time: 25–30 minutes.
 
 ## Mini-Lecture (5 min before challenge)
 
-Effective rule evaluation combines association, direction, tuple, priority, and default rules.
+- A timeout does not prove a network-security cause; effective rules and flow evidence must discriminate it from application, DNS, and routing failures.
+- Effective rule evaluation combines association, direction, tuple, priority, and default rules.
+- Recovery must restore the intended flow without weakening unrelated denied paths.
 
 ## Expected Student Output
 
@@ -18,7 +20,7 @@ Effective rule evaluation combines association, direction, tuple, priority, and 
 
 ## Coach Runbook
 
-1. Confirm the target is the coach-provided sandbox before any fault or remediation action.
+1. Present the blocked-dependency exercise and confirm the target is the coach-provided sandbox before any fault or remediation action.
 2. Require NIC and subnet associations, effective rules, direction, priority, protocol, source, destination, and port.
 3. Ask the student to bound affected and unaffected paths before proposing a change.
 4. Approve only a narrow reversible correction, then require both recovery and regression checks.
@@ -32,7 +34,7 @@ Effective rule evaluation combines association, direction, tuple, priority, and 
 ## Debrief Discussion Guide
 
 1. Why do effective rules win? → Azure evaluates the combined NIC/subnet rule set, not one displayed NSG in isolation.
-2. How is blast radius bounded? → Match the effective rule against actual source, destination, port, protocol, and direction.
+2. How is blast radius bounded? → Match the effective rule against actual source, destination, port, protocol, and direction, then test unaffected paths.
 3. What proves recovery? → A successful original flow plus confirmation that unrelated denied paths remain denied.
 
 ## Success Criteria Notes

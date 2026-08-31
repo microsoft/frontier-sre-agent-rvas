@@ -2,11 +2,11 @@
 
 # Challenge 10 — Heartbeat Triage and Deep RCA
 
-> **Capabilities added in this challenge**: Azure Monitor Alerting · Automated Incident Triage · RCA Deep Dive
+> **Incident capability exercised in this challenge**: Missing-Heartbeat Triage · Hypothesis Testing · Recovery Proof
 
 ## Introduction
 
-A missing heartbeat is a simple signal with several possible causes: the VM may be stopped, the monitoring agent may be unhealthy, or telemetry may be delayed. In this challenge, you create one heartbeat alert and let the SRE Agent distinguish the symptom from the root cause using current Azure state and recent telemetry.
+A monitored VM stops sending heartbeats, but the alert does not explain whether the VM, monitoring agent, or telemetry path failed. Simulate that incident and use the SRE Agent to distinguish symptom from root cause, recommend a safe response, and prove recovery with current Azure state and telemetry.
 
 ## Description
 
@@ -21,7 +21,7 @@ Keep the exercise scoped to that single VM and achieve these outcomes:
 
 - Create an enabled heartbeat alert that evaluates every 5 minutes over a 15-minute window and fires when the selected VM reports no heartbeat.
 - Route the alert to the Azure SRE Agent through the existing Azure Monitor incident connection and a dedicated response plan.
-- Safely create a missing-heartbeat condition on the lab VM, then observe the alert and automated investigation.
+- Safely create a missing-heartbeat condition on the lab VM, then observe the alert and SRE investigation.
 - Ask the agent for a deep RCA containing a timeline, evidence matrix, competing hypotheses, rejected hypothesis, root-cause assessment, contributing factors, confidence level, and recommended recovery action.
 - Restore the VM or monitoring path and confirm that heartbeat data resumes and the alert resolves.
 
@@ -31,7 +31,7 @@ Do not make the response plan restart or modify the VM automatically. Investigat
 
 - [ ] Live mode has one enabled heartbeat alert with the required scope and timing; evidence-pack mode identifies the supplied rule and labels the run as an exercise
 - [ ] A live or simulated incident is routed to the intended SRE Agent response plan and accurately labeled
-- [ ] The agent correlates missing heartbeat data with current VM state and monitoring status
+- [ ] The SRE Agent correlates missing heartbeat data with current VM state and monitoring status
 - [ ] The RCA clearly separates observed symptoms, supporting evidence, likely root cause, contributing factors, confidence, and next action
 - [ ] The RCA compares at least two plausible hypotheses and explains why one was rejected
 - [ ] Live mode proves resumed heartbeat and alert resolution; evidence-pack mode states the exact evidence required to prove recovery

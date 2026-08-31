@@ -1,35 +1,35 @@
 [< Previous Challenge](./Challenge-10.md) — **[Home](./README.md)** — [Next Challenge >](./Challenge-12.md)
 
-# Challenge 11 — Context That Learns
+# Challenge 11 — Improve the Next Heartbeat Response
 
-> **Capabilities added in this challenge**: Knowledge Bases · Grounded Responses · Contextual Learning
+> **Incident capability exercised in this challenge**: Operational Context · Repeat-Incident Learning · Evidence Precedence
 
 ## Introduction
 
-Telemetry explains what the platform observed, but it does not contain your organization’s architecture, ownership, maintenance windows, or recovery policy. In this challenge, you give the SRE Agent that missing context and prove that the same operational question produces a more useful, grounded response.
+Replay the missing-heartbeat incident after adding verified workload context and one confirmed lesson from the first response. Determine whether the SRE Agent identifies impact, ownership, recovery objectives, and escalation faster without allowing stale knowledge to override current evidence.
 
 ## Description
 
 > **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-11.ps1'` to list agent memory, create a safe knowledge draft, and print the grounded prompt. See the [presenter runbook](./Scripts/README.md).
 
-Use the heartbeat workload from Challenge 10 and achieve these outcomes:
+Use the heartbeat incident from Challenge 10 as a clearly labeled replay and achieve these outcomes:
 
-- Ask a reliability question before adding any custom knowledge and capture the response as a baseline.
+- Replay the original incident question before adding any custom knowledge and capture the response as a baseline.
 - Create one concise knowledge document containing workload purpose, architecture, owner, criticality, heartbeat expectation, maintenance window, escalation path, RTO, RPO, and approved investigation boundaries.
 - Add the document to the SRE Agent knowledge base and ask the same question again.
 - Identify which statements came from live Azure evidence and which came from the knowledge document.
-- Add one verified lesson from the heartbeat incident, then confirm that a later response uses the new context without contradicting current telemetry.
+- Add one verified lesson from the heartbeat incident, then replay the question and confirm that the later response uses the lesson without substituting history for current investigation.
 
 Do not store credentials, access tokens, personal contact details, or unverified incident assumptions in the knowledge document. Context can guide interpretation, but current evidence remains authoritative.
 
 ## Success Criteria
 
-- [ ] A before-and-after comparison shows that the knowledge document materially improves the response
+- [ ] A before-and-after incident replay shows that the knowledge document materially improves impact, ownership, recovery, or escalation reasoning
 - [ ] The document contains operational context, ownership, recovery objectives, and investigation boundaries
 - [ ] The grounded response cites or clearly attributes the custom knowledge it used
 - [ ] The response distinguishes live evidence from organizational context and identifies any conflict between them
 - [ ] One verified incident lesson is added and appears in a later grounded response
-- [ ] **Explain to your coach** — when should live telemetry override a knowledge document, and how would you prevent stale operational knowledge from misleading the agent?
+- [ ] **Explain to your coach** — how can a verified incident lesson speed future response without becoming a shortcut that biases the diagnosis?
 
 ## Learning Resources
 

@@ -1,32 +1,32 @@
 [< Previous Solution](./Solution-10.md) | **[Home](./README.md)** | [Next Solution >](./Solution-12.md)
 
-# Coach Guide — Challenge 11: Context That Learns
+# Coach Guide — Challenge 11: Improve the Next Heartbeat Response
 
 ## Purpose
 
-- Demonstrate how organizational context improves an evidence-based operational response.
-- Teach students to separate durable knowledge from transient telemetry and verified learning from assumptions.
+- Replay the heartbeat incident and demonstrate how verified organizational context improves impact, ownership, recovery, and escalation decisions.
+- Teach students to reuse confirmed learning without allowing history to replace current investigation.
 - Expected time: 20–25 minutes.
 
 ## Mini-Lecture (5 min before challenge)
 
-- Monitoring answers “what is happening”; knowledge answers “what does it mean here.”
+- Monitoring answers “what is happening”; operational context answers “what does it mean here and who must act.”
 - Useful knowledge includes architecture, ownership, policy, thresholds, recovery objectives, and boundaries.
 - Knowledge must be versioned and reviewed because stale context can produce confidently wrong guidance.
 - Incident learning belongs in the knowledge base only after evidence confirms it.
 
 ## Expected Student Output
 
-- A baseline response captured before custom knowledge is added.
+- A baseline heartbeat-incident response captured before custom knowledge is added.
 - A concise reliability knowledge document with ownership, architecture, objectives, and boundaries.
-- A grounded response that visibly improves on the baseline.
-- One verified incident lesson added and reused in a later response.
+- A replayed response that visibly improves impact, ownership, recovery, or escalation reasoning.
+- One verified incident lesson reused without overriding current Azure evidence.
 
 ## Coach Runbook
 
-1. Capture a baseline answer before attaching custom knowledge; preserve the exact prompt.
+1. Replay the Challenge 10 heartbeat question before attaching custom knowledge; preserve the exact prompt and exercise label.
 2. Review the proposed document for durable facts, owner, review date, boundaries, and no transient resource state.
-3. After ingestion, repeat the identical prompt and identify exactly which improvements came from knowledge.
+3. After ingestion, replay the identical incident prompt and identify exactly which decisions improved because of context.
 4. Add only a verified lesson, then confirm the agent still checks current telemetry rather than replaying history.
 
 ## Common Issues and Hints
@@ -44,7 +44,7 @@
 
 ## Success Criteria Notes
 
-- **Require:** identical before/after question, visible local-context improvement, evidence/context separation, and a reusable verified lesson.
+- **Require:** identical incident replay, visible improvement to operational decisions, evidence/context separation, and a reusable verified lesson.
 - **Reject:** incident transcripts, assumptions, secrets, or transient state stored as durable truth.
 - **Accept:** any concise Markdown or text format supported by the configured source.
 

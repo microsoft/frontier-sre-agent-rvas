@@ -9,17 +9,17 @@
 | 00 | Deploy the Workload with azd | [Solution 00](./Solution-00.md) |
 | 01 | Deploy the Agent Core with azd | [Solution 01](./Solution-01.md) |
 | 02 | Deploy Evidence Connectors with azd | [Solution 02](./Solution-02.md) |
-| 03 | Arm the Operator | [Solution 03](./Solution-03.md) |
-| 04 | Discover Connected Systems | [Solution 04](./Solution-04.md) |
-| 05 | Discover Specialist Agents | [Solution 05](./Solution-05.md) |
-| 06 | Understand Response Plans | [Solution 06](./Solution-06.md) |
-| 07 | Map the Application Dependency Graph | [Solution 07](./Solution-07.md) |
+| 03 | Triage the First Grubify Incident | [Solution 03](./Solution-03.md) |
+| 04 | Investigate an Evidence Blind Spot | [Solution 04](./Solution-04.md) |
+| 05 | Route a Cross-Domain Incident | [Solution 05](./Solution-05.md) |
+| 06 | Exercise a Guarded HTTP-Error Response | [Solution 06](./Solution-06.md) |
+| 07 | Scope Impact with Dependency Evidence | [Solution 07](./Solution-07.md) |
 | 08 | Investigate a Network Security Failure | [Solution 08](./Solution-08.md) |
 | 09 | Investigate a Routing Black Hole | [Solution 09](./Solution-09.md) |
 | 10 | Heartbeat Triage and Deep RCA | [Solution 10](./Solution-10.md) |
-| 11 | Context That Learns | [Solution 11](./Solution-11.md) |
-| 12 | Proactive Tenant Optimization | [Solution 12](./Solution-12.md) |
-| 13 | Backup-to-Teams Resilience | [Solution 13](./Solution-13.md) |
+| 11 | Improve the Next Heartbeat Response | [Solution 11](./Solution-11.md) |
+| 12 | Resolve a Critical Assurance Risk | [Solution 12](./Solution-12.md) |
+| 13 | Resolve a Backup Assurance Incident | [Solution 13](./Solution-13.md) |
 
 ## Azure Requirements
 
@@ -44,8 +44,9 @@
 
 1. Ask for evidence before accepting confidence.
 2. Keep demonstrations read-only or approval-gated; the existing agent is Autonomous with High access.
-3. Distinguish configured state from observed behavior.
-4. Stop any fault injection outside the disposable network sandbox.
+3. Start Missions 03–13 with the operational issue, not the product feature used to investigate it.
+4. Accept `not confirmed` or `not reproduced` when that is what current evidence supports.
+5. Stop any fault injection outside the disposable network sandbox.
 
 ## Pre-Session Blocker Checklist
 
@@ -67,14 +68,14 @@
 | 00 | Existing workload | Inventory and health evidence | Wrong subscription or attempted redeployment | **30 min** | Any mutation command is proposed |
 | 01 | Existing agent core | ARM, action mode, RBAC, scope | Wrong agent name or inferred safety mode | **20 min** | Endpoint or managed scope differs |
 | 02 | Existing ground truth | Telemetry and evidence gaps | Empty source content mistaken for service failure | **25 min** | A participant attempts OAuth or upload |
-| 03 | Operator | Skills and grants | Git Bash path | **25 min** | Validation is skipped |
-| 04 | Systems | Connector state | Reachability vs configuration | **20 min** | Tokens appear in output |
-| 05 | Specialists | Routing and privilege | Overlapping descriptions | **20 min** | Writes lack approval |
-| 06 | Plans | Filters and gates | Alert mismatch | **25 min** | Plan proposes early action |
-| 07 | Dependencies | Observed topology | Missing telemetry | **25 min** | Unsupported edges appear |
+| 03 | First incident | Evidence-led triage and guarded action | Git Bash path or unconfirmed symptom | **25 min** | Diagnosis lacks current evidence |
+| 04 | Evidence blind spot | Source failure, fallback, and escalation | Reachability vs configuration | **20 min** | Missing evidence is silently assumed |
+| 05 | Cross-domain incident | Evidence-led routing and one incident owner | Overlapping descriptions | **20 min** | Handoffs fragment the timeline |
+| 06 | HTTP-error response | Intake, action gate, and recovery proof | Alert mismatch | **25 min** | Action precedes evidence |
+| 07 | Impact scope | Critical path and blast radius | Missing telemetry | **25 min** | Whole-service impact is assumed |
 | 08 | NSG | Effective rules | Wrong association | **30 min** | Student targets production |
 | 09 | Routing | Effective next hop | Return path omitted | **30 min** | Fault is not restored |
 | 10 | RCA | Hypothesis testing | Missing zero-row alert query | **25 min** | RCA states unsupported cause |
-| 11 | Learning | Verified context | Stale knowledge | **25 min** | Assumptions are persisted |
-| 12 | Optimization | Evidence and trade-offs | Missing cost scope | **25 min** | Agent attempts remediation |
-| 13 | Resilience | RTO/RPO and validation | Teams/Backup readiness | **25 min** | Restore is treated as app health |
+| 11 | Repeat incident | Verified context and evidence precedence | Stale knowledge | **25 min** | Historical cause replaces current checks |
+| 12 | Assurance risk | Preventive response and validation | Missing cost or monitoring scope | **25 min** | A plan is reported as resolved |
+| 13 | Backup incident | RTO/RPO, communication, and validation | Teams/Backup readiness | **25 min** | Restore is treated as app health |

@@ -1,18 +1,20 @@
 [< Previous Challenge](./Challenge-05.md) — **[Home](./README.md)** — [Next Challenge >](./Challenge-07.md)
 
-# Challenge 06 — Understand Response Plans
+# Challenge 06 — Exercise a Guarded HTTP-Error Response
 
-> **Capabilities added in this challenge**: Incident Filters · Response Plans · Approval and Validation Gates
+> **Incident capability exercised in this challenge**: Alert Routing · Guarded Response · Recovery Validation
 
 ## Introduction
 
-Automation is only trustworthy when operators can explain its control flow. Trace one response plan from the incoming signal to closure and expose every decision gate.
+Turn the Grubify HTTP-error report into a controlled incident exercise. Observe how the SRE Agent receives the signal, gathers evidence, proposes a bounded response, waits at the action gate, and defines proof of recovery.
 
 ## Description
 
 > **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-06.ps1'` to show incident filters and Azure Monitor wiring. See the [presenter runbook](./Scripts/README.md).
 
-Select one non-destructive Azure Monitor alert and ask the agent to explain the complete execution path. Produce a response-plan trace with:
+Use a genuine non-destructive HTTP-error alert when available, or invoke a clearly labeled `EXERCISE - Grubify HTTP errors` event that matches the configured sample-food filter. Do not inject production failures merely to create an alert.
+
+Ask the SRE Agent to handle the event and produce an observed incident timeline containing:
 
 - incident source and filter conditions;
 - specialist and skill selection;
@@ -33,15 +35,16 @@ $Base = "https://management.azure.com/subscriptions/$SubscriptionId/resourceGrou
 az rest --method GET --url "$Base/incidentFilters?api-version=$ApiVersion" --query 'value[].name' -o table
 ```
 
-Run the plan as an exercise incident. Do not approve a write. Compare the observed timeline with the documented trace and mark every skipped or unexpected stage.
+Do not approve a write. Compare the observed timeline with the intended response path and mark every skipped or unexpected stage. The SRE Agent must stop or escalate when evidence is insufficient, approval times out, a proposed action fails, or recovery cannot be demonstrated.
 
 ## Success Criteria
 
-- [ ] The filter condition and selected plan are unambiguous
-- [ ] Investigation precedes action selection
-- [ ] Approval, validation, timeout, and escalation gates are visible
-- [ ] The exercise timeline is compared with the expected control flow
-- [ ] **Explain to your coach** — which gate prevents a plausible diagnosis from becoming an unsafe action?
+- [ ] The genuine or exercise incident is accurately labeled and routed by the intended HTTP-error filter
+- [ ] Current Grubify evidence and classification precede action selection
+- [ ] The proposed response states scope, risk, rollback, approval, and recovery checks
+- [ ] Timeout, failed-action, failed-validation, and escalation paths are visible
+- [ ] The observed incident timeline is compared with the intended response path
+- [ ] **Explain to your coach** — why must incident closure depend on service recovery evidence rather than workflow completion?
 
 ## Learning Resources
 
@@ -51,6 +54,6 @@ Run the plan as an exercise incident. Do not approve a write. Compare the observ
 
 ## Tips
 
-- A response plan is control flow, not only a prompt.
+- The incident outcome matters more than the response-plan terminology.
 - Closure must depend on recovery evidence.
-- Keep the exercise non-destructive.
+- Keep the exercise labeled and non-destructive.

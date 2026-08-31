@@ -1,41 +1,46 @@
 [< Previous Solution](./Solution-03.md) | **[Home](./README.md)** | [Next Solution >](./Solution-05.md)
 
-# Coach Guide — Challenge 04: Discover Connected Systems
+# Coach Guide — Challenge 04: Investigate an Evidence Blind Spot
 
 ## Purpose
 
-Turn configured connectors into an evidence-backed reachability map. Expected time: 15–20 minutes.
+Coach an SRE investigation when one required evidence source is failed, stale, unauthorized, or unavailable during Grubify triage. Expected time: 15–20 minutes.
 
 ## Mini-Lecture (5 min before challenge)
 
-Configured, authenticated, reachable, and authorized are four different states.
+- An investigation is only as current and scoped as the evidence it can retrieve.
+- Configured, authenticated, authorized, reachable, and fresh are distinct states.
+- Missing evidence should reduce confidence, trigger a fallback or escalation, and never be silently replaced by assumptions.
 
 ## Expected Student Output
 
-- A connector matrix with configured state, authentication, authorization, observed read tests, timestamps, scopes, and failure classifications.
-- An explicit `unverified` label wherever a live read was not completed.
+- A current evidence-source matrix tied to the Grubify incident question.
+- One classified blind spot with diagnostic impact, alternate evidence, owner, and recovery proof.
+- An explicit `unverified` label wherever a current read was not completed.
 
 ## Coach Runbook
 
-1. Ask the student to inventory connectors without displaying credentials.
-2. Require one harmless read per connector and capture timestamp, scope, and returned object type.
-3. Classify failures as configuration, authentication, authorization, network, tool discovery, or source-data failure.
-4. Stop and rotate credentials if any token or secret appears in output.
+1. Continue the Grubify HTTP-health exercise and ask which evidence source is needed for the next decision.
+2. Designate one real failed or stale read, or provide a labeled failed-read result. Never disable a production source for the exercise.
+3. Require harmless reads with timestamp, scope, freshness, and returned object type, then classify the blind spot.
+4. Ask what can still be concluded, which alternate source can discriminate next, who owns restoration, and what proves evidence access recovered.
+5. Stop and rotate credentials if any token or secret appears in output.
 
 ## Common Issues and Hints
 
 - **Symptom:** Connector shows healthy but reads fail. **Fix:** test authentication and authorization separately.
 - **Symptom:** Secrets appear in output. **Fix:** redact and rotate exposed values immediately.
-- **Symptom:** Agent omits MCP tools. **Fix:** request tool discovery from each MCP endpoint.
+- **Symptom:** The SRE Agent completes the diagnosis despite missing required evidence. **Fix:** reduce confidence and require an alternate discriminating source or escalation.
+- **Symptom:** All sources are healthy. **Fix:** use a labeled failed-read result instead of breaking a live connector.
 
 ## Debrief Discussion Guide
 
-1. What is the strongest connectivity evidence? → A current, harmless read that returns expected scoped data.
-2. How should stale reads be labeled? → With the timestamp and an explicit stale or unverified state.
-3. Which connectors can write? → Only those whose discovered tools and grants explicitly allow writes; connector health alone proves nothing.
+1. When can investigation continue with a blind spot? → When alternate evidence can answer the decision safely and uncertainty remains explicit.
+2. When should the SRE stop or escalate? → When missing evidence prevents impact, cause, or action risk from being bounded.
+3. What proves the blind spot recovered? → A current, authorized, scoped read returning expected data, not configuration state alone.
 
 ## Success Criteria Notes
 
-- **Require:** every connector has a current read result or explicit `unverified` status.
-- **Reject:** secrets in evidence, or `healthy` inferred only from configured state.
-- **Accept:** failed reads when the failure is accurately classified and bounded.
+- **Require:** incident relevance, a classified blind spot, explicit diagnostic impact, fallback or escalation, owner, and recovery proof.
+- **Reject:** secrets in evidence, invented data, or a confident diagnosis that depends on an unavailable source.
+- **Accept:** healthy live sources plus a coach-provided failed-read result, clearly labeled as an exercise.

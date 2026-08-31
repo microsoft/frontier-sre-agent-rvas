@@ -1,16 +1,16 @@
 [< Previous Solution](./Solution-12.md) | **[Home](./README.md)**
 
-# Coach Guide — Challenge 13: Backup-to-Teams Resilience
+# Coach Guide — Challenge 13: Resolve a Backup Assurance Incident
 
 ## Purpose
 
-- Demonstrate a complete backup-alert-to-Teams workflow grounded in live recovery and application evidence.
-- Connect automated incident handling to approval, recovery guidance, post-recovery validation, and escalation.
+- Simulate a backup assurance incident from alert through evidence, stakeholder communication, guarded recovery, application validation, and escalation.
+- Teach students to distinguish confirmed backup failure, degraded assurance, restore completion, and actual service recovery.
 - Expected time: 20–25 minutes.
 
 ## Mini-Lecture (5 min before challenge)
 
-- Azure Backup built-in alerts are Azure Monitor alerts; SRE Agent routing and Teams posting are separate workflow stages.
+- The operational issue is recoverability risk; alert routing and Teams posting are supporting workflow stages.
 - Backup success, restore success, and application health are different validation gates.
 - RTO and RPO turn technical backup state into application impact.
 - Keep recovery actions behind approval for this customer exercise.
@@ -25,7 +25,7 @@
 ## Coach Runbook
 
 1. Verify vault alerting, protected-item state, SRE Agent incident routing, and Teams authorization before the exercise.
-2. Prefer a genuine failed job; otherwise retain an `EXERCISE` label in the incident and every Teams message.
+2. Prefer a genuine failed lab job; otherwise retain an `EXERCISE` label in the incident and every Teams message.
 3. Require evidence, application impact, confidence, owner, next action, RTO/RPO status, and approval posture in the notification.
 4. Treat restore completion as an intermediate event; close only after application, dependency, telemetry, and business validation.
 

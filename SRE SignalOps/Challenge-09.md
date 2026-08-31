@@ -2,17 +2,17 @@
 
 # Challenge 09 — Investigate a Routing Black Hole
 
-> **Capabilities added in this challenge**: Effective Routes · Next-Hop Analysis · Asymmetric Path Detection
+> **Incident capability exercised in this challenge**: Path Diagnosis · Hypothesis Rejection · Bidirectional Recovery
 
 ## Introduction
 
-Security rules can allow every packet while routing still prevents a conversation. Diagnose a lab-only black hole by proving the forward and return paths separately.
+The dependency connection still fails after security rules are shown to allow it. Diagnose the lab-only incident by proving the forward and return paths separately, then validate both connectivity and application recovery.
 
 ## Description
 
 > **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-09.ps1' -ResourceGroup '<sandbox-rg>' -NicName '<nic>'`; add VM and IP parameters for next-hop evidence. See the [presenter runbook](./Scripts/README.md).
 
-This mission uses the same coach-provided network sandbox or incident snapshot as Challenge 08. Introduce or receive a route-table condition that creates an invalid or asymmetric return path.
+This mission uses the same coach-provided network sandbox or incident snapshot as Challenge 08. Introduce or receive a route-table condition that creates an invalid or asymmetric return path. Keep the event labeled `EXERCISE` and preserve the pre-fault route state for restoration.
 
 Ask the network specialist to produce:
 
@@ -44,7 +44,7 @@ Validate both directions after an approved correction. A successful forward test
 
 - [ ] Forward and return route decisions are documented independently
 - [ ] Effective route and next-hop evidence identify the black hole
-- [ ] DNS, NSG, and application hypotheses are explicitly tested
+- [ ] DNS, NSG, and application hypotheses are explicitly tested and rejected or retained with evidence
 - [ ] Recovery proves bidirectional connectivity and application behavior
 - [ ] **Explain to your coach** — why can a route table look valid in the portal while the effective path is still wrong?
 

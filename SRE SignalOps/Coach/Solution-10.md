@@ -4,7 +4,7 @@
 
 ## Purpose
 
-- Demonstrate a complete alert-to-RCA loop with one VM and one observable failure signal.
+- Simulate a complete missing-heartbeat incident with one VM and one observable failure signal.
 - Teach students to separate a symptom from an evidence-backed root cause.
 - Expected time: 20–25 minutes.
 
@@ -18,7 +18,7 @@
 ## Expected Student Output
 
 - An enabled, single-VM heartbeat alert using a 5-minute frequency and 15-minute window.
-- An SRE Agent incident routed through a dedicated response plan.
+- An SRE Agent incident routed through a dedicated response path.
 - An RCA with a timeline, evidence, root-cause assessment, confidence, and recovery recommendation.
 - A resolved alert and resumed heartbeat after the VM or telemetry path is restored.
 
@@ -26,7 +26,7 @@
 
 1. Confirm the selected VM has a recent heartbeat before creating or exercising the alert.
 2. Record the last heartbeat, VM power state, and recent Activity Log as the baseline evidence set.
-3. Trigger only the approved lab condition and require the student to distinguish observations, hypotheses, and conclusions.
+3. Trigger only the approved lab condition, label an evidence-pack run as `EXERCISE`, and require the student to distinguish observations, hypotheses, and conclusions.
 4. Restore the condition, then require a resumed heartbeat and alert resolution before closure.
 
 ## Common Issues and Hints

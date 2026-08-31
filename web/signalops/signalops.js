@@ -2,17 +2,17 @@ const missions = [
     ['00', 'Bootstrap', 'Deploy the Workload with azd', 'Create the isolated food application and workspace-backed observability from Bicep.', '30–40 min', ['azd', 'Bicep', 'Container Apps']],
     ['01', 'Bootstrap', 'Deploy the Agent Core with azd', 'Add the SRE Agent, managed identity, governed RBAC, and managed resource scope.', '20–30 min', ['azd provision', 'RBAC', 'Agent']],
     ['02', 'Bootstrap', 'Deploy Evidence Connectors with azd', 'Add Azure telemetry connectors and prove the resulting evidence-plane ground truth.', '20–25 min', ['Connectors', 'Knowledge', 'Telemetry']],
-    ['03', 'Bootstrap', 'Arm the Operator', 'Load operational skills and verify read, write, and approval boundaries.', '20–25 min', ['Skills', 'Safety', 'PowerShell']],
-    ['04', 'Wire', 'Discover Connected Systems', 'Inventory live connectors and prove which external systems are reachable.', '15–20 min', ['MCP', 'Connectors', 'Discovery']],
-    ['05', 'Wire', 'Discover Specialist Agents', 'Inspect specialist identities, tool grants, and routing boundaries.', '15–20 min', ['Subagents', 'Routing', 'Least privilege']],
-    ['06', 'Wire', 'Understand Response Plans', 'Trace an alert from filter match through investigation, approval, and validation.', '20–25 min', ['Response plans', 'Incidents', 'Automation']],
-    ['07', 'Trace', 'Map the Application Dependency Graph', 'Build an evidence-backed service map before diagnosing a failure.', '20–25 min', ['App Insights', 'Topology', 'Dependencies']],
+    ['03', 'Bootstrap', 'Triage the First Grubify Incident', 'Turn an ambiguous HTTP-health report into evidence, hypotheses, guarded action, and recovery checks.', '20–25 min', ['Triage', 'Evidence', 'Safety']],
+    ['04', 'Wire', 'Investigate an Evidence Blind Spot', 'Classify a failed or stale evidence source and choose a safe fallback or escalation.', '15–20 min', ['Evidence', 'Freshness', 'Escalation']],
+    ['05', 'Wire', 'Route a Cross-Domain Incident', 'Coordinate application and network investigation without losing ownership or the incident timeline.', '15–20 min', ['Routing', 'Handoffs', 'Ownership']],
+    ['06', 'Wire', 'Exercise a Guarded HTTP-Error Response', 'Follow an HTTP-error incident through intake, evidence, approval, and recovery criteria.', '20–25 min', ['HTTP errors', 'Approval', 'Recovery']],
+    ['07', 'Trace', 'Scope Impact with Dependency Evidence', 'Bound the affected Grubify user journey and identify the next discriminating check.', '20–25 min', ['Dependencies', 'Blast radius', 'Telemetry']],
     ['08', 'Trace', 'Investigate a Network Security Failure', 'Find the NSG decision that blocks an application dependency.', '25–30 min', ['NSG', 'Flow Logs', 'Blast radius']],
     ['09', 'Trace', 'Investigate a Routing Black Hole', 'Use effective routes and next-hop evidence to expose asymmetric routing.', '25–30 min', ['UDR', 'Next hop', 'Routing']],
     ['10', 'Operate', 'Heartbeat Triage and Deep RCA', 'Separate symptom from cause and defend an evidence-backed RCA.', '20–25 min', ['Heartbeat', 'Triage', 'RCA']],
-    ['11', 'Operate', 'Context That Learns', 'Compare grounded responses and preserve one verified operational lesson.', '20–25 min', ['Knowledge', 'Grounding', 'Learning']],
-    ['12', 'Operate', 'Proactive Tenant Optimization', 'Turn cost, utilization, risk, and coverage signals into ranked action.', '20–25 min', ['Resource Graph', 'Advisor', 'FinOps']],
-    ['13', 'Operate', 'Backup-to-Teams Resilience', 'Connect protection evidence, approval, communication, and service validation.', '20–25 min', ['Azure Backup', 'Teams', 'RTO / RPO']]
+    ['11', 'Operate', 'Improve the Next Heartbeat Response', 'Replay the incident with verified context while keeping current evidence authoritative.', '20–25 min', ['Context', 'Learning', 'Evidence']],
+    ['12', 'Operate', 'Resolve a Critical Assurance Risk', 'Find a critical preventive issue and define owned remediation, rollback, and validation.', '20–25 min', ['Assurance', 'Prevention', 'Governance']],
+    ['13', 'Operate', 'Resolve a Backup Assurance Incident', 'Triage recoverability risk, communicate impact, and validate service after recovery.', '20–25 min', ['Azure Backup', 'Communication', 'Recovery']]
 ];
 
 const studentFiles = missions.map(mission => ({ file: `../sre-signalops/Challenge-${mission[0]}.md`, title: mission[2] }));

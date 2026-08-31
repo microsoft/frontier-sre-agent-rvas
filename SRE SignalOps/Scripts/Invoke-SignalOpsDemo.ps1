@@ -65,7 +65,7 @@ function Get-AgentContext {
 }
 
 function Write-Prompt([string]$Text) {
-    Write-Host "`nGHCP / SRE Agent prompt" -ForegroundColor Cyan
+    Write-Host "`nSRE incident exercise prompt" -ForegroundColor Cyan
     Write-Host $Text
 }
 
@@ -199,8 +199,8 @@ switch ($Challenge) {
             if ($Execute -and -not $PSCmdlet.ShouldProcess("$AgentName/$target", 'Apply SRE Agent configuration')) { continue }
             Invoke-Native { & $Bash -lc $command }
         }
-        Write-Expected 'Four target classes plan cleanly; with -Execute they apply without exposing connector secrets.'
-        Write-Prompt 'Explain which tools are read-only, which actions require approval, and why explicit grants are stronger than prompt-only restrictions.'
+        Write-Expected 'Diagnostic procedures, specialist routing, Azure Monitor incident intake, and incident filters plan cleanly; with -Execute they apply without exposing secrets.'
+        Write-Prompt 'EXERCISE: Users report that Grubify is slow and intermittently returning HTTP errors. Determine whether a current incident exists. Report the investigation window, current evidence, affected and unaffected components, competing hypotheses, provisional diagnosis and confidence, next discriminating check, approval boundary, and recovery criteria.'
     }
     '04' {
         $context = Get-AgentContext

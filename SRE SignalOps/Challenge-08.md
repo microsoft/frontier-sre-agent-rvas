@@ -2,11 +2,11 @@
 
 # Challenge 08 — Investigate a Network Security Failure
 
-> **Capabilities added in this challenge**: NSG Analysis · Flow Evidence · Security Blast Radius
+> **Incident capability exercised in this challenge**: Security-Rule Diagnosis · Blast-Radius Control · Safe Recovery
 
 ## Introduction
 
-An application timeout may be a security control working exactly as configured. Investigate a lab-only NSG failure without weakening unrelated protections.
+Grubify cannot reach one required dependency, but other paths remain healthy. Investigate whether an effective NSG decision explains the timeout, reject competing causes, and recover only the affected flow without weakening unrelated protections.
 
 ## Description
 
@@ -14,7 +14,7 @@ An application timeout may be a security control working exactly as configured. 
 
 This mission requires an existing hub-spoke network sandbox with Network Watcher and flow telemetry. The `azd` Grubify deployment from Challenge 00 does not create that network. Use a coach-provided sandbox or skip fault injection and analyze a supplied incident snapshot.
 
-Create or receive a known NSG deny condition on one dependency edge from the map. Ask the network specialist to correlate:
+Create or receive a known NSG deny condition on one dependency edge from the map. Keep the incident labeled `EXERCISE` unless a genuine lab alert exists. Ask the SRE Agent to correlate:
 
 - source and destination addresses, ports, and direction;
 - NSG association and effective security rules;
@@ -38,7 +38,8 @@ Do not remove a broad deny rule. Propose the smallest scoped correction and requ
 - [ ] The exact effective rule and priority are identified
 - [ ] Flow evidence agrees with the rule evaluation
 - [ ] Blast radius includes affected and unaffected paths
-- [ ] Remediation is minimal, approval-gated, and reversible
+- [ ] The SRE Agent rejects at least one plausible non-NSG cause with evidence
+- [ ] Remediation is minimal, approval-gated, reversible, and followed by recovery and regression checks
 - [ ] **Explain to your coach** — why is deleting the blocking rule usually less safe than introducing a narrowly scoped higher-priority rule?
 
 ## Learning Resources

@@ -1,12 +1,12 @@
 [< Previous Challenge](./Challenge-12.md) — **[Home](./README.md)**
 
-# Challenge 13 — Backup-to-Teams Resilience
+# Challenge 13 — Resolve a Backup Assurance Incident
 
-> **Capabilities added in this challenge**: Azure Backup Alerting · Response Plans · Teams Notifications · Application Resilience
+> **Incident capability exercised in this challenge**: Backup-Failure Triage · Stakeholder Communication · Recovery Validation
 
 ## Introduction
 
-A resilient application needs more than a backup policy. Responders must know when protection is at risk, understand application impact, communicate quickly, follow an approved recovery path, and validate service after recovery. In this challenge, you build that automation workflow around an existing protected lab workload.
+A backup alert means application recoverability may be at risk even while the service is still running. Simulate that assurance incident, determine whether protection actually failed, communicate customer and RPO impact, follow an approved recovery path, and define the evidence required to close the issue.
 
 ## Description
 
@@ -23,7 +23,7 @@ Achieve these outcomes:
 - Create a response plan covering detection, evidence collection, classification, Teams notification, approval, recovery guidance, validation, and escalation.
 - Ground the investigation in live vault, protected-item, job, recovery-point, and application-health evidence plus the knowledge document’s owner, RTO, and RPO.
 - Post one concise update to the intended Teams channel containing severity, affected workload, application impact, latest job state, latest usable recovery point, RPO risk, confidence, recommended action, and a portal link.
-- Demonstrate the workflow with a genuine alert when available or a clearly labeled exercise incident based on live evidence.
+- Demonstrate the workflow with a genuine alert when available or a clearly labeled `EXERCISE` incident based on live evidence.
 - Explain how the application would be validated after an approved restore or recovery action and when the workflow must escalate.
 
 Resolve the Teams destination at runtime or use a connector-managed destination. Do not commit OAuth tokens, webhook URLs, Team IDs, or Channel IDs. Do not label an in-progress job or pending initial recovery point as a confirmed backup failure.

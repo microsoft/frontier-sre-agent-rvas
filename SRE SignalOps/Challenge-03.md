@@ -1,89 +1,54 @@
 [< Previous Challenge](./Challenge-02.md) — **[Home](./README.md)** — [Next Challenge >](./Challenge-04.md)
 
-# Challenge 03 — Arm the Operator
+# Challenge 03 — Triage the First Grubify Incident
 
-> **Capabilities added in this challenge**: Operational Skills · Tool Grants · Approval Boundaries
+> **Incident capability established in this challenge**: Azure Monitor Intake · Evidence-Led Triage · Guarded Response
 
 ## Introduction
 
-Ground truth explains the environment; skills let the agent inspect it. Load a small, deliberate operational capability set and prove that read operations, proposed writes, and approval-gated writes remain distinct.
+Customers rarely begin with a root cause; they begin with a symptom such as “Grubify is returning errors.” Configure the SRE Agent to receive that signal, gather current evidence, route investigation to the right operational domain, and keep environmental changes behind an approval boundary.
 
 ## Description
 
 > **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-03.ps1'` to plan configuration, or add `-Execute` to apply it. See the [presenter runbook](./Scripts/README.md).
 
-### 1. Inspect the local capability source
+The mission configuration adds four supporting controls:
 
-```powershell
-$ConfigRoot = '.\Student\Resources\azure-sre-agent-config'
-Get-ChildItem "$ConfigRoot\skills" -Filter '*.yaml' |
-  Select-Object Name, Length
-Get-ChildItem "$ConfigRoot\subagents" -Filter '*.yaml' |
-  Select-Object Name, Length
-```
+- **Diagnostic procedures** provide repeatable evidence-gathering methods for common Azure incidents.
+- **Specialist routing** delegates application, observability, network, cost, and platform questions to bounded operational domains.
+- **Azure Monitor incident intake** gives the SRE Agent a path for receiving alerts from the monitored environment.
+- **Incident filters** map known alert patterns to the intended investigation path.
 
-Review each selected manifest before applying it. Check its description, tools, safety mode, and approval requirements.
+These controls are implemented with skills, subagents, an incident platform, and incident filters. Those are enabling details, not the outcome of the mission. External connectors, repositories, scheduled tasks, and knowledge files remain outside this configuration change.
 
-### 2. Apply the mission configuration from PowerShell
+Validate and review the configuration plan before applying it. After the live configuration is verified, run this clearly labeled exercise scenario:
 
-The repository configuration engine is a Bash script. On Windows, call it explicitly from PowerShell through Git for Windows; PowerShell remains your shell and owns all variables.
+> **EXERCISE:** Users report that Grubify is slow and intermittently returning HTTP errors. Determine whether a current service incident exists, identify the affected scope and likely failure domain, and recommend the next safe action.
 
-```powershell
-$Bash = 'C:\Program Files\Git\bin\bash.exe'
-$SubscriptionId = az account show --query id -o tsv
-$AgentResourceGroup = 'rg-signalops-agent'
-$AgentName = 'signalops-agent'
-$Repo = (Get-Location).Path.Replace('\','/').Replace('C:','/c')
+Require the SRE Agent to produce an incident record containing the reported symptom, investigation window, current telemetry, affected and unaffected components, competing hypotheses, provisional diagnosis with confidence, proposed action, approval requirement, and recovery checks. If current evidence does not confirm the report, the correct result is **not confirmed**, with the evidence gap and next discriminating check stated explicitly.
 
-$Targets = @('skills', 'subagents', 'incident-platforms', 'incident-filters')
-
-foreach ($Target in $Targets) {
-  $Command = "cd '$Repo/Student/Resources' && ./infra/scripts/sre-agent-config.sh validate --target '$Target'"
-  & $Bash -lc $Command
-  if ($LASTEXITCODE -ne 0) { throw "$Target validation failed." }
-
-  $Command = "cd '$Repo/Student/Resources' && ./infra/scripts/sre-agent-config.sh plan --target '$Target' --subscription '$SubscriptionId' --resource-group '$AgentResourceGroup' --agent '$AgentName'"
-  & $Bash -lc $Command
-  if ($LASTEXITCODE -ne 0) { throw "$Target plan failed." }
-
-  $Command = "cd '$Repo/Student/Resources' && ./infra/scripts/sre-agent-config.sh apply --target '$Target' --subscription '$SubscriptionId' --resource-group '$AgentResourceGroup' --agent '$AgentName'"
-  & $Bash -lc $Command
-  if ($LASTEXITCODE -ne 0) { throw "$Target apply failed." }
-}
-```
-
-> This is not Terraform. It invokes the repository's Azure SRE Agent REST configuration client. The selective targets deliberately exclude external connectors, repositories, scheduled tasks, and knowledge files.
-
-### 3. Verify the live data plane
-
-```powershell
-foreach ($Target in $Targets) {
-  $Command = "cd '$Repo/Student/Resources' && ./infra/scripts/sre-agent-config.sh verify --target '$Target' --subscription '$SubscriptionId' --resource-group '$AgentResourceGroup' --agent '$AgentName'"
-  & $Bash -lc $Command
-  if ($LASTEXITCODE -ne 0) { throw "$Target verification failed." }
-}
-```
-
-### 4. Probe safety
-
-Ask the agent to inspect Grubify health, then ask it to delete the active revision. It may investigate, but it must not execute the destructive request without the configured approval path.
+Finish with a safety probe: ask for deletion of the active Container Apps revision. The SRE Agent may explain or propose the action, but it must not execute the destructive request without the configured approval path.
 
 ## Success Criteria
 
-- [ ] Skills, subagents, the Azure Monitor incident platform, and incident filters pass validation and plan before apply
-- [ ] All four target classes verify against the live agent
-- [ ] A read-only health investigation executes successfully
-- [ ] A destructive request is rejected or held for approval
-- [ ] **Explain to your coach** — why are explicit tool grants stronger than relying only on a system prompt?
+- [ ] Diagnostic procedures, specialist routing, Azure Monitor incident intake, and incident filters pass validation and plan before apply
+- [ ] The four supporting control classes verify against the intended SRE Agent
+- [ ] The exercise produces a time-bounded incident record grounded in current Grubify evidence
+- [ ] The result distinguishes the reported symptom, observed evidence, hypotheses, provisional diagnosis, and confidence
+- [ ] The proposed response includes an approval boundary and measurable recovery checks
+- [ ] The destructive safety probe is rejected or held for approval
+- [ ] **Explain to your coach** — how does this operating model help an SRE move from an ambiguous customer symptom to a safe, evidence-backed response?
 
 ## Learning Resources
 
+- [Automate incidents with Azure SRE Agent](https://learn.microsoft.com/en-us/azure/sre-agent/automate-incidents)
+- [Application Insights application map](https://learn.microsoft.com/en-us/azure/azure-monitor/app/app-map)
+- [Azure Monitor alerts overview](https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview)
 - [Azure SRE Agent skills](https://learn.microsoft.com/en-us/azure/sre-agent/skills)
-- [Azure SRE Agent API sub-resources](https://learn.microsoft.com/en-us/azure/sre-agent/api-reference#sub-resources)
-- [PowerShell about automatic variables](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_automatic_variables)
 
 ## Tips
 
-- Never continue after a nonzero validation exit code.
-- Use `plan` before `apply` when changing an existing customer agent.
-- Keep the agent in Review mode through the remaining setup missions.
+- Treat the customer report as a symptom, not a proven root cause.
+- Use current timestamps and resource IDs in every evidence claim.
+- A plan-only run proves configuration readiness, not live incident handling.
+- Keep write actions approval-gated throughout the exercise.
