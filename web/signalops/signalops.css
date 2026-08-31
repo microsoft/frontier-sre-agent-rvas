@@ -301,7 +301,7 @@ nav > a:hover {
     margin: 0;
     padding: 0;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     list-style: none;
 }
 
@@ -395,6 +395,7 @@ nav > a:hover {
 }
 
 .challenge-card.phase-bootstrap { --accent: var(--ms-blue); --tint: #dde6f7; }
+.challenge-card.phase-orient { --accent: #c43e1c; --tint: #fce8e2; }
 .challenge-card.phase-wire { --accent: var(--purple); --tint: #ede9f7; }
 .challenge-card.phase-trace { --accent: #a05a00; --tint: #fff1d6; }
 .challenge-card.phase-operate { --accent: var(--teal); --tint: #dcefee; }

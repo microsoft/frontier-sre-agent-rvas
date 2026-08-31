@@ -1,4 +1,4 @@
-**[Home](./README.md)** — [Next Challenge >](./Challenge-01.md)
+[< Lab Details](./Lab-Details.md) — **[Home](./README.md)** — [Next Challenge >](./Challenge-01.md)
 
 # Challenge 00 — Deploy the Workload with azd
 

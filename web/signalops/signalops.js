@@ -2,7 +2,7 @@ const missions = [
     ['00', 'Bootstrap', 'Deploy the Workload with azd', 'Create the isolated food application and workspace-backed observability from Bicep.', '30–40 min', ['azd', 'Bicep', 'Container Apps']],
     ['01', 'Bootstrap', 'Deploy the Agent Core with azd', 'Add the SRE Agent, managed identity, governed RBAC, and managed resource scope.', '20–30 min', ['azd provision', 'RBAC', 'Agent']],
     ['02', 'Bootstrap', 'Deploy Evidence Connectors with azd', 'Add Azure telemetry connectors and prove the resulting evidence-plane ground truth.', '20–25 min', ['Connectors', 'Knowledge', 'Telemetry']],
-    ['03', 'Bootstrap', 'Triage the First Grubify Incident', 'Understand the architecture, prove the normal baseline, then turn an ambiguous report into guarded triage.', '35–45 min', ['Architecture', 'Baseline', 'Triage']],
+    ['03', 'Bootstrap', 'Triage the First Grubify Incident', 'Turn an ambiguous HTTP-health report into evidence, hypotheses, guarded action, and recovery checks.', '20–25 min', ['Triage', 'Evidence', 'Safety']],
     ['04', 'Wire', 'Investigate an Evidence Blind Spot', 'Classify a failed or stale evidence source and choose a safe fallback or escalation.', '15–20 min', ['Evidence', 'Freshness', 'Escalation']],
     ['05', 'Wire', 'Route a Cross-Domain Incident', 'Coordinate application and network investigation without losing ownership or the incident timeline.', '15–20 min', ['Routing', 'Handoffs', 'Ownership']],
     ['06', 'Wire', 'Exercise a Guarded HTTP-Error Response', 'Follow an HTTP-error incident through intake, evidence, approval, and recovery criteria.', '20–25 min', ['HTTP errors', 'Approval', 'Recovery']],
@@ -15,29 +15,57 @@ const missions = [
     ['13', 'Operate', 'Resolve a Backup Assurance Incident', 'Triage recoverability risk, communicate impact, and validate service after recovery.', '20–25 min', ['Azure Backup', 'Communication', 'Recovery']]
 ];
 
-const studentFiles = missions.map(mission => ({ file: `../sre-signalops/Challenge-${mission[0]}.md`, title: mission[2] }));
-const coachFiles = missions.map(mission => ({ file: `../sre-signalops/Coach/Solution-${mission[0]}.md`, title: mission[2] }));
+const labDetails = {
+    number: 'LAB',
+    phase: 'Orient',
+    title: 'Understand Grubify',
+    summary: 'Learn the application, Azure architecture, evidence flow, and expected normal state before deploying anything.',
+    duration: '15–20 min',
+    tags: ['Application', 'Architecture', 'Baseline']
+};
+
+const studentFiles = [
+    { file: '../sre-signalops/Lab-Details.md', title: labDetails.title, label: 'Lab details' },
+    ...missions.map(mission => ({ file: `../sre-signalops/Challenge-${mission[0]}.md`, title: mission[2], label: `Mission ${mission[0]}` }))
+];
+const coachFiles = [
+    { file: '../sre-signalops/Coach/Lab-Details.md', title: labDetails.title, label: 'Lab details' },
+    ...missions.map(mission => ({ file: `../sre-signalops/Coach/Solution-${mission[0]}.md`, title: mission[2], label: `Solution ${mission[0]}` }))
+];
 
 const challengeGrid = document.getElementById('challenge-grid');
 const coachList = document.getElementById('coach-list');
 
-missions.forEach((mission, index) => {
-    const [number, phase, title, summary, duration, tags] = mission;
+function createChallengeCard(number, phase, title, summary, duration, tags, index, buttonLabel) {
     const article = document.createElement('article');
     article.className = `challenge-card phase-${phase.toLowerCase()}`;
     article.innerHTML = `<div class="card-meta"><span class="number">${number}</span><span class="duration">${duration}</span></div>
         <p class="card-label">${phase}</p><h3>${title}</h3><p>${summary}</p>
-        <ul class="tags" aria-label="Capabilities">${tags.map(tag => `<li>${tag}</li>`).join('')}</ul>
-        <button class="open-reader" data-kind="student" data-index="${index}">Open mission <span aria-hidden="true">→</span></button>`;
+        <ul class="tags" aria-label="Topics">${tags.map(tag => `<li>${tag}</li>`).join('')}</ul>
+        <button class="open-reader" data-kind="student" data-index="${index}">${buttonLabel} <span aria-hidden="true">→</span></button>`;
     challengeGrid.appendChild(article);
+}
+
+createChallengeCard(labDetails.number, labDetails.phase, labDetails.title, labDetails.summary, labDetails.duration, labDetails.tags, 0, 'Open lab details');
+
+missions.forEach((mission, index) => {
+    const [number, phase, title, summary, duration, tags] = mission;
+    createChallengeCard(number, phase, title, summary, duration, tags, index + 1, 'Open mission');
 
     const coachButton = document.createElement('button');
     coachButton.className = 'coach-row open-reader';
     coachButton.dataset.kind = 'coach';
-    coachButton.dataset.index = index;
+    coachButton.dataset.index = index + 1;
     coachButton.innerHTML = `<span>Solution ${number}</span><strong>${title}</strong><span aria-hidden="true">→</span>`;
     coachList.appendChild(coachButton);
 });
+
+const labCoachButton = document.createElement('button');
+labCoachButton.className = 'coach-row open-reader';
+labCoachButton.dataset.kind = 'coach';
+labCoachButton.dataset.index = 0;
+labCoachButton.innerHTML = `<span>Lab details</span><strong>${labDetails.title}</strong><span aria-hidden="true">→</span>`;
+coachList.prepend(labCoachButton);
 
 const reader = document.getElementById('reader');
 const overlay = document.getElementById('reader-overlay');
@@ -104,7 +132,7 @@ async function renderEntry() {
     const entry = activeFiles[activeIndex];
     const isCoach = activeFiles === coachFiles;
 
-    readerKind.textContent = isCoach ? 'Coach guide' : `Challenge ${missions[activeIndex][0]}`;
+    readerKind.textContent = isCoach ? `Coach · ${entry.label}` : entry.label;
     readerTitle.textContent = entry.title;
     previousButton.disabled = activeIndex === 0;
     nextButton.disabled = activeIndex === activeFiles.length - 1;

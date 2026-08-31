@@ -35,11 +35,13 @@ build-web: clean-web
 	@# Standalone SRE SignalOps challenge track
 	@mkdir -p _site/sre-signalops/Coach
 	@cp "SRE SignalOps/README.md" _site/sre-signalops/README.md
+	@cp "SRE SignalOps/Lab-Details.md" _site/sre-signalops/Lab-Details.md
 	@find "SRE SignalOps" -maxdepth 1 -name "Challenge-*.md" -exec cp {} _site/sre-signalops/ \; 2>/dev/null || true
 	@mkdir -p _site/sre-signalops/Scripts
 	@cp "SRE SignalOps/Scripts/README.md" _site/sre-signalops/Scripts/README.md
 	@find "SRE SignalOps/Scripts" -maxdepth 1 -name "*.ps1" -exec cp {} _site/sre-signalops/Scripts/ \; 2>/dev/null || true
 	@cp "SRE SignalOps/Coach/README.md" _site/sre-signalops/Coach/README.md
+	@cp "SRE SignalOps/Coach/Lab-Details.md" _site/sre-signalops/Coach/Lab-Details.md
 	@find "SRE SignalOps/Coach" -maxdepth 1 -name "Solution-*.md" -exec cp {} _site/sre-signalops/Coach/ \; 2>/dev/null || true
 	@echo "Done → _site/"
 

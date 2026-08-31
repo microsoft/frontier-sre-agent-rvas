@@ -4,6 +4,12 @@ SRE SignalOps is a compact incident-response track for Azure SRE Agent. After bo
 
 Open the [dashboard source](../web/signalops/index.html) or the [published SignalOps experience](https://microsoft.github.io/frontier-sre-agent-rvas/signalops/).
 
+## Before Mission 00
+
+Start with [Lab Details — Understand Grubify](./Lab-Details.md) (15–20 min). It explains the application, Azure resource architecture, customer and evidence flows, and expected normal baseline before participants deploy anything.
+
+Return to its baseline checklist after Missions 00–02 and record the observed state before Mission 03.
+
 ## Mission Index
 
 | Mission | Phase | Outcome | Time |
@@ -11,7 +17,7 @@ Open the [dashboard source](../web/signalops/index.html) or the [published Signa
 | [00](./Challenge-00.md) | Bootstrap | Deploy the Workload with azd | 30–40 min + deployment |
 | [01](./Challenge-01.md) | Bootstrap | Deploy the Agent Core with azd | 20–30 min + deployment |
 | [02](./Challenge-02.md) | Bootstrap | Deploy Evidence Connectors with azd | 20–25 min + deployment |
-| [03](./Challenge-03.md) | Bootstrap | Understand the architecture, baseline Grubify, and triage the first incident | 35–45 min |
+| [03](./Challenge-03.md) | Bootstrap | Triage the First Grubify Incident | 20–25 min |
 | [04](./Challenge-04.md) | Wire | Investigate an Evidence Blind Spot | 15–20 min |
 | [05](./Challenge-05.md) | Wire | Route a Cross-Domain Incident | 15–20 min |
 | [06](./Challenge-06.md) | Wire | Exercise a Guarded HTTP-Error Response | 20–25 min |
@@ -38,9 +44,11 @@ The original lab was deployed with Terraform. Missions 00–02 use it as the par
 
 | Missions | Readiness | Source |
 |---|---|---|
+| Before 00 | Lab orientation | Understand the Grubify application and expected architecture; no Azure resources are required yet |
 | 00 | azd workload stage | Create an isolated registry, Container Apps environment, food API/frontend, Log Analytics, and workspace-backed Application Insights |
 | 01 | azd agent stage | Add an isolated SRE Agent, managed identity, agent telemetry, managed scope, and governed RBAC |
 | 02, 04 | azd connector stage and audit | Add Log Analytics and Application Insights connectors, then audit repository, memory, and knowledge state |
+| Before 03 | Observed baseline | Return to Lab Details and record scope, revisions, routes, telemetry, and agent access as PASS, FAIL, or UNKNOWN |
 | 03 | Applied by configuration client | Configure diagnostic procedures, specialist routing, Azure Monitor incident intake, and incident filters, then exercise Grubify triage |
 | 04–07, 12 | Live evidence or simulated issue | Consume the configured operating model for evidence validation, cross-domain routing, guarded response, dependency scoping, and preventive assurance review |
 | 08, 09 | Coach-provided | Use a disposable hub-spoke network sandbox with Network Watcher and flow evidence, or a supplied incident snapshot |

@@ -2,6 +2,8 @@
 
 > COACHES ONLY — Do not share with participants.
 
+Before Mission 00, use [Coach Orientation — Understand Grubify](./Lab-Details.md) with the participant [Lab Details](../Lab-Details.md). Return to the baseline checklist after Mission 02.
+
 ## Solution Index
 
 | Challenge | Title | Solution File |
@@ -44,7 +46,7 @@
 
 1. Ask for evidence before accepting confidence.
 2. Keep demonstrations read-only or approval-gated; the existing agent is Autonomous with High access.
-3. Before Mission 03, explain the Grubify request, telemetry, incident, and control paths and record the normal baseline; then start Missions 03–13 with the operational issue, not the product feature used to investigate it.
+3. Before Mission 00, explain the Grubify request, telemetry, incident, and control paths; after Mission 02, record the normal baseline; then start Missions 03–13 with the operational issue.
 4. Accept `not confirmed` or `not reproduced` when that is what current evidence supports.
 5. Stop any fault injection outside the disposable network sandbox.
 
@@ -52,8 +54,10 @@
 
 | Missions | Check before students begin | Coach response when blocked |
 |---|---|---|
+| Before 00 | Participants can identify the frontend, API, in-memory state, and separate evidence/control paths | Use the Lab Details diagrams; do not require deployed Azure evidence yet |
 | 00–02 | azd environment targets the approved subscription and `swedencentral` | Stop before provisioning; select the correct environment and rerun preview |
-| 03 | Grubify architecture is understood; scope, revisions, routes, telemetry, and agent access have a timestamped baseline; Git Bash, `jq`, and `yq` are available | Stop on unexplained baseline failures; use `Challenge-03.ps1` without `-Execute` and resolve prerequisites before applying |
+| Before 03 | Scope, revisions, routes, telemetry, and agent access have a timestamped baseline | Stop on unexplained baseline failures and resolve prerequisites before applying Mission 03 configuration |
+| 03 | Git Bash, `jq`, and `yq` are available; the Mission 03 plan targets the intended agent | Use `Challenge-03.ps1` without `-Execute` and inspect the plan before applying |
 | 04–06 | Connector authorization, specialist manifests, and incident routing are inspectable | Use unverified labels or a labeled exercise; never invent connectivity or incidents |
 | 07 | Recent Application Insights request/dependency telemetry exists | Generate harmless baseline traffic or label unsupported edges unobserved |
 | 08–09 | A disposable network sandbox and restoration procedure are ready | Use the supplied evidence pack; do not inject faults into production |
@@ -65,10 +69,11 @@
 
 | Ch | Title | Key Concepts | Known Blockers & Hints | Est. Time | When to Intervene |
 |---|---|---|---|---|---|
+| Lab | Understand Grubify | Application, architecture, evidence paths, and normal baseline | Architecture confused with observed health | **15 min** | Participants treat the SRE Agent as a request-path dependency |
 | 00 | Existing workload | Inventory and health evidence | Wrong subscription or attempted redeployment | **30 min** | Any mutation command is proposed |
 | 01 | Existing agent core | ARM, action mode, RBAC, scope | Wrong agent name or inferred safety mode | **20 min** | Endpoint or managed scope differs |
 | 02 | Existing ground truth | Telemetry and evidence gaps | Empty source content mistaken for service failure | **25 min** | A participant attempts OAuth or upload |
-| 03 | First incident | Architecture, normal baseline, evidence-led triage, and guarded action | Missing deployment outputs, baseline failure, Git Bash path, or unconfirmed symptom | **45 min** | Configuration begins before the system and baseline are understood |
+| 03 | First incident | Evidence-led triage and guarded action | Git Bash path, parser prerequisites, wrong target, or unconfirmed symptom | **25 min** | Action or diagnosis precedes current evidence |
 | 04 | Evidence blind spot | Source failure, fallback, and escalation | Reachability vs configuration | **20 min** | Missing evidence is silently assumed |
 | 05 | Cross-domain incident | Evidence-led routing and one incident owner | Overlapping descriptions | **20 min** | Handoffs fragment the timeline |
 | 06 | HTTP-error response | Intake, action gate, and recovery proof | Alert mismatch | **25 min** | Action precedes evidence |
