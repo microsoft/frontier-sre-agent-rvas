@@ -1,124 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="An interactive presentation of Azure SRE Agent capabilities, from incident signal to governed action and operational learning.">
-    <title>Azure SRE Agent Capabilities — SRE SignalOps</title>
+    <meta name="description" content="Explore Azure SRE Agent capabilities from telemetry and root cause analysis to governed remediation, optimization, and learning.">
+    <title>Azure SRE Agent — Capability Briefing</title>
+    <link rel="icon" href="data:,">
     <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
     <link rel="stylesheet" href="../assets/css/brand.css">
-    <link rel="stylesheet" href="./capabilities.css">
+    <link rel="stylesheet" href="./capabilities.css?v=2">
 </head>
-
 <body>
-    <header class="briefing-header">
-        <a class="briefing-brand" href="./" aria-label="Return to SRE SignalOps">
-            <span class="solution-logo" aria-label="RVAS">RVA<span>S</span></span>
-            <span class="brand-divider" aria-hidden="true"></span>
-            <span>SRE SignalOps</span>
-        </a>
-        <div class="header-actions">
-            <a class="header-link" href="./">Missions</a>
-            <a class="icon-action" href="https://learn.microsoft.com/en-us/azure/sre-agent/overview" target="_blank" rel="noopener noreferrer" title="Open Microsoft Learn" aria-label="Open Azure SRE Agent overview on Microsoft Learn">
-                <i data-lucide="book-open"></i>
-            </a>
-            <button class="icon-action" id="present-button" type="button" title="Enter presentation mode" aria-label="Enter presentation mode">
-                <i data-lucide="presentation"></i>
-            </button>
-        </div>
+    <header class="site-nav">
+        <a class="brand-lockup" href="./"><span class="solution-logo">RVA<b>S</b></span><i></i><strong>SRE SignalOps</strong></a>
+        <nav><a href="#capabilities">Capabilities</a><a href="#optimize">Optimize</a><a href="#outcomes">Outcomes</a><a class="icon-button" href="https://learn.microsoft.com/en-us/azure/sre-agent/overview" target="_blank" rel="noopener" title="Microsoft Learn" aria-label="Microsoft Learn"><i data-lucide="book-open"></i></a><button class="icon-button" id="present-button" title="Present full screen" aria-label="Present full screen"><i data-lucide="presentation"></i></button></nav>
     </header>
 
     <main>
-        <section class="briefing-intro" aria-labelledby="briefing-title">
-            <div>
-                <p class="overline"><span class="live-dot"></span> Capability briefing · Microsoft Azure</p>
-                <h1 id="briefing-title">The SRE engineer who is<br><span>already in the incident.</span></h1>
+        <section class="hero">
+            <div class="hero-grid">
+                <div class="hero-copy">
+                    <p class="eyebrow"><span></span> Azure SRE Agent · Capability briefing</p>
+                    <h1>From scattered signals<br>to <em>assured recovery.</em></h1>
+                    <p class="hero-lede">An AI-powered operations teammate that investigates incidents, connects evidence, proposes mitigations, automates routine work, and helps every on-call engineer start with more context.</p>
+                    <div class="hero-actions"><a class="primary-button" href="#capabilities">Run the briefing <i data-lucide="arrow-down"></i></a><a href="./">Explore the missions <i data-lucide="arrow-up-right"></i></a></div>
+                </div>
+                <div class="incident-window" aria-label="Illustrative incident investigation">
+                    <div class="window-bar"><span>INC-2471 · CHECKOUT API</span><b>LIVE</b></div>
+                    <div class="incident-alert"><i data-lucide="triangle-alert"></i><div><small>SEV 1 · 14:03 UTC</small><strong>Latency breached SLO</strong></div><span>2.8s</span></div>
+                    <div class="trace-chart"><svg viewBox="0 0 600 130" preserveAspectRatio="none"><path d="M0 25H600M0 65H600M0 105H600"/><path class="trace" d="M0 102 C80 96 115 99 180 92 S295 95 355 84 S430 90 474 76 S545 30 600 22"/></svg><span>DEPLOY 13:21</span></div>
+                    <ol><li><i data-lucide="check"></i><span>Correlated 4 telemetry sources</span><time>6s</time></li><li><i data-lucide="check"></i><span>Linked deployment <code>a84f1c</code></span><time>11s</time></li><li class="active"><i data-lucide="scan-search"></i><span>Testing root-cause hypothesis</span><time>LIVE</time></li></ol>
+                    <p>Illustrative investigation · evidence remains inspectable</p>
+                </div>
             </div>
-            <div class="intro-side">
-                <p>Follow one production signal as Azure SRE Agent gathers evidence, forms a hypothesis, coordinates a governed response, and preserves what the team learned.</p>
-                <div class="intro-stat"><strong>7</strong><span>capabilities<br>one operating loop</span></div>
-            </div>
+            <div class="hero-proof"><div><span>01</span><strong>See the whole system</strong><small>Logs · metrics · traces · changes</small></div><div><span>02</span><strong>Reason across evidence</strong><small>Hypothesis before mitigation</small></div><div><span>03</span><strong>Act inside guardrails</strong><small>Review or Autonomous mode</small></div><div><span>04</span><strong>Learn from recovery</strong><small>Context compounds over time</small></div></div>
         </section>
 
-        <section class="capability-console" aria-label="Azure SRE Agent capability explorer">
-            <div class="capability-rail">
-                <div class="rail-heading">
-                    <span>Operating loop</span>
-                    <small>Choose a capability</small>
-                </div>
-                <div id="capability-buttons" class="capability-buttons" role="tablist" aria-orientation="vertical"></div>
-                <p class="keyboard-hint"><kbd>↑</kbd><kbd>↓</kbd> Navigate <kbd>Enter</kbd> Expand</p>
-            </div>
-
-            <article class="capability-stage" id="capability-stage" aria-live="polite">
-                <div class="stage-topline">
-                    <div class="stage-index" id="stage-index">01 / 07</div>
-                    <div class="stage-status"><span></span> Agent online</div>
-                </div>
-
-                <div class="stage-heading">
-                    <div class="capability-icon" id="stage-icon" aria-hidden="true"></div>
-                    <div>
-                        <p id="stage-kicker">Ask the environment</p>
-                        <h2 id="stage-title">Investigate &amp; advise</h2>
-                    </div>
-                </div>
-
-                <div class="story-grid">
-                    <div class="situation-panel">
-                        <span class="panel-label">Situation</span>
-                        <p id="stage-situation"></p>
-                        <blockquote id="stage-prompt"></blockquote>
-                    </div>
-                    <div class="agent-panel">
-                        <span class="panel-label">Agent response</span>
-                        <p id="stage-response"></p>
-                        <div class="evidence-row" id="stage-evidence"></div>
-                    </div>
-                </div>
-
-                <div class="diagram-shell">
-                    <div class="diagram-header">
-                        <span>Signal path</span>
-                        <small id="diagram-caption">Grounded investigation across connected systems</small>
-                    </div>
-                    <div class="signal-diagram" id="signal-diagram"></div>
-                </div>
-
-                <div class="stage-footer">
-                    <div class="operator-note">
-                        <i data-lucide="message-square-quote"></i>
-                        <div><span>Say this</span><p id="stage-talk-track"></p></div>
-                    </div>
-                    <div class="outcome-strip" id="stage-outcomes"></div>
-                </div>
+        <section class="capability-section" id="capabilities">
+            <div class="section-intro"><div><p class="section-label">The operating system for reliability</p><h2>Seven capabilities.<br>One continuous response.</h2></div><p>Select a capability to reveal the situation, agent response, evidence path, and the control an SRE engineer keeps.</p></div>
+            <div class="capability-tabs" id="capability-tabs" role="tablist" aria-label="Azure SRE Agent capabilities"></div>
+            <article class="capability-detail" id="capability-detail" aria-live="polite">
+                <div class="detail-copy"><div class="detail-number" id="detail-number"></div><p class="detail-kicker" id="detail-kicker"></p><h3 id="detail-title"></h3><p class="detail-thesis" id="detail-thesis"></p><div class="scenario"><span>THE SITUATION</span><p id="detail-situation"></p></div><div class="prompt"><i data-lucide="terminal"></i><div><span>ASK THE AGENT</span><code id="detail-prompt"></code></div></div></div>
+                <div class="detail-visual"><div class="visual-topline"><span><i data-lucide="activity"></i> Evidence flow</span><small id="detail-caption"></small></div><div class="evidence-flow" id="evidence-flow"></div><div class="moves"><header><span>How the agent moves</span><small>01—04</small></header><ol id="agent-moves"></ol></div><div class="control"><i data-lucide="shield-check"></i><div><span>ENGINEER CONTROL</span><p id="detail-control"></p></div></div></div>
+                <div class="detail-impact"><span>WHY IT MATTERS</span><strong id="detail-impact"></strong><p id="detail-impact-note"></p></div>
             </article>
         </section>
 
-        <section class="operating-model" aria-labelledby="model-title">
-            <div class="model-copy">
-                <p class="overline">The reliability operating model</p>
-                <h2 id="model-title">Signal to recovery,<br>without losing control.</h2>
-                <p>The agent can investigate broadly while every proposed tool call still passes through identity, RBAC, run mode, and tool-level policy. Automation speed and operational governance are designed into the same loop.</p>
-            </div>
-            <ol class="model-steps">
-                <li><span>01</span><div><strong>Observe</strong><small>Connect signals and context</small></div></li>
-                <li><span>02</span><div><strong>Reason</strong><small>Correlate and hypothesize</small></div></li>
-                <li><span>03</span><div><strong>Decide</strong><small>Propose the safest action</small></div></li>
-                <li><span>04</span><div><strong>Act</strong><small>Approve or automate</small></div></li>
-                <li><span>05</span><div><strong>Learn</strong><small>Retain verified context</small></div></li>
-            </ol>
+        <section class="lifecycle"><div><p class="section-label">The continuous reliability loop</p><h2>Every recovery improves<br>the next response.</h2></div><ol><li><i data-lucide="radio-tower"></i><span>01</span><strong>Monitor</strong><p>Unify telemetry and context.</p></li><li><i data-lucide="radar"></i><span>02</span><strong>Detect</strong><p>Turn noise into an incident.</p></li><li><i data-lucide="stethoscope"></i><span>03</span><strong>Diagnose</strong><p>Test grounded hypotheses.</p></li><li><i data-lucide="shield-check"></i><span>04</span><strong>Remediate</strong><p>Act within policy boundaries.</p></li><li><i data-lucide="brain-circuit"></i><span>05</span><strong>Learn</strong><p>Retain verified context.</p></li></ol></section>
+
+        <section class="optimization" id="optimize">
+            <div class="optimization-copy"><p class="section-label">Beyond incident response</p><h2>Optimize the estate<br>and the experience.</h2><p>SRE Agent can support proactive analysis across the Azure environment that governs the estate and the applications that deliver customer value.</p><div class="scope-switch" role="tablist"><button role="tab" aria-selected="true" data-scope="tenant"><i data-lucide="landmark"></i> Azure estate</button><button role="tab" aria-selected="false" data-scope="application"><i data-lucide="panels-top-left"></i> Applications</button></div></div>
+            <div class="optimization-board" id="optimization-board" aria-live="polite"></div>
         </section>
+
+        <section class="ecosystem"><div><p class="section-label">Integration ecosystem</p><h2>Meet the team<br>where work happens.</h2><p>Connect observability, source, incident, data, and communication systems into one investigation context.</p></div><div class="ecosystem-map"><div class="agent-core"><i data-lucide="bot"></i><strong>Azure SRE Agent</strong><span>Reason · Act · Learn</span></div><article><i data-lucide="chart-no-axes-combined"></i><strong>Observability</strong><span>Monitor · App Insights · Log Analytics</span></article><article><i data-lucide="git-branch"></i><strong>Source & delivery</strong><span>GitHub · Azure DevOps</span></article><article><i data-lucide="siren"></i><strong>Incident response</strong><span>Azure Alerts · PagerDuty · ServiceNow</span></article><article><i data-lucide="database"></i><strong>Data & MCP</strong><span>ADX · partner tools · custom systems</span></article><article><i data-lucide="messages-square"></i><strong>People</strong><span>Teams · Outlook · approvals</span></article></div></section>
+
+        <section class="outcomes" id="outcomes"><div><p class="section-label">The customer conversation</p><h2>Move the operating model,<br>not just the alert queue.</h2></div><div class="outcome-grid"><article><i data-lucide="timer-reset"></i><strong>Hours → minutes</strong><h3>Compress investigation time</h3><p>Automated evidence gathering and hypothesis-driven diagnosis reduce manual log hunting.</p></article><article><i data-lucide="repeat-2"></i><strong>Routine → automated</strong><h3>Return engineering capacity</h3><p>Scheduled and event-driven workflows take on repeatable operational work.</p></article><article><i data-lucide="shield-half"></i><strong>Reactive → proactive</strong><h3>Find risk before impact</h3><p>Surface reliability, scaling, cost, and operational weaknesses earlier.</p></article><article><i data-lucide="library-big"></i><strong>Individual → shared</strong><h3>Preserve team knowledge</h3><p>Make verified causes and successful resolutions reusable across handoffs.</p></article></div><div class="closing"><span>THE SHIFT</span><p>From reactive firefighting to a governed, evidence-led reliability practice.</p><a href="#capabilities">Replay <i data-lucide="rotate-ccw"></i></a></div></section>
     </main>
-
-    <footer class="briefing-footer">
-        <span>RVAS · SRE SignalOps</span>
-        <p>Capability model based on Azure SRE Agent documentation, reviewed August 2026.</p>
-        <a href="https://learn.microsoft.com/en-us/azure/sre-agent/" target="_blank" rel="noopener noreferrer">Microsoft Learn <i data-lucide="arrow-up-right"></i></a>
-    </footer>
-
-    <script src="./capabilities.js"></script>
+    <footer><strong>RVAS · SRE SignalOps</strong><span>Grounded in Microsoft Learn and the supplied Azure SRE Agent decks · August 2026</span><a href="https://learn.microsoft.com/en-us/azure/sre-agent/" target="_blank" rel="noopener">Microsoft Learn <i data-lucide="arrow-up-right"></i></a></footer>
+    <script src="./capabilities.js?v=2"></script>
 </body>
-
 </html>
