@@ -47,6 +47,19 @@
 3. Distinguish configured state from observed behavior.
 4. Stop any fault injection outside the disposable network sandbox.
 
+## Pre-Session Blocker Checklist
+
+| Missions | Check before students begin | Coach response when blocked |
+|---|---|---|
+| 00–02 | azd environment targets the approved subscription and `swedencentral` | Stop before provisioning; select the correct environment and rerun preview |
+| 03 | Git Bash, `jq`, and `yq` are available; plan-only simulation lists 8 skills, 11 subagents, 1 platform, and 4 filters | Use `Challenge-03.ps1` without `-Execute`; resolve prerequisites before applying |
+| 04–06 | Connector authorization, specialist manifests, and incident routing are inspectable | Use unverified labels or a labeled exercise; never invent connectivity or incidents |
+| 07 | Recent Application Insights request/dependency telemetry exists | Generate harmless baseline traffic or label unsupported edges unobserved |
+| 08–09 | A disposable network sandbox and restoration procedure are ready | Use the supplied evidence pack; do not inject faults into production |
+| 10 | The selected VM has recent heartbeat data and a safe recovery path | Choose another VM or use evidence-pack mode |
+| 11–12 | Knowledge ingestion and required read permissions are available | Record the evidence gap and continue without overstating coverage |
+| 13 | Vault alerts and Teams connector authorization are proven | Run a clearly labeled exercise and do not claim a real post or failed backup |
+
 ## Per-Challenge Coach Guide
 
 | Ch | Title | Key Concepts | Known Blockers & Hints | Est. Time | When to Intervene |

@@ -12,7 +12,16 @@ Effective rule evaluation combines association, direction, tuple, priority, and 
 
 ## Expected Student Output
 
-The matching rule, flow evidence, blast radius, and a narrow reversible remediation proposal.
+- The exact effective rule and five-tuple evidence that explains the denied flow.
+- A bounded blast radius, rejected alternatives, and the narrowest reversible remediation proposal.
+- Post-remediation evidence that the original path recovered without weakening unrelated controls.
+
+## Coach Runbook
+
+1. Confirm the target is the coach-provided sandbox before any fault or remediation action.
+2. Require NIC and subnet associations, effective rules, direction, priority, protocol, source, destination, and port.
+3. Ask the student to bound affected and unaffected paths before proposing a change.
+4. Approve only a narrow reversible correction, then require both recovery and regression checks.
 
 ## Common Issues and Hints
 
@@ -22,10 +31,12 @@ The matching rule, flow evidence, blast radius, and a narrow reversible remediat
 
 ## Debrief Discussion Guide
 
-1. Why do effective rules win?
-2. How is blast radius bounded?
-3. What proves recovery?
+1. Why do effective rules win? → Azure evaluates the combined NIC/subnet rule set, not one displayed NSG in isolation.
+2. How is blast radius bounded? → Match the effective rule against actual source, destination, port, protocol, and direction.
+3. What proves recovery? → A successful original flow plus confirmation that unrelated denied paths remain denied.
 
 ## Success Criteria Notes
 
-Fault injection is allowed only in the coach-provided sandbox.
+- **Require:** exact rule evidence, bounded blast radius, narrow correction, recovery proof, and control regression proof.
+- **Reject:** production targeting, broad deny deletion, or portal-only reasoning.
+- **Accept:** supplied flow snapshots when live Traffic Analytics has not ingested yet; label their timestamp.

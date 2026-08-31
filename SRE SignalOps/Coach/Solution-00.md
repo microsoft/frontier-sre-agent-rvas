@@ -12,7 +12,16 @@ Explain that azd orchestrates Bicep provisioning plus application packaging and 
 
 ## Expected Student Output
 
-An explicit `signalops-core` azd environment, reviewed preview, successful `azd up`, isolated workload resource group, running food Container Apps, frontend HTTP `200`, and workspace-backed Application Insights.
+- An explicit `signalops-core` azd environment targeting the approved subscription and `swedencentral`.
+- A reviewed preview containing only the isolated workload resources.
+- A successful `azd up`, two running Container Apps, frontend HTTP `200`, and workspace-backed Application Insights.
+
+## Coach Runbook
+
+1. Before deployment, ask the student to show `AZURE_SUBSCRIPTION_ID`, `AZURE_LOCATION`, `DEPLOY_AGENT`, and `DEPLOY_CONNECTORS` from the selected azd environment.
+2. Review the preview together. Expect seven creates and no changes or deletes; the agent resource group must not appear.
+3. After deployment, require resource inventory, Container App running state, the frontend HTTP result, and the Application Insights workspace ID.
+4. Stop immediately if the preview targets an existing Terraform-managed resource group or proposes replacement/deletion.
 
 ## Common Issues and Hints
 
@@ -29,4 +38,6 @@ An explicit `signalops-core` azd environment, reviewed preview, successful `azd 
 
 ## Success Criteria Notes
 
-Require an explicit environment, reviewed preview, successful deployment, both Container Apps in `Running`, frontend HTTP `200`, and the Application Insights workspace relationship. Reject deployments that target the Terraform-managed resource groups.
+- **Require:** explicit environment values, reviewed preview, successful deployment, both apps in `Running`, HTTP `200`, and a non-empty workspace relationship.
+- **Reject:** implicit subscription selection, skipped preview, or any operation against a Terraform-managed resource group.
+- **Accept:** environment-derived resource names; they do not need to match the Terraform names.

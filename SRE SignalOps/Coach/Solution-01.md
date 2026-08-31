@@ -12,7 +12,16 @@ Separate ARM provisioning state from data-plane readiness. Highlight the deliber
 
 ## Expected Student Output
 
-A running environment-named agent, populated endpoint, managed-resource list, Autonomous/High action configuration, and RBAC output proving workload-scoped write access.
+- A running environment-named SRE Agent with a populated endpoint.
+- Managed resources that include the isolated workload and its telemetry.
+- Autonomous/High action configuration and RBAC output proving workload-scoped write access.
+
+## Coach Runbook
+
+1. Confirm the student reused `signalops-core`, set `DEPLOY_AGENT=true`, and kept `DEPLOY_CONNECTORS=false`.
+2. Review the preview for the new agent group, identity, agent telemetry, agent, and RBAC; no existing resource should be replaced.
+3. After provisioning, compare ARM state, power state, endpoint, action configuration, managed resources, and role assignments.
+4. Stop if Contributor appears at subscription scope. Monitoring Contributor at subscription scope and Contributor on the isolated workload group are expected.
 
 ## Common Issues and Hints
 
@@ -29,4 +38,6 @@ A running environment-named agent, populated endpoint, managed-resource list, Au
 
 ## Success Criteria Notes
 
-Do not pass if preview was skipped, the endpoint is absent, managed resources omit the isolated workload, action mode/access are inaccurate, or the identity receives subscription-wide Contributor.
+- **Require:** reviewed preview, `Succeeded`/`Running`, a non-empty endpoint, correct managed scope, and the documented role split.
+- **Reject:** subscription-wide Contributor, missing workload scope, or claims based only on portal appearance.
+- **Accept:** brief endpoint propagation delay after ARM provisioning reaches `Succeeded`.

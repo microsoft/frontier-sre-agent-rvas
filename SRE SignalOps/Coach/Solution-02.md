@@ -12,7 +12,16 @@ Connectors create an authorized evidence path; they do not guarantee useful data
 
 ## Expected Student Output
 
-A reviewed connector-only preview, two live Azure telemetry connectors owned by the same azd environment, and an accurate inventory of repository, Agent Memory, and knowledge state.
+- A reviewed preview that adds connector configuration without replacing the agent or workload.
+- Two live Azure telemetry connectors owned by the same azd environment.
+- Separate, accurate statements about connector deployment, repository content, Agent Memory health, knowledge files, and live telemetry.
+
+## Coach Runbook
+
+1. Confirm both deployment flags are `true` and the same azd environment from Missions 00–01 is selected.
+2. Explain that azd's summary may omit child connectors; use the connector list or compiled ARM graph as evidence.
+3. Require the student to report repository, Agent Memory, knowledge-file, and telemetry state independently.
+4. Stop if a student stores an access token, authorizes OAuth, or uploads knowledge merely to make an empty-state check look successful.
 
 ## Common Issues and Hints
 
@@ -29,4 +38,6 @@ A reviewed connector-only preview, two live Azure telemetry connectors owned by 
 
 ## Success Criteria Notes
 
-Require a reviewed preview, both ARM connectors with azd-owned resource IDs, an independent live resource comparison, and accurate disclosure of repository and knowledge state. No token may be persisted.
+- **Require:** both connector types and sources, an independent live-resource comparison, and honest disclosure of empty or unproven evidence planes.
+- **Reject:** treating connector existence as proof that useful data exists, or persisting any token.
+- **Accept:** an empty repository or knowledge inventory when it is reported accurately.

@@ -22,6 +22,13 @@
 - An RCA with a timeline, evidence, root-cause assessment, confidence, and recovery recommendation.
 - A resolved alert and resumed heartbeat after the VM or telemetry path is restored.
 
+## Coach Runbook
+
+1. Confirm the selected VM has a recent heartbeat before creating or exercising the alert.
+2. Record the last heartbeat, VM power state, and recent Activity Log as the baseline evidence set.
+3. Trigger only the approved lab condition and require the student to distinguish observations, hypotheses, and conclusions.
+4. Restore the condition, then require a resumed heartbeat and alert resolution before closure.
+
 ## Common Issues and Hints
 
 - **Symptom:** The alert fires immediately before the exercise begins. **Fix:** verify that the selected VM has recent heartbeat data and that the query uses the correct `_ResourceId`.
@@ -37,9 +44,9 @@
 
 ## Success Criteria Notes
 
-- Be strict on single-resource scope, recovery validation, and symptom-versus-cause language.
-- Accept either a stopped VM or a deliberately stopped monitoring agent as the test condition if the environment has a safe recovery path.
-- Do not require autonomous remediation.
+- **Require:** single-resource scope, correlated evidence, explicit confidence, recovery validation, and symptom-versus-cause language.
+- **Reject:** an RCA that infers cause from missing heartbeat alone.
+- **Accept:** either a stopped VM or deliberately stopped monitoring agent when a safe recovery path exists; do not require autonomous remediation.
 
 ## Solution
 

@@ -22,6 +22,13 @@
 - Trade-offs, confidence, effort, owner, and expected value for each recommendation.
 - A recurring review cadence with approval boundaries.
 
+## Coach Runbook
+
+1. Require the student to declare subscriptions, resource groups, time window, and inaccessible evidence before analysis.
+2. Check that each recommendation uses at least two evidence planes and names the affected resource and owner.
+3. Ask for value, risk, confidence, effort, trade-off, approval, rollback, and validation for every recommendation.
+4. End by confirming no writes occurred and no recommendation bypasses workload criticality or recovery objectives.
+
 ## Common Issues and Hints
 
 - **Symptom:** The report only paraphrases Azure Advisor. **Fix:** require inventory, utilization, backup, alert, and telemetry-freshness evidence.
@@ -37,9 +44,9 @@
 
 ## Success Criteria Notes
 
-- Be strict on evidence, trade-offs, and confirmation that no writes occurred.
-- Accept fewer findings in a small environment if the agent clearly reports the limited scope.
-- Accept Cost Management permission failure when it is documented rather than concealed.
+- **Require:** declared scope, multi-source evidence, trade-offs, prioritization, ownership, and explicit confirmation that no writes occurred.
+- **Reject:** Advisor paraphrases presented as analysis or destructive recommendations without criticality context.
+- **Accept:** fewer findings in a small environment and documented Cost Management permission gaps.
 
 ## Solution
 

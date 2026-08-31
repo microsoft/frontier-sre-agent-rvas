@@ -22,6 +22,13 @@
 - A concise Teams post with live evidence and application impact.
 - Recovery guidance containing application validation and escalation conditions.
 
+## Coach Runbook
+
+1. Verify vault alerting, protected-item state, SRE Agent incident routing, and Teams authorization before the exercise.
+2. Prefer a genuine failed job; otherwise retain an `EXERCISE` label in the incident and every Teams message.
+3. Require evidence, application impact, confidence, owner, next action, RTO/RPO status, and approval posture in the notification.
+4. Treat restore completion as an intermediate event; close only after application, dependency, telemetry, and business validation.
+
 ## Common Issues and Hints
 
 - **Symptom:** No real failed backup is available. **Fix:** use a clearly labeled exercise incident with live vault and application evidence; never fabricate a failed job.
@@ -37,9 +44,9 @@
 
 ## Success Criteria Notes
 
-- Be strict that the Teams message does not overstate evidence or expose destination credentials or IDs.
-- Accept a genuine alert or a clearly labeled exercise incident; all factual fields must use live evidence.
-- Accept Recovery Services vaults or Backup vaults based on the customer environment.
+- **Require:** correct alert routing, safe notification, approval boundary, application validation, and explicit escalation conditions.
+- **Reject:** fabricated failed jobs, leaked credentials/IDs, or closure based only on restore status.
+- **Accept:** a genuine alert or clearly labeled exercise, and either Recovery Services vaults or Backup vaults.
 
 ## Solution
 

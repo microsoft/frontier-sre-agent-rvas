@@ -30,8 +30,8 @@ function Assert-Command([string]$Name) {
     }
 }
 
-function Invoke-Native([scriptblock]$Command) {
-    & $Command
+function Invoke-Native([scriptblock]$Action) {
+    & $Action
     if ($LASTEXITCODE -ne 0) { throw "Command failed with exit code $LASTEXITCODE" }
 }
 
@@ -42,6 +42,14 @@ function Get-AzdValue([string]$Name) {
         if ($LASTEXITCODE -eq 0) { return ($value | Out-String).Trim() }
         return $null
     } finally { Pop-Location }
+}
+
+function Get-BashToolPath {
+    $toolDirectories = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Recurse -File -Include jq.exe,yq.exe -ErrorAction SilentlyContinue |
+        Select-Object -ExpandProperty DirectoryName -Unique |
+        ForEach-Object { $_.Replace('\','/').Replace('C:','/c') }
+    if (-not $toolDirectories) { return '' }
+    return "export PATH='$($toolDirectories -join ':')':`"`$PATH`"; "
 }
 
 function Get-AgentContext {
@@ -183,10 +191,11 @@ switch ($Challenge) {
         if (-not (Test-Path $Bash)) { throw "Git Bash not found at $Bash" }
         $subscriptionId = (az account show --query id -o tsv).Trim()
         $configRoot = (Join-Path $RepoRoot 'Student\Resources').Replace('\','/').Replace('C:','/c')
+        $bashToolPath = Get-BashToolPath
         $targets = @('skills','subagents','incident-platforms','incident-filters')
         foreach ($target in $targets) {
             $operation = if ($Execute) { 'apply' } else { 'plan' }
-            $command = "cd '$configRoot' && ./infra/scripts/sre-agent-config.sh $operation --target '$target' --subscription '$subscriptionId' --resource-group '$AgentResourceGroup' --agent '$AgentName'"
+            $command = "$bashToolPath" + "cd '$configRoot' && ./infra/scripts/sre-agent-config.sh $operation --target '$target' --subscription '$subscriptionId' --resource-group '$AgentResourceGroup' --agent '$AgentName'"
             if ($Execute -and -not $PSCmdlet.ShouldProcess("$AgentName/$target", 'Apply SRE Agent configuration')) { continue }
             Invoke-Native { & $Bash -lc $command }
         }

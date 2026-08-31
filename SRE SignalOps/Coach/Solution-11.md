@@ -22,6 +22,13 @@
 - A grounded response that visibly improves on the baseline.
 - One verified incident lesson added and reused in a later response.
 
+## Coach Runbook
+
+1. Capture a baseline answer before attaching custom knowledge; preserve the exact prompt.
+2. Review the proposed document for durable facts, owner, review date, boundaries, and no transient resource state.
+3. After ingestion, repeat the identical prompt and identify exactly which improvements came from knowledge.
+4. Add only a verified lesson, then confirm the agent still checks current telemetry rather than replaying history.
+
 ## Common Issues and Hints
 
 - **Symptom:** The before-and-after responses are nearly identical. **Fix:** add concrete local context such as ownership, RTO/RPO, maintenance windows, and escalation boundaries.
@@ -37,9 +44,9 @@
 
 ## Success Criteria Notes
 
-- Be strict on the identical before-and-after question and the separation of evidence from context.
-- Require the added lesson to be verified and reusable, not a transcript dump.
-- Accept any concise Markdown or text knowledge format supported by the configured source.
+- **Require:** identical before/after question, visible local-context improvement, evidence/context separation, and a reusable verified lesson.
+- **Reject:** incident transcripts, assumptions, secrets, or transient state stored as durable truth.
+- **Accept:** any concise Markdown or text format supported by the configured source.
 
 ## Solution
 

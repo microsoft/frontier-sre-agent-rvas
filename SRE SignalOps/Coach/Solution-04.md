@@ -12,7 +12,15 @@ Configured, authenticated, reachable, and authorized are four different states.
 
 ## Expected Student Output
 
-A connector matrix with observed read tests, timestamps, scopes, and failure classifications.
+- A connector matrix with configured state, authentication, authorization, observed read tests, timestamps, scopes, and failure classifications.
+- An explicit `unverified` label wherever a live read was not completed.
+
+## Coach Runbook
+
+1. Ask the student to inventory connectors without displaying credentials.
+2. Require one harmless read per connector and capture timestamp, scope, and returned object type.
+3. Classify failures as configuration, authentication, authorization, network, tool discovery, or source-data failure.
+4. Stop and rotate credentials if any token or secret appears in output.
 
 ## Common Issues and Hints
 
@@ -22,10 +30,12 @@ A connector matrix with observed read tests, timestamps, scopes, and failure cla
 
 ## Debrief Discussion Guide
 
-1. What is the strongest connectivity evidence?
-2. How should stale reads be labeled?
-3. Which connectors can write?
+1. What is the strongest connectivity evidence? → A current, harmless read that returns expected scoped data.
+2. How should stale reads be labeled? → With the timestamp and an explicit stale or unverified state.
+3. Which connectors can write? → Only those whose discovered tools and grants explicitly allow writes; connector health alone proves nothing.
 
 ## Success Criteria Notes
 
-Every configured connector needs a current read test or an explicit unverified label.
+- **Require:** every connector has a current read result or explicit `unverified` status.
+- **Reject:** secrets in evidence, or `healthy` inferred only from configured state.
+- **Accept:** failed reads when the failure is accurately classified and bounded.
