@@ -60,7 +60,8 @@ Before Mission 00, use [Coach Orientation — Understand Grubify](./Lab-Details.
 | Before 03 | Scope, revisions, routes, telemetry, and agent access have a timestamped baseline | Stop on unexplained baseline failures and resolve prerequisites before applying Mission 03 configuration |
 | 03 | Baseline health passes; the 5xx alert and fault loop target only the isolated Grubify API | Stop on any target mismatch or unexplained baseline failure; inject the fault once, then collect evidence |
 | 04 | Agent Memory is enabled and the four repository knowledge files resolve | Record failed uploads or pending indexing honestly; never expose the data-plane token |
-| 05–07 | Connector authorization, specialist manifests, and incident routing are inspectable | Use unverified labels or a labeled exercise; never invent connectivity or incidents |
+| 05 | ARM and data-plane connector inventories plus harmless Log Analytics and Application Insights reads are available | Use a labeled failed-read result if every source is healthy; never disable a connector to manufacture a failure |
+| 06–07 | Specialist manifests and incident routing are inspectable | Use unverified labels or a labeled exercise; never invent connectivity or incidents |
 | 08 | Recent Application Insights request/dependency telemetry exists | Generate harmless baseline traffic or label unsupported edges unobserved |
 | 09–10 | A disposable network sandbox and restoration procedure are ready | Use the supplied evidence pack; do not inject faults into production |
 | 11 | The selected VM has recent heartbeat data and a safe recovery path | Choose another VM or use evidence-pack mode |
@@ -77,7 +78,7 @@ Before Mission 00, use [Coach Orientation — Understand Grubify](./Lab-Details.
 | 02 | Existing ground truth | Telemetry and evidence gaps | Empty source content mistaken for service failure | **25 min** | A participant attempts OAuth or upload |
 | 03 | Investigate and Recover a Grubify Memory Incident | Metric alert, memory pressure, agent intake, source validation, and recovery | Azure ingestion lag, wrong target, repeated injection, or absent agent incident | **40 min** | Fault runs before target/baseline checks or restart is called a permanent fix |
 | 04 | Grubify knowledge | Agent Memory, indexing, and memory-first specialist configuration | Enabled memory mistaken for populated memory | **30 min** | Tokens are exposed or desired state is presented as live state |
-| 05 | Evidence blind spot | Source failure, fallback, and escalation | Reachability vs configuration | **20 min** | Missing evidence is silently assumed |
+| 05 | Evidence blind spot | ARM/data-plane inventory, authorization, source reads, freshness, and escalation | Deployment state mistaken for current evidence | **20 min** | Missing or stale evidence is silently assumed |
 | 06 | Cross-domain incident | Evidence-led routing and one incident owner | Overlapping descriptions | **20 min** | Handoffs fragment the timeline |
 | 07 | HTTP-error response | Intake, action gate, and recovery proof | Alert mismatch | **25 min** | Action precedes evidence |
 | 08 | Impact scope | Critical path and blast radius | Missing telemetry | **25 min** | Whole-service impact is assumed |

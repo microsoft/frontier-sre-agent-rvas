@@ -6,35 +6,249 @@
 
 ## Introduction
 
-An SRE investigation can stall when the evidence source it depends on is stale, unauthorized, or unreachable. Investigate an evidence blind spot during the Grubify HTTP-health exercise and determine what can still be concluded safely.
+Mission 03 produced a real Grubify incident and Mission 04 added approved operational knowledge. Neither result proves that every configured evidence source is reachable, authorized, or fresh. In this mission you will validate each Azure telemetry connector with visible commands, identify one real or coach-provided evidence blind spot, and bound what the SRE Agent can conclude safely.
+
+Run every command separately from the repository root and inspect its output before continuing. This mission intentionally does not use a PowerShell script.
 
 ## Description
 
-> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-05.ps1'` to inventory live connectors and print the customer prompt. See the [presenter runbook](./Scripts/README.md).
+### Part 1 — Reuse the Isolated SignalOps Environment
 
-Continue the Grubify memory incident from Challenge 03. During triage, treat one unavailable, failed, or stale evidence source as the issue to investigate. If every live source is healthy, use a coach-provided failed-read result; do not disable a production connector to create the exercise.
-
-Ask the SRE Agent to identify which evidence is needed, attempt harmless reads, and produce a matrix containing source, authentication state, authorization scope, reachability, data freshness, and allowed actions. Include the configured Azure telemetry connectors. List GitHub, knowledge, or MCP sources only when they are actually configured.
-
-Challenge 02 provides Log Analytics and Application Insights connectors. It audits repository, Agent Memory, and knowledge state but does not populate those sources. GitHub, MCP, Teams, Outlook, and other external integrations count only when a coach or customer has configured, authorized, and verified them. Reference or `example-*` manifests do not prove a live connector exists.
-
-From PowerShell, compare the answer with the control plane:
+Select the environment used in Missions 00–04 and retrieve its deployed resource IDs:
 
 ```powershell
-$SubscriptionId = az account show --query id -o tsv
-$AgentResourceGroup = 'rg-signalopscore-agent'
-$AgentName = az resource list --resource-group $AgentResourceGroup --resource-type 'Microsoft.App/agents' --query '[0].name' -o tsv
-$ApiVersion = '2025-05-01-preview'
-$Url = "https://management.azure.com/subscriptions/$SubscriptionId/resourceGroups/$AgentResourceGroup/providers/Microsoft.App/agents/$AgentName/DataConnectors?api-version=$ApiVersion"
-az rest --method GET --url $Url --query 'value[].{Name:name,Type:properties.dataConnectorType,State:properties.provisioningState}' -o table
+$ErrorActionPreference = 'Stop'
+
+Push-Location '.\SRE SignalOps'
+azd env select signalops-core
+$AGENT_ID = (azd env get-value SRE_AGENT_ID).Trim()
+$WORKLOAD_RG = (azd env get-value AZURE_RESOURCE_GROUP).Trim()
+$LOG_ANALYTICS_ID = (azd env get-value LOG_ANALYTICS_WORKSPACE_ID).Trim()
+$WORKLOAD_APP_INSIGHTS_NAME = (azd env get-value APPLICATIONINSIGHTS_NAME).Trim()
+Pop-Location
 ```
 
-Classify the blind spot as configuration, authentication, authorization, network, schema, source-data, or freshness failure. State how it limits the incident diagnosis, which alternate evidence remains available, who owns the failed source, and what proof would restore confidence. Do not call a source healthy merely because it exists in configuration.
+Confirm the active subscription and all four resolved values before making data-plane calls:
+
+```powershell
+az account show --query '{Subscription:name,SubscriptionId:id,Tenant:tenantId}' -o table
+
+[pscustomobject]@{
+	AgentId             = $AGENT_ID
+	WorkloadGroup       = $WORKLOAD_RG
+	LogAnalyticsId      = $LOG_ANALYTICS_ID
+	WorkloadAppInsights = $WORKLOAD_APP_INSIGHTS_NAME
+} | Format-List
+```
+
+Stop if any value is empty or does not belong to the isolated `signalops-core` environment.
+
+### Part 2 — Inventory Configured Connectors Through ARM
+
+Use the same current ARM API version as Missions 02 and 04:
+
+```powershell
+$API_VERSION = '2026-01-01'
+$CONNECTOR_URL = "https://management.azure.com$AGENT_ID/connectors?api-version=$API_VERSION"
+
+az rest --method GET --url $CONNECTOR_URL `
+	--query 'value[].{Name:name,Type:properties.dataConnectorType,State:properties.provisioningState,Source:properties.dataSource}' -o table
+```
+
+The expected configured connectors are `log-analytics` and `application-insights`. A `Succeeded` provisioning state proves only that the connector resource exists; it does not prove a current evidence read.
+
+Capture the connector records so their source IDs can be compared with the azd environment:
+
+```powershell
+$CONNECTORS = az rest --method GET --url $CONNECTOR_URL | ConvertFrom-Json
+$CONNECTORS.value | Select-Object name,
+	@{Name='Type';Expression={$_.properties.dataConnectorType}},
+	@{Name='State';Expression={$_.properties.provisioningState}},
+	@{Name='Source';Expression={$_.properties.dataSource}} |
+	Format-Table -AutoSize
+```
+
+Check that the Log Analytics connector targets the expected workspace:
+
+```powershell
+$LOG_CONNECTOR = $CONNECTORS.value |
+	Where-Object { $_.properties.dataConnectorType -eq 'LogAnalytics' } |
+	Select-Object -First 1
+
+[pscustomobject]@{
+	ConfiguredSource = $LOG_CONNECTOR.properties.dataSource
+	ExpectedSource   = $LOG_ANALYTICS_ID
+	SourceMatches    = $LOG_CONNECTOR.properties.dataSource -eq $LOG_ANALYTICS_ID
+} | Format-List
+```
+
+Inspect the Application Insights connector source independently:
+
+```powershell
+$APP_CONNECTOR = $CONNECTORS.value |
+	Where-Object { $_.properties.dataConnectorType -eq 'AppInsights' } |
+	Select-Object -First 1
+
+[pscustomobject]@{
+	Name   = $APP_CONNECTOR.name
+	State  = $APP_CONNECTOR.properties.provisioningState
+	Source = $APP_CONNECTOR.properties.dataSource
+} | Format-List
+```
+
+### Part 3 — Compare the Live Data-Plane Inventory
+
+Discover the deployed endpoint rather than copying it from a previous mission:
+
+```powershell
+$AGENT = az rest --method GET --url "https://management.azure.com$AGENT_ID`?api-version=$API_VERSION" | ConvertFrom-Json
+$AGENT_ENDPOINT = $AGENT.properties.agentEndpoint.TrimEnd('/')
+$AGENT_ENDPOINT
+```
+
+Request a short-lived SRE Agent token and keep it only in the current process:
+
+```powershell
+$TOKEN = (az account get-access-token --resource https://azuresre.dev --query accessToken -o tsv).Trim()
+$HEADERS = @{ Authorization = "Bearer $TOKEN" }
+```
+
+Do not display `$TOKEN`, write it to disk, or save it in the azd environment.
+
+List connectors exposed by the live data plane:
+
+```powershell
+Invoke-RestMethod -Uri "$AGENT_ENDPOINT/api/v2/extendedAgent/connectors" -Headers $HEADERS -Method Get |
+	ConvertTo-Json -Depth 10
+```
+
+Record any connector that exists in ARM but is absent from the data-plane response as a configuration or synchronization blind spot. Do not report repository examples as live connectors.
+
+### Part 4 — Prove Log Analytics Reachability and Freshness
+
+Resolve the workspace customer ID from the expected resource:
+
+```powershell
+$LOG_WORKSPACE = az monitor log-analytics workspace show --ids $LOG_ANALYTICS_ID | ConvertFrom-Json
+$LOG_WORKSPACE_CUSTOMER_ID = $LOG_WORKSPACE.customerId
+
+$LOG_WORKSPACE | Select-Object name, resourceGroup, location, provisioningState, customerId |
+	Format-List
+```
+
+Run a harmless query over the last 30 minutes. A successful query with zero rows proves authorization and query execution, but it does not prove fresh application telemetry:
+
+```powershell
+$LOG_QUERY = @'
+ContainerAppConsoleLogs_CL
+| where TimeGenerated > ago(30m)
+| summarize Rows=count(), Latest=max(TimeGenerated)
+'@
+
+az monitor log-analytics query --workspace $LOG_WORKSPACE_CUSTOMER_ID `
+	--analytics-query $LOG_QUERY -o table
+```
+
+Record the query time so freshness can be assessed rather than assumed:
+
+```powershell
+$LOG_CHECKED_AT = (Get-Date).ToUniversalTime()
+$LOG_CHECKED_AT.ToString('yyyy-MM-ddTHH:mm:ssZ')
+```
+
+### Part 5 — Prove Application Insights Reachability and Freshness
+
+Resolve the connector's actual `dataSource` resource. Do not assume it is the workload component:
+
+```powershell
+$APP_SOURCE_ID = $APP_CONNECTOR.properties.dataSource
+$APP_SOURCE = az resource show --ids $APP_SOURCE_ID | ConvertFrom-Json
+
+$APP_SOURCE | Select-Object name, resourceGroup, location, provisioningState, id |
+	Format-List
+```
+
+Compare the connector source with the workload Application Insights component. They can be different resources with different telemetry purposes:
+
+```powershell
+[pscustomobject]@{
+	ConnectorSource       = $APP_SOURCE_ID
+	WorkloadComponentName = $WORKLOAD_APP_INSIGHTS_NAME
+	WorkloadResourceGroup = $WORKLOAD_RG
+} | Format-List
+```
+
+Run a harmless request query against the connector's configured source over the last 30 minutes:
+
+```powershell
+$APP_QUERY = @'
+requests
+| where timestamp > ago(30m)
+| summarize Rows=count(), Latest=max(timestamp), Failures=countif(success == false)
+'@
+
+az monitor app-insights query --resource-group $APP_SOURCE.resourceGroup --app $APP_SOURCE.name `
+	--analytics-query $APP_QUERY -o table
+```
+
+Record the second check time separately:
+
+```powershell
+$APP_CHECKED_AT = (Get-Date).ToUniversalTime()
+$APP_CHECKED_AT.ToString('yyyy-MM-ddTHH:mm:ssZ')
+```
+
+If the query succeeds but `Latest` is empty or older than the investigation window, classify the issue as a source-data or freshness blind spot. A healthy resource and successful authentication do not make stale evidence current.
+
+### Part 6 — Classify the Blind Spot
+
+Use one observed failure from the preceding commands. If every live check succeeds with fresh data, ask your coach for a labeled failed-read result; do not disable or misconfigure a connector to manufacture an incident.
+
+Record the evidence matrix in your notes:
+
+| Source | Configured | Authenticated | Authorized read | Reachable | Latest evidence (UTC) | Allowed action | Result |
+|---|---|---|---|---|---|---|---|
+| Log Analytics |  |  |  |  |  | Read-only query |  |
+| Application Insights |  |  |  |  |  | Read-only query |  |
+| Agent Memory | Verified in Mission 04 |  |  |  | Indexing time | Read-only retrieval |  |
+
+Classify the selected blind spot as one of these types:
+
+- `configuration` — expected connector or source ID is missing or incorrect
+- `authentication` — no valid identity or token can be established
+- `authorization` — identity is valid but the harmless read is denied
+- `network` — the endpoint cannot be reached
+- `schema` — the source is reachable but the expected table or fields cannot be queried
+- `source-data` — the query works but the required evidence is absent
+- `freshness` — evidence exists but is too old for the incident decision
+
+### Part 7 — Ask the SRE Agent to Bound Its Conclusion
+
+Open the deployed SRE Agent:
+
+```powershell
+Start-Process $AGENT_ENDPOINT
+```
+
+Submit this prompt with your observed timestamps and failed-read details filled in:
+
+> Continue the Grubify investigation from the memory incident. Build an evidence matrix for Log Analytics, Application Insights, and Agent Memory. For each source, state configuration, authentication, authorization, reachability, latest evidence time, and allowed actions. Classify this failed or stale read: `<paste the sanitized result>`. Explain what cannot be concluded, which alternate evidence can discriminate next, who owns restoration, and what proof would restore confidence. Do not invent evidence or perform a write.
+
+Compare the response with the command output. The agent must lower confidence or stop when the missing evidence is required for a safe diagnosis.
+
+Remove the short-lived token when the exercise is complete:
+
+```powershell
+Remove-Variable TOKEN
+$HEADERS = $null
+```
 
 ## Success Criteria
 
+- [ ] ARM inventory and data-plane inventory are checked separately with the current `2026-01-01` API version
+- [ ] Log Analytics and Application Insights each have an individual harmless read and UTC freshness timestamp
 - [ ] The incident identifies the required evidence source and the failed or stale read that created the blind spot
-- [ ] Each relevant source has an observed reachability test, timestamp, freshness assessment, and authorization scope
+- [ ] Each relevant source has an observed reachability result, freshness assessment, and authorization scope
 - [ ] The failure is classified without exposing credentials or inventing evidence
 - [ ] The SRE Agent states the diagnostic limitation, alternate evidence path, owner, and recovery proof
 - [ ] **Explain to your coach** — when should an SRE continue with partial evidence, and when should the investigation stop or escalate?
@@ -50,3 +264,4 @@ Classify the blind spot as configuration, authentication, authorization, network
 - Use read-only calls for evidence validation.
 - Never print connector secrets or bearer tokens.
 - A successful stale read is still an incident evidence risk.
+- An ARM `Succeeded` state proves deployment, not data-plane access or evidence freshness.

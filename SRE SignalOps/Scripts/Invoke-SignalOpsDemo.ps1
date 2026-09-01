@@ -1,7 +1,7 @@
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [Parameter(Mandatory)]
-    [ValidateSet('00','01','02','05','06','07','08','09','10','11','12','13','14')]
+    [ValidateSet('00','01','02','06','07','08','09','10','11','12','13','14')]
     [string]$Challenge,
     [switch]$Execute,
     [switch]$Restore,
@@ -186,13 +186,6 @@ switch ($Challenge) {
         az containerapp list --resource-group $workloadResourceGroup --query '[].{name:name,state:properties.runningStatus,fqdn:properties.configuration.ingress.fqdn}' -o table
         Write-Expected 'The two azd-managed Azure telemetry connectors are visible; repository and knowledge state is reported independently.'
         Write-Prompt 'List the currently proven evidence planes. Distinguish deployed connector infrastructure from populated source and knowledge evidence.'
-    }
-    '05' {
-        $context = Get-AgentContext
-        $headers = @{ Authorization = "Bearer $($context.Token)" }
-        Invoke-RestMethod -Uri "$($context.Endpoint)/api/v2/extendedAgent/connectors" -Headers $headers | ConvertTo-Json -Depth 8
-        Write-Expected 'Every live connector has a type and current state; reference manifests are not reported as live systems.'
-        Write-Prompt 'Build a connector matrix with authentication, authorization, reachable tools, freshness, and one harmless read test. Separate configured from proven connectivity.'
     }
     '06' {
         $context = Get-AgentContext
