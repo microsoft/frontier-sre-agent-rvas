@@ -1,62 +1,44 @@
 [< Previous Solution](./Solution-12.md) | **[Home](./README.md)** | [Next Solution >](./Solution-14.md)
 
-# Coach Guide — Challenge 13: Resolve a Critical Assurance Risk
+# Coach Guide — Challenge 13: Investigate a Routing Black Hole
 
 ## Purpose
 
-- Detect a critical observability, backup, capacity, cost, or governance assurance issue before it becomes a customer-facing incident.
-- Turn the selected issue into an owned, approval-gated remediation and validation plan.
-- Expected time: 20–25 minutes.
+Coach a dependency failure that persists after NSG clearance, prove the asymmetric route, and validate bidirectional application recovery. Expected time: 25–30 minutes.
 
 ## Mini-Lecture (5 min before challenge)
 
-- A service can be available while its ability to detect, absorb, or recover from the next failure is degraded.
-- Strong preventive SRE work combines inventory, spend, utilization, Advisor, monitoring, protection, and workload context.
-- The highest-priority assurance issue is selected by customer consequence and evidence, not cost alone.
-- Discovery remains read-only until ownership, approval, rollback, and validation are explicit.
+- A previously rejected security hypothesis should remain rejected unless new evidence changes it.
+- Azure selects effective routes by longest prefix, then route source; asymmetric paths can fail despite a valid forward route.
+- Route correction is incomplete until the original application path and both network directions recover.
 
 ## Expected Student Output
 
-- A declared subscription and resource scope.
-- At least three prioritized assurance issues supported by multiple evidence sources.
-- One selected issue with customer consequence, confidence, owner, approval, remediation, rollback, and validation.
-- A recurring detection cadence that would reveal recurrence.
+- Separate forward and return effective-route decisions with next-hop evidence.
+- A named root-cause route, rejected DNS/NSG/NVA alternatives, and a narrow reversible correction.
+- Recovery proof and restoration of every injected route change.
 
 ## Coach Runbook
 
-1. Require the student to declare subscriptions, resource groups, time window, and inaccessible evidence before analysis.
-2. Check that each issue uses at least two evidence planes and names the affected resource, customer consequence, and owner.
-3. Select the highest-priority issue and require approval, reversible remediation, rollback trigger, validation, and recurrence detection.
-4. End by confirming no writes occurred and the issue is planned, not falsely reported as resolved.
+1. Present the continuing dependency failure, confirm the sandbox, and record the injected route state so it can be restored.
+2. Require effective NIC routes and next-hop checks for both directions; route-table definitions alone are insufficient.
+3. Challenge DNS, NSG, and NVA hypotheses with one discriminating check each.
+4. After correction, rerun connectivity and route evidence, then verify the injected state is fully restored.
 
 ## Common Issues and Hints
 
-- **Symptom:** The report only paraphrases Azure Advisor. **Fix:** require inventory, utilization, backup, alert, telemetry-freshness, and workload-impact evidence.
-- **Symptom:** Cost data is unavailable. **Fix:** report the permission gap and continue with technical optimization evidence.
-- **Symptom:** The agent recommends deleting or downsizing a critical resource. **Fix:** apply the knowledge document’s criticality and recovery objectives before prioritization.
-- **Symptom:** The student calls the selected risk resolved. **Fix:** distinguish a governed remediation plan from an executed and validated change.
+- **Symptom:** Only route-table definitions are shown. **Fix:** inspect effective NIC routes.
+- **Symptom:** Forward path works but app fails. **Fix:** prove the return path.
+- **Symptom:** DNS is assumed healthy. **Fix:** test and reject it with evidence.
 
 ## Debrief Discussion Guide
 
-- Why is an assurance gap an SRE issue before an outage? → It raises the probability, duration, or uncertainty of future customer impact.
-- Which preventive actions can be automated safely? → Low-blast-radius, reversible changes with strong validation and clear ownership.
-- What proves preventive resolution? → The missing or degraded control is restored, tested, monitored for recurrence, and does not reduce service reliability.
+1. Why can portal configuration mislead? → A route table shows intent; effective NIC routes show the combined decision actually applied.
+2. What creates asymmetry? → Different effective routes, longest-prefix matches, propagation paths, or middleboxes in each direction.
+3. Which checks prove recovery? → Bidirectional next-hop evidence plus the original application connectivity test.
 
 ## Success Criteria Notes
 
-- **Require:** declared scope, multi-source evidence, a selected assurance issue, ownership, governed remediation, rollback, validation, and confirmation that no writes occurred.
-- **Reject:** Advisor paraphrases presented as analysis, cost-only prioritization, or a planned change reported as completed resolution.
-- **Accept:** fewer findings in a small environment and documented permission gaps when uncertainty remains explicit.
-
-## Solution
-
-Ask the SRE Agent to run a recommendation-only assurance review across every accessible lab subscription. Require these evidence planes:
-
-1. Resource Graph inventory and orphan checks.
-2. Cost Management spend where permissions allow.
-3. Azure Monitor utilization and telemetry freshness.
-4. Azure Advisor recommendations.
-5. Backup and alert coverage for critical workloads.
-6. Knowledge-base criticality, ownership, RTO, and RPO.
-
-Require one de-duplicated table with scope, evidence, customer consequence, value, risk, confidence, effort, trade-off, owner, and approval requirement. Select one issue and add reversible remediation, rollback trigger, validation, and recurrence detection. End with an explicit statement that no resources were changed and the issue is not yet resolved.
+- **Require:** both path directions, rejected alternatives, narrow correction, recovery proof, and full fault restoration.
+- **Reject:** forward-path-only analysis or fixation on an NVA that no effective route selects.
+- **Accept:** a supplied evidence pack if no safe network sandbox exists.

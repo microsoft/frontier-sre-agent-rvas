@@ -1,51 +1,53 @@
 [< Previous Challenge](./Challenge-10.md) — **[Home](./README.md)** — [Next Challenge >](./Challenge-12.md)
 
-# Challenge 11 — Heartbeat Triage and Deep RCA
+# Challenge 11 — Scope Impact with Dependency Evidence
 
-> **Incident capability exercised in this challenge**: Missing-Heartbeat Triage · Hypothesis Testing · Recovery Proof
+> **Incident capability exercised in this challenge**: Dependency Evidence · Blast-Radius Analysis · Critical Path
 
 ## Introduction
 
-A monitored VM stops sending heartbeats, but the alert does not explain whether the VM, monitoring agent, or telemetry path failed. Simulate that incident and use the SRE Agent to distinguish symptom from root cause, recommend a safe response, and prove recovery with current Azure state and telemetry.
+During an availability incident, responders need to know whether one endpoint, one dependency, or the whole service is affected. Use observed Grubify telemetry to bound customer impact and identify the next dependency to test.
 
 ## Description
 
-> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-11.ps1' -WorkspaceId '<workspace-id>' -VmResourceId '<resource-id>'`. Lab VM changes require `-Execute`; recovery requires `-Restore`. See the [presenter runbook](./Scripts/README.md).
+> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-11.ps1'` to generate API traffic and query Application Insights. See the [presenter runbook](./Scripts/README.md).
 
-The Grubify deployment does not create a VM or Azure Monitor Agent. Complete this mission in one of two supported modes:
+Use this exercise symptom without injecting a fault:
 
-- **Live mode:** use a coach-provided lab VM with Azure Monitor Agent, a data collection rule, and recent `Heartbeat` records in the connected Log Analytics workspace.
-- **Evidence-pack mode:** use a coach-provided alert, heartbeat timeline, VM power-state evidence, Activity Log evidence, and agent-health snapshot. Simulate routing and recovery; do not claim that a live alert fired.
+> **EXERCISE:** Grubify meal search is failing for some users while the main site remains reachable. Identify the affected critical path, likely blast radius, and strongest next check.
 
-Keep the exercise scoped to that single VM and achieve these outcomes:
+Ask the SRE Agent to map the frontend, API, downstream services, data stores, and Azure platform dependencies relevant to that user journey. Each edge must include direction, protocol, observed timestamp, request volume, latency, failure rate, and evidence source.
 
-- Create an enabled heartbeat alert that evaluates every 5 minutes over a 15-minute window and fires when the selected VM reports no heartbeat.
-- Route the alert to the Azure SRE Agent through the existing Azure Monitor incident connection and a dedicated response plan.
-- Safely create a missing-heartbeat condition on the lab VM, then observe the alert and SRE investigation.
-- Ask the agent for a deep RCA containing a timeline, evidence matrix, competing hypotheses, rejected hypothesis, root-cause assessment, contributing factors, confidence level, and recommended recovery action.
-- Restore the VM or monitoring path and confirm that heartbeat data resumes and the alert resolves.
+Use Application Insights to validate the graph. Where telemetry is absent, label the edge **documented but unobserved** rather than inventing data.
 
-Do not make the response plan restart or modify the VM automatically. Investigation and recommendation are sufficient for this customer-friendly exercise.
+Challenge 00 instruments the Grubify API for request, exception, and dependency telemetry. The browser frontend is not instrumented, and the sample API currently uses in-memory data rather than an external database. Expect the observed map to be smaller than the intended architecture; generate API traffic before judging coverage.
+
+Require four incident outputs:
+
+1. A dependency diagram.
+2. A table of observed edges.
+3. The affected user-facing critical path and bounded blast radius.
+4. Coverage gaps and the next discriminating check that would strengthen the diagnosis.
+
+Do not claim that the exercise symptom is present unless telemetry confirms it. A healthy baseline is still useful: report the issue as not reproduced, identify what would be monitored during recurrence, and preserve the dependency evidence for the network investigations that follow.
 
 ## Success Criteria
 
-- [ ] Live mode has one enabled heartbeat alert with the required scope and timing; evidence-pack mode identifies the supplied rule and labels the run as an exercise
-- [ ] A live or simulated incident is routed to the intended SRE Agent response plan and accurately labeled
-- [ ] The SRE Agent correlates missing heartbeat data with current VM state and monitoring status
-- [ ] The RCA clearly separates observed symptoms, supporting evidence, likely root cause, contributing factors, confidence, and next action
-- [ ] The RCA compares at least two plausible hypotheses and explains why one was rejected
-- [ ] Live mode proves resumed heartbeat and alert resolution; evidence-pack mode states the exact evidence required to prove recovery
-- [ ] **Explain to your coach** — why is “heartbeat missing” a symptom rather than a root cause, and what additional evidence would increase your confidence in the diagnosis?
+- [ ] Every incident-relevant edge is observed or explicitly labeled unobserved
+- [ ] The affected critical path and likely blast radius are bounded without overstating the evidence
+- [ ] Latency, volume, and failure evidence support each health claim
+- [ ] The result states whether the issue was reproduced and identifies the next discriminating check
+- [ ] Telemetry gaps that weaken diagnosis are explicit
+- [ ] **Explain to your coach** — how does dependency evidence prevent an SRE from changing a healthy component during an incident?
 
 ## Learning Resources
 
-- [Azure Monitor log search alerts](https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-create-log-alert-rule)
-- [Azure Monitor Agent overview](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-overview)
-- [Azure Monitor alerts and state](https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview)
-- [Automate incident response with Azure SRE Agent](https://learn.microsoft.com/en-us/azure/sre-agent/automate-incidents)
+- [Application Map in Application Insights](https://learn.microsoft.com/en-us/azure/azure-monitor/app/app-map)
+- [Application Insights dependency telemetry](https://learn.microsoft.com/en-us/azure/azure-monitor/app/dependencies)
+- [Distributed tracing concepts](https://learn.microsoft.com/en-us/azure/azure-monitor/app/distributed-trace-data)
 
 ## Tips
 
-- Confirm that the VM has recent heartbeat records before creating the failure condition. A missing baseline is a monitoring setup issue, not an incident.
-- Compare the alert timestamp with VM power-state changes and the most recent heartbeat timestamp.
-- A strong RCA states uncertainty. Do not call a stopped VM a monitoring-agent failure unless the evidence supports it.
+- Architecture describes intent; telemetry describes observed behavior.
+- Preserve resource IDs and timestamps.
+- Do not infer a dependency from naming alone.

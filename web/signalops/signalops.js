@@ -6,17 +6,17 @@ const missions = [
     ['04', 'Bootstrap', 'Build Grubify Knowledge and Incident Memory', 'Upload approved Grubify knowledge, verify indexing, and inspect memory-first specialist instructions.', '20–30 min', ['Agent Memory', 'Knowledge', 'Indexing']],
     ['05', 'Wire', 'Investigate an Evidence Blind Spot', 'Validate each telemetry source, classify a failed or stale read, and choose a safe fallback or escalation.', '20–25 min', ['Evidence', 'Freshness', 'Escalation']],
     ['06', 'Wire', 'Route a Cross-Domain Incident', 'Compare live specialists with desired state, then route application and network evidence without losing ownership.', '20–25 min', ['Routing', 'Handoffs', 'Ownership']],
-    ['07', 'Wire', 'Exercise a Guarded HTTP-Error Response', 'Verify HTTP-error routing, gather current evidence, and exercise proposal-only stop and recovery criteria.', '25–30 min', ['HTTP errors', 'Routing', 'Recovery']],
-    ['08', 'Trace', 'Scope Impact with Dependency Evidence', 'Bound the affected Grubify user journey and identify the next discriminating check.', '20–25 min', ['Dependencies', 'Blast radius', 'Telemetry']],
-    ['09', 'Trace', 'Investigate a Network Security Failure', 'Find the NSG decision that blocks an application dependency.', '25–30 min', ['NSG', 'Flow Logs', 'Blast radius']],
-    ['10', 'Trace', 'Investigate a Routing Black Hole', 'Use effective routes and next-hop evidence to expose asymmetric routing.', '25–30 min', ['UDR', 'Next hop', 'Routing']],
-    ['11', 'Operate', 'Heartbeat Triage and Deep RCA', 'Separate symptom from cause and defend an evidence-backed RCA.', '20–25 min', ['Heartbeat', 'Triage', 'RCA']],
-    ['12', 'Operate', 'Improve the Next Heartbeat Response', 'Replay the incident with verified context while keeping current evidence authoritative.', '20–25 min', ['Context', 'Learning', 'Evidence']],
-    ['13', 'Operate', 'Resolve a Critical Assurance Risk', 'Find a critical preventive issue and define owned remediation, rollback, and validation.', '20–25 min', ['Assurance', 'Prevention', 'Governance']],
-    ['14', 'Operate', 'Resolve a Backup Assurance Incident', 'Triage recoverability risk, communicate impact, and validate service after recovery.', '20–25 min', ['Azure Backup', 'Communication', 'Recovery']]
+    ['07', 'Operate', 'Heartbeat Triage and Deep RCA', 'Separate symptom from cause and defend an evidence-backed RCA.', '20–25 min', ['Heartbeat', 'Triage', 'RCA']],
+    ['08', 'Operate', 'Improve the Next Heartbeat Response', 'Replay the incident with verified context while keeping current evidence authoritative.', '20–25 min', ['Context', 'Learning', 'Evidence']],
+    ['09', 'Operate', 'Resolve a Backup Assurance Incident', 'Triage recoverability risk, communicate impact, and validate service after recovery.', '20–25 min', ['Azure Backup', 'Communication', 'Recovery']],
+    ['10', 'Wire', 'Exercise a Guarded HTTP-Error Response', 'Verify HTTP-error routing, gather current evidence, and exercise proposal-only stop and recovery criteria.', '25–30 min', ['HTTP errors', 'Routing', 'Recovery']],
+    ['11', 'Trace', 'Scope Impact with Dependency Evidence', 'Bound the affected Grubify user journey and identify the next discriminating check.', '20–25 min', ['Dependencies', 'Blast radius', 'Telemetry']],
+    ['12', 'Trace', 'Investigate a Network Security Failure', 'Find the NSG decision that blocks an application dependency.', '25–30 min', ['NSG', 'Flow Logs', 'Blast radius']],
+    ['13', 'Trace', 'Investigate a Routing Black Hole', 'Use effective routes and next-hop evidence to expose asymmetric routing.', '25–30 min', ['UDR', 'Next hop', 'Routing']],
+    ['14', 'Operate', 'Resolve a Critical Assurance Risk', 'Find a critical preventive issue and define owned remediation, rollback, and validation.', '20–25 min', ['Assurance', 'Prevention', 'Governance']]
 ];
 
-const contentVersion = '10';
+const contentVersion = '11';
 
 const labDetails = {
     number: 'LAB',

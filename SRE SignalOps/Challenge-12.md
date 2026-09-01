@@ -1,45 +1,55 @@
 [< Previous Challenge](./Challenge-11.md) — **[Home](./README.md)** — [Next Challenge >](./Challenge-13.md)
 
-# Challenge 12 — Improve the Next Heartbeat Response
+# Challenge 12 — Investigate a Network Security Failure
 
-> **Incident capability exercised in this challenge**: Operational Context · Repeat-Incident Learning · Evidence Precedence
+> **Incident capability exercised in this challenge**: Security-Rule Diagnosis · Blast-Radius Control · Safe Recovery
 
 ## Introduction
 
-Replay the missing-heartbeat incident after adding verified workload context and one confirmed lesson from the first response. Determine whether the SRE Agent identifies impact, ownership, recovery objectives, and escalation faster without allowing stale knowledge to override current evidence.
+Grubify cannot reach one required dependency, but other paths remain healthy. Investigate whether an effective NSG decision explains the timeout, reject competing causes, and recover only the affected flow without weakening unrelated protections.
 
 ## Description
 
-> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-12.ps1'` to list agent memory, create a safe knowledge draft, and print the grounded prompt. See the [presenter runbook](./Scripts/README.md).
+> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-12.ps1' -ResourceGroup '<sandbox-rg>' -NicName '<nic>'`. See the [presenter runbook](./Scripts/README.md).
 
-Use the heartbeat incident from Challenge 11 as a clearly labeled replay and achieve these outcomes:
+This mission requires an existing hub-spoke network sandbox with Network Watcher and flow telemetry. The `azd` Grubify deployment from Challenge 00 does not create that network. Use a coach-provided sandbox or skip fault injection and analyze a supplied incident snapshot.
 
-- Replay the original incident question before adding any custom knowledge and capture the response as a baseline.
-- Create one concise knowledge document containing workload purpose, architecture, owner, criticality, heartbeat expectation, maintenance window, escalation path, RTO, RPO, and approved investigation boundaries.
-- Add the document to the SRE Agent knowledge base and ask the same question again.
-- Identify which statements came from live Azure evidence and which came from the knowledge document.
-- Add one verified lesson from the heartbeat incident, then replay the question and confirm that the later response uses the lesson without substituting history for current investigation.
+Create or receive a known NSG deny condition on one dependency edge from the map. Keep the incident labeled `EXERCISE` unless a genuine lab alert exists. Ask the SRE Agent to correlate:
 
-Do not store credentials, access tokens, personal contact details, or unverified incident assumptions in the knowledge document. Context can guide interpretation, but current evidence remains authoritative.
+- source and destination addresses, ports, and direction;
+- NSG association and effective security rules;
+- matching allow and deny priorities;
+- flow-log or Traffic Analytics evidence;
+- affected and unaffected dependencies;
+- minimum safe remediation and rollback.
+
+Use PowerShell to inspect effective rules on the selected NIC:
+
+```powershell
+$ResourceGroup = '<network-sandbox-rg>'
+$NicName = '<affected-nic>'
+az network nic list-effective-nsg --resource-group $ResourceGroup --name $NicName -o jsonc
+```
+
+Do not remove a broad deny rule. Propose the smallest scoped correction and require approval before any write.
 
 ## Success Criteria
 
-- [ ] A before-and-after incident replay shows that the knowledge document materially improves impact, ownership, recovery, or escalation reasoning
-- [ ] The document contains operational context, ownership, recovery objectives, and investigation boundaries
-- [ ] The grounded response cites or clearly attributes the custom knowledge it used
-- [ ] The response distinguishes live evidence from organizational context and identifies any conflict between them
-- [ ] One verified incident lesson is added and appears in a later grounded response
-- [ ] **Explain to your coach** — how can a verified incident lesson speed future response without becoming a shortcut that biases the diagnosis?
+- [ ] The exact effective rule and priority are identified
+- [ ] Flow evidence agrees with the rule evaluation
+- [ ] Blast radius includes affected and unaffected paths
+- [ ] The SRE Agent rejects at least one plausible non-NSG cause with evidence
+- [ ] Remediation is minimal, approval-gated, reversible, and followed by recovery and regression checks
+- [ ] **Explain to your coach** — why is deleting the blocking rule usually less safe than introducing a narrowly scoped higher-priority rule?
 
 ## Learning Resources
 
-- [Connect knowledge sources to Azure SRE Agent](https://learn.microsoft.com/en-us/azure/sre-agent/connect-knowledge)
-- [Knowledge source concepts in Azure AI Search](https://learn.microsoft.com/en-us/azure/search/search-knowledge-source-overview)
-- [Reliability guidance in the Azure Well-Architected Framework](https://learn.microsoft.com/en-us/azure/well-architected/reliability/)
-- [Azure Monitor data platform](https://learn.microsoft.com/en-us/azure/azure-monitor/data-platform)
+- [Diagnose NSG traffic filtering](https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem)
+- [Effective security rules](https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works)
+- [Virtual network flow logs](https://learn.microsoft.com/en-us/azure/network-watcher/vnet-flow-logs-overview)
 
 ## Tips
 
-- Use the exact same question before and after adding knowledge; otherwise the comparison is weak.
-- Keep durable policy and architecture in knowledge. Keep transient resource state in Azure Monitor and Resource Graph.
-- Record only a verified lesson. A plausible but unconfirmed RCA should remain a hypothesis, not become institutional knowledge.
+- Use only a disposable lab sandbox for fault injection.
+- Effective rules matter more than the rule you expected to apply.
+- Restore the sandbox before leaving the mission.

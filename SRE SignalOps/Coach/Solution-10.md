@@ -1,44 +1,54 @@
 [< Previous Solution](./Solution-09.md) | **[Home](./README.md)** | [Next Solution >](./Solution-11.md)
 
-# Coach Guide — Challenge 10: Investigate a Routing Black Hole
+# Coach Guide — Challenge 10: Exercise a Guarded HTTP-Error Response
 
 ## Purpose
 
-Coach a dependency failure that persists after NSG clearance, prove the asymmetric route, and validate bidirectional application recovery. Expected time: 25–30 minutes.
+Coach a Grubify HTTP-error incident from routing verification through evidence, a proposal-only response, recovery validation, and escalation. Expected time: 25–30 minutes.
 
 ## Mini-Lecture (5 min before challenge)
 
-- A previously rejected security hypothesis should remain rejected unless new evidence changes it.
-- Azure selects effective routes by longest prefix, then route source; asymmetric paths can fail despite a valid forward route.
-- Route correction is incomplete until the original application path and both network directions recover.
+- Workflow completion is not incident resolution; service recovery evidence is the closure condition.
+- A trustworthy response gathers enough evidence to bound action risk before proposing any action.
+- Missing evidence, an attempted write, failed action, and failed validation must lead to an explicit stop or escalation.
 
 ## Expected Student Output
 
-- Separate forward and return effective-route decisions with next-hop evidence.
-- A named root-cause route, rejected DNS/NSG/NVA alternatives, and a narrow reversible correction.
-- Recovery proof and restoration of every injected route change.
+- Separate observations for ARM incident wiring, desired filter state, live filter registration, and Mission 03 alert compatibility.
+- An explicit registration-gap result when `/incidentFilters` returns an empty `value` collection.
+- An explicit mismatch showing that the Mission 03 `Sev2` rule name does not satisfy desired `Sev1` plus `titleContains: food` conditions.
+- A genuine incident only when registration, matching, and intake are all observed; otherwise a clearly labeled tabletop.
+- An observed timeline from intake through evidence, classification, proposal-only boundary, validation criteria, and escalation.
+- A bounded response proposal with risk, rollback, and measurable service recovery checks.
 
 ## Coach Runbook
 
-1. Present the continuing dependency failure, confirm the sandbox, and record the injected route state so it can be restored.
-2. Require effective NIC routes and next-hop checks for both directions; route-table definitions alone are insufficient.
-3. Challenge DNS, NSG, and NVA hypotheses with one discriminating check each.
-4. After correction, rerun connectivity and route evidence, then verify the injected state is fully restored.
+1. Have the participant run each command from Challenge 10 directly; there is no wrapper script.
+2. Verify ARM reports `AzMonitor`/`azmonitor` and record that the deployed agent is `Autonomous/High`, not approval-gated.
+3. Compare the desired `sample-food-http-errors` manifest with the live data-plane filter collection. The prepared environment may return `{ value: [], nextLink: null }`.
+4. Compare the Mission 03 rule with both routing predicates. Its severity `2` and name without `food` do not match the desired filter.
+5. Require current API health and Azure Monitor metrics before any response proposal.
+6. Run only a labeled proposal exercise unless live registration, alert matching, and observed intake are all proven.
+7. Exercise missing-evidence, failed-action, and failed-validation branches without executing a write.
+8. Treat any closure without service-level evidence as a failed exercise.
 
 ## Common Issues and Hints
 
-- **Symptom:** Only route-table definitions are shown. **Fix:** inspect effective NIC routes.
-- **Symptom:** Forward path works but app fails. **Fix:** prove the return path.
-- **Symptom:** DNS is assumed healthy. **Fix:** test and reject it with evidence.
+- **Symptom:** `/incidentFilters` returns `{ value: [], nextLink: null }`. **Fix:** record a registration gap and continue only as a labeled desired-state tabletop.
+- **Symptom:** The Mission 03 alert does not route. **Fix:** show that `Sev2` and a rule name without `food` fail the desired `Sev1` and title predicates; do not mutate either resource.
+- **Symptom:** Data-plane request returns `401`. **Fix:** reacquire the short-lived token for `https://azuresre.dev`; never print or persist it.
+- **Symptom:** The student waits for approval. **Fix:** ARM reports `Autonomous/High`; enforce a proposal-only prompt and do not request execution.
+- **Symptom:** Action is proposed before evidence. **Fix:** require current health, 5xx, memory, and restart observations first.
+- **Symptom:** Plan closes immediately after simulated action. **Fix:** require HTTP `200`, no new 5xx buckets, and stable restart evidence.
 
 ## Debrief Discussion Guide
 
-1. Why can portal configuration mislead? → A route table shows intent; effective NIC routes show the combined decision actually applied.
-2. What creates asymmetry? → Different effective routes, longest-prefix matches, propagation paths, or middleboxes in each direction.
-3. Which checks prove recovery? → Bidirectional next-hop evidence plus the original application connectivity test.
+1. What guards this exercise when the agent is `Autonomous/High`? → Explicit proposal-only instructions, no execution request, and immediate stop on attempted writes.
+2. What should trigger escalation? → Missing evidence, an attempted write, failed action, failed validation, or ownership/RTO breach.
+3. How is closure proven? → The original signal clears and the affected Grubify user journey succeeds within expected service thresholds.
 
 ## Success Criteria Notes
 
-- **Require:** both path directions, rejected alternatives, narrow correction, recovery proof, and full fault restoration.
-- **Reject:** forward-path-only analysis or fixation on an NVA that no effective route selects.
-- **Accept:** a supplied evidence pack if no safe network sandbox exists.
+- **Require:** separate wiring/filter/alert evidence, accurate match determination, current evidence before proposal, no-write behavior, recovery validation, and escalation logic.
+- **Reject:** wrapper use, desired state presented as live, a mismatched alert presented as routed, action execution, or closure immediately after action.
+- **Accept:** a tabletop when it remains clearly labeled and uses live configuration and workload evidence.

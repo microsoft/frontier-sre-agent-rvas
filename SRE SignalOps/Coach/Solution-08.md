@@ -1,46 +1,81 @@
 [< Previous Solution](./Solution-07.md) | **[Home](./README.md)** | [Next Solution >](./Solution-09.md)
 
-# Coach Guide — Challenge 08: Scope Impact with Dependency Evidence
+# Coach Guide — Challenge 08: Improve the Next Heartbeat Response
 
 ## Purpose
 
-Use dependency telemetry to bound the impact of a reported Grubify meal-search failure and choose the next discriminating check. Expected time: 20–25 minutes.
+- Replay the heartbeat incident and demonstrate how verified organizational context improves impact, ownership, recovery, and escalation decisions.
+- Teach students to reuse confirmed learning without allowing history to replace current investigation.
+- Expected time: 20–25 minutes.
 
 ## Mini-Lecture (5 min before challenge)
 
-- During an incident, topology is useful only when it narrows affected users, components, and next decisions.
-- Architecture is intended structure; an incident map is observed request behavior with time and health evidence.
-- A healthy or incomplete baseline must be labeled honestly; inability to reproduce an issue is not permission to invent one.
+- Monitoring answers “what is happening”; operational context answers “what does it mean here and who must act.”
+- Useful knowledge includes architecture, ownership, policy, thresholds, recovery objectives, and boundaries.
+- Knowledge must be versioned and reviewed because stale context can produce confidently wrong guidance.
+- Incident learning belongs in the knowledge base only after evidence confirms it.
 
 ## Expected Student Output
 
-- A directed dependency diagram and matching evidence table scoped to the meal-search user journey.
-- A bounded blast radius, current reproduction status, and next discriminating check.
-- Explicit telemetry gaps that prevent stronger incident conclusions.
+- A baseline heartbeat-incident response captured before custom knowledge is added.
+- A concise reliability knowledge document with ownership, architecture, objectives, and boundaries.
+- A replayed response that visibly improves impact, ownership, recovery, or escalation reasoning.
+- One verified incident lesson reused without overriding current Azure evidence.
 
 ## Coach Runbook
 
-1. Present `EXERCISE: Grubify meal search fails for some users while the main site remains reachable`, then generate harmless baseline traffic.
-2. Require each incident-relevant edge to identify caller, callee, protocol/type, time window, volume, latency, failures, and evidence source.
-3. Ask which users and components are demonstrably affected, unaffected, or unknown; compare the diagram with the evidence table.
-4. If the symptom is not reproduced, require that conclusion plus the telemetry and next check needed during recurrence.
-5. Label intended but unobserved dependencies instead of drawing them as telemetry-proven edges.
+1. Replay the Challenge 07 heartbeat question before upload; preserve the exact prompt and exercise label.
+2. Inspect the temporary document before upload and reject placeholders, secrets, personal contact details, assumptions, and transient resource state.
+3. Watch the student upload one named document, list files, and inspect indexer status as separate commands.
+4. Replay the identical prompt and identify exactly which decisions improved because of context.
+5. Permit the verified lesson only after the cause, decisive evidence, prevention guidance, and review date are complete.
+6. Confirm the final response tests current evidence rather than treating the historical cause as current truth.
 
 ## Common Issues and Hints
 
-- **Symptom:** Map contains unsupported edges. **Fix:** require telemetry or label them documented-only.
-- **Symptom:** Dependencies have no direction. **Fix:** identify caller and callee.
-- **Symptom:** The student declares the entire application down. **Fix:** separate the failing user journey from healthy and unknown paths.
-- **Symptom:** No failure appears in current telemetry. **Fix:** accept `not reproduced` and require a recurrence capture plan.
+- **Symptom:** The before-and-after responses are nearly identical. **Fix:** add concrete local context such as ownership, RTO/RPO, maintenance windows, and escalation boundaries.
+- **Symptom:** The new document does not appear in the response. **Fix:** confirm ingestion completed, the source is attached to the agent, and the question contains terms present in the document.
+- **Symptom:** The response treats old resource state in the document as current. **Fix:** remove transient state and require a live Azure query before conclusions.
+- **Symptom:** Students add an unconfirmed RCA as a lesson. **Fix:** require the evidence and confidence level before accepting it as durable knowledge.
 
 ## Debrief Discussion Guide
 
-1. How did dependency evidence change the incident scope? → It separated affected, unaffected, and unknown paths instead of treating Grubify as one health state.
-2. What is the strongest next check? → The observation that most directly distinguishes between the remaining causal hypotheses on the affected path.
-3. How would sampling distort the conclusion? → Rare failures and low-volume edges may disappear while aggregate latency looks healthier.
+- What belongs in knowledge rather than telemetry? → Durable organizational facts and policies, not current resource state.
+- When should telemetry override knowledge? → Whenever live evidence conflicts with stale or generalized documentation.
+- How does contextual learning stay trustworthy? → Evidence, review ownership, timestamps, versioning, and expiry rules.
 
 ## Success Criteria Notes
 
-- **Require:** direction, evidence status, measurement window, bounded blast radius, reproduction status, and a next discriminating check.
-- **Reject:** invented dependencies, whole-service impact without evidence, or health claims based on one request.
-- **Accept:** a healthy baseline or missing edges when explicitly labeled and paired with a recurrence collection plan.
+- **Require:** identical incident replay, visible improvement to operational decisions, evidence/context separation, and a reusable verified lesson.
+- **Reject:** incident transcripts, assumptions, secrets, or transient state stored as durable truth.
+- **Accept:** any concise Markdown or text format supported by the configured source.
+
+## Solution
+
+### Verify the before state
+
+The student should discover the agent endpoint through ARM, request a process-only `https://azuresre.dev` token, then run separate file-inventory and indexer-status reads. Require the exact baseline prompt from the challenge and preserve its answer before any upload.
+
+### Review the knowledge document
+
+The temporary document should contain:
+
+- Workload owner and criticality
+- Required RTO and RPO
+- Approved investigation steps
+- Escalation role or non-personal channel
+- Heartbeat expectation and maintenance window
+- Review owner and review date
+- Explicit prohibition on write actions without approval
+
+Require the `Select-String '<[^>]+>'` guard to pass before upload. Reject credentials, tokens, personal contact details, current resource state, and an unconfirmed RCA.
+
+### Verify upload and comparison
+
+Observe the visible multipart upload command. The student must then list files and read indexer status independently; an accepted upload is not proof of completed indexing. Replay the exact baseline prompt and compare work impact, ownership, objectives, maintenance interpretation, boundaries, and escalation in the supplied matrix.
+
+### Add a verified lesson
+
+Require all four lesson fields before the student appends and re-uploads the document. After final file and indexer checks, use the challenge’s evidence-precedence prompt. Reject any answer that substitutes the historical lesson for current evidence.
+
+Confirm the student removes the process token and temporary local document. The durable Agent Memory file remains because this mission intentionally tests later retrieval; remove it only under the customer’s normal knowledge-governance process.

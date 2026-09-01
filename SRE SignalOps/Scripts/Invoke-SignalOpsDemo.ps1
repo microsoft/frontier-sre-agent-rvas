@@ -1,28 +1,21 @@
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [Parameter(Mandatory)]
-    [ValidateSet('00','01','02','08','09','10','11','12','13','14')]
+    [ValidateSet('00','01','02','11','12','13','14')]
     [string]$Challenge,
     [switch]$Execute,
-    [switch]$Restore,
     [string]$EnvironmentName = 'signalops-core',
     [string]$Location = 'swedencentral',
-    [string]$AgentResourceGroup = 'rg-sre-agent',
-    [string]$AgentName = 'contoso-sre-agent-dev',
     [string]$ResourceGroup,
     [string]$NicName,
     [string]$VmName,
     [string]$SourceIp,
-    [string]$DestinationIp,
-    [string]$WorkspaceId,
-    [string]$VmResourceId
+    [string]$DestinationIp
 )
 
 $ErrorActionPreference = 'Stop'
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-$GrubifyRoot = Join-Path $RepoRoot 'Student\Resources\grubify'
 $SignalOpsRoot = Join-Path $RepoRoot 'SRE SignalOps'
-$Bash = 'C:\Program Files\Git\bin\bash.exe'
 
 function Assert-Command([string]$Name) {
     if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
@@ -52,18 +45,6 @@ function Get-BashToolPath {
     return "export PATH='$($toolDirectories -join ':')':`"`$PATH`"; "
 }
 
-function Get-AgentContext {
-    $subscriptionId = (az account show --query id -o tsv).Trim()
-    $agentId = "/subscriptions/$subscriptionId/resourceGroups/$AgentResourceGroup/providers/Microsoft.App/agents/$AgentName"
-    $agent = az rest --method GET --url "https://management.azure.com$agentId`?api-version=2026-01-01" 2>$null | ConvertFrom-Json
-    [pscustomobject]@{
-        SubscriptionId = $subscriptionId
-        AgentId = $agentId
-        Endpoint = $agent.properties.agentEndpoint.TrimEnd('/')
-        Token = (az account get-access-token --resource https://azuresre.dev --query accessToken -o tsv).Trim()
-    }
-}
-
 function Write-Prompt([string]$Text) {
     Write-Host "`nSRE incident exercise prompt" -ForegroundColor Cyan
     Write-Host $Text
@@ -81,7 +62,6 @@ if ($LASTEXITCODE -ne 0) {
 
 switch ($Challenge) {
     '00' {
-        if ($Restore) { throw 'Challenge 00 does not support -Restore. Use azd down only with explicit coach approval.' }
         Assert-Command azd
         $account = az account show | ConvertFrom-Json
         if ($account.name -ne 'MCAPS-Hybrid-REQ-150072-2026-rakau') {
@@ -115,7 +95,6 @@ switch ($Challenge) {
         Write-Expected 'The isolated azd workload contains both running Container Apps, a reachable frontend, and workspace-backed telemetry.'
     }
     '01' {
-        if ($Restore) { throw 'Challenge 01 does not support -Restore.' }
         Assert-Command azd
         Push-Location (Join-Path $RepoRoot 'SRE SignalOps')
         try {
@@ -142,7 +121,6 @@ switch ($Challenge) {
         Write-Prompt 'Audit this isolated autonomous lab agent and prove that write access does not extend beyond its workload resource group.'
     }
     '02' {
-        if ($Restore) { throw 'Challenge 02 does not support -Restore.' }
         Assert-Command azd
         Push-Location (Join-Path $RepoRoot 'SRE SignalOps')
         try {
@@ -187,7 +165,7 @@ switch ($Challenge) {
         Write-Expected 'The two azd-managed Azure telemetry connectors are visible; repository and knowledge state is reported independently.'
         Write-Prompt 'List the currently proven evidence planes. Distinguish deployed connector infrastructure from populated source and knowledge evidence.'
     }
-    '08' {
+    '11' {
         $workloadResourceGroup = Get-AzdValue 'AZURE_RESOURCE_GROUP'
         $apiUrl = Get-AzdValue 'API_BASE_URL'
         1..10 | ForEach-Object { Invoke-RestMethod -Uri "$apiUrl/api/restaurants" | Out-Null }
@@ -198,14 +176,14 @@ switch ($Challenge) {
         Write-Expected 'API requests appear; absent browser or downstream edges remain explicitly unobserved.'
         Write-Prompt 'Create an evidence-backed dependency map. For each edge include direction, protocol, timestamp, volume, latency, failure rate, and evidence source; label unobserved edges.'
     }
-    '09' {
-        if (-not $ResourceGroup -or -not $NicName) { throw 'Challenge 09 requires -ResourceGroup and -NicName for the coach-provided sandbox.' }
+    '12' {
+        if (-not $ResourceGroup -or -not $NicName) { throw 'Challenge 12 requires -ResourceGroup and -NicName for the coach-provided sandbox.' }
         az network nic list-effective-nsg --resource-group $ResourceGroup --name $NicName -o jsonc
         Write-Expected 'The effective NSG output identifies the actual NIC/subnet associations and rule priorities.'
         Write-Prompt 'Identify the exact effective deny, affected and unaffected paths, and the narrowest reversible remediation. Do not delete a broad deny rule.'
     }
-    '10' {
-        if (-not $ResourceGroup -or -not $NicName) { throw 'Challenge 10 requires -ResourceGroup and -NicName.' }
+    '13' {
+        if (-not $ResourceGroup -or -not $NicName) { throw 'Challenge 13 requires -ResourceGroup and -NicName.' }
         az network nic show-effective-route-table --resource-group $ResourceGroup --name $NicName -o table
         if ($VmName -and $SourceIp -and $DestinationIp) {
             az network watcher show-next-hop --resource-group $ResourceGroup --vm $VmName --source-ip $SourceIp --dest-ip $DestinationIp -o jsonc
@@ -215,42 +193,7 @@ switch ($Challenge) {
         Write-Expected 'Forward and return route evidence identifies the effective next hop or missing path.'
         Write-Prompt 'Prove forward and return paths separately, then distinguish routing from DNS, NSG, and application failure.'
     }
-    '11' {
-        if (-not $WorkspaceId -or -not $VmResourceId) { throw 'Challenge 11 requires -WorkspaceId and -VmResourceId. Use coach evidence-pack mode when no monitored VM exists.' }
-        $escapedResourceId = $VmResourceId.Replace("'", "''")
-        az monitor log-analytics query --workspace $WorkspaceId --analytics-query "Heartbeat | where _ResourceId =~ '$escapedResourceId' | summarize HeartbeatCount=count(), LastHeartbeat=max(TimeGenerated)" -o table
-        if ($Execute -or $Restore) {
-            if (-not $ResourceGroup -or -not $VmName) { throw 'VM actions also require -ResourceGroup and -VmName.' }
-            $action = if ($Restore) { 'start' } else { 'deallocate' }
-            if ($PSCmdlet.ShouldProcess("$ResourceGroup/$VmName", "$action lab VM")) {
-                Invoke-Native { az vm $action --resource-group $ResourceGroup --name $VmName --no-wait }
-            }
-        }
-        Write-Expected 'The baseline has recent Heartbeat data; any VM state change is explicit, confirmed, and reversible with -Restore.'
-        Write-Prompt 'Produce an RCA with timeline, evidence matrix, competing hypotheses, rejected hypothesis, likely cause, contributing factors, confidence, and next safe action.'
-    }
-    '12' {
-        $context = Get-AgentContext
-        $headers = @{ Authorization = "Bearer $($context.Token)" }
-        Invoke-RestMethod -Uri "$($context.Endpoint)/api/v1/AgentMemory/files" -Headers $headers | ConvertTo-Json -Depth 8
-        $template = @'
-# Workload Reliability Context
-- Purpose:
-- Architecture and dependencies:
-- Owner and escalation path:
-- Criticality:
-- Heartbeat expectation and maintenance window:
-- RTO / RPO:
-- Approved investigation boundaries:
-- Verified incident lesson:
-'@
-        $output = Join-Path $env:TEMP 'signalops-workload-context.md'
-        Set-Content -Path $output -Value $template -Encoding utf8
-        Write-Host "Knowledge draft created: $output"
-        Write-Expected 'The same question can be compared before and after ingestion, with live evidence separated from organizational context.'
-        Write-Prompt 'Assess the selected VM heartbeat risk. Attribute every claim to live Azure evidence or custom knowledge, and flag conflicts or stale context.'
-    }
-    '13' {
+    '14' {
         $subscriptionId = (az account show --query id -o tsv).Trim()
         $resources = az resource list --subscription $subscriptionId -o json | ConvertFrom-Json
         $resources | Group-Object type | Sort-Object Count -Descending | Select-Object Count, Name | Format-Table -AutoSize
@@ -258,24 +201,5 @@ switch ($Challenge) {
         az monitor log-analytics workspace list --subscription $subscriptionId --query '[].{name:name,resourceGroup:resourceGroup,retention:retentionInDays}' -o table
         Write-Expected 'Inventory, Advisor, and observability evidence are visible; unavailable cost or utilization access is reported as a gap.'
         Write-Prompt 'Produce three prioritized read-only recommendations across cost, reliability, observability, resilience, or governance. Include evidence, value, confidence, effort, trade-off, owner, and approval need.'
-    }
-    '14' {
-        $subscriptionId = (az account show --query id -o tsv).Trim()
-        az backup vault list --subscription $subscriptionId --query '[].{name:name,resourceGroup:resourceGroup,location:location}' -o table
-        $message = @'
-EXERCISE - Backup assurance review
-Severity: <severity>
-Affected workload: <name>
-Application impact: <observed impact>
-Latest job state: <state and UTC timestamp>
-Latest usable recovery point: <timestamp or unavailable>
-RPO risk: <assessment>
-Confidence: <level and evidence>
-Recommended action: <approval-gated action>
-Incident / portal link: <URL>
-'@
-        Write-Host $message
-        Write-Expected 'Live mode uses an authorized connector; evidence-pack mode produces a review-ready message without claiming delivery.'
-        Write-Prompt 'Correlate vault, protected-item, job, recovery-point, application health, RTO, and RPO evidence. Draft a concise Teams update, but do not post without explicit approval.'
     }
 }
