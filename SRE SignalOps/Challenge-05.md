@@ -52,28 +52,42 @@ $API_VERSION = '2026-01-01'
 $CONNECTOR_URL = "https://management.azure.com$AGENT_ID/connectors?api-version=$API_VERSION"
 
 az rest --method GET --url $CONNECTOR_URL `
-	--query 'value[].{Name:name,Type:properties.dataConnectorType,State:properties.provisioningState,Source:properties.dataSource}' -o table
+	--query 'value[].{Name:name,Type:properties.dataConnectorType,State:properties.provisioningState}' -o table
 ```
 
-The expected configured connectors are `log-analytics` and `application-insights`. A `Succeeded` provisioning state proves only that the connector resource exists; it does not prove a current evidence read.
+The expected configured connectors are `log-analytics` and `application-insights`. A `Succeeded` provisioning state proves only that the connector resource exists; it does not prove a current evidence read. The ARM schema marks `dataSource` as sensitive, so normal `GET` responses redact it to `null`.
 
-Capture the connector records so their source IDs can be compared with the azd environment:
+Capture the connector records for their names, types, and provisioning states:
 
 ```powershell
 $CONNECTORS = az rest --method GET --url $CONNECTOR_URL | ConvertFrom-Json
 $CONNECTORS.value | Select-Object name,
 	@{Name='Type';Expression={$_.properties.dataConnectorType}},
-	@{Name='State';Expression={$_.properties.provisioningState}},
-	@{Name='Source';Expression={$_.properties.dataSource}} |
+	@{Name='State';Expression={$_.properties.provisioningState}} |
 	Format-Table -AutoSize
+```
+
+Use each connector's `listSecrets` action to retrieve its configured source. Keep these results only in the current PowerShell process:
+
+```powershell
+$LOG_CONNECTOR_RECORD = $CONNECTORS.value |
+	Where-Object { $_.properties.dataConnectorType -eq 'LogAnalytics' } |
+	Select-Object -First 1
+$APP_CONNECTOR_RECORD = $CONNECTORS.value |
+	Where-Object { $_.properties.dataConnectorType -eq 'AppInsights' } |
+	Select-Object -First 1
+
+$LOG_CONNECTOR = az rest --method POST --url `
+	"https://management.azure.com$AGENT_ID/connectors/$($LOG_CONNECTOR_RECORD.name)/listSecrets?api-version=$API_VERSION" |
+	ConvertFrom-Json
+$APP_CONNECTOR = az rest --method POST --url `
+	"https://management.azure.com$AGENT_ID/connectors/$($APP_CONNECTOR_RECORD.name)/listSecrets?api-version=$API_VERSION" |
+	ConvertFrom-Json
 ```
 
 Check that the Log Analytics connector targets the expected workspace:
 
 ```powershell
-$LOG_CONNECTOR = $CONNECTORS.value |
-	Where-Object { $_.properties.dataConnectorType -eq 'LogAnalytics' } |
-	Select-Object -First 1
 
 [pscustomobject]@{
 	ConfiguredSource = $LOG_CONNECTOR.properties.dataSource
@@ -85,16 +99,14 @@ $LOG_CONNECTOR = $CONNECTORS.value |
 Inspect the Application Insights connector source independently:
 
 ```powershell
-$APP_CONNECTOR = $CONNECTORS.value |
-	Where-Object { $_.properties.dataConnectorType -eq 'AppInsights' } |
-	Select-Object -First 1
-
 [pscustomobject]@{
 	Name   = $APP_CONNECTOR.name
 	State  = $APP_CONNECTOR.properties.provisioningState
 	Source = $APP_CONNECTOR.properties.dataSource
 } | Format-List
 ```
+
+Stop if either connector record is absent, either `listSecrets` call fails, or the Log Analytics source does not match `$LOG_ANALYTICS_ID`. Although these source values are Azure resource IDs rather than credentials in this lab, do not persist the `listSecrets` responses.
 
 ### Part 3 — Compare the Live Data-Plane Inventory
 
@@ -136,12 +148,12 @@ $LOG_WORKSPACE | Select-Object name, resourceGroup, location, provisioningState,
 	Format-List
 ```
 
-Run a harmless query over the last 30 minutes. A successful query with zero rows proves authorization and query execution, but it does not prove fresh application telemetry:
+Run a harmless query over the last 24 hours. A successful query with zero rows proves authorization and query execution, but it does not prove fresh application telemetry:
 
 ```powershell
 $LOG_QUERY = @'
 ContainerAppConsoleLogs_CL
-| where TimeGenerated > ago(30m)
+| where TimeGenerated > ago(24h)
 | summarize Rows=count(), Latest=max(TimeGenerated)
 '@
 
@@ -178,12 +190,12 @@ Compare the connector source with the workload Application Insights component. T
 } | Format-List
 ```
 
-Run a harmless request query against the connector's configured source over the last 30 minutes:
+Run a harmless request query against the connector's configured source over the last 24 hours:
 
 ```powershell
 $APP_QUERY = @'
 requests
-| where timestamp > ago(30m)
+| where timestamp > ago(24h)
 | summarize Rows=count(), Latest=max(timestamp), Failures=countif(success == false)
 '@
 

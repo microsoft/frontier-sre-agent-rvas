@@ -15,8 +15,8 @@ Coach an SRE investigation when one required evidence source is failed, stale, u
 ## Expected Student Output
 
 - Separate ARM and live data-plane connector inventories.
-- A Log Analytics source-ID match, harmless read result, and UTC freshness timestamp.
-- An Application Insights connector-source read and UTC freshness timestamp.
+- A Log Analytics source-ID match obtained through `listSecrets`, harmless read result, and UTC freshness timestamp.
+- An Application Insights connector-source read obtained through `listSecrets` and UTC freshness timestamp.
 - A current evidence matrix covering Log Analytics, Application Insights, and Agent Memory.
 - One classified blind spot with diagnostic impact, alternate evidence, owner, and recovery proof.
 - A bounded SRE Agent response with an explicit `unverified` label wherever a current read was not completed.
@@ -26,11 +26,12 @@ Coach an SRE investigation when one required evidence source is failed, stale, u
 1. Have the participant run each command from Challenge 05 directly; there is no wrapper script.
 2. Confirm `signalops-core` resolves the expected agent, workload group, Log Analytics workspace, and workload Application Insights component.
 3. Compare the `2026-01-01` ARM connector inventory with `/api/v2/extendedAgent/connectors` before accepting connector health.
-4. Require separate harmless reads from the Log Analytics workspace and the Application Insights connector's actual `dataSource` resource.
-5. Require UTC check times and classify zero rows, missing tables, stale timestamps, denied reads, and inventory disagreement distinctly.
-6. Designate one real failed or stale read, or provide a labeled failed-read result. Never disable a live connector for the exercise.
-7. Ask what can still be concluded, which alternate source can discriminate next, who owns restoration, and what proves evidence access recovered.
-8. Stop and rotate credentials if any token or secret appears in output.
+4. Confirm normal connector `GET` responses redact sensitive `dataSource` values, then use each connector's `listSecrets` action to validate the configured source in process memory.
+5. Require separate harmless reads from the Log Analytics workspace and the Application Insights connector's actual `dataSource` resource.
+6. Require UTC check times and classify zero rows, missing tables, stale timestamps, denied reads, and inventory disagreement distinctly.
+7. Designate one real failed or stale read, or provide a labeled failed-read result. Never disable a live connector for the exercise.
+8. Ask what can still be concluded, which alternate source can discriminate next, who owns restoration, and what proves evidence access recovered.
+9. Stop and rotate credentials if any token or secret appears in output.
 
 ## Common Issues and Hints
 
@@ -39,6 +40,7 @@ Coach an SRE investigation when one required evidence source is failed, stale, u
 - **Symptom:** `ContainerAppConsoleLogs_CL` or `requests` is missing. **Fix:** classify a schema gap and inspect available tables before changing the query.
 - **Symptom:** Query succeeds with zero rows or an old `Latest` value. **Fix:** classify source-data or freshness separately from reachability.
 - **Symptom:** ARM lists a connector that the data plane omits. **Fix:** classify configuration or synchronization as unproven and do not infer live connectivity.
+- **Symptom:** ARM connector `GET` returns `dataSource: null`. **Fix:** this property is sensitive and redacted by design; call `POST .../connectors/{name}/listSecrets` and retain the response only in process memory.
 - **Symptom:** The Application Insights name differs from the workload component. **Fix:** query the connector's `dataSource` resource; the connector may target agent telemetry.
 - **Symptom:** Secrets appear in output. **Fix:** redact and rotate exposed values immediately.
 - **Symptom:** The SRE Agent completes the diagnosis despite missing required evidence. **Fix:** reduce confidence and require an alternate discriminating source or escalation.
