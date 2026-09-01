@@ -16,7 +16,7 @@ const missions = [
     ['14', 'Operate', 'Resolve a Critical Assurance Risk', 'Find a critical preventive issue and define owned remediation, rollback, and validation.', '20–25 min', ['Assurance', 'Prevention', 'Governance']]
 ];
 
-const contentVersion = '14';
+const contentVersion = '15';
 
 const labDetails = {
     number: 'LAB',
@@ -37,23 +37,27 @@ const coachFiles = [
 ];
 
 const challengeGrid = document.getElementById('challenge-grid');
+const archiveGrid = document.getElementById('archive-grid');
+const archiveCount = document.getElementById('archive-count');
 const coachList = document.getElementById('coach-list');
+const archivedMissionNumbers = new Set(['10', '11', '13', '14', '15']);
 
-function createChallengeCard(number, phase, title, summary, duration, tags, index, buttonLabel) {
+function createChallengeCard(number, phase, title, summary, duration, tags, index, buttonLabel, target = challengeGrid) {
     const article = document.createElement('article');
     article.className = `challenge-card phase-${phase.toLowerCase()}`;
     article.innerHTML = `<div class="card-meta"><span class="number">${number}</span><span class="duration">${duration}</span></div>
         <p class="card-label">${phase}</p><h3>${title}</h3><p>${summary}</p>
         <ul class="tags" aria-label="Topics">${tags.map(tag => `<li>${tag}</li>`).join('')}</ul>
         <button class="open-reader" data-kind="student" data-index="${index}">${buttonLabel} <span aria-hidden="true">→</span></button>`;
-    challengeGrid.appendChild(article);
+    target.appendChild(article);
 }
 
 createChallengeCard(labDetails.number, labDetails.phase, labDetails.title, labDetails.summary, labDetails.duration, labDetails.tags, 0, 'Open lab details');
 
 missions.forEach((mission, index) => {
     const [number, phase, title, summary, duration, tags] = mission;
-    createChallengeCard(number, phase, title, summary, duration, tags, index + 1, 'Open mission');
+    const target = archivedMissionNumbers.has(number) ? archiveGrid : challengeGrid;
+    createChallengeCard(number, phase, title, summary, duration, tags, index + 1, 'Open mission', target);
 
     const coachButton = document.createElement('button');
     coachButton.className = 'coach-row open-reader';
@@ -62,6 +66,8 @@ missions.forEach((mission, index) => {
     coachButton.innerHTML = `<span>Solution ${number}</span><strong>${title}</strong><span aria-hidden="true">→</span>`;
     coachList.appendChild(coachButton);
 });
+
+archiveCount.textContent = `${archiveGrid.childElementCount} missions`;
 
 const labCoachButton = document.createElement('button');
 labCoachButton.className = 'coach-row open-reader';

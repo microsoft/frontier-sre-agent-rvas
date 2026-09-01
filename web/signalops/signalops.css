@@ -374,6 +374,56 @@ nav > a:hover {
     border-left: 1px solid var(--line);
 }
 
+.mission-archive {
+    margin-top: 24px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+}
+
+.mission-archive summary {
+    min-height: 64px;
+    padding: 0 22px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: var(--ink);
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-weight: 800;
+    list-style: none;
+}
+
+.mission-archive summary::-webkit-details-marker {
+    display: none;
+}
+
+.mission-archive summary::after {
+    content: '+';
+    color: var(--blue);
+    font-size: 1.35rem;
+}
+
+.mission-archive[open] summary::after {
+    content: '−';
+}
+
+.mission-archive summary:hover,
+.mission-archive summary:focus-visible {
+    background: #eef4fb;
+}
+
+.mission-archive summary small {
+    margin-left: auto;
+    color: var(--muted);
+    font-family: var(--font-body);
+    font-size: .72rem;
+    font-weight: 700;
+}
+
+.archive-grid {
+    border-left: 0;
+}
+
 .challenge-card {
     position: relative;
     min-height: 360px;
