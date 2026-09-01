@@ -132,6 +132,8 @@ $EXPECTED_SPECIALISTS | ForEach-Object {
 } | Format-Table -AutoSize
 ```
 
+In the prepared SignalOps environment, all three specialists should report `Registered = True` and `Route = available`. Treat any other result as live configuration drift and record the affected route as unavailable.
+
 If a specialist is absent, mark that route `unavailable`. An empty live roster is a valid observed registration gap. A missing `AgentType` on a registered specialist is a metadata evidence gap, not proof that the specialist is absent. A repository manifest proves desired configuration, not live registration.
 
 ### Part 3 — Inspect Each Relevant Manifest

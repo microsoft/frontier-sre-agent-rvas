@@ -16,7 +16,7 @@ Coach an ambiguous Grubify availability incident across application and network 
 
 - An initial hypothesis and evidence need for the Grubify HTTP 5xx and dependency-connection exercise.
 - A live data-plane specialist inventory compared with the three relevant desired-state manifests.
-- An explicit registration-gap result when a specialist is absent; the current prepared environment may return an empty `value` collection or only the application specialist.
+- A three-specialist live roster containing `aca-app-incident-handler`, `network-traffic-analyst`, and `cost-optimization-agent`; any missing specialist is recorded as configuration drift.
 - A schema-normalized roster that reads `handoffDescription` from the live record's `properties` object when the v2 API returns an ARM-style envelope.
 - Defensible application-to-network routing decisions with evidence returned at each handoff.
 - One accountable incident timeline, unresolved-question list, and owner.
@@ -26,7 +26,7 @@ Coach an ambiguous Grubify availability incident across application and network 
 
 1. Have the participant run each command from Challenge 06 directly; there is no wrapper script.
 2. Verify the endpoint is discovered from `signalops-core`, the short-lived token uses `https://azuresre.dev`, and the token is never displayed or persisted.
-3. Inspect `/api/v2/extendedAgent/agents` before discussing routes. Accept an empty `value` collection as proof that no specialists are registered.
+3. Inspect `/api/v2/extendedAgent/agents` before discussing routes. The prepared environment should return all three expected specialists with populated handoff descriptions; treat an empty or incomplete collection as live configuration drift.
 4. Compare live registration with the application, network, and cost manifests. Desired state must not be reported as live capability.
 5. Present the exercise as an application symptom plus a dependency connection failure; require the next evidence before selecting a domain.
 6. Evolve the evidence from HTTP failure to denied network flow without losing the primary owner or timeline.
@@ -35,7 +35,7 @@ Coach an ambiguous Grubify availability incident across application and network 
 
 ## Common Issues and Hints
 
-- **Symptom:** The endpoint returns `{ value: [], nextLink: null }`. **Fix:** record a registration gap, mark routes unavailable, and continue only as a labeled manifest-based exercise.
+- **Symptom:** The endpoint returns `{ value: [], nextLink: null }` or fewer than three expected specialists. **Fix:** record live configuration drift, mark affected routes unavailable, and continue only as a labeled manifest-based exercise.
 - **Symptom:** The roster object is counted as one specialist. **Fix:** normalize the `value` or `agents` property into an array before counting.
 - **Symptom:** `agentType` and `handoffDescription` appear blank even though a specialist is registered. **Fix:** normalize the v2 envelope: read `properties.handoffDescription`, and report `AgentType` as `<not returned>` when neither the top level nor `properties` exposes it. Do not treat top-level `type: ExtendedAgent` as equivalent to manifest `agent_type: Autonomous`.
 - **Symptom:** Data-plane request returns `401`. **Fix:** reacquire the short-lived token for `https://azuresre.dev`; never print or persist it.
