@@ -16,7 +16,7 @@ const missions = [
     ['14', 'Operate', 'Resolve a Critical Assurance Risk', 'Find a critical preventive issue and define owned remediation, rollback, and validation.', '20–25 min', ['Assurance', 'Prevention', 'Governance']]
 ];
 
-const contentVersion = '12';
+const contentVersion = '13';
 
 const labDetails = {
     number: 'LAB',

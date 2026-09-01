@@ -16,7 +16,8 @@ Coach an ambiguous Grubify availability incident across application and network 
 
 - An initial hypothesis and evidence need for the Grubify HTTP 5xx and dependency-connection exercise.
 - A live data-plane specialist inventory compared with the three relevant desired-state manifests.
-- An explicit registration-gap result when a specialist is absent; the current prepared environment may return an empty `value` collection.
+- An explicit registration-gap result when a specialist is absent; the current prepared environment may return an empty `value` collection or only the application specialist.
+- A schema-normalized roster that reads `handoffDescription` from the live record's `properties` object when the v2 API returns an ARM-style envelope.
 - Defensible application-to-network routing decisions with evidence returned at each handoff.
 - One accountable incident timeline, unresolved-question list, and owner.
 - A compact record of unsafe scope, overlap, or unowned gaps that affect resolution.
@@ -36,6 +37,7 @@ Coach an ambiguous Grubify availability incident across application and network 
 
 - **Symptom:** The endpoint returns `{ value: [], nextLink: null }`. **Fix:** record a registration gap, mark routes unavailable, and continue only as a labeled manifest-based exercise.
 - **Symptom:** The roster object is counted as one specialist. **Fix:** normalize the `value` or `agents` property into an array before counting.
+- **Symptom:** `agentType` and `handoffDescription` appear blank even though a specialist is registered. **Fix:** normalize the v2 envelope: read `properties.handoffDescription`, and report `AgentType` as `<not returned>` when neither the top level nor `properties` exposes it. Do not treat top-level `type: ExtendedAgent` as equivalent to manifest `agent_type: Autonomous`.
 - **Symptom:** Data-plane request returns `401`. **Fix:** reacquire the short-lived token for `https://azuresre.dev`; never print or persist it.
 - **Symptom:** Live fields differ from the manifest. **Fix:** report configuration drift and treat live registration as authoritative for current routing.
 - **Symptom:** Every prompt routes to one agent. **Fix:** compare handoff descriptions and the exact evidence required for overlap.

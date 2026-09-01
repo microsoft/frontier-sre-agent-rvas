@@ -70,16 +70,46 @@ $LIVE_AGENTS = if ($AGENT_RESPONSE.PSObject.Properties.Name -contains 'agents') 
 }
 
 $LIVE_AGENTS = @($LIVE_AGENTS)
+
+$LIVE_AGENT_ROSTER = @($LIVE_AGENTS | ForEach-Object {
+  $AGENT_RECORD = $_
+  $AGENT_PROPERTIES = $AGENT_RECORD.properties
+
+  $LIVE_AGENT_TYPE = if ($AGENT_RECORD.PSObject.Properties.Name -contains 'agentType') {
+    $AGENT_RECORD.agentType
+  } elseif ($null -ne $AGENT_PROPERTIES -and $AGENT_PROPERTIES.PSObject.Properties.Name -contains 'agentType') {
+    $AGENT_PROPERTIES.agentType
+  } else {
+    $null
+  }
+
+  $LIVE_HANDOFF_DESCRIPTION = if ($AGENT_RECORD.PSObject.Properties.Name -contains 'handoffDescription') {
+    $AGENT_RECORD.handoffDescription
+  } elseif ($null -ne $AGENT_PROPERTIES -and $AGENT_PROPERTIES.PSObject.Properties.Name -contains 'handoffDescription') {
+    $AGENT_PROPERTIES.handoffDescription
+  } else {
+    $null
+  }
+
+  [pscustomobject]@{
+    Name               = $AGENT_RECORD.name
+    ResourceType       = $AGENT_RECORD.type
+    AgentType          = $LIVE_AGENT_TYPE
+    HandoffDescription = $LIVE_HANDOFF_DESCRIPTION
+  }
+})
 ```
 
 Display the fields used by the primary agent to decide a route:
 
 ```powershell
-$LIVE_AGENTS |
-  Select-Object name, agentType, handoffDescription |
-  Sort-Object name |
+$LIVE_AGENT_ROSTER |
+  Select-Object Name, ResourceType, AgentType, HandoffDescription |
+  Sort-Object Name |
   Format-Table -Wrap -AutoSize
 ```
+
+The current API may return an ARM-style record with `type: ExtendedAgent` and routing metadata beneath `properties`. `ResourceType` identifies the API resource shape; it is not a substitute for the manifest's `agent_type`. If `AgentType` is not returned, record it as a live registration evidence gap. Do not fill it from the repository manifest.
 
 Check for the three specialists used in this exercise:
 
@@ -92,16 +122,17 @@ $EXPECTED_SPECIALISTS = @(
 
 $EXPECTED_SPECIALISTS | ForEach-Object {
   $SPECIALIST_NAME = $_
-  $MATCH = $LIVE_AGENTS | Where-Object { $_.name -eq $SPECIALIST_NAME }
+  $MATCH = @($LIVE_AGENT_ROSTER | Where-Object { $_.Name -eq $SPECIALIST_NAME })
   [pscustomobject]@{
     Name       = $SPECIALIST_NAME
-    Registered = $null -ne $MATCH
-    AgentType  = $MATCH.agentType
+    Registered = $MATCH.Count -gt 0
+    AgentType  = if ($MATCH.Count -eq 0) { '<not registered>' } elseif ($null -eq $MATCH[0].AgentType) { '<not returned>' } else { $MATCH[0].AgentType }
+    Route      = if ($MATCH.Count -gt 0) { 'available' } else { 'unavailable' }
   }
 } | Format-Table -AutoSize
 ```
 
-If a specialist is absent, mark that route `unavailable`. An empty live roster is a valid observed registration gap. A repository manifest proves desired configuration, not live registration.
+If a specialist is absent, mark that route `unavailable`. An empty live roster is a valid observed registration gap. A missing `AgentType` on a registered specialist is a metadata evidence gap, not proof that the specialist is absent. A repository manifest proves desired configuration, not live registration.
 
 ### Part 3 — Inspect Each Relevant Manifest
 
