@@ -87,6 +87,63 @@
             box-shadow: 0 4px 16px rgba(26, 119, 227, .12);
         }
 
+        .challenge-archive {
+            margin-top: 1.25rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #F8FAFD;
+            overflow: hidden;
+        }
+
+        .challenge-archive summary {
+            min-height: 3.5rem;
+            padding: 0 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            cursor: pointer;
+            color: #334155;
+            font-family: var(--font-body, "Inter", sans-serif);
+            font-size: .78rem;
+            font-weight: 600;
+            list-style: none;
+        }
+
+        .challenge-archive summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .challenge-archive summary::after {
+            content: '+';
+            color: var(--cyan);
+            font-family: var(--font-mono, "JetBrains Mono", monospace);
+            font-size: 1.1rem;
+        }
+
+        .challenge-archive[open] summary::after {
+            content: '−';
+        }
+
+        .challenge-archive summary:hover,
+        .challenge-archive summary:focus-visible {
+            background: #F1F5FA;
+            color: #0F3B68;
+        }
+
+        .archive-count {
+            margin-left: auto;
+            color: #64748B;
+            font-family: var(--font-mono, "JetBrains Mono", monospace);
+            font-size: .68rem;
+            font-weight: 500;
+        }
+
+        .archive-grid {
+            border-width: 1px 0 0;
+            border-radius: 0;
+        }
+
         .challenge-card::before {
             content: '';
             position: absolute;
@@ -1418,6 +1475,14 @@
                         </div>
                     </a>
                 </div>
+
+                <details class="challenge-archive">
+                    <summary>
+                        <span>Archive</span>
+                        <span class="archive-count">5 challenges</span>
+                    </summary>
+                    <div class="challenges-grid archive-grid" id="challenge-archive-grid"></div>
+                </details>
         </section>
 
         <!-- Subagents -->
@@ -1653,7 +1718,13 @@
             });
         }, { threshold: 0.05 });
 
-        const grid = document.querySelector('.challenges-grid');
+        const grid = document.querySelector('#challenges > .wrap > .challenges-grid');
+        const archiveGrid = document.getElementById('challenge-archive-grid');
+        const archivedPhases = new Set(['10', '11', '13', '14', '15']);
+        grid.querySelectorAll('.challenge-card').forEach(card => {
+            if (archivedPhases.has(card.dataset.phase)) archiveGrid.appendChild(card);
+        });
+
         if (grid) cardObserver.observe(grid);
 
         // ── Active nav highlight ────────────────────────────────────────────
