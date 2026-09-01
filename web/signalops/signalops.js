@@ -16,7 +16,7 @@ const missions = [
     ['14', 'Operate', 'Resolve a Backup Assurance Incident', 'Triage recoverability risk, communicate impact, and validate service after recovery.', '20–25 min', ['Azure Backup', 'Communication', 'Recovery']]
 ];
 
-const contentVersion = '9';
+const contentVersion = '10';
 
 const labDetails = {
     number: 'LAB',

@@ -9,8 +9,8 @@ Coach a Grubify HTTP-error incident from routing verification through evidence, 
 ## Mini-Lecture (5 min before challenge)
 
 - Workflow completion is not incident resolution; service recovery evidence is the closure condition.
-- A trustworthy response gathers enough evidence to bound action risk before requesting approval.
-- Missing evidence, approval timeout, failed action, and failed validation must lead to an explicit stop or escalation.
+- A trustworthy response gathers enough evidence to bound action risk before proposing any action.
+- Missing evidence, an attempted write, failed action, and failed validation must lead to an explicit stop or escalation.
 
 ## Expected Student Output
 
@@ -44,7 +44,7 @@ Coach a Grubify HTTP-error incident from routing verification through evidence, 
 ## Debrief Discussion Guide
 
 1. What guards this exercise when the agent is `Autonomous/High`? → Explicit proposal-only instructions, no execution request, and immediate stop on attempted writes.
-2. What should trigger escalation? → Missing evidence, approval timeout, failed action, failed validation, or ownership/RTO breach.
+2. What should trigger escalation? → Missing evidence, an attempted write, failed action, failed validation, or ownership/RTO breach.
 3. How is closure proven? → The original signal clears and the affected Grubify user journey succeeds within expected service thresholds.
 
 ## Success Criteria Notes
