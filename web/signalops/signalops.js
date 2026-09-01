@@ -15,6 +15,8 @@ const missions = [
     ['13', 'Operate', 'Resolve a Backup Assurance Incident', 'Triage recoverability risk, communicate impact, and validate service after recovery.', '20–25 min', ['Azure Backup', 'Communication', 'Recovery']]
 ];
 
+const contentVersion = '5';
+
 const labDetails = {
     number: 'LAB',
     phase: 'Orient',
@@ -140,7 +142,9 @@ async function renderEntry() {
     document.querySelector('.reader-body').scrollTop = 0;
 
     try {
-        const response = await fetch(entry.file);
+        const documentUrl = new URL(entry.file, window.location.href);
+        documentUrl.searchParams.set('v', contentVersion);
+        const response = await fetch(documentUrl);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         content.innerHTML = DOMPurify.sanitize(marked.parse(await response.text()));
