@@ -1,6 +1,6 @@
 [< Previous Solution](./Solution-02.md) | **[Home](./README.md)** | [Next Solution >](./Solution-04.md)
 
-# Coach Guide — Challenge 03: Automated Incident Triage and RCA
+# Coach Guide — Challenge 03: Investigate and Recover a Grubify Memory Incident
 
 ## Purpose
 

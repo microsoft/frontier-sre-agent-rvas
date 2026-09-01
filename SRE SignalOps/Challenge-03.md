@@ -1,6 +1,6 @@
 [< Previous Challenge](./Challenge-02.md) — **[Home](./README.md)** — [Next Challenge >](./Challenge-04.md)
 
-# Challenge 03 — Automated Incident Triage and RCA
+# Challenge 03 — Investigate and Recover a Grubify Memory Incident
 
 > **Incident capability exercised in this challenge**: Azure Monitor Alerting · Azure SRE Agent Investigation · Evidence-Backed RCA · Verified Recovery
 

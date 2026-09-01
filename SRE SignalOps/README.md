@@ -17,7 +17,7 @@ Return to its baseline checklist after Missions 00–02 and record the observed 
 | [00](./Challenge-00.md) | Bootstrap | Deploy the Workload with azd | 30–40 min + deployment |
 | [01](./Challenge-01.md) | Bootstrap | Deploy the Agent Core with azd | 20–30 min + deployment |
 | [02](./Challenge-02.md) | Bootstrap | Deploy Evidence Connectors with azd | 20–25 min + deployment |
-| [03](./Challenge-03.md) | Bootstrap | Automated Incident Triage and RCA | 30–40 min |
+| [03](./Challenge-03.md) | Bootstrap | Investigate and Recover a Grubify Memory Incident | 30–40 min |
 | [04](./Challenge-04.md) | Wire | Investigate an Evidence Blind Spot | 15–20 min |
 | [05](./Challenge-05.md) | Wire | Route a Cross-Domain Incident | 15–20 min |
 | [06](./Challenge-06.md) | Wire | Exercise a Guarded HTTP-Error Response | 20–25 min |

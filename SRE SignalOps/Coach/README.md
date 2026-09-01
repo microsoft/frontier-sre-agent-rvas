@@ -11,7 +11,7 @@ Before Mission 00, use [Coach Orientation — Understand Grubify](./Lab-Details.
 | 00 | Deploy the Workload with azd | [Solution 00](./Solution-00.md) |
 | 01 | Deploy the Agent Core with azd | [Solution 01](./Solution-01.md) |
 | 02 | Deploy Evidence Connectors with azd | [Solution 02](./Solution-02.md) |
-| 03 | Triage the First Grubify Incident | [Solution 03](./Solution-03.md) |
+| 03 | Investigate and Recover a Grubify Memory Incident | [Solution 03](./Solution-03.md) |
 | 04 | Investigate an Evidence Blind Spot | [Solution 04](./Solution-04.md) |
 | 05 | Route a Cross-Domain Incident | [Solution 05](./Solution-05.md) |
 | 06 | Exercise a Guarded HTTP-Error Response | [Solution 06](./Solution-06.md) |
@@ -57,7 +57,7 @@ Before Mission 00, use [Coach Orientation — Understand Grubify](./Lab-Details.
 | Before 00 | Participants can identify the frontend, API, in-memory state, and separate evidence/control paths | Use the Lab Details diagrams; do not require deployed Azure evidence yet |
 | 00–02 | azd environment targets the approved subscription and `swedencentral` | Stop before provisioning; select the correct environment and rerun preview |
 | Before 03 | Scope, revisions, routes, telemetry, and agent access have a timestamped baseline | Stop on unexplained baseline failures and resolve prerequisites before applying Mission 03 configuration |
-| 03 | Git Bash, `jq`, and `yq` are available; the Mission 03 plan targets the intended agent | Use `Challenge-03.ps1` without `-Execute` and inspect the plan before applying |
+| 03 | Baseline health passes; the 5xx alert and fault loop target only the isolated Grubify API | Stop on any target mismatch or unexplained baseline failure; inject the fault once, then collect evidence |
 | 04–06 | Connector authorization, specialist manifests, and incident routing are inspectable | Use unverified labels or a labeled exercise; never invent connectivity or incidents |
 | 07 | Recent Application Insights request/dependency telemetry exists | Generate harmless baseline traffic or label unsupported edges unobserved |
 | 08–09 | A disposable network sandbox and restoration procedure are ready | Use the supplied evidence pack; do not inject faults into production |
@@ -73,7 +73,7 @@ Before Mission 00, use [Coach Orientation — Understand Grubify](./Lab-Details.
 | 00 | Existing workload | Inventory and health evidence | Wrong subscription or attempted redeployment | **30 min** | Any mutation command is proposed |
 | 01 | Existing agent core | ARM, action mode, RBAC, scope | Wrong agent name or inferred safety mode | **20 min** | Endpoint or managed scope differs |
 | 02 | Existing ground truth | Telemetry and evidence gaps | Empty source content mistaken for service failure | **25 min** | A participant attempts OAuth or upload |
-| 03 | First incident | Evidence-led triage and guarded action | Git Bash path, parser prerequisites, wrong target, or unconfirmed symptom | **25 min** | Action or diagnosis precedes current evidence |
+| 03 | Investigate and Recover a Grubify Memory Incident | Metric alert, memory pressure, agent intake, source validation, and recovery | Azure ingestion lag, wrong target, repeated injection, or absent agent incident | **40 min** | Fault runs before target/baseline checks or restart is called a permanent fix |
 | 04 | Evidence blind spot | Source failure, fallback, and escalation | Reachability vs configuration | **20 min** | Missing evidence is silently assumed |
 | 05 | Cross-domain incident | Evidence-led routing and one incident owner | Overlapping descriptions | **20 min** | Handoffs fragment the timeline |
 | 06 | HTTP-error response | Intake, action gate, and recovery proof | Alert mismatch | **25 min** | Action precedes evidence |
