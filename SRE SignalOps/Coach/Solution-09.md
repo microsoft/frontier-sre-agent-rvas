@@ -1,44 +1,44 @@
 [< Previous Solution](./Solution-08.md) | **[Home](./README.md)** | [Next Solution >](./Solution-10.md)
 
-# Coach Guide — Challenge 09: Investigate a Routing Black Hole
+# Coach Guide — Challenge 09: Investigate a Network Security Failure
 
 ## Purpose
 
-Coach a dependency failure that persists after NSG clearance, prove the asymmetric route, and validate bidirectional application recovery. Expected time: 25–30 minutes.
+Coach a Grubify dependency timeout from symptom to an evidence-backed NSG diagnosis, narrow recovery, and control regression check. Expected time: 25–30 minutes.
 
 ## Mini-Lecture (5 min before challenge)
 
-- A previously rejected security hypothesis should remain rejected unless new evidence changes it.
-- Azure selects effective routes by longest prefix, then route source; asymmetric paths can fail despite a valid forward route.
-- Route correction is incomplete until the original application path and both network directions recover.
+- A timeout does not prove a network-security cause; effective rules and flow evidence must discriminate it from application, DNS, and routing failures.
+- Effective rule evaluation combines association, direction, tuple, priority, and default rules.
+- Recovery must restore the intended flow without weakening unrelated denied paths.
 
 ## Expected Student Output
 
-- Separate forward and return effective-route decisions with next-hop evidence.
-- A named root-cause route, rejected DNS/NSG/NVA alternatives, and a narrow reversible correction.
-- Recovery proof and restoration of every injected route change.
+- The exact effective rule and five-tuple evidence that explains the denied flow.
+- A bounded blast radius, rejected alternatives, and the narrowest reversible remediation proposal.
+- Post-remediation evidence that the original path recovered without weakening unrelated controls.
 
 ## Coach Runbook
 
-1. Present the continuing dependency failure, confirm the sandbox, and record the injected route state so it can be restored.
-2. Require effective NIC routes and next-hop checks for both directions; route-table definitions alone are insufficient.
-3. Challenge DNS, NSG, and NVA hypotheses with one discriminating check each.
-4. After correction, rerun connectivity and route evidence, then verify the injected state is fully restored.
+1. Present the blocked-dependency exercise and confirm the target is the coach-provided sandbox before any fault or remediation action.
+2. Require NIC and subnet associations, effective rules, direction, priority, protocol, source, destination, and port.
+3. Ask the student to bound affected and unaffected paths before proposing a change.
+4. Approve only a narrow reversible correction, then require both recovery and regression checks.
 
 ## Common Issues and Hints
 
-- **Symptom:** Only route-table definitions are shown. **Fix:** inspect effective NIC routes.
-- **Symptom:** Forward path works but app fails. **Fix:** prove the return path.
-- **Symptom:** DNS is assumed healthy. **Fix:** test and reject it with evidence.
+- **Symptom:** Student inspects only subnet NSG. **Fix:** include NIC associations and effective rules.
+- **Symptom:** Flow data is absent. **Fix:** label the evidence gap and use the supplied snapshot.
+- **Symptom:** Proposed fix deletes a broad deny. **Fix:** require minimum-scope correction.
 
 ## Debrief Discussion Guide
 
-1. Why can portal configuration mislead? → A route table shows intent; effective NIC routes show the combined decision actually applied.
-2. What creates asymmetry? → Different effective routes, longest-prefix matches, propagation paths, or middleboxes in each direction.
-3. Which checks prove recovery? → Bidirectional next-hop evidence plus the original application connectivity test.
+1. Why do effective rules win? → Azure evaluates the combined NIC/subnet rule set, not one displayed NSG in isolation.
+2. How is blast radius bounded? → Match the effective rule against actual source, destination, port, protocol, and direction, then test unaffected paths.
+3. What proves recovery? → A successful original flow plus confirmation that unrelated denied paths remain denied.
 
 ## Success Criteria Notes
 
-- **Require:** both path directions, rejected alternatives, narrow correction, recovery proof, and full fault restoration.
-- **Reject:** forward-path-only analysis or fixation on an NVA that no effective route selects.
-- **Accept:** a supplied evidence pack if no safe network sandbox exists.
+- **Require:** exact rule evidence, bounded blast radius, narrow correction, recovery proof, and control regression proof.
+- **Reject:** production targeting, broad deny deletion, or portal-only reasoning.
+- **Accept:** supplied flow snapshots when live Traffic Analytics has not ingested yet; label their timestamp.

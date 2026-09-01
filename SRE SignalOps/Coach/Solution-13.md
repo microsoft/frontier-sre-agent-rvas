@@ -1,74 +1,62 @@
-[< Previous Solution](./Solution-12.md) | **[Home](./README.md)**
+[< Previous Solution](./Solution-12.md) | **[Home](./README.md)** | [Next Solution >](./Solution-14.md)
 
-# Coach Guide — Challenge 13: Resolve a Backup Assurance Incident
+# Coach Guide — Challenge 13: Resolve a Critical Assurance Risk
 
 ## Purpose
 
-- Simulate a backup assurance incident from alert through evidence, stakeholder communication, guarded recovery, application validation, and escalation.
-- Teach students to distinguish confirmed backup failure, degraded assurance, restore completion, and actual service recovery.
+- Detect a critical observability, backup, capacity, cost, or governance assurance issue before it becomes a customer-facing incident.
+- Turn the selected issue into an owned, approval-gated remediation and validation plan.
 - Expected time: 20–25 minutes.
 
 ## Mini-Lecture (5 min before challenge)
 
-- The operational issue is recoverability risk; alert routing and Teams posting are supporting workflow stages.
-- Backup success, restore success, and application health are different validation gates.
-- RTO and RPO turn technical backup state into application impact.
-- Keep recovery actions behind approval for this customer exercise.
+- A service can be available while its ability to detect, absorb, or recover from the next failure is degraded.
+- Strong preventive SRE work combines inventory, spend, utilization, Advisor, monitoring, protection, and workload context.
+- The highest-priority assurance issue is selected by customer consequence and evidence, not cost alone.
+- Discovery remains read-only until ownership, approval, rollback, and validation are explicit.
 
 ## Expected Student Output
 
-- Backup-failure alerts enabled for an existing protected workload.
-- A response plan covering detect, investigate, classify, notify, approve, recover, validate, and escalate.
-- A concise Teams post with live evidence and application impact.
-- Recovery guidance containing application validation and escalation conditions.
+- A declared subscription and resource scope.
+- At least three prioritized assurance issues supported by multiple evidence sources.
+- One selected issue with customer consequence, confidence, owner, approval, remediation, rollback, and validation.
+- A recurring detection cadence that would reveal recurrence.
 
 ## Coach Runbook
 
-1. Verify vault alerting, protected-item state, SRE Agent incident routing, and Teams authorization before the exercise.
-2. Prefer a genuine failed lab job; otherwise retain an `EXERCISE` label in the incident and every Teams message.
-3. Require evidence, application impact, confidence, owner, next action, RTO/RPO status, and approval posture in the notification.
-4. Treat restore completion as an intermediate event; close only after application, dependency, telemetry, and business validation.
+1. Require the student to declare subscriptions, resource groups, time window, and inaccessible evidence before analysis.
+2. Check that each issue uses at least two evidence planes and names the affected resource, customer consequence, and owner.
+3. Select the highest-priority issue and require approval, reversible remediation, rollback trigger, validation, and recurrence detection.
+4. End by confirming no writes occurred and the issue is planned, not falsely reported as resolved.
 
 ## Common Issues and Hints
 
-- **Symptom:** No real failed backup is available. **Fix:** use a clearly labeled exercise incident with live vault and application evidence; never fabricate a failed job.
-- **Symptom:** Teams returns `400 Group ID does not exist`. **Fix:** list teams and channels through the connector and resolve the destination by display name.
-- **Symptom:** The response plan cannot post. **Fix:** verify Teams connector authorization and grant its post-message tool to the selected agent.
-- **Symptom:** The workflow stops after a successful restore. **Fix:** require application probes, dependency checks, telemetry, and business validation before closure.
+- **Symptom:** The report only paraphrases Azure Advisor. **Fix:** require inventory, utilization, backup, alert, telemetry-freshness, and workload-impact evidence.
+- **Symptom:** Cost data is unavailable. **Fix:** report the permission gap and continue with technical optimization evidence.
+- **Symptom:** The agent recommends deleting or downsizing a critical resource. **Fix:** apply the knowledge document’s criticality and recovery objectives before prioritization.
+- **Symptom:** The student calls the selected risk resolved. **Fix:** distinguish a governed remediation plan from an executed and validated change.
 
 ## Debrief Discussion Guide
 
-- Why is restore completion not incident resolution? → The application may still be unavailable, inconsistent, or disconnected from dependencies.
-- What belongs behind approval? → Actions with data, availability, cost, compliance, or broad blast-radius impact.
-- When should the workflow escalate? → RTO/RPO breach, no usable recovery point, failed validation, uncertain ownership, or repeated recovery failure.
+- Why is an assurance gap an SRE issue before an outage? → It raises the probability, duration, or uncertainty of future customer impact.
+- Which preventive actions can be automated safely? → Low-blast-radius, reversible changes with strong validation and clear ownership.
+- What proves preventive resolution? → The missing or degraded control is restored, tested, monitored for recurrence, and does not reduce service reliability.
 
 ## Success Criteria Notes
 
-- **Require:** correct alert routing, safe notification, approval boundary, application validation, and explicit escalation conditions.
-- **Reject:** fabricated failed jobs, leaked credentials/IDs, or closure based only on restore status.
-- **Accept:** a genuine alert or clearly labeled exercise, and either Recovery Services vaults or Backup vaults.
+- **Require:** declared scope, multi-source evidence, a selected assurance issue, ownership, governed remediation, rollback, validation, and confirmation that no writes occurred.
+- **Reject:** Advisor paraphrases presented as analysis, cost-only prioritization, or a planned change reported as completed resolution.
+- **Accept:** fewer findings in a small environment and documented permission gaps when uncertainty remains explicit.
 
 ## Solution
 
-### Enable and route backup alerts
+Ask the SRE Agent to run a recommendation-only assurance review across every accessible lab subscription. Require these evidence planes:
 
-In the vault, open **Monitoring > Alerts**, confirm Azure Monitor backup alerts are enabled, and use **Configure notifications** at the intended scope. Confirm the SRE Agent Azure Monitor incident connection can ingest the alert.
+1. Resource Graph inventory and orphan checks.
+2. Cost Management spend where permissions allow.
+3. Azure Monitor utilization and telemetry freshness.
+4. Azure Advisor recommendations.
+5. Backup and alert coverage for critical workloads.
+6. Knowledge-base criticality, ownership, RTO, and RPO.
 
-### Configure the workflow
-
-Create a response plan matching stable backup alert titles such as `Backup Failed` or `Backup Health`. Require these stages:
-
-1. Read vault, protected-item, job, and recovery-point state.
-2. Identify the dependent application and query its current health.
-3. Apply owner, criticality, RTO, RPO, and escalation context from knowledge.
-4. Classify the event as confirmed failure, assurance risk, or informational.
-5. Post one concise Teams message with evidence, impact, confidence, and next action.
-6. Request approval before any recovery or application change.
-7. After an approved action, validate availability, dependencies, telemetry, and business function.
-8. Resolve only after validation; otherwise escalate.
-
-Authorize the Teams connector in the portal and grant its post-message tool to the response agent. Resolve the Team and channel by display name instead of storing IDs or credentials.
-
-### Validate safely
-
-Use a genuine alert when available. Otherwise, invoke the workflow with `EXERCISE - Backup assurance review`, require live evidence, and retain the `EXERCISE` label in Teams. Pending initial protection is an assurance risk, not a confirmed failed job.
+Require one de-duplicated table with scope, evidence, customer consequence, value, risk, confidence, effort, trade-off, owner, and approval requirement. Select one issue and add reversible remediation, rollback trigger, validation, and recurrence detection. End with an explicit statement that no resources were changed and the issue is not yet resolved.

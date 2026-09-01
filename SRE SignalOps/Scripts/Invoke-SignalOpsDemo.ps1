@@ -1,7 +1,7 @@
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [Parameter(Mandatory)]
-    [ValidateSet('00','01','02','03','04','05','06','07','08','09','10','11','12','13')]
+    [ValidateSet('00','01','02','05','06','07','08','09','10','11','12','13','14')]
     [string]$Challenge,
     [switch]$Execute,
     [switch]$Restore,
@@ -187,29 +187,14 @@ switch ($Challenge) {
         Write-Expected 'The two azd-managed Azure telemetry connectors are visible; repository and knowledge state is reported independently.'
         Write-Prompt 'List the currently proven evidence planes. Distinguish deployed connector infrastructure from populated source and knowledge evidence.'
     }
-    '03' {
-        if (-not (Test-Path $Bash)) { throw "Git Bash not found at $Bash" }
-        $subscriptionId = (az account show --query id -o tsv).Trim()
-        $configRoot = (Join-Path $RepoRoot 'Student\Resources').Replace('\','/').Replace('C:','/c')
-        $bashToolPath = Get-BashToolPath
-        $targets = @('skills','subagents','incident-platforms','incident-filters')
-        foreach ($target in $targets) {
-            $operation = if ($Execute) { 'apply' } else { 'plan' }
-            $command = "$bashToolPath" + "cd '$configRoot' && ./infra/scripts/sre-agent-config.sh $operation --target '$target' --subscription '$subscriptionId' --resource-group '$AgentResourceGroup' --agent '$AgentName'"
-            if ($Execute -and -not $PSCmdlet.ShouldProcess("$AgentName/$target", 'Apply SRE Agent configuration')) { continue }
-            Invoke-Native { & $Bash -lc $command }
-        }
-        Write-Expected 'Diagnostic procedures, specialist routing, Azure Monitor incident intake, and incident filters plan cleanly; with -Execute they apply without exposing secrets.'
-        Write-Prompt 'EXERCISE: Users report that Grubify is slow and intermittently returning HTTP errors. Determine whether a current incident exists. Report the investigation window, current evidence, affected and unaffected components, competing hypotheses, provisional diagnosis and confidence, next discriminating check, approval boundary, and recovery criteria.'
-    }
-    '04' {
+    '05' {
         $context = Get-AgentContext
         $headers = @{ Authorization = "Bearer $($context.Token)" }
         Invoke-RestMethod -Uri "$($context.Endpoint)/api/v2/extendedAgent/connectors" -Headers $headers | ConvertTo-Json -Depth 8
         Write-Expected 'Every live connector has a type and current state; reference manifests are not reported as live systems.'
         Write-Prompt 'Build a connector matrix with authentication, authorization, reachable tools, freshness, and one harmless read test. Separate configured from proven connectivity.'
     }
-    '05' {
+    '06' {
         $context = Get-AgentContext
         $headers = @{ Authorization = "Bearer $($context.Token)" }
         $agents = Invoke-RestMethod -Uri "$($context.Endpoint)/api/v2/extendedAgent/agents" -Headers $headers
@@ -218,7 +203,7 @@ switch ($Challenge) {
         Write-Expected 'Specialists have distinct handoff descriptions and constrained tools.'
         Write-Prompt 'Route an application error, denied network flow, and cost anomaly to specialists. Explain each choice and identify overlaps or unowned gaps.'
     }
-    '06' {
+    '07' {
         $context = Get-AgentContext
         $headers = @{ Authorization = "Bearer $($context.Token)" }
         Invoke-RestMethod -Uri "$($context.Endpoint)/api/v2/extendedAgent/incidentFilters" -Headers $headers | ConvertTo-Json -Depth 8
@@ -226,7 +211,7 @@ switch ($Challenge) {
         Write-Expected 'Filter conditions, selected specialists, and Azure Monitor incident wiring are visible.'
         Write-Prompt 'Trace one non-destructive alert from filter match through evidence collection, approval, validation, timeout, escalation, and closure. Do not approve a write.'
     }
-    '07' {
+    '08' {
         $workloadResourceGroup = Get-AzdValue 'AZURE_RESOURCE_GROUP'
         $apiUrl = Get-AzdValue 'API_BASE_URL'
         1..10 | ForEach-Object { Invoke-RestMethod -Uri "$apiUrl/api/restaurants" | Out-Null }
@@ -237,14 +222,14 @@ switch ($Challenge) {
         Write-Expected 'API requests appear; absent browser or downstream edges remain explicitly unobserved.'
         Write-Prompt 'Create an evidence-backed dependency map. For each edge include direction, protocol, timestamp, volume, latency, failure rate, and evidence source; label unobserved edges.'
     }
-    '08' {
-        if (-not $ResourceGroup -or -not $NicName) { throw 'Challenge 08 requires -ResourceGroup and -NicName for the coach-provided sandbox.' }
+    '09' {
+        if (-not $ResourceGroup -or -not $NicName) { throw 'Challenge 09 requires -ResourceGroup and -NicName for the coach-provided sandbox.' }
         az network nic list-effective-nsg --resource-group $ResourceGroup --name $NicName -o jsonc
         Write-Expected 'The effective NSG output identifies the actual NIC/subnet associations and rule priorities.'
         Write-Prompt 'Identify the exact effective deny, affected and unaffected paths, and the narrowest reversible remediation. Do not delete a broad deny rule.'
     }
-    '09' {
-        if (-not $ResourceGroup -or -not $NicName) { throw 'Challenge 09 requires -ResourceGroup and -NicName.' }
+    '10' {
+        if (-not $ResourceGroup -or -not $NicName) { throw 'Challenge 10 requires -ResourceGroup and -NicName.' }
         az network nic show-effective-route-table --resource-group $ResourceGroup --name $NicName -o table
         if ($VmName -and $SourceIp -and $DestinationIp) {
             az network watcher show-next-hop --resource-group $ResourceGroup --vm $VmName --source-ip $SourceIp --dest-ip $DestinationIp -o jsonc
@@ -254,8 +239,8 @@ switch ($Challenge) {
         Write-Expected 'Forward and return route evidence identifies the effective next hop or missing path.'
         Write-Prompt 'Prove forward and return paths separately, then distinguish routing from DNS, NSG, and application failure.'
     }
-    '10' {
-        if (-not $WorkspaceId -or -not $VmResourceId) { throw 'Challenge 10 requires -WorkspaceId and -VmResourceId. Use coach evidence-pack mode when no monitored VM exists.' }
+    '11' {
+        if (-not $WorkspaceId -or -not $VmResourceId) { throw 'Challenge 11 requires -WorkspaceId and -VmResourceId. Use coach evidence-pack mode when no monitored VM exists.' }
         $escapedResourceId = $VmResourceId.Replace("'", "''")
         az monitor log-analytics query --workspace $WorkspaceId --analytics-query "Heartbeat | where _ResourceId =~ '$escapedResourceId' | summarize HeartbeatCount=count(), LastHeartbeat=max(TimeGenerated)" -o table
         if ($Execute -or $Restore) {
@@ -268,7 +253,7 @@ switch ($Challenge) {
         Write-Expected 'The baseline has recent Heartbeat data; any VM state change is explicit, confirmed, and reversible with -Restore.'
         Write-Prompt 'Produce an RCA with timeline, evidence matrix, competing hypotheses, rejected hypothesis, likely cause, contributing factors, confidence, and next safe action.'
     }
-    '11' {
+    '12' {
         $context = Get-AgentContext
         $headers = @{ Authorization = "Bearer $($context.Token)" }
         Invoke-RestMethod -Uri "$($context.Endpoint)/api/v1/AgentMemory/files" -Headers $headers | ConvertTo-Json -Depth 8
@@ -289,7 +274,7 @@ switch ($Challenge) {
         Write-Expected 'The same question can be compared before and after ingestion, with live evidence separated from organizational context.'
         Write-Prompt 'Assess the selected VM heartbeat risk. Attribute every claim to live Azure evidence or custom knowledge, and flag conflicts or stale context.'
     }
-    '12' {
+    '13' {
         $subscriptionId = (az account show --query id -o tsv).Trim()
         $resources = az resource list --subscription $subscriptionId -o json | ConvertFrom-Json
         $resources | Group-Object type | Sort-Object Count -Descending | Select-Object Count, Name | Format-Table -AutoSize
@@ -298,7 +283,7 @@ switch ($Challenge) {
         Write-Expected 'Inventory, Advisor, and observability evidence are visible; unavailable cost or utilization access is reported as a gap.'
         Write-Prompt 'Produce three prioritized read-only recommendations across cost, reliability, observability, resilience, or governance. Include evidence, value, confidence, effort, trade-off, owner, and approval need.'
     }
-    '13' {
+    '14' {
         $subscriptionId = (az account show --query id -o tsv).Trim()
         az backup vault list --subscription $subscriptionId --query '[].{name:name,resourceGroup:resourceGroup,location:location}' -o table
         $message = @'

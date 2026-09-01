@@ -3,19 +3,20 @@ const missions = [
     ['01', 'Bootstrap', 'Deploy the Agent Core with azd', 'Add the SRE Agent, managed identity, governed RBAC, and managed resource scope.', '20–30 min', ['azd provision', 'RBAC', 'Agent']],
     ['02', 'Bootstrap', 'Deploy Evidence Connectors with azd', 'Add Azure telemetry connectors and prove the resulting evidence-plane ground truth.', '20–25 min', ['Connectors', 'Knowledge', 'Telemetry']],
     ['03', 'Bootstrap', 'Investigate and Recover a Grubify Memory Incident', 'Trigger a real Grubify memory incident, follow Azure Monitor and SRE Agent evidence, then recover and verify.', '30–40 min', ['Alerts', 'Memory', 'RCA']],
-    ['04', 'Wire', 'Investigate an Evidence Blind Spot', 'Classify a failed or stale evidence source and choose a safe fallback or escalation.', '15–20 min', ['Evidence', 'Freshness', 'Escalation']],
-    ['05', 'Wire', 'Route a Cross-Domain Incident', 'Coordinate application and network investigation without losing ownership or the incident timeline.', '15–20 min', ['Routing', 'Handoffs', 'Ownership']],
-    ['06', 'Wire', 'Exercise a Guarded HTTP-Error Response', 'Follow an HTTP-error incident through intake, evidence, approval, and recovery criteria.', '20–25 min', ['HTTP errors', 'Approval', 'Recovery']],
-    ['07', 'Trace', 'Scope Impact with Dependency Evidence', 'Bound the affected Grubify user journey and identify the next discriminating check.', '20–25 min', ['Dependencies', 'Blast radius', 'Telemetry']],
-    ['08', 'Trace', 'Investigate a Network Security Failure', 'Find the NSG decision that blocks an application dependency.', '25–30 min', ['NSG', 'Flow Logs', 'Blast radius']],
-    ['09', 'Trace', 'Investigate a Routing Black Hole', 'Use effective routes and next-hop evidence to expose asymmetric routing.', '25–30 min', ['UDR', 'Next hop', 'Routing']],
-    ['10', 'Operate', 'Heartbeat Triage and Deep RCA', 'Separate symptom from cause and defend an evidence-backed RCA.', '20–25 min', ['Heartbeat', 'Triage', 'RCA']],
-    ['11', 'Operate', 'Improve the Next Heartbeat Response', 'Replay the incident with verified context while keeping current evidence authoritative.', '20–25 min', ['Context', 'Learning', 'Evidence']],
-    ['12', 'Operate', 'Resolve a Critical Assurance Risk', 'Find a critical preventive issue and define owned remediation, rollback, and validation.', '20–25 min', ['Assurance', 'Prevention', 'Governance']],
-    ['13', 'Operate', 'Resolve a Backup Assurance Incident', 'Triage recoverability risk, communicate impact, and validate service after recovery.', '20–25 min', ['Azure Backup', 'Communication', 'Recovery']]
+    ['04', 'Bootstrap', 'Build Grubify Knowledge and Incident Memory', 'Upload approved Grubify knowledge, verify indexing, and inspect memory-first specialist instructions.', '20–30 min', ['Agent Memory', 'Knowledge', 'Indexing']],
+    ['05', 'Wire', 'Investigate an Evidence Blind Spot', 'Classify a failed or stale evidence source and choose a safe fallback or escalation.', '15–20 min', ['Evidence', 'Freshness', 'Escalation']],
+    ['06', 'Wire', 'Route a Cross-Domain Incident', 'Coordinate application and network investigation without losing ownership or the incident timeline.', '15–20 min', ['Routing', 'Handoffs', 'Ownership']],
+    ['07', 'Wire', 'Exercise a Guarded HTTP-Error Response', 'Follow an HTTP-error incident through intake, evidence, approval, and recovery criteria.', '20–25 min', ['HTTP errors', 'Approval', 'Recovery']],
+    ['08', 'Trace', 'Scope Impact with Dependency Evidence', 'Bound the affected Grubify user journey and identify the next discriminating check.', '20–25 min', ['Dependencies', 'Blast radius', 'Telemetry']],
+    ['09', 'Trace', 'Investigate a Network Security Failure', 'Find the NSG decision that blocks an application dependency.', '25–30 min', ['NSG', 'Flow Logs', 'Blast radius']],
+    ['10', 'Trace', 'Investigate a Routing Black Hole', 'Use effective routes and next-hop evidence to expose asymmetric routing.', '25–30 min', ['UDR', 'Next hop', 'Routing']],
+    ['11', 'Operate', 'Heartbeat Triage and Deep RCA', 'Separate symptom from cause and defend an evidence-backed RCA.', '20–25 min', ['Heartbeat', 'Triage', 'RCA']],
+    ['12', 'Operate', 'Improve the Next Heartbeat Response', 'Replay the incident with verified context while keeping current evidence authoritative.', '20–25 min', ['Context', 'Learning', 'Evidence']],
+    ['13', 'Operate', 'Resolve a Critical Assurance Risk', 'Find a critical preventive issue and define owned remediation, rollback, and validation.', '20–25 min', ['Assurance', 'Prevention', 'Governance']],
+    ['14', 'Operate', 'Resolve a Backup Assurance Incident', 'Triage recoverability risk, communicate impact, and validate service after recovery.', '20–25 min', ['Azure Backup', 'Communication', 'Recovery']]
 ];
 
-const contentVersion = '5';
+const contentVersion = '6';
 
 const labDetails = {
     number: 'LAB',

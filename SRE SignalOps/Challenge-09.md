@@ -1,61 +1,55 @@
 [< Previous Challenge](./Challenge-08.md) — **[Home](./README.md)** — [Next Challenge >](./Challenge-10.md)
 
-# Challenge 09 — Investigate a Routing Black Hole
+# Challenge 09 — Investigate a Network Security Failure
 
-> **Incident capability exercised in this challenge**: Path Diagnosis · Hypothesis Rejection · Bidirectional Recovery
+> **Incident capability exercised in this challenge**: Security-Rule Diagnosis · Blast-Radius Control · Safe Recovery
 
 ## Introduction
 
-The dependency connection still fails after security rules are shown to allow it. Diagnose the lab-only incident by proving the forward and return paths separately, then validate both connectivity and application recovery.
+Grubify cannot reach one required dependency, but other paths remain healthy. Investigate whether an effective NSG decision explains the timeout, reject competing causes, and recover only the affected flow without weakening unrelated protections.
 
 ## Description
 
-> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-09.ps1' -ResourceGroup '<sandbox-rg>' -NicName '<nic>'`; add VM and IP parameters for next-hop evidence. See the [presenter runbook](./Scripts/README.md).
+> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-09.ps1' -ResourceGroup '<sandbox-rg>' -NicName '<nic>'`. See the [presenter runbook](./Scripts/README.md).
 
-This mission uses the same coach-provided network sandbox or incident snapshot as Challenge 08. Introduce or receive a route-table condition that creates an invalid or asymmetric return path. Keep the event labeled `EXERCISE` and preserve the pre-fault route state for restoration.
+This mission requires an existing hub-spoke network sandbox with Network Watcher and flow telemetry. The `azd` Grubify deployment from Challenge 00 does not create that network. Use a coach-provided sandbox or skip fault injection and analyze a supplied incident snapshot.
 
-Ask the network specialist to produce:
+Create or receive a known NSG deny condition on one dependency edge from the map. Keep the incident labeled `EXERCISE` unless a genuine lab alert exists. Ask the SRE Agent to correlate:
 
-- source and destination route decisions;
-- longest-prefix and route-source reasoning;
-- effective next hop in both directions;
-- Network Watcher next-hop results;
-- evidence that distinguishes routing from DNS, NSG, and application failure;
-- the narrowest reversible route correction.
+- source and destination addresses, ports, and direction;
+- NSG association and effective security rules;
+- matching allow and deny priorities;
+- flow-log or Traffic Analytics evidence;
+- affected and unaffected dependencies;
+- minimum safe remediation and rollback.
 
-Use PowerShell for independent checks:
+Use PowerShell to inspect effective rules on the selected NIC:
 
 ```powershell
 $ResourceGroup = '<network-sandbox-rg>'
 $NicName = '<affected-nic>'
-az network nic show-effective-route-table --resource-group $ResourceGroup --name $NicName -o table
-
-az network watcher show-next-hop `
-  --resource-group $ResourceGroup `
-  --vm '<source-vm>' `
-  --source-ip '<source-ip>' `
-  --dest-ip '<destination-ip>' `
-  -o jsonc
+az network nic list-effective-nsg --resource-group $ResourceGroup --name $NicName -o jsonc
 ```
 
-Validate both directions after an approved correction. A successful forward test alone is not recovery evidence.
+Do not remove a broad deny rule. Propose the smallest scoped correction and require approval before any write.
 
 ## Success Criteria
 
-- [ ] Forward and return route decisions are documented independently
-- [ ] Effective route and next-hop evidence identify the black hole
-- [ ] DNS, NSG, and application hypotheses are explicitly tested and rejected or retained with evidence
-- [ ] Recovery proves bidirectional connectivity and application behavior
-- [ ] **Explain to your coach** — why can a route table look valid in the portal while the effective path is still wrong?
+- [ ] The exact effective rule and priority are identified
+- [ ] Flow evidence agrees with the rule evaluation
+- [ ] Blast radius includes affected and unaffected paths
+- [ ] The SRE Agent rejects at least one plausible non-NSG cause with evidence
+- [ ] Remediation is minimal, approval-gated, reversible, and followed by recovery and regression checks
+- [ ] **Explain to your coach** — why is deleting the blocking rule usually less safe than introducing a narrowly scoped higher-priority rule?
 
 ## Learning Resources
 
-- [Diagnose routing problems](https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-routing-problem)
-- [Network Watcher next hop](https://learn.microsoft.com/en-us/azure/network-watcher/next-hop-overview)
-- [Azure virtual network routing](https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview)
+- [Diagnose NSG traffic filtering](https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem)
+- [Effective security rules](https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works)
+- [Virtual network flow logs](https://learn.microsoft.com/en-us/azure/network-watcher/vnet-flow-logs-overview)
 
 ## Tips
 
-- Check effective routes, not only route-table definitions.
-- Prove the return path.
-- Restore every injected route change before continuing.
+- Use only a disposable lab sandbox for fault injection.
+- Effective rules matter more than the rule you expected to apply.
+- Restore the sandbox before leaving the mission.

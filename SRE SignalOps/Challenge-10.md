@@ -1,51 +1,61 @@
 [< Previous Challenge](./Challenge-09.md) — **[Home](./README.md)** — [Next Challenge >](./Challenge-11.md)
 
-# Challenge 10 — Heartbeat Triage and Deep RCA
+# Challenge 10 — Investigate a Routing Black Hole
 
-> **Incident capability exercised in this challenge**: Missing-Heartbeat Triage · Hypothesis Testing · Recovery Proof
+> **Incident capability exercised in this challenge**: Path Diagnosis · Hypothesis Rejection · Bidirectional Recovery
 
 ## Introduction
 
-A monitored VM stops sending heartbeats, but the alert does not explain whether the VM, monitoring agent, or telemetry path failed. Simulate that incident and use the SRE Agent to distinguish symptom from root cause, recommend a safe response, and prove recovery with current Azure state and telemetry.
+The dependency connection still fails after security rules are shown to allow it. Diagnose the lab-only incident by proving the forward and return paths separately, then validate both connectivity and application recovery.
 
 ## Description
 
-> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-10.ps1' -WorkspaceId '<workspace-id>' -VmResourceId '<resource-id>'`. Lab VM changes require `-Execute`; recovery requires `-Restore`. See the [presenter runbook](./Scripts/README.md).
+> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-10.ps1' -ResourceGroup '<sandbox-rg>' -NicName '<nic>'`; add VM and IP parameters for next-hop evidence. See the [presenter runbook](./Scripts/README.md).
 
-The Grubify deployment does not create a VM or Azure Monitor Agent. Complete this mission in one of two supported modes:
+This mission uses the same coach-provided network sandbox or incident snapshot as Challenge 09. Introduce or receive a route-table condition that creates an invalid or asymmetric return path. Keep the event labeled `EXERCISE` and preserve the pre-fault route state for restoration.
 
-- **Live mode:** use a coach-provided lab VM with Azure Monitor Agent, a data collection rule, and recent `Heartbeat` records in the connected Log Analytics workspace.
-- **Evidence-pack mode:** use a coach-provided alert, heartbeat timeline, VM power-state evidence, Activity Log evidence, and agent-health snapshot. Simulate routing and recovery; do not claim that a live alert fired.
+Ask the network specialist to produce:
 
-Keep the exercise scoped to that single VM and achieve these outcomes:
+- source and destination route decisions;
+- longest-prefix and route-source reasoning;
+- effective next hop in both directions;
+- Network Watcher next-hop results;
+- evidence that distinguishes routing from DNS, NSG, and application failure;
+- the narrowest reversible route correction.
 
-- Create an enabled heartbeat alert that evaluates every 5 minutes over a 15-minute window and fires when the selected VM reports no heartbeat.
-- Route the alert to the Azure SRE Agent through the existing Azure Monitor incident connection and a dedicated response plan.
-- Safely create a missing-heartbeat condition on the lab VM, then observe the alert and SRE investigation.
-- Ask the agent for a deep RCA containing a timeline, evidence matrix, competing hypotheses, rejected hypothesis, root-cause assessment, contributing factors, confidence level, and recommended recovery action.
-- Restore the VM or monitoring path and confirm that heartbeat data resumes and the alert resolves.
+Use PowerShell for independent checks:
 
-Do not make the response plan restart or modify the VM automatically. Investigation and recommendation are sufficient for this customer-friendly exercise.
+```powershell
+$ResourceGroup = '<network-sandbox-rg>'
+$NicName = '<affected-nic>'
+az network nic show-effective-route-table --resource-group $ResourceGroup --name $NicName -o table
+
+az network watcher show-next-hop `
+  --resource-group $ResourceGroup `
+  --vm '<source-vm>' `
+  --source-ip '<source-ip>' `
+  --dest-ip '<destination-ip>' `
+  -o jsonc
+```
+
+Validate both directions after an approved correction. A successful forward test alone is not recovery evidence.
 
 ## Success Criteria
 
-- [ ] Live mode has one enabled heartbeat alert with the required scope and timing; evidence-pack mode identifies the supplied rule and labels the run as an exercise
-- [ ] A live or simulated incident is routed to the intended SRE Agent response plan and accurately labeled
-- [ ] The SRE Agent correlates missing heartbeat data with current VM state and monitoring status
-- [ ] The RCA clearly separates observed symptoms, supporting evidence, likely root cause, contributing factors, confidence, and next action
-- [ ] The RCA compares at least two plausible hypotheses and explains why one was rejected
-- [ ] Live mode proves resumed heartbeat and alert resolution; evidence-pack mode states the exact evidence required to prove recovery
-- [ ] **Explain to your coach** — why is “heartbeat missing” a symptom rather than a root cause, and what additional evidence would increase your confidence in the diagnosis?
+- [ ] Forward and return route decisions are documented independently
+- [ ] Effective route and next-hop evidence identify the black hole
+- [ ] DNS, NSG, and application hypotheses are explicitly tested and rejected or retained with evidence
+- [ ] Recovery proves bidirectional connectivity and application behavior
+- [ ] **Explain to your coach** — why can a route table look valid in the portal while the effective path is still wrong?
 
 ## Learning Resources
 
-- [Azure Monitor log search alerts](https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-create-log-alert-rule)
-- [Azure Monitor Agent overview](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-overview)
-- [Azure Monitor alerts and state](https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview)
-- [Automate incident response with Azure SRE Agent](https://learn.microsoft.com/en-us/azure/sre-agent/automate-incidents)
+- [Diagnose routing problems](https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-routing-problem)
+- [Network Watcher next hop](https://learn.microsoft.com/en-us/azure/network-watcher/next-hop-overview)
+- [Azure virtual network routing](https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview)
 
 ## Tips
 
-- Confirm that the VM has recent heartbeat records before creating the failure condition. A missing baseline is a monitoring setup issue, not an incident.
-- Compare the alert timestamp with VM power-state changes and the most recent heartbeat timestamp.
-- A strong RCA states uncertainty. Do not call a stopped VM a monitoring-agent failure unless the evidence supports it.
+- Check effective routes, not only route-table definitions.
+- Prove the return path.
+- Restore every injected route change before continuing.

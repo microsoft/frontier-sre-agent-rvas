@@ -1,59 +1,51 @@
 [< Previous Challenge](./Challenge-05.md) — **[Home](./README.md)** — [Next Challenge >](./Challenge-07.md)
 
-# Challenge 06 — Exercise a Guarded HTTP-Error Response
+# Challenge 06 — Route a Cross-Domain Incident
 
-> **Incident capability exercised in this challenge**: Alert Routing · Guarded Response · Recovery Validation
+> **Incident capability exercised in this challenge**: Domain Routing · Coordinated Investigation · Least Privilege
 
 ## Introduction
 
-Turn the Grubify HTTP-error report into a controlled incident exercise. Observe how the SRE Agent receives the signal, gathers evidence, proposes a bounded response, waits at the action gate, and defines proof of recovery.
+A Grubify HTTP failure may originate in the application, telemetry path, network, or Azure platform. Route an ambiguous incident by evidence domain, coordinate the handoffs, and preserve one accountable incident narrative.
 
 ## Description
 
-> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-06.ps1'` to show incident filters and Azure Monitor wiring. See the [presenter runbook](./Scripts/README.md).
+> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-06.ps1'` to inventory specialist agents and print routing prompts. See the [presenter runbook](./Scripts/README.md).
 
-Use a genuine non-destructive HTTP-error alert when available, or invoke a clearly labeled `EXERCISE - Grubify HTTP errors` event that matches the configured sample-food filter. Do not inject production failures merely to create an alert.
+Use this exercise report:
 
-Ask the SRE Agent to handle the event and produce an observed incident timeline containing:
+> **EXERCISE:** Grubify clients receive intermittent HTTP 5xx responses, and one backend dependency shows connection failures. Determine which operational domains must investigate and in what order.
 
-- incident source and filter conditions;
-- specialist and skill selection;
-- evidence collected before classification;
-- severity and confidence decisions;
-- proposed actions and approval requirements;
-- recovery verification and closure criteria;
-- timeout, retry, and escalation behavior.
+Have the primary SRE Agent form an initial hypothesis, select the first specialist based on the evidence needed, and define the handoff condition for a second domain. Keep a compact roster of relevant specialists with purpose, data sources, tools, write permissions, approval boundary, and return conditions. Skills and subagents are supporting implementation details; the required outcome is a coordinated incident investigation.
 
-Use PowerShell to inventory incident filters:
+Use the repository manifests as a second source of truth:
 
 ```powershell
-$SubscriptionId = az account show --query id -o tsv
-$AgentResourceGroup = 'rg-signalops-agent'
-$AgentName = 'signalops-agent'
-$ApiVersion = '2025-05-01-preview'
-$Base = "https://management.azure.com/subscriptions/$SubscriptionId/resourceGroups/$AgentResourceGroup/providers/Microsoft.App/agents/$AgentName"
-az rest --method GET --url "$Base/incidentFilters?api-version=$ApiVersion" --query 'value[].name' -o table
+Get-ChildItem '.\Student\Resources\azure-sre-agent-config\subagents' -Filter '*.yaml' |
+  ForEach-Object {
+    [pscustomobject]@{ Name = $_.BaseName; Updated = $_.LastWriteTimeUtc; Bytes = $_.Length }
+  } | Format-Table
 ```
 
-Do not approve a write. Compare the observed timeline with the intended response path and mark every skipped or unexpected stage. The SRE Agent must stop or escalate when evidence is insufficient, approval times out, a proposed action fails, or recovery cannot be demonstrated.
+Test the incident as it evolves from application error to denied network flow evidence. Add a cost-anomaly prompt only as a negative control: it should not divert the active availability incident unless cost evidence is causally relevant. Record each routing decision, evidence returned, rejected domain, handoff, and remaining owner gap.
 
 ## Success Criteria
 
-- [ ] The genuine or exercise incident is accurately labeled and routed by the intended HTTP-error filter
-- [ ] Current Grubify evidence and classification precede action selection
-- [ ] The proposed response states scope, risk, rollback, approval, and recovery checks
-- [ ] Timeout, failed-action, failed-validation, and escalation paths are visible
-- [ ] The observed incident timeline is compared with the intended response path
-- [ ] **Explain to your coach** — why must incident closure depend on service recovery evidence rather than workflow completion?
+- [ ] The initial incident hypothesis identifies the evidence needed before choosing a specialist
+- [ ] Application and network handoffs are justified by returned evidence rather than keywords
+- [ ] The primary SRE Agent preserves one timeline, owner, and unresolved-question list across handoffs
+- [ ] Tool scope, write posture, overlap, and no-owner gaps are visible without becoming the focus of the incident report
+- [ ] The unrelated cost prompt does not divert the availability investigation without causal evidence
+- [ ] **Explain to your coach** — when should an SRE keep an investigation in one domain, and when is a specialist handoff justified?
 
 ## Learning Resources
 
-- [Automate incidents with Azure SRE Agent](https://learn.microsoft.com/en-us/azure/sre-agent/automate-incidents)
-- [Azure SRE Agent API sub-resources](https://learn.microsoft.com/en-us/azure/sre-agent/api-reference#sub-resources)
-- [Azure Monitor alert processing rules](https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-processing-rules)
+- [Azure SRE Agent subagents](https://learn.microsoft.com/en-us/azure/sre-agent/subagents)
+- [Azure SRE Agent tools](https://learn.microsoft.com/en-us/azure/sre-agent/tools)
+- [Zero Trust least-privilege principle](https://learn.microsoft.com/en-us/security/zero-trust/deploy/identity)
 
 ## Tips
 
-- The incident outcome matters more than the response-plan terminology.
-- Closure must depend on recovery evidence.
-- Keep the exercise labeled and non-destructive.
+- Route according to the next evidence required, not the loudest keyword.
+- A handoff must return evidence or a bounded uncertainty to the primary incident record.
+- Do not let multiple specialists create competing timelines or owners.

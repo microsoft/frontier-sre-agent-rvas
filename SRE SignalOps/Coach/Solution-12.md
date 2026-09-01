@@ -1,62 +1,71 @@
 [< Previous Solution](./Solution-11.md) | **[Home](./README.md)** | [Next Solution >](./Solution-13.md)
 
-# Coach Guide — Challenge 12: Resolve a Critical Assurance Risk
+# Coach Guide — Challenge 12: Improve the Next Heartbeat Response
 
 ## Purpose
 
-- Detect a critical observability, backup, capacity, cost, or governance assurance issue before it becomes a customer-facing incident.
-- Turn the selected issue into an owned, approval-gated remediation and validation plan.
+- Replay the heartbeat incident and demonstrate how verified organizational context improves impact, ownership, recovery, and escalation decisions.
+- Teach students to reuse confirmed learning without allowing history to replace current investigation.
 - Expected time: 20–25 minutes.
 
 ## Mini-Lecture (5 min before challenge)
 
-- A service can be available while its ability to detect, absorb, or recover from the next failure is degraded.
-- Strong preventive SRE work combines inventory, spend, utilization, Advisor, monitoring, protection, and workload context.
-- The highest-priority assurance issue is selected by customer consequence and evidence, not cost alone.
-- Discovery remains read-only until ownership, approval, rollback, and validation are explicit.
+- Monitoring answers “what is happening”; operational context answers “what does it mean here and who must act.”
+- Useful knowledge includes architecture, ownership, policy, thresholds, recovery objectives, and boundaries.
+- Knowledge must be versioned and reviewed because stale context can produce confidently wrong guidance.
+- Incident learning belongs in the knowledge base only after evidence confirms it.
 
 ## Expected Student Output
 
-- A declared subscription and resource scope.
-- At least three prioritized assurance issues supported by multiple evidence sources.
-- One selected issue with customer consequence, confidence, owner, approval, remediation, rollback, and validation.
-- A recurring detection cadence that would reveal recurrence.
+- A baseline heartbeat-incident response captured before custom knowledge is added.
+- A concise reliability knowledge document with ownership, architecture, objectives, and boundaries.
+- A replayed response that visibly improves impact, ownership, recovery, or escalation reasoning.
+- One verified incident lesson reused without overriding current Azure evidence.
 
 ## Coach Runbook
 
-1. Require the student to declare subscriptions, resource groups, time window, and inaccessible evidence before analysis.
-2. Check that each issue uses at least two evidence planes and names the affected resource, customer consequence, and owner.
-3. Select the highest-priority issue and require approval, reversible remediation, rollback trigger, validation, and recurrence detection.
-4. End by confirming no writes occurred and the issue is planned, not falsely reported as resolved.
+1. Replay the Challenge 11 heartbeat question before attaching custom knowledge; preserve the exact prompt and exercise label.
+2. Review the proposed document for durable facts, owner, review date, boundaries, and no transient resource state.
+3. After ingestion, replay the identical incident prompt and identify exactly which decisions improved because of context.
+4. Add only a verified lesson, then confirm the agent still checks current telemetry rather than replaying history.
 
 ## Common Issues and Hints
 
-- **Symptom:** The report only paraphrases Azure Advisor. **Fix:** require inventory, utilization, backup, alert, telemetry-freshness, and workload-impact evidence.
-- **Symptom:** Cost data is unavailable. **Fix:** report the permission gap and continue with technical optimization evidence.
-- **Symptom:** The agent recommends deleting or downsizing a critical resource. **Fix:** apply the knowledge document’s criticality and recovery objectives before prioritization.
-- **Symptom:** The student calls the selected risk resolved. **Fix:** distinguish a governed remediation plan from an executed and validated change.
+- **Symptom:** The before-and-after responses are nearly identical. **Fix:** add concrete local context such as ownership, RTO/RPO, maintenance windows, and escalation boundaries.
+- **Symptom:** The new document does not appear in the response. **Fix:** confirm ingestion completed, the source is attached to the agent, and the question contains terms present in the document.
+- **Symptom:** The response treats old resource state in the document as current. **Fix:** remove transient state and require a live Azure query before conclusions.
+- **Symptom:** Students add an unconfirmed RCA as a lesson. **Fix:** require the evidence and confidence level before accepting it as durable knowledge.
 
 ## Debrief Discussion Guide
 
-- Why is an assurance gap an SRE issue before an outage? → It raises the probability, duration, or uncertainty of future customer impact.
-- Which preventive actions can be automated safely? → Low-blast-radius, reversible changes with strong validation and clear ownership.
-- What proves preventive resolution? → The missing or degraded control is restored, tested, monitored for recurrence, and does not reduce service reliability.
+- What belongs in knowledge rather than telemetry? → Durable organizational facts and policies, not current resource state.
+- When should telemetry override knowledge? → Whenever live evidence conflicts with stale or generalized documentation.
+- How does contextual learning stay trustworthy? → Evidence, review ownership, timestamps, versioning, and expiry rules.
 
 ## Success Criteria Notes
 
-- **Require:** declared scope, multi-source evidence, a selected assurance issue, ownership, governed remediation, rollback, validation, and confirmation that no writes occurred.
-- **Reject:** Advisor paraphrases presented as analysis, cost-only prioritization, or a planned change reported as completed resolution.
-- **Accept:** fewer findings in a small environment and documented permission gaps when uncertainty remains explicit.
+- **Require:** identical incident replay, visible improvement to operational decisions, evidence/context separation, and a reusable verified lesson.
+- **Reject:** incident transcripts, assumptions, secrets, or transient state stored as durable truth.
+- **Accept:** any concise Markdown or text format supported by the configured source.
 
 ## Solution
 
-Ask the SRE Agent to run a recommendation-only assurance review across every accessible lab subscription. Require these evidence planes:
+### Create the knowledge document
 
-1. Resource Graph inventory and orphan checks.
-2. Cost Management spend where permissions allow.
-3. Azure Monitor utilization and telemetry freshness.
-4. Azure Advisor recommendations.
-5. Backup and alert coverage for critical workloads.
-6. Knowledge-base criticality, ownership, RTO, and RPO.
+Use a short document containing:
 
-Require one de-duplicated table with scope, evidence, customer consequence, value, risk, confidence, effort, trade-off, owner, and approval requirement. Select one issue and add reversible remediation, rollback trigger, validation, and recurrence detection. End with an explicit statement that no resources were changed and the issue is not yet resolved.
+- Workload owner and criticality
+- Required RPO and retention
+- Approved investigation steps
+- Escalation channel and on-call owner
+- Heartbeat expectation and maintenance window
+- Known verified failure modes
+- Explicit prohibition on write actions without approval
+
+### Run the comparison
+
+Before attaching the source, ask: `The selected VM has missed heartbeats. Assess impact, likely causes, ownership, recovery objectives, and escalation.` Capture the answer. Attach and ingest the knowledge source, then ask the exact same question. The second response should add local context while still querying current Azure state.
+
+### Add a verified lesson
+
+Append the confirmed Challenge 11 cause, decisive evidence, and prevention guidance with a review date. Ask how the previous incident changes the current investigation. Reject any answer that substitutes the historical lesson for current evidence.

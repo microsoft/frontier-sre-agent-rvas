@@ -1,51 +1,52 @@
 [< Previous Challenge](./Challenge-04.md) — **[Home](./README.md)** — [Next Challenge >](./Challenge-06.md)
 
-# Challenge 05 — Route a Cross-Domain Incident
+# Challenge 05 — Investigate an Evidence Blind Spot
 
-> **Incident capability exercised in this challenge**: Domain Routing · Coordinated Investigation · Least Privilege
+> **Incident capability exercised in this challenge**: Evidence Availability · Source Validation · Fallback Reasoning
 
 ## Introduction
 
-A Grubify HTTP failure may originate in the application, telemetry path, network, or Azure platform. Route an ambiguous incident by evidence domain, coordinate the handoffs, and preserve one accountable incident narrative.
+An SRE investigation can stall when the evidence source it depends on is stale, unauthorized, or unreachable. Investigate an evidence blind spot during the Grubify HTTP-health exercise and determine what can still be concluded safely.
 
 ## Description
 
-> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-05.ps1'` to inventory specialist agents and print routing prompts. See the [presenter runbook](./Scripts/README.md).
+> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-05.ps1'` to inventory live connectors and print the customer prompt. See the [presenter runbook](./Scripts/README.md).
 
-Use this exercise report:
+Continue the Grubify memory incident from Challenge 03. During triage, treat one unavailable, failed, or stale evidence source as the issue to investigate. If every live source is healthy, use a coach-provided failed-read result; do not disable a production connector to create the exercise.
 
-> **EXERCISE:** Grubify clients receive intermittent HTTP 5xx responses, and one backend dependency shows connection failures. Determine which operational domains must investigate and in what order.
+Ask the SRE Agent to identify which evidence is needed, attempt harmless reads, and produce a matrix containing source, authentication state, authorization scope, reachability, data freshness, and allowed actions. Include the configured Azure telemetry connectors. List GitHub, knowledge, or MCP sources only when they are actually configured.
 
-Have the primary SRE Agent form an initial hypothesis, select the first specialist based on the evidence needed, and define the handoff condition for a second domain. Keep a compact roster of relevant specialists with purpose, data sources, tools, write permissions, approval boundary, and return conditions. Skills and subagents are supporting implementation details; the required outcome is a coordinated incident investigation.
+Challenge 02 provides Log Analytics and Application Insights connectors. It audits repository, Agent Memory, and knowledge state but does not populate those sources. GitHub, MCP, Teams, Outlook, and other external integrations count only when a coach or customer has configured, authorized, and verified them. Reference or `example-*` manifests do not prove a live connector exists.
 
-Use the repository manifests as a second source of truth:
+From PowerShell, compare the answer with the control plane:
 
 ```powershell
-Get-ChildItem '.\Student\Resources\azure-sre-agent-config\subagents' -Filter '*.yaml' |
-  ForEach-Object {
-    [pscustomobject]@{ Name = $_.BaseName; Updated = $_.LastWriteTimeUtc; Bytes = $_.Length }
-  } | Format-Table
+$SubscriptionId = az account show --query id -o tsv
+$AgentResourceGroup = 'rg-signalopscore-agent'
+$AgentName = az resource list --resource-group $AgentResourceGroup --resource-type 'Microsoft.App/agents' --query '[0].name' -o tsv
+$ApiVersion = '2025-05-01-preview'
+$Url = "https://management.azure.com/subscriptions/$SubscriptionId/resourceGroups/$AgentResourceGroup/providers/Microsoft.App/agents/$AgentName/DataConnectors?api-version=$ApiVersion"
+az rest --method GET --url $Url --query 'value[].{Name:name,Type:properties.dataConnectorType,State:properties.provisioningState}' -o table
 ```
 
-Test the incident as it evolves from application error to denied network flow evidence. Add a cost-anomaly prompt only as a negative control: it should not divert the active availability incident unless cost evidence is causally relevant. Record each routing decision, evidence returned, rejected domain, handoff, and remaining owner gap.
+Classify the blind spot as configuration, authentication, authorization, network, schema, source-data, or freshness failure. State how it limits the incident diagnosis, which alternate evidence remains available, who owns the failed source, and what proof would restore confidence. Do not call a source healthy merely because it exists in configuration.
 
 ## Success Criteria
 
-- [ ] The initial incident hypothesis identifies the evidence needed before choosing a specialist
-- [ ] Application and network handoffs are justified by returned evidence rather than keywords
-- [ ] The primary SRE Agent preserves one timeline, owner, and unresolved-question list across handoffs
-- [ ] Tool scope, write posture, overlap, and no-owner gaps are visible without becoming the focus of the incident report
-- [ ] The unrelated cost prompt does not divert the availability investigation without causal evidence
-- [ ] **Explain to your coach** — when should an SRE keep an investigation in one domain, and when is a specialist handoff justified?
+- [ ] The incident identifies the required evidence source and the failed or stale read that created the blind spot
+- [ ] Each relevant source has an observed reachability test, timestamp, freshness assessment, and authorization scope
+- [ ] The failure is classified without exposing credentials or inventing evidence
+- [ ] The SRE Agent states the diagnostic limitation, alternate evidence path, owner, and recovery proof
+- [ ] **Explain to your coach** — when should an SRE continue with partial evidence, and when should the investigation stop or escalate?
 
 ## Learning Resources
 
-- [Azure SRE Agent subagents](https://learn.microsoft.com/en-us/azure/sre-agent/subagents)
-- [Azure SRE Agent tools](https://learn.microsoft.com/en-us/azure/sre-agent/tools)
-- [Zero Trust least-privilege principle](https://learn.microsoft.com/en-us/security/zero-trust/deploy/identity)
+- [Azure SRE Agent connectors](https://learn.microsoft.com/en-us/azure/sre-agent/connectors)
+- [Model Context Protocol overview](https://learn.microsoft.com/en-us/azure/sre-agent/mcp)
+- [Azure SRE Agent API connectors](https://learn.microsoft.com/en-us/azure/sre-agent/api-reference#connector-types)
 
 ## Tips
 
-- Route according to the next evidence required, not the loudest keyword.
-- A handoff must return evidence or a bounded uncertainty to the primary incident record.
-- Do not let multiple specialists create competing timelines or owners.
+- Use read-only calls for evidence validation.
+- Never print connector secrets or bearer tokens.
+- A successful stale read is still an incident evidence risk.

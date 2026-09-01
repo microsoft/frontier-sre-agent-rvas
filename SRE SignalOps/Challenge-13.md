@@ -1,53 +1,48 @@
-[< Previous Challenge](./Challenge-12.md) — **[Home](./README.md)**
+[< Previous Challenge](./Challenge-12.md) — **[Home](./README.md)** — [Next Challenge >](./Challenge-14.md)
 
-# Challenge 13 — Resolve a Backup Assurance Incident
+# Challenge 13 — Resolve a Critical Assurance Risk
 
-> **Incident capability exercised in this challenge**: Backup-Failure Triage · Stakeholder Communication · Recovery Validation
+> **Incident capability exercised in this challenge**: Assurance-Risk Detection · Preventive Response · Change Validation
 
 ## Introduction
 
-A backup alert means application recoverability may be at risk even while the service is still running. Simulate that assurance incident, determine whether protection actually failed, communicate customer and RPO impact, follow an approved recovery path, and define the evidence required to close the issue.
+A critical workload may be running while its alerting, telemetry, backup, or capacity assurance is already degraded. Use the SRE Agent to find the highest-priority tenant risk, treat it as a preventive SRE issue, and define a governed path to resolution before customer impact occurs.
 
 ## Description
 
-> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-13.ps1'` to inventory vaults and produce a review-ready Teams update. See the [presenter runbook](./Scripts/README.md).
+> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-13.ps1'` for a read-only inventory, Advisor, and observability review. See the [presenter runbook](./Scripts/README.md).
 
-The Grubify deployment does not create a Backup vault, protected workload, or Teams connector. Complete this mission in one of two supported modes:
+Run a proactive review that combines current Azure evidence with the organizational context from Challenge 12. Keep discovery recommendation-only, then select one highest-priority assurance issue and achieve these outcomes:
 
-- **Live mode:** use an existing Recovery Services vault or Backup vault with a protected lab workload, plus an authorized Teams connector whose post-message tool is granted to the response agent.
-- **Evidence-pack mode:** use coach-provided vault, protected-item, job, recovery-point, and application-health evidence. Build and exercise the response plan, and produce a review-ready Teams message without posting it.
+- Inventory the accessible subscriptions and identify the resources included in the review.
+- Examine cost and utilization, Azure Advisor recommendations, backup coverage, alert coverage, stale telemetry, and obvious orphaned resources.
+- Produce at least three prioritized issues across cost, reliability, observability, resilience, or governance.
+- For each issue, include affected scope, evidence, expected value or risk reduction, confidence, implementation effort, operational trade-off, and suggested owner.
+- For the selected issue, define the owner, customer consequence, approval boundary, reversible remediation, rollback trigger, and post-change validation.
+- Define a recurring review cadence that would detect the issue again.
 
-Achieve these outcomes:
-
-- Enable Azure Monitor alerts for backup failures and route them to the Azure SRE Agent through the existing incident connection.
-- Create a response plan covering detection, evidence collection, classification, Teams notification, approval, recovery guidance, validation, and escalation.
-- Ground the investigation in live vault, protected-item, job, recovery-point, and application-health evidence plus the knowledge document’s owner, RTO, and RPO.
-- Post one concise update to the intended Teams channel containing severity, affected workload, application impact, latest job state, latest usable recovery point, RPO risk, confidence, recommended action, and a portal link.
-- Demonstrate the workflow with a genuine alert when available or a clearly labeled `EXERCISE` incident based on live evidence.
-- Explain how the application would be validated after an approved restore or recovery action and when the workflow must escalate.
-
-Resolve the Teams destination at runtime or use a connector-managed destination. Do not commit OAuth tokens, webhook URLs, Team IDs, or Channel IDs. Do not label an in-progress job or pending initial recovery point as a confirmed backup failure.
+Do not resize, delete, stop, reconfigure, or remediate any resource. If evidence is unavailable because of permissions or data retention, report the gap instead of guessing.
 
 ## Success Criteria
 
-- [ ] Live mode enables backup-failure alerting; evidence-pack mode identifies the supplied alert scope and labels the run as an exercise
-- [ ] The response plan implements the complete detect-to-validate workflow with an explicit approval boundary
-- [ ] The assessment correlates backup evidence with application criticality, RTO, RPO, and current health
-- [ ] Live mode posts one concise incident update; evidence-pack mode produces an equivalent review-ready message without claiming delivery
-- [ ] The message distinguishes confirmed failure, assurance risk, and healthy in-progress work
-- [ ] The recovery guidance includes post-recovery application validation and escalation conditions
-- [ ] **Explain to your coach** — why are a successful restore and a healthy application different outcomes, and which validation signals are required before closing the incident?
+- [ ] The report states which subscriptions and resource types were reviewed
+- [ ] Findings combine more than one evidence source rather than repeating Azure Advisor alone
+- [ ] At least three assurance issues are prioritized by value, risk, confidence, and effort
+- [ ] Recommendations respect workload criticality, RTO/RPO, and ownership context from the knowledge base
+- [ ] Missing access or evidence is reported as a limitation
+- [ ] The agent confirms that it performed no write operations
+- [ ] The selected issue has an owner, governed remediation, rollback trigger, and measurable validation plan
+- [ ] **Explain to your coach** — why should an observability, backup, or capacity gap be handled as an SRE issue before it causes an outage?
 
 ## Learning Resources
 
-- [Monitor Azure Backup with Azure Monitor](https://learn.microsoft.com/en-us/azure/backup/backup-azure-monitoring-use-azuremonitor)
-- [Azure Backup alerts overview](https://learn.microsoft.com/en-us/azure/backup/backup-azure-monitoring-built-in-monitor)
-- [Send notifications from Azure SRE Agent](https://learn.microsoft.com/en-us/azure/sre-agent/send-notifications)
-- [Connect Azure SRE Agent to Microsoft Teams](https://learn.microsoft.com/en-us/azure/sre-agent/teams-bot)
-- [Application resilience in the Azure Well-Architected Framework](https://learn.microsoft.com/en-us/azure/well-architected/reliability/design-resilience)
+- [Azure Advisor overview](https://learn.microsoft.com/en-us/azure/advisor/advisor-overview)
+- [Azure Resource Graph overview](https://learn.microsoft.com/en-us/azure/governance/resource-graph/overview)
+- [Azure Cost Management documentation](https://learn.microsoft.com/en-us/azure/cost-management-billing/cost-management-billing-overview)
+- [Azure Well-Architected Framework](https://learn.microsoft.com/en-us/azure/well-architected/)
 
 ## Tips
 
-- Report protection state, job state, and recovery-point state separately.
-- Keep detailed evidence in the SRE Agent investigation and put only the decision summary in Teams.
-- Validation should cover application availability and correctness, not only Azure resource provisioning state.
+- Treat a missing alert, stale data source, or unprotected critical workload as an assurance issue even when it has no immediate customer impact.
+- De-duplicate the same issue when Resource Graph, Advisor, and Cost Management expose it independently.
+- A preventive issue is not resolved until the control is changed and its protection is validated; this mission produces that governed plan without executing it.

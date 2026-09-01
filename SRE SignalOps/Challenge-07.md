@@ -1,53 +1,59 @@
 [< Previous Challenge](./Challenge-06.md) — **[Home](./README.md)** — [Next Challenge >](./Challenge-08.md)
 
-# Challenge 07 — Scope Impact with Dependency Evidence
+# Challenge 07 — Exercise a Guarded HTTP-Error Response
 
-> **Incident capability exercised in this challenge**: Dependency Evidence · Blast-Radius Analysis · Critical Path
+> **Incident capability exercised in this challenge**: Alert Routing · Guarded Response · Recovery Validation
 
 ## Introduction
 
-During an availability incident, responders need to know whether one endpoint, one dependency, or the whole service is affected. Use observed Grubify telemetry to bound customer impact and identify the next dependency to test.
+Turn the Grubify HTTP-error report into a controlled incident exercise. Observe how the SRE Agent receives the signal, gathers evidence, proposes a bounded response, waits at the action gate, and defines proof of recovery.
 
 ## Description
 
-> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-07.ps1'` to generate API traffic and query Application Insights. See the [presenter runbook](./Scripts/README.md).
+> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-07.ps1'` to show incident filters and Azure Monitor wiring. See the [presenter runbook](./Scripts/README.md).
 
-Use this exercise symptom without injecting a fault:
+Use a genuine non-destructive HTTP-error alert when available, or invoke a clearly labeled `EXERCISE - Grubify HTTP errors` event that matches the configured sample-food filter. Do not inject production failures merely to create an alert.
 
-> **EXERCISE:** Grubify meal search is failing for some users while the main site remains reachable. Identify the affected critical path, likely blast radius, and strongest next check.
+Ask the SRE Agent to handle the event and produce an observed incident timeline containing:
 
-Ask the SRE Agent to map the frontend, API, downstream services, data stores, and Azure platform dependencies relevant to that user journey. Each edge must include direction, protocol, observed timestamp, request volume, latency, failure rate, and evidence source.
+- incident source and filter conditions;
+- specialist and skill selection;
+- evidence collected before classification;
+- severity and confidence decisions;
+- proposed actions and approval requirements;
+- recovery verification and closure criteria;
+- timeout, retry, and escalation behavior.
 
-Use Application Insights to validate the graph. Where telemetry is absent, label the edge **documented but unobserved** rather than inventing data.
+Use PowerShell to inventory incident filters:
 
-Challenge 00 instruments the Grubify API for request, exception, and dependency telemetry. The browser frontend is not instrumented, and the sample API currently uses in-memory data rather than an external database. Expect the observed map to be smaller than the intended architecture; generate API traffic before judging coverage.
+```powershell
+$SubscriptionId = az account show --query id -o tsv
+$AgentResourceGroup = 'rg-signalops-agent'
+$AgentName = 'signalops-agent'
+$ApiVersion = '2025-05-01-preview'
+$Base = "https://management.azure.com/subscriptions/$SubscriptionId/resourceGroups/$AgentResourceGroup/providers/Microsoft.App/agents/$AgentName"
+az rest --method GET --url "$Base/incidentFilters?api-version=$ApiVersion" --query 'value[].name' -o table
+```
 
-Require four incident outputs:
-
-1. A dependency diagram.
-2. A table of observed edges.
-3. The affected user-facing critical path and bounded blast radius.
-4. Coverage gaps and the next discriminating check that would strengthen the diagnosis.
-
-Do not claim that the exercise symptom is present unless telemetry confirms it. A healthy baseline is still useful: report the issue as not reproduced, identify what would be monitored during recurrence, and preserve the dependency evidence for the network investigations that follow.
+Do not approve a write. Compare the observed timeline with the intended response path and mark every skipped or unexpected stage. The SRE Agent must stop or escalate when evidence is insufficient, approval times out, a proposed action fails, or recovery cannot be demonstrated.
 
 ## Success Criteria
 
-- [ ] Every incident-relevant edge is observed or explicitly labeled unobserved
-- [ ] The affected critical path and likely blast radius are bounded without overstating the evidence
-- [ ] Latency, volume, and failure evidence support each health claim
-- [ ] The result states whether the issue was reproduced and identifies the next discriminating check
-- [ ] Telemetry gaps that weaken diagnosis are explicit
-- [ ] **Explain to your coach** — how does dependency evidence prevent an SRE from changing a healthy component during an incident?
+- [ ] The genuine or exercise incident is accurately labeled and routed by the intended HTTP-error filter
+- [ ] Current Grubify evidence and classification precede action selection
+- [ ] The proposed response states scope, risk, rollback, approval, and recovery checks
+- [ ] Timeout, failed-action, failed-validation, and escalation paths are visible
+- [ ] The observed incident timeline is compared with the intended response path
+- [ ] **Explain to your coach** — why must incident closure depend on service recovery evidence rather than workflow completion?
 
 ## Learning Resources
 
-- [Application Map in Application Insights](https://learn.microsoft.com/en-us/azure/azure-monitor/app/app-map)
-- [Application Insights dependency telemetry](https://learn.microsoft.com/en-us/azure/azure-monitor/app/dependencies)
-- [Distributed tracing concepts](https://learn.microsoft.com/en-us/azure/azure-monitor/app/distributed-trace-data)
+- [Automate incidents with Azure SRE Agent](https://learn.microsoft.com/en-us/azure/sre-agent/automate-incidents)
+- [Azure SRE Agent API sub-resources](https://learn.microsoft.com/en-us/azure/sre-agent/api-reference#sub-resources)
+- [Azure Monitor alert processing rules](https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-processing-rules)
 
 ## Tips
 
-- Architecture describes intent; telemetry describes observed behavior.
-- Preserve resource IDs and timestamps.
-- Do not infer a dependency from naming alone.
+- The incident outcome matters more than the response-plan terminology.
+- Closure must depend on recovery evidence.
+- Keep the exercise labeled and non-destructive.

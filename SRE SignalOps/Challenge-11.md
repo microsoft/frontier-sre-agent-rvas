@@ -1,45 +1,51 @@
 [< Previous Challenge](./Challenge-10.md) — **[Home](./README.md)** — [Next Challenge >](./Challenge-12.md)
 
-# Challenge 11 — Improve the Next Heartbeat Response
+# Challenge 11 — Heartbeat Triage and Deep RCA
 
-> **Incident capability exercised in this challenge**: Operational Context · Repeat-Incident Learning · Evidence Precedence
+> **Incident capability exercised in this challenge**: Missing-Heartbeat Triage · Hypothesis Testing · Recovery Proof
 
 ## Introduction
 
-Replay the missing-heartbeat incident after adding verified workload context and one confirmed lesson from the first response. Determine whether the SRE Agent identifies impact, ownership, recovery objectives, and escalation faster without allowing stale knowledge to override current evidence.
+A monitored VM stops sending heartbeats, but the alert does not explain whether the VM, monitoring agent, or telemetry path failed. Simulate that incident and use the SRE Agent to distinguish symptom from root cause, recommend a safe response, and prove recovery with current Azure state and telemetry.
 
 ## Description
 
-> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-11.ps1'` to list agent memory, create a safe knowledge draft, and print the grounded prompt. See the [presenter runbook](./Scripts/README.md).
+> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-11.ps1' -WorkspaceId '<workspace-id>' -VmResourceId '<resource-id>'`. Lab VM changes require `-Execute`; recovery requires `-Restore`. See the [presenter runbook](./Scripts/README.md).
 
-Use the heartbeat incident from Challenge 10 as a clearly labeled replay and achieve these outcomes:
+The Grubify deployment does not create a VM or Azure Monitor Agent. Complete this mission in one of two supported modes:
 
-- Replay the original incident question before adding any custom knowledge and capture the response as a baseline.
-- Create one concise knowledge document containing workload purpose, architecture, owner, criticality, heartbeat expectation, maintenance window, escalation path, RTO, RPO, and approved investigation boundaries.
-- Add the document to the SRE Agent knowledge base and ask the same question again.
-- Identify which statements came from live Azure evidence and which came from the knowledge document.
-- Add one verified lesson from the heartbeat incident, then replay the question and confirm that the later response uses the lesson without substituting history for current investigation.
+- **Live mode:** use a coach-provided lab VM with Azure Monitor Agent, a data collection rule, and recent `Heartbeat` records in the connected Log Analytics workspace.
+- **Evidence-pack mode:** use a coach-provided alert, heartbeat timeline, VM power-state evidence, Activity Log evidence, and agent-health snapshot. Simulate routing and recovery; do not claim that a live alert fired.
 
-Do not store credentials, access tokens, personal contact details, or unverified incident assumptions in the knowledge document. Context can guide interpretation, but current evidence remains authoritative.
+Keep the exercise scoped to that single VM and achieve these outcomes:
+
+- Create an enabled heartbeat alert that evaluates every 5 minutes over a 15-minute window and fires when the selected VM reports no heartbeat.
+- Route the alert to the Azure SRE Agent through the existing Azure Monitor incident connection and a dedicated response plan.
+- Safely create a missing-heartbeat condition on the lab VM, then observe the alert and SRE investigation.
+- Ask the agent for a deep RCA containing a timeline, evidence matrix, competing hypotheses, rejected hypothesis, root-cause assessment, contributing factors, confidence level, and recommended recovery action.
+- Restore the VM or monitoring path and confirm that heartbeat data resumes and the alert resolves.
+
+Do not make the response plan restart or modify the VM automatically. Investigation and recommendation are sufficient for this customer-friendly exercise.
 
 ## Success Criteria
 
-- [ ] A before-and-after incident replay shows that the knowledge document materially improves impact, ownership, recovery, or escalation reasoning
-- [ ] The document contains operational context, ownership, recovery objectives, and investigation boundaries
-- [ ] The grounded response cites or clearly attributes the custom knowledge it used
-- [ ] The response distinguishes live evidence from organizational context and identifies any conflict between them
-- [ ] One verified incident lesson is added and appears in a later grounded response
-- [ ] **Explain to your coach** — how can a verified incident lesson speed future response without becoming a shortcut that biases the diagnosis?
+- [ ] Live mode has one enabled heartbeat alert with the required scope and timing; evidence-pack mode identifies the supplied rule and labels the run as an exercise
+- [ ] A live or simulated incident is routed to the intended SRE Agent response plan and accurately labeled
+- [ ] The SRE Agent correlates missing heartbeat data with current VM state and monitoring status
+- [ ] The RCA clearly separates observed symptoms, supporting evidence, likely root cause, contributing factors, confidence, and next action
+- [ ] The RCA compares at least two plausible hypotheses and explains why one was rejected
+- [ ] Live mode proves resumed heartbeat and alert resolution; evidence-pack mode states the exact evidence required to prove recovery
+- [ ] **Explain to your coach** — why is “heartbeat missing” a symptom rather than a root cause, and what additional evidence would increase your confidence in the diagnosis?
 
 ## Learning Resources
 
-- [Connect knowledge sources to Azure SRE Agent](https://learn.microsoft.com/en-us/azure/sre-agent/connect-knowledge)
-- [Knowledge source concepts in Azure AI Search](https://learn.microsoft.com/en-us/azure/search/search-knowledge-source-overview)
-- [Reliability guidance in the Azure Well-Architected Framework](https://learn.microsoft.com/en-us/azure/well-architected/reliability/)
-- [Azure Monitor data platform](https://learn.microsoft.com/en-us/azure/azure-monitor/data-platform)
+- [Azure Monitor log search alerts](https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-create-log-alert-rule)
+- [Azure Monitor Agent overview](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-overview)
+- [Azure Monitor alerts and state](https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview)
+- [Automate incident response with Azure SRE Agent](https://learn.microsoft.com/en-us/azure/sre-agent/automate-incidents)
 
 ## Tips
 
-- Use the exact same question before and after adding knowledge; otherwise the comparison is weak.
-- Keep durable policy and architecture in knowledge. Keep transient resource state in Azure Monitor and Resource Graph.
-- Record only a verified lesson. A plausible but unconfirmed RCA should remain a hypothesis, not become institutional knowledge.
+- Confirm that the VM has recent heartbeat records before creating the failure condition. A missing baseline is a monitoring setup issue, not an incident.
+- Compare the alert timestamp with VM power-state changes and the most recent heartbeat timestamp.
+- A strong RCA states uncertainty. Do not call a stopped VM a monitoring-agent failure unless the evidence supports it.

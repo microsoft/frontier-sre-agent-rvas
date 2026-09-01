@@ -1,48 +1,45 @@
 [< Previous Challenge](./Challenge-11.md) — **[Home](./README.md)** — [Next Challenge >](./Challenge-13.md)
 
-# Challenge 12 — Resolve a Critical Assurance Risk
+# Challenge 12 — Improve the Next Heartbeat Response
 
-> **Incident capability exercised in this challenge**: Assurance-Risk Detection · Preventive Response · Change Validation
+> **Incident capability exercised in this challenge**: Operational Context · Repeat-Incident Learning · Evidence Precedence
 
 ## Introduction
 
-A critical workload may be running while its alerting, telemetry, backup, or capacity assurance is already degraded. Use the SRE Agent to find the highest-priority tenant risk, treat it as a preventive SRE issue, and define a governed path to resolution before customer impact occurs.
+Replay the missing-heartbeat incident after adding verified workload context and one confirmed lesson from the first response. Determine whether the SRE Agent identifies impact, ownership, recovery objectives, and escalation faster without allowing stale knowledge to override current evidence.
 
 ## Description
 
-> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-12.ps1'` for a read-only inventory, Advisor, and observability review. See the [presenter runbook](./Scripts/README.md).
+> **Customer demo script:** Run `pwsh -File '.\SRE SignalOps\Scripts\Challenge-12.ps1'` to list agent memory, create a safe knowledge draft, and print the grounded prompt. See the [presenter runbook](./Scripts/README.md).
 
-Run a proactive review that combines current Azure evidence with the organizational context from Challenge 11. Keep discovery recommendation-only, then select one highest-priority assurance issue and achieve these outcomes:
+Use the heartbeat incident from Challenge 11 as a clearly labeled replay and achieve these outcomes:
 
-- Inventory the accessible subscriptions and identify the resources included in the review.
-- Examine cost and utilization, Azure Advisor recommendations, backup coverage, alert coverage, stale telemetry, and obvious orphaned resources.
-- Produce at least three prioritized issues across cost, reliability, observability, resilience, or governance.
-- For each issue, include affected scope, evidence, expected value or risk reduction, confidence, implementation effort, operational trade-off, and suggested owner.
-- For the selected issue, define the owner, customer consequence, approval boundary, reversible remediation, rollback trigger, and post-change validation.
-- Define a recurring review cadence that would detect the issue again.
+- Replay the original incident question before adding any custom knowledge and capture the response as a baseline.
+- Create one concise knowledge document containing workload purpose, architecture, owner, criticality, heartbeat expectation, maintenance window, escalation path, RTO, RPO, and approved investigation boundaries.
+- Add the document to the SRE Agent knowledge base and ask the same question again.
+- Identify which statements came from live Azure evidence and which came from the knowledge document.
+- Add one verified lesson from the heartbeat incident, then replay the question and confirm that the later response uses the lesson without substituting history for current investigation.
 
-Do not resize, delete, stop, reconfigure, or remediate any resource. If evidence is unavailable because of permissions or data retention, report the gap instead of guessing.
+Do not store credentials, access tokens, personal contact details, or unverified incident assumptions in the knowledge document. Context can guide interpretation, but current evidence remains authoritative.
 
 ## Success Criteria
 
-- [ ] The report states which subscriptions and resource types were reviewed
-- [ ] Findings combine more than one evidence source rather than repeating Azure Advisor alone
-- [ ] At least three assurance issues are prioritized by value, risk, confidence, and effort
-- [ ] Recommendations respect workload criticality, RTO/RPO, and ownership context from the knowledge base
-- [ ] Missing access or evidence is reported as a limitation
-- [ ] The agent confirms that it performed no write operations
-- [ ] The selected issue has an owner, governed remediation, rollback trigger, and measurable validation plan
-- [ ] **Explain to your coach** — why should an observability, backup, or capacity gap be handled as an SRE issue before it causes an outage?
+- [ ] A before-and-after incident replay shows that the knowledge document materially improves impact, ownership, recovery, or escalation reasoning
+- [ ] The document contains operational context, ownership, recovery objectives, and investigation boundaries
+- [ ] The grounded response cites or clearly attributes the custom knowledge it used
+- [ ] The response distinguishes live evidence from organizational context and identifies any conflict between them
+- [ ] One verified incident lesson is added and appears in a later grounded response
+- [ ] **Explain to your coach** — how can a verified incident lesson speed future response without becoming a shortcut that biases the diagnosis?
 
 ## Learning Resources
 
-- [Azure Advisor overview](https://learn.microsoft.com/en-us/azure/advisor/advisor-overview)
-- [Azure Resource Graph overview](https://learn.microsoft.com/en-us/azure/governance/resource-graph/overview)
-- [Azure Cost Management documentation](https://learn.microsoft.com/en-us/azure/cost-management-billing/cost-management-billing-overview)
-- [Azure Well-Architected Framework](https://learn.microsoft.com/en-us/azure/well-architected/)
+- [Connect knowledge sources to Azure SRE Agent](https://learn.microsoft.com/en-us/azure/sre-agent/connect-knowledge)
+- [Knowledge source concepts in Azure AI Search](https://learn.microsoft.com/en-us/azure/search/search-knowledge-source-overview)
+- [Reliability guidance in the Azure Well-Architected Framework](https://learn.microsoft.com/en-us/azure/well-architected/reliability/)
+- [Azure Monitor data platform](https://learn.microsoft.com/en-us/azure/azure-monitor/data-platform)
 
 ## Tips
 
-- Treat a missing alert, stale data source, or unprotected critical workload as an assurance issue even when it has no immediate customer impact.
-- De-duplicate the same issue when Resource Graph, Advisor, and Cost Management expose it independently.
-- A preventive issue is not resolved until the control is changed and its protection is validated; this mission produces that governed plan without executing it.
+- Use the exact same question before and after adding knowledge; otherwise the comparison is weak.
+- Keep durable policy and architecture in knowledge. Keep transient resource state in Azure Monitor and Resource Graph.
+- Record only a verified lesson. A plausible but unconfirmed RCA should remain a hypothesis, not become institutional knowledge.
