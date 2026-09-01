@@ -1,55 +1,156 @@
 [< Previous Solution](./Solution-02.md) | **[Home](./README.md)** | [Next Solution >](./Solution-04.md)
 
-# Coach Guide — Challenge 03: Triage the First Grubify Incident
+# Coach Guide — Challenge 03: Automated Incident Triage and RCA
 
 ## Purpose
 
-Configure the SRE operating model and coach a reported HTTP-health issue from ambiguous symptom to evidence-backed triage and a guarded response. The architecture and baseline are handled separately in [Coach Orientation — Understand Grubify](./Lab-Details.md). Expected time: 20–25 minutes.
+Demonstrate a complete, real incident path in the isolated SignalOps environment: healthy baseline, Azure Monitor alert, controlled Grubify memory fault, SRE Agent intake, evidence-backed RCA, approved recovery, and post-recovery verification. Expected time: 30–40 minutes, including Azure ingestion delays.
 
-## Mini-Lecture (5 min before challenge)
+This mission uses individual customer-run commands so participants can see every read and write. Do not replace the steps with a wrapper script or an inline loop.
 
-- SRE starts with an imperfect signal and reduces uncertainty through time-bounded evidence.
-- Separate what the customer reported, what Azure currently proves, what remains a hypothesis, and what action is justified.
-- Diagnostic skills and specialist agents support repeatable investigation and bounded delegation; they are implementation controls, not the lesson.
-- Approval and recovery gates prevent a plausible diagnosis from becoming an unsafe environmental change.
+## What the Fault Actually Does
 
-## Expected Student Output
+`CartController.AddItemToCart` allocates a 10 MB `byte[]` for every cart POST and appends it to the static `RequestDataCache`. Nothing removes entries. With a 1 GiB API memory limit, repeated requests produce a steep working-set increase and can lead to an out-of-memory restart, connection failures, and ingress-side 5xx responses.
 
-- A reviewed setup plan for 8 diagnostic skills, 11 specialist definitions, 1 Azure Monitor incident platform, and 4 incident filters.
-- With coach approval, all four supporting control classes applied and verified against the intended SRE Agent.
-- A time-bounded Grubify incident record that separates the reported symptom, observed evidence, hypotheses, provisional diagnosis, confidence, and evidence gaps.
-- A safe response proposal with approval and measurable recovery criteria; no unapproved environmental write.
-- External connectors, repositories, scheduled tasks, and knowledge files remain intentionally excluded.
+The intended evidence chain is:
+
+1. `Requests` filtered to `statusCodeCategory = 5xx` establishes the availability symptom.
+2. `WorkingSetBytes` establishes memory growth during the same window.
+3. `RestartCount`, replica state, and logs establish runtime behavior under pressure.
+4. The cache-growth logs and .NET source establish why memory is retained.
+5. Health and fresh metrics after restart establish recovery.
+
+Do not accept a 5xx alert alone as proof of a memory leak.
+
+## Preflight
+
+Confirm all of the following before the participant creates the alert or sends cart requests:
+
+- azd environment is `signalops-core`.
+- Subscription is `b1e100ca-fff5-4e0e-9847-2e44bf47b68c`.
+- Workload group is `rg-signalopscore-food`.
+- API is `ca-signalopscor-food-api` in Sweden Central.
+- The API FQDN ends in `swedencentral.azurecontainerapps.io`.
+- The discovered container memory limit is `1Gi`.
+- `/health` and `/api/restaurants` currently succeed.
+- The participant is allowed to create a metric alert and restart this isolated revision.
+- No other fault or load test is running.
+
+The image and latest ready revision are runtime values and must be discovered, not copied from this guide.
 
 ## Coach Runbook
 
-1. Confirm the [Lab Details baseline](../Lab-Details.md#normal-baseline) is preserved and any controlled limitation is explicit.
-2. Run `pwsh -NoProfile -File '.\SRE SignalOps\Scripts\Challenge-03.ps1'`. This is plan-only and must not change agent configuration.
-3. Confirm the output proposes 8 skill PUTs, 11 subagent PUTs, 1 incident-platform PATCH, and 4 incident-filter PUTs. Explain these briefly as diagnostic procedures, specialist routing, alert intake, and issue routing.
-4. Review the target subscription, resource group, agent, manifests, and approval boundaries before allowing `-Execute`.
-5. After apply and verification, present: `EXERCISE: Users report that Grubify is slow and intermittently returning HTTP errors.` Do not tell participants whether the report reflects a current fault.
-6. Require current telemetry, a bounded investigation window, affected and unaffected components, at least two hypotheses, confidence, an evidence gap, the next discriminating check, and recovery criteria.
-7. Run the destructive safety probe only after triage. Stop if any write executes without the configured approval path.
-8. Stop if the configuration plan includes connectors, repositories, knowledge, scheduled tasks, secrets, or the wrong agent.
+### 1. Establish the baseline
+
+Have the participant run Parts 1–2 exactly as written and retain the output. The normal working set can drift; require a timestamped value below the memory limit rather than a memorized number. Newest Azure Monitor buckets may be empty because of ingestion delay.
+
+Stop if health is already failing, restarts are unexplained, the app targets another environment, or the API is shared with another exercise.
+
+### 2. Create and inspect the alert
+
+The expected alert is:
+
+| Property | Expected value |
+|---|---|
+| Name | `alert-signalopscore-grubify-http-5xx` |
+| Scope | Current Grubify API resource ID |
+| Metric | `Requests` |
+| Aggregation | `Total` |
+| Dimension | `statusCodeCategory includes 5xx` |
+| Threshold | Greater than `0` |
+| Window / frequency | 1 minute / 1 minute |
+| Severity | 2 |
+
+No action group is required for this lab path because Azure SRE Agent monitors Azure Monitor alerts in its managed scope. This does not guarantee instant incident creation; intake must be observed.
+
+If the alert already exists, inspect it. Reuse it only when every property above and the resource scope match. Otherwise delete only that lab alert and recreate it.
+
+### 3. Inject once and observe
+
+Watch the participant's target URL before allowing cart requests. The participant runs one visible `curl.exe` POST at a time and repeats it with the terminal history. Every accepted request retains 10 MB; the participant stops at the first failure or after 200 requests.
+
+Expected client output varies:
+
+- Early requests commonly return `200`.
+- Later requests may return `5xx`, time out, or lose the connection while the replica recycles.
+- A rapid platform restart can make the health endpoint recover before the participant checks it.
+
+Do not continue requests simply to make the terminal show a 5xx. First inspect Azure metrics and alerts. Additional load can create multiple restarts and make the timeline harder to explain.
+
+### 4. Allow for Azure timing
+
+Typical timing after fault injection stops:
+
+- Container logs: near real time to 2 minutes.
+- Container Apps metrics: approximately 1–3 minutes.
+- Metric alert evaluation: another 1–2 minutes.
+- SRE Agent incident intake: commonly several minutes after the alert fires.
+
+These are observations, not service guarantees. Use UTC timestamps to correlate evidence. An empty newest bucket means not yet reported; it does not prove zero.
+
+### 5. Evaluate agent triage
+
+The agent response should include:
+
+- Exact resource and bounded UTC incident window.
+- Affected endpoint or API scope and any proven unaffected read path.
+- 5xx requests, memory, restart, replica, and revision evidence.
+- At least one competing hypothesis, such as an unhealthy revision or request surge.
+- A confidence level and missing evidence.
+- A recovery proposal with validation checks before any write.
+
+Missions 00–02 created telemetry connectors, but the current Agent Memory and knowledge index contain no uploaded Grubify runbook or source repository. The agent may diagnose memory pressure from Azure evidence; it cannot honestly claim line-level knowledge of `RequestDataCache` unless that source was separately connected and ingested. Participants validate the exact cause against the local source in Part 6.
+
+If the Azure Monitor alert is `Fired` but no SRE incident appears, record an **agent intake gap**. Continue the RCA with Azure metrics, logs, and source. Do not manufacture an incident or claim automated triage succeeded.
+
+### 6. Approve recovery only after RCA evidence
+
+The participant refreshes `latestReadyRevisionName` and restarts that exact revision. This is the only intended recovery write after alert creation. Confirm all cart requests have stopped first.
+
+Recovery passes when:
+
+- `/health` returns `200`.
+- `/api/restaurants` returns `200`.
+- The active revision reports healthy replicas.
+- Working set returns near the pre-fault range after metric ingestion.
+- No fresh 5xx buckets appear after recovery traffic.
+- The alert resolves, allowing for Azure Monitor delay.
+
+Restart clears process memory. It does not correct the unbounded static cache. Reject any report that calls the source defect fixed without a code change, image build, deployment, and regression test.
+
+## Stop Conditions
+
+Stop fault injection or recovery immediately when:
+
+- Subscription, resource group, app name, or FQDN differs from the isolated values.
+- Another class or customer is using the same deployment.
+- Baseline health already fails for an unknown reason.
+- A cart request targets the frontend or any endpoint other than the isolated API cart endpoint.
+- The participant proposes scaling, deleting a revision, changing ingress, or redeploying as part of diagnosis.
+- Repeated restarts continue after fault traffic has stopped.
+
+For an unstable service, skip additional load and proceed directly to revision restart and health verification.
 
 ## Common Issues and Hints
 
-- **Symptom:** Git Bash path is missing. **Fix:** locate `bash.exe` under the installed Git directory.
-- **Symptom:** Validation reports `Required command not found: jq` or no YAML parser. **Fix:** install `jq` and `yq`; the mission runner also discovers current WinGet installations for Git Bash.
-- **Symptom:** Bash reports an encoded string as an invalid option. **Fix:** use the current shared runner; its native-command helper must not use `$Command` as the scriptblock parameter name.
-- **Symptom:** The investigation repeats the customer report as root cause. **Fix:** require one current Azure observation for every causal claim.
-- **Symptom:** No active fault is visible. **Fix:** accept `not confirmed` when the student states the evidence gap and next discriminating check; do not manufacture an incident.
-- **Symptom:** Apply targets the wrong agent. **Fix:** print subscription, resource group, and agent before execution.
+- **No 5xx in the terminal:** Query the `Requests` metric after ingestion. Connection failures and quick restarts can hide the ingress result from the client.
+- **No metric rows:** Confirm `$APP_ID`, widen the start time to 30 minutes, and wait one interval.
+- **Alert remains healthy:** Verify the dimension value is exactly `5xx`, the rule is enabled, and the incident occurred after rule creation.
+- **Alert fired, no agent incident:** Record the intake gap and continue with direct evidence. Do not rerun the fault.
+- **Logs omit early cache messages:** The recycled replica may no longer expose all console history through `az containerapp logs show`; use metrics and source, and label the log gap.
+- **Restart command says revision not found:** Rediscover `latestReadyRevisionName` immediately before restart.
+- **Health polling does not end:** Press `Ctrl+C`, inspect revision health and system logs, then escalate rather than injecting more traffic.
 
 ## Debrief Discussion Guide
 
-1. What did the customer report establish? → A symptom and starting point, not a confirmed incident or root cause.
-2. What makes the triage useful to an on-call SRE? → Current evidence, bounded scope, explicit uncertainty, a discriminating next check, and measurable recovery criteria.
-3. Why keep specialist routing and diagnostic procedures bounded? → They make investigation repeatable while limiting irrelevant context, permissions, and blast radius.
-4. Which layer enforces write approval? → The configured action mode, tool grant, and approval policy; prompt wording alone is not a security boundary.
+1. What establishes that customers experienced a symptom? → The scoped 5xx request metric and alert.
+2. What establishes memory pressure? → Time-correlated `WorkingSetBytes`, restart/replica evidence, and cache-growth logs.
+3. What establishes the exact software cause? → The static retained collection and 10 MB allocation in `CartController`, correlated with runtime evidence.
+4. Why is restart not remediation? → It discards the current process memory but leaves the same defect in the deployed image.
+5. What did automation add? → Continuous signal detection, incident intake, and accelerated evidence gathering; claims still require evidence validation.
 
 ## Success Criteria Notes
 
-- **Require:** a preserved baseline, exact target identity, reviewed configuration plan, an evidence-backed incident record, visible uncertainty, approval posture, recovery checks, and the safety probe.
-- **Reject:** direct destructive execution, skipped plan/validation, invented telemetry, or a diagnosis based only on the customer report.
-- **Accept:** `not confirmed` as a valid operational conclusion when supported by current evidence and a concrete next check. For plan-only completion, label apply, live routing, and safety probes as not executed.
+- **Require:** exact target verification, preserved baseline, correctly scoped alert, one bounded fault run, timestamped evidence, honest agent-intake status, source-validated RCA, controlled restart, and recovery proof.
+- **Reject:** wrong-target load, repeated injection to force an outcome, diagnosis from a 5xx alone, invented knowledge ingestion, unapproved environmental changes, or a claim that restart fixed the code.
+- **Accept:** a documented agent-intake gap when the Azure alert fired but no SRE incident appeared. The participant must still complete the direct evidence chain and recovery.

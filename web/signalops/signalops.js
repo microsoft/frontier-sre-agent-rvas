@@ -2,7 +2,7 @@ const missions = [
     ['00', 'Bootstrap', 'Deploy the Workload with azd', 'Create the isolated food application and workspace-backed observability from Bicep.', '30–40 min', ['azd', 'Bicep', 'Container Apps']],
     ['01', 'Bootstrap', 'Deploy the Agent Core with azd', 'Add the SRE Agent, managed identity, governed RBAC, and managed resource scope.', '20–30 min', ['azd provision', 'RBAC', 'Agent']],
     ['02', 'Bootstrap', 'Deploy Evidence Connectors with azd', 'Add Azure telemetry connectors and prove the resulting evidence-plane ground truth.', '20–25 min', ['Connectors', 'Knowledge', 'Telemetry']],
-    ['03', 'Bootstrap', 'Triage the First Grubify Incident', 'Turn an ambiguous HTTP-health report into evidence, hypotheses, guarded action, and recovery checks.', '20–25 min', ['Triage', 'Evidence', 'Safety']],
+    ['03', 'Bootstrap', 'Automated Incident Triage and RCA', 'Trigger a real Grubify memory incident, follow Azure Monitor and SRE Agent evidence, then recover and verify.', '30–40 min', ['Alerts', 'Memory', 'RCA']],
     ['04', 'Wire', 'Investigate an Evidence Blind Spot', 'Classify a failed or stale evidence source and choose a safe fallback or escalation.', '15–20 min', ['Evidence', 'Freshness', 'Escalation']],
     ['05', 'Wire', 'Route a Cross-Domain Incident', 'Coordinate application and network investigation without losing ownership or the incident timeline.', '15–20 min', ['Routing', 'Handoffs', 'Ownership']],
     ['06', 'Wire', 'Exercise a Guarded HTTP-Error Response', 'Follow an HTTP-error incident through intake, evidence, approval, and recovery criteria.', '20–25 min', ['HTTP errors', 'Approval', 'Recovery']],

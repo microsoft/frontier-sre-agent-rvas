@@ -1,12 +1,12 @@
 # SignalOps Customer Demo Scripts
 
-Run these scripts from the repository root in PowerShell 7. Each challenge has a stable wrapper:
+Run presenter scripts from the repository root in PowerShell 7. Most challenges have a stable wrapper:
 
 ```powershell
 pwsh -File '.\SRE SignalOps\Scripts\Challenge-00.ps1'
 ```
 
-The default behavior is read-only or an azd/configuration preview. Missions 00–02 preview staged azd changes and require `-Execute` to deploy them. Mission 00 runs `azd up`; Missions 01–02 run `azd provision`. The VM heartbeat action additionally supports `-Restore`.
+The default behavior is read-only or an azd/configuration preview. Missions 00–02 preview staged azd changes and require `-Execute` to deploy them. Mission 00 runs `azd up`; Missions 01–02 run `azd provision`. Mission 03 is the deliberate exception: customers run and inspect each command directly from the challenge page. The VM heartbeat action additionally supports `-Restore`.
 
 ## Presenter Flow
 
@@ -15,7 +15,7 @@ The default behavior is read-only or an azd/configuration preview. Missions 00�
 | 00 | Preview isolated workload provisioning | `-Execute` runs `azd up` | Deploys apps and workspace-backed observability |
 | 01 | Preview isolated agent-core provisioning | `-Execute` runs `azd provision` | Deploys identity, RBAC, agent telemetry, and SRE Agent |
 | 02 | Preview telemetry connector provisioning | `-Execute` runs `azd provision` | Adds two connectors, then audits evidence state |
-| 03 | Plan four config targets | `-Execute` applies them | Never apply external connector examples blindly |
+| 03 | Run each command directly from Challenge 03 | None | No wrapper script; stop cart requests at the first failure or 200-request cap |
 | 04 | Inventory live connectors | None | Demonstrate configured versus proven connectivity |
 | 05 | Inventory specialists | None | Use local manifests if the data plane is slow |
 | 06 | Show filters and incident wiring | None | Use filter manifests as the control-flow fallback |
