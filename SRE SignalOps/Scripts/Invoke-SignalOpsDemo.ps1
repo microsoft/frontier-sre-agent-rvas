@@ -1,7 +1,7 @@
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [Parameter(Mandatory)]
-    [ValidateSet('00','01','02','06','07','08','09','10','11','12','13','14')]
+    [ValidateSet('00','01','02','07','08','09','10','11','12','13','14')]
     [string]$Challenge,
     [switch]$Execute,
     [switch]$Restore,
@@ -186,15 +186,6 @@ switch ($Challenge) {
         az containerapp list --resource-group $workloadResourceGroup --query '[].{name:name,state:properties.runningStatus,fqdn:properties.configuration.ingress.fqdn}' -o table
         Write-Expected 'The two azd-managed Azure telemetry connectors are visible; repository and knowledge state is reported independently.'
         Write-Prompt 'List the currently proven evidence planes. Distinguish deployed connector infrastructure from populated source and knowledge evidence.'
-    }
-    '06' {
-        $context = Get-AgentContext
-        $headers = @{ Authorization = "Bearer $($context.Token)" }
-        $agents = Invoke-RestMethod -Uri "$($context.Endpoint)/api/v2/extendedAgent/agents" -Headers $headers
-        $items = if ($agents.agents) { $agents.agents } elseif ($agents.value) { $agents.value } else { $agents }
-        $items | Select-Object name, agentType, handoffDescription | Format-Table -AutoSize
-        Write-Expected 'Specialists have distinct handoff descriptions and constrained tools.'
-        Write-Prompt 'Route an application error, denied network flow, and cost anomaly to specialists. Explain each choice and identify overlaps or unowned gaps.'
     }
     '07' {
         $context = Get-AgentContext

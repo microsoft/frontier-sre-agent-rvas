@@ -4,7 +4,7 @@
 
 ## Purpose
 
-Coach an ambiguous Grubify availability incident across application and network domains while preserving one owner, timeline, and evidence record. Expected time: 15–20 minutes.
+Coach an ambiguous Grubify availability incident across application and network domains while preserving one owner, timeline, and evidence record. Expected time: 20–25 minutes.
 
 ## Mini-Lecture (5 min before challenge)
 
@@ -15,24 +15,33 @@ Coach an ambiguous Grubify availability incident across application and network 
 ## Expected Student Output
 
 - An initial hypothesis and evidence need for the Grubify HTTP 5xx and dependency-connection exercise.
+- A live data-plane specialist inventory compared with the three relevant desired-state manifests.
+- An explicit registration-gap result when a specialist is absent; the current prepared environment may return an empty `value` collection.
 - Defensible application-to-network routing decisions with evidence returned at each handoff.
 - One accountable incident timeline, unresolved-question list, and owner.
 - A compact record of unsafe scope, overlap, or unowned gaps that affect resolution.
 
 ## Coach Runbook
 
-1. Present the exercise as an application symptom plus a dependency connection failure; do not name the owning specialist.
-2. Require the student to state the next evidence needed before routing, then inspect the relevant manifest only to verify scope and safety.
-3. Evolve the evidence from HTTP failure to denied network flow and require a justified handoff without losing the primary owner or timeline.
-4. Use the cost prompt as a negative control and reject diversion without causal evidence.
-5. Stop if a specialist writes, lacks an approval boundary, or replaces evidence with a domain assumption.
+1. Have the participant run each command from Challenge 06 directly; there is no wrapper script.
+2. Verify the endpoint is discovered from `signalops-core`, the short-lived token uses `https://azuresre.dev`, and the token is never displayed or persisted.
+3. Inspect `/api/v2/extendedAgent/agents` before discussing routes. Accept an empty `value` collection as proof that no specialists are registered.
+4. Compare live registration with the application, network, and cost manifests. Desired state must not be reported as live capability.
+5. Present the exercise as an application symptom plus a dependency connection failure; require the next evidence before selecting a domain.
+6. Evolve the evidence from HTTP failure to denied network flow without losing the primary owner or timeline.
+7. Use the cost prompt as a negative control and reject diversion without causal evidence.
+8. Stop if a specialist writes, a simulated route is presented as live, or evidence is replaced with a domain assumption.
 
 ## Common Issues and Hints
 
-- **Symptom:** Every prompt routes to one agent. **Fix:** compare routing descriptions for overlap.
+- **Symptom:** The endpoint returns `{ value: [], nextLink: null }`. **Fix:** record a registration gap, mark routes unavailable, and continue only as a labeled manifest-based exercise.
+- **Symptom:** The roster object is counted as one specialist. **Fix:** normalize the `value` or `agents` property into an array before counting.
+- **Symptom:** Data-plane request returns `401`. **Fix:** reacquire the short-lived token for `https://azuresre.dev`; never print or persist it.
+- **Symptom:** Live fields differ from the manifest. **Fix:** report configuration drift and treat live registration as authoritative for current routing.
+- **Symptom:** Every prompt routes to one agent. **Fix:** compare handoff descriptions and the exact evidence required for overlap.
 - **Symptom:** The handoff is based only on “network” or “HTTP.” **Fix:** ask which query or observation the receiving domain must provide.
 - **Symptom:** Each specialist creates a separate conclusion. **Fix:** require all evidence and uncertainty to return to one primary incident record.
-- **Symptom:** A write-capable agent has no gate. **Fix:** keep it disabled until approval is configured.
+- **Symptom:** A write-capable agent attempts remediation. **Fix:** stop the exercise; Mission 06 authorizes inspection and routing only.
 
 ## Debrief Discussion Guide
 
@@ -42,6 +51,6 @@ Coach an ambiguous Grubify availability incident across application and network 
 
 ## Success Criteria Notes
 
-- **Require:** evidence-led routing, coherent handoffs, one incident owner, and explicit unresolved gaps.
-- **Reject:** keyword-only routing, fragmented timelines, unrelated cost diversion, or unreviewed write grants.
+- **Require:** direct live inventory, live-versus-desired comparison, evidence-led routing, coherent handoffs, one incident owner, and explicit unresolved gaps.
+- **Reject:** wrapper use, simulated registration presented as live, keyword-only routing, fragmented timelines, unrelated cost diversion, or any write.
 - **Accept:** more than one plausible first domain when the student states a discriminating check and clear tie-breaker.

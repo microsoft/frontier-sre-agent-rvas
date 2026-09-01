@@ -60,4 +60,4 @@ The existing MCAPS Terraform lab remains available for later hub-spoke and parki
 
 Coach references are in the [Coach folder](./Coach/).
 
-Customer-facing commands, expected observations, fallbacks, and safety switches are in the [presenter runbook](./Scripts/README.md). Missions 03–05 are intentionally run command-by-command from their challenge pages and have no wrapper scripts.
+Customer-facing commands, expected observations, fallbacks, and safety switches are in the [presenter runbook](./Scripts/README.md). Missions 03–06 are intentionally run command-by-command from their challenge pages and have no wrapper scripts.
