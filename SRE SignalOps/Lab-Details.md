@@ -26,6 +26,22 @@ flowchart LR
 
 The two applications are independently deployed and independently observable. A green frontend root proves that nginx can serve the website; it does not prove that the browser can load restaurant data from the API. Likewise, a healthy API does not prove that the frontend has the correct API URL or CORS origin.
 
+## Important Application URLs
+
+These URLs point to the shared Grubify lab deployment. Mission 00 also writes the environment-specific base addresses to `FRONTEND_URL` and `API_BASE_URL`; use those azd values if you deploy a different environment.
+
+| Experience or check | URL | Why it matters |
+|---|---|---|
+| Grubify customer experience | [Open the Grubify frontend](https://ca-signalopscor-food-frontend.proudhill-f504bbcd.swedencentral.azurecontainerapps.io/) | Loads the React application and exercises the browser-to-API customer path |
+| API health | [Open the health endpoint](https://ca-signalopscor-food-api.proudhill-f504bbcd.swedencentral.azurecontainerapps.io/health) | Confirms that the API process can answer a lightweight request |
+| Restaurants | [Open the restaurants endpoint](https://ca-signalopscor-food-api.proudhill-f504bbcd.swedencentral.azurecontainerapps.io/api/restaurants) | Returns the restaurant data shown by the frontend |
+| Food items | [Open the food-items endpoint](https://ca-signalopscor-food-api.proudhill-f504bbcd.swedencentral.azurecontainerapps.io/api/fooditems) | Returns the menu catalog used by the browse experience |
+| Demo cart | [Open the demo-user cart](https://ca-signalopscor-food-api.proudhill-f504bbcd.swedencentral.azurecontainerapps.io/api/cart/demo-user) | Exercises a user-scoped read without changing data |
+| Compatibility check | [Open WeatherForecast](https://ca-signalopscor-food-api.proudhill-f504bbcd.swedencentral.azurecontainerapps.io/WeatherForecast) | Provides a lightweight fallback when an older image does not expose `/health` |
+| Negative control | [Open the undefined menu route](https://ca-signalopscor-food-api.proudhill-f504bbcd.swedencentral.azurecontainerapps.io/api/menu) | Expected to return `404`, proving the test can distinguish an undefined route from an outage |
+
+Do not use the API root `/` as a health test; it is not an application route and normally returns `404`. Cart and order write endpoints are intentionally omitted because opening them in a browser does not perform a meaningful customer transaction.
+
 ## Azure Resource Architecture
 
 ```mermaid
@@ -74,16 +90,28 @@ flowchart TB
 	class Agent agent
 ```
 
-| Resource or boundary | Normal responsibility | What it does not prove |
-|---|---|---|
-| Frontend Container App | Serves the React application through nginx and gives the browser the API base URL | A `200` at `/` does not prove API calls or customer journeys work |
-| API Container App | Serves restaurant, food-item, cart, order, weather, and health routes | A running revision does not prove every route is correct or fast |
-| In-memory API state | Holds demonstration data while the API process is alive | It is not durable; a restart can reset carts and orders |
-| Container Apps environment | Runs both revisions and sends platform logs to the workload workspace | It is not an application dependency traversed by the SRE Agent |
-| Application Insights | Receives API request, dependency, and exception telemetry when the connection string and SDK are active | Resource existence does not prove recent telemetry has arrived |
-| Workload Log Analytics | Stores workspace-based application telemetry and Container Apps platform logs | An empty query may mean no traffic, ingestion delay, wrong scope, or broken telemetry |
-| Azure SRE Agent | Investigates evidence and can propose or perform actions allowed by its identity and policies | It is outside the customer request path; Grubify can run without it |
-| Agent managed identity and RBAC | Grants Reader, Monitoring Reader, Log Analytics Reader, and Contributor in the workload resource group, plus subscription Monitoring Contributor | Prompt wording is not a permission boundary, and access does not prove an action is appropriate |
+## How Many Infrastructure Components Are Deployed?
+
+After Missions 00–02, the lab deploys **14 core Azure resources** across two resource groups. This count includes the services, identities, and agent connectors that participants inspect. It excludes the two resource groups themselves, RBAC role-assignment records, Container App revisions, deployment records, subagent configuration, and the response plan.
+
+| Deployment area | Count | Components | Why they are separate |
+|---|---:|---|---|
+| Grubify workload | 8 | 2 Container Apps, 1 Container Apps environment, 1 container registry, 2 managed identities, 1 Application Insights component, and 1 Log Analytics workspace | Separates frontend and API releases and scaling, uses credential-free image pulls, and keeps application and platform evidence with the workload |
+| SRE Agent | 6 | 1 Azure SRE Agent, 1 managed identity, 1 Application Insights component, 1 Log Analytics workspace, and 2 evidence connectors | Keeps the reasoning and action plane outside the customer path, gives it an auditable identity, records its own telemetry, and connects specific evidence sources |
+| **Total** | **14** | **Core resources deployed by the lab** | **Supports an isolated customer path, an independent evidence plane, and bounded agent access** |
+
+The two-resource-group boundary is intentional: `rg-signalopscore-food` owns the customer workload, while `rg-signalopscore-agent` owns the operational agent. This makes ownership, cost, cleanup, access scope, and incident blast radius easier to explain. The resource count may be higher in the Azure portal because Azure also displays revisions, role assignments, deployments, and provider-managed objects.
+
+| Resource or boundary | Normal responsibility |
+|---|---|
+| Frontend Container App | Serves the React application through nginx and gives the browser the API base URL |
+| API Container App | Serves restaurant, food-item, cart, order, weather, and health routes |
+| In-memory API state | Holds non-durable demonstration data while the API process is alive; a restart can reset carts and orders |
+| Container Apps environment | Runs both application revisions and sends platform logs to the workload workspace |
+| Application Insights | Receives API request, dependency, and exception telemetry when the connection string and SDK are active |
+| Workload Log Analytics | Stores workspace-based application telemetry and Container Apps platform logs |
+| Azure SRE Agent | Investigates evidence and can propose or perform actions allowed by its identity and policies; it remains outside the customer request path |
+| Agent managed identity and RBAC | Grants Reader, Monitoring Reader, Log Analytics Reader, and Contributor in the workload resource group, plus subscription Monitoring Contributor |
 
 ## Normal Request, Evidence, and Response Flow
 
