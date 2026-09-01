@@ -6,7 +6,7 @@ Run presenter scripts from the repository root in PowerShell 7. Most challenges 
 pwsh -File '.\SRE SignalOps\Scripts\Challenge-00.ps1'
 ```
 
-The default behavior is read-only or an azd/configuration preview. Missions 00–02 preview staged azd changes and require `-Execute` to deploy them. Mission 00 runs `azd up`; Missions 01–02 run `azd provision`. Missions 03–06 are deliberate exceptions: customers run and inspect each command directly from the challenge page. The VM heartbeat action additionally supports `-Restore`.
+The default behavior is read-only or an azd/configuration preview. Missions 00–02 preview staged azd changes and require `-Execute` to deploy them. Mission 00 runs `azd up`; Missions 01–02 run `azd provision`. Missions 03–07 are deliberate exceptions: customers run and inspect each command directly from the challenge page. The VM heartbeat action additionally supports `-Restore`.
 
 ## Presenter Flow
 
@@ -19,7 +19,7 @@ The default behavior is read-only or an azd/configuration preview. Missions 00�
 | 04 | Run each command directly from Challenge 04 | Upload four approved knowledge files individually | No wrapper script; verify stored files and asynchronous indexing separately |
 | 05 | Run each command directly from Challenge 05 | Validate each telemetry source independently | No wrapper script; distinguish deployment, access, and freshness evidence |
 | 06 | Run each command directly from Challenge 06 | Compare live registration with three manifests | No wrapper script; an empty live roster is a valid registration-gap result |
-| 07 | Show filters and incident wiring | None | Use filter manifests as the control-flow fallback |
+| 07 | Run each command directly from Challenge 07 | Validate routing, then run proposal-only branches | No wrapper script; empty filters and the Mission 03 alert mismatch must remain explicit |
 | 08 | Generate traffic and query App Insights | None | Allow several minutes for ingestion; label absent edges unobserved |
 | 09 | Inspect effective NSGs | Coach prepares sandbox fault | Use a sanitized incident snapshot without a sandbox |
 | 10 | Inspect effective routes/next hop | Coach prepares route fault | Use forward/return evidence snapshot |

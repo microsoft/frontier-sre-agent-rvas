@@ -1,7 +1,7 @@
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [Parameter(Mandatory)]
-    [ValidateSet('00','01','02','07','08','09','10','11','12','13','14')]
+    [ValidateSet('00','01','02','08','09','10','11','12','13','14')]
     [string]$Challenge,
     [switch]$Execute,
     [switch]$Restore,
@@ -55,7 +55,7 @@ function Get-BashToolPath {
 function Get-AgentContext {
     $subscriptionId = (az account show --query id -o tsv).Trim()
     $agentId = "/subscriptions/$subscriptionId/resourceGroups/$AgentResourceGroup/providers/Microsoft.App/agents/$AgentName"
-    $agent = az rest --method GET --url "https://management.azure.com$agentId`?api-version=2025-05-01-preview" 2>$null | ConvertFrom-Json
+    $agent = az rest --method GET --url "https://management.azure.com$agentId`?api-version=2026-01-01" 2>$null | ConvertFrom-Json
     [pscustomobject]@{
         SubscriptionId = $subscriptionId
         AgentId = $agentId
@@ -186,14 +186,6 @@ switch ($Challenge) {
         az containerapp list --resource-group $workloadResourceGroup --query '[].{name:name,state:properties.runningStatus,fqdn:properties.configuration.ingress.fqdn}' -o table
         Write-Expected 'The two azd-managed Azure telemetry connectors are visible; repository and knowledge state is reported independently.'
         Write-Prompt 'List the currently proven evidence planes. Distinguish deployed connector infrastructure from populated source and knowledge evidence.'
-    }
-    '07' {
-        $context = Get-AgentContext
-        $headers = @{ Authorization = "Bearer $($context.Token)" }
-        Invoke-RestMethod -Uri "$($context.Endpoint)/api/v2/extendedAgent/incidentFilters" -Headers $headers | ConvertTo-Json -Depth 8
-        az rest --method GET --url "https://management.azure.com$($context.AgentId)?api-version=2025-05-01-preview" --query properties.incidentManagementConfiguration -o json
-        Write-Expected 'Filter conditions, selected specialists, and Azure Monitor incident wiring are visible.'
-        Write-Prompt 'Trace one non-destructive alert from filter match through evidence collection, approval, validation, timeout, escalation, and closure. Do not approve a write.'
     }
     '08' {
         $workloadResourceGroup = Get-AzdValue 'AZURE_RESOURCE_GROUP'
