@@ -23,6 +23,9 @@ build-web: clean-web
 	@mkdir -p _site
 	@# Web source (index.html + assets)
 	@cp -r web/. _site/
+	@# Publish the briefing at /signalops/ and preserve the mission board.
+	@cp _site/signalops/index.html _site/signalops/missions.html
+	@cp _site/signalops/capabilities.html _site/signalops/index.html
 	@# README linked from the page
 	@cp README.md _site/README.md
 	@# Student challenge markdown files (directly in Student/)
