@@ -8,7 +8,7 @@
 
 Your agent can read the Grubify source code (from Challenge 01) but knows nothing about *your running environment*. Ask it about the Grubify architecture or its monitoring configuration and it will either say it doesn't know, or it will hallucinate — drawing on generic Azure knowledge and inventing details that don't match the lab.
 
-**Knowledge documents** are how you fix that. They are Markdown files — architecture diagrams, runbooks, incident reports, troubleshooting guides, KQL catalogs — that the agent retrieves at query time to ground its answers in your actual environment. Once loaded, every response about Grubify or the Parking Manager is backed by real documentation, not guesswork.
+**Knowledge documents** are how you fix that. They are Markdown files — architecture diagrams, runbooks, incident reports, troubleshooting guides, KQL catalogs — that the agent retrieves at query time to ground its answers in your actual environment. Once loaded, every response about Grubify, its network, or its costs is backed by real documentation, not guesswork.
 
 ## Description
 
@@ -51,17 +51,23 @@ Explain the Grubify application topology. What are its components, how are they 
 The agent should now describe:
 
 - The hub-and-spoke network layout with specific IP ranges
-- The Container Apps services (`ca-vflta-food-api`, `ca-vflta-food-frontend`) and their ports
+- The Container Apps services (`ca-food-api`, `ca-food-frontend`) and their ports
 - The IaaS web tier (nginx VMs behind the internal load balancer at `10.20.2.100`)
 - The monitoring stack (Log Analytics workspace, Application Insights, Syslog DCR)
 
 And for the KQL question — it should now name the correct workspace, table (`Syslog`), and facility filter.
 
-### Step 4 — Ask about the Parking Manager
+### Step 4 — Ask about something the knowledge base does not cover
+
+No knowledge document describes the Parking Manager app. Ask:
 
 ```text
 Explain the Parking Manager architecture. What backend APIs does it expose, what technology stack does each use, and how is observability configured for the hybrid components?
 ```
+
+A well-grounded agent should say it doesn't have documentation for the Parking Manager rather than
+inventing an architecture — this is the flip side of Step 3: retrieval grounds real answers *and*
+prevents hallucination when there is nothing to retrieve.
 
 ### Step 5 — Verify citation
 

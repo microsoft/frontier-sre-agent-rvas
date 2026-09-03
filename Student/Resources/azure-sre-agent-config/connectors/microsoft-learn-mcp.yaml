@@ -1,33 +1,4 @@
-# Microsoft Learn MCP connector. Imported from the EMU project guide
-# docs-azure-sre-agent/azure-sre-agent-implementation-guide.md (section 7) and
-# grounded in the official Microsoft Learn MCP server documentation
-# (https://github.com/MicrosoftDocs/mcp): endpoint https://learn.microsoft.com/api/mcp,
-# transport Streamable HTTP (type: http), no auth (Custom headers, left empty).
-#
-# R1 (resolved): the data-plane connector object type must be "AgentConnector"
-# (the same type as the proven github connector). The kind below is mapped to the
-# body type by data_put_manifest. Verified live against contoso-sre-agent-dev:
-# type "Connector" returns HTTP 400 InvalidObjectType, while "AgentConnector"
-# with these Mcp properties returns HTTP 200.
-#
-# R2 (transport, 2026-06-15): the SRE Agent platform supports only Streamable-HTTP
-# (type: http) and stdio; the legacy SSE transport is deprecated and leaves the
-# connector stuck in Disconnected. The Learn server speaks Streamable HTTP on the
-# same URL, so type: http is correct (mirrors the working github-mcp connector).
-# Refs: https://learn.microsoft.com/en-us/azure/sre-agent/mcp-connectors (transports +
-# health monitoring); https://github.com/MicrosoftDocs/mcp (endpoint + 3 tools).
-#
-# R3 (auth, 2026-06-15 - DECISIVE root cause): the no-auth public server must be
-# declared with authType "CustomHeaders" and the headers left EMPTY, NOT authType
-# "None". With "None" the connector registered the 3 tools to the meta agent but the
-# outbound MCP session never became usable, so chat reported the namespaced tools as
-# "not available". Switching to CustomHeaders (empty headers) makes the agent send a
-# plain unauthenticated HTTP request that the public Learn server accepts. Confirmed
-# live (portal Edit connector > Authentication = Custom headers, left empty) and
-# matches the official tutorial wording "Authentication = Custom headers (leave
-# empty; this server requires no authentication)":
-# https://learn.microsoft.com/en-us/azure/sre-agent/mcp-connector#example-connect-to-the-microsoft-learn-mcp-server
-# Codifying CustomHeaders here prevents a future full apply from regressing to None.
+# Microsoft Learn MCP connector.
 api_version: azuresre.ai/v1
 kind: AgentConnector
 metadata:
@@ -35,14 +6,11 @@ metadata:
 spec:
   properties:
     dataConnectorType: Mcp
-    dataSource: microsoft-learn
+    endpoint: https://learn.microsoft.com/api/mcp
+    dataSource: https://learn.microsoft.com/api/mcp
     extendedProperties:
       type: http
       endpoint: https://learn.microsoft.com/api/mcp
-      # No-auth public server: authType MUST be CustomHeaders with EMPTY headers (not
-      # None). See R3 in the header comment. Leaving customHeaders unset = no headers
-      # sent, which is what the proven-working portal config stores.
-      authType: CustomHeaders
       # Tools exposed to the MAIN/meta agent (portal chat). Without this field the
       # connector reaches Connected but the meta agent sees zero Learn tools, so a
       # docs query in chat fails with "tool not available" even though the server is
@@ -56,4 +24,4 @@ spec:
         - microsoft-learn-mcp_microsoft_docs_search
         - microsoft-learn-mcp_microsoft_docs_fetch
         - microsoft-learn-mcp_microsoft_code_sample_search
-    identity: system
+      identity: ""

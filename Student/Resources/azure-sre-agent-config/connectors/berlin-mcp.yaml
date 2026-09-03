@@ -6,7 +6,7 @@
 # Terraform output.
 #
 # Optional auth: set BERLIN_MCP_AUTH_TOKEN in Student/.env before `make infra` /
-# `make connectors`. Leave it empty to keep authentication disabled for the lab.
+# `make connectors`. The deployment script omits the auth fields when this value is empty.
 api_version: azuresre.ai/v1
 kind: AgentConnector
 metadata:
@@ -14,11 +14,12 @@ metadata:
 spec:
   properties:
     dataConnectorType: Mcp
-    dataSource: berlin-mcp
+    endpoint: ${BERLIN_MCP_URL}
+    dataSource: ${BERLIN_MCP_URL}
     extendedProperties:
       type: http
       endpoint: ${BERLIN_MCP_URL}
       authType: CustomHeaders
-      customHeaders:
+      headers:
         Authorization: Bearer ${BERLIN_MCP_AUTH_TOKEN}
-    identity: system
+    identity: ""

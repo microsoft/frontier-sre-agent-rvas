@@ -10,12 +10,11 @@ kind: Skill
 metadata:
   name: connectivity-diagnostics
 spec:
-  description: Select and run the right read-only Network Watcher connectivity diagnostic (IP flow verify, next hop, effective NSG/routes, connection troubleshoot) for VM/VNet reachability, including the Private Endpoint source-side path and private DNS resolution.
-  content_file: ./connectivity-diagnostics.md
+  description: Diagnose Azure VM/VNet reachability by selecting and correlating Network Watcher tests, effective NSG rules, effective routes, next hop, Traffic Analytics, Private Endpoint source-side evidence, and private DNS; remediate only the exact proven NSG or UDR fault when the active trigger permits it.
+  files:
+    - ./connectivity-diagnostics.md
+    - ./connectivity-diagnostics/references/diagnostic-commands.md
   tools:
     - RunAzCliReadCommands
     - QueryLogAnalyticsByWorkspaceId
     - GetAzCliHelp
-  safety:
-    default_mode: read_only
-    requires_approval_for_actions: true

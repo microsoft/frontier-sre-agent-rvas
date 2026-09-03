@@ -1,16 +1,19 @@
-# Grubify source repository for deep-context code correlation and issue triage.
-# Imported from dm-chelupati/sre-agent-lab. The Grubify application now lives INSIDE this
-# solution's repository (microsoft/frontier-sre-agent-rvas) under the subfolder
-# Student/Resources/grubify/ — the agent reads the source there and opens fix pull
-# requests against that repository.
-# authConnectorName links this repo to the GitHub OAuth connector (connectors/github.yaml)
-# so the agent can read source and manage issues/PRs via the authorized OAuth session.
+# Repository that the agent clones for source correlation, issue creation and pull-request
+# delivery. It must be the copy the student actually owns, because the student has to review and
+# merge the proposed fix, and because the deployed application is built from this same code.
+#
+# The address is resolved automatically from the `origin` remote of the working copy, so no
+# manual configuration is needed. Set GRUBIFY_REPO_URL to override it.
+#
+# Scope note: the Azure SRE Agent repository resource has no field that restricts the agent to a
+# subdirectory, so the whole repository is cloned. Confining the agent to the Grubify folder is a
+# behavioural rule expressed in the skill, the subagent prompt and the agent-global instructions,
+# not a boundary enforced by the platform.
 api_version: azuresre.ai/v1
 kind: Repository
 metadata:
   name: grubify
 spec:
-  url: https://github.com/microsoft/frontier-sre-agent-rvas
+  url: ${GRUBIFY_REPO_URL}
   type: GitHub
-  authConnectorName: github
-  description: Grubify application source (under Student/Resources/grubify/ in microsoft/frontier-sre-agent-rvas) for code-analyzer correlation, issue-triager triage, and autonomous fix pull requests.
+  description: Workshop repository containing the Grubify source under Student/Resources/grubify, mounted for incident correlation, code fixes, issue creation and pull-request delivery.

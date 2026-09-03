@@ -38,5 +38,5 @@ Expected demo path:
 1. Baseline Next Hop from client VM to ${db_ip} should still show VirtualAppliance / ${firewall_ip}.
 2. Effective routes on data subnets now contain a more specific 10.20.1.0/24 route to None.
 3. Use Traffic Analytics to inspect FlowDirection, BytesSrcToDest/BytesDestToSrc, and missing or imbalanced return flow.
-Restore with: ./Infra/scripts/restore-udr-asymmetry.sh
+Restore with: make restore-udr
 EOF

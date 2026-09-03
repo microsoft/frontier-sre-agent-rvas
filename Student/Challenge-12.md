@@ -27,15 +27,15 @@ make baseline-traffic
 make trigger-nsg-block
 ```
 
-This creates NSG rule `Demo-Deny-App-To-Db-5432` (Deny TCP `10.20.0.0/16 → 10.30.2.10:5432`) on the app-spoke NSG and generates traffic that is now blocked.
+This creates NSG rule `Demo-Deny-App-To-Db-5432` (Deny TCP `10.20.0.0/16 → 10.30.2.10:5432`) on the data-spoke NSG (`nsg-data`) and generates traffic that is now blocked.
 
 ### Step 2 — Wait for the alert
 
-The log-search alert `alert-vflta-denied-flow-spike` fires on a Sev2 threshold: a spike in `FlowStatus = Denied` flows in the `NTANetAnalytics` Traffic Analytics table. Traffic Analytics aggregates flow data on a **10-minute interval**, so within **10–15 minutes** the incident should appear in the SRE Agent portal under **Incident Response**.
+The log-search alert `alert-denied-flow-spike` fires on a Sev2 threshold: a spike in `FlowStatus = Denied` flows in the `NTANetAnalytics` Traffic Analytics table. Traffic Analytics aggregates flow data on a **10-minute interval**, so within **10–15 minutes** the incident should appear in the SRE Agent portal under **Incident Response**.
 
 ### Step 3 — Observe the autonomous investigation
 
-The response plan `network-observability-review` (Sev2, `titleContains: Denied`) routes this incident to the `network-traffic-analyst` subagent in **Autonomous** mode. Watch the agent:
+The response plan `network-observability-review` (Sev2, `titleContains: network-`, excluding `nginx`) routes this incident to the `network-traffic-analyst` subagent in **Autonomous** mode. Watch the agent:
 
 1. Query `NTANetAnalytics` for denied flows — source IP, destination IP, destination port, protocol
 2. Identify the exact flow match criteria (source prefix, destination IP, port, protocol) of the blocked traffic
@@ -67,7 +67,7 @@ In the portal, read the agent's investigation log. Verify:
 
 ## Success Criteria
 
-- [ ] The `alert-vflta-denied-flow-spike` alert fired and appeared in the SRE Agent portal
+- [ ] The `alert-denied-flow-spike` alert fired and appeared in the SRE Agent portal
 - [ ] The agent queried `NTANetAnalytics` and identified the denied flow match criteria correctly
 - [ ] The agent named the specific NSG rule (`Demo-Deny-App-To-Db-5432`) as the cause
 - [ ] The agent deleted the NSG rule and verified that denied flows cleared
@@ -83,6 +83,6 @@ In the portal, read the agent's investigation log. Verify:
 ## Tips
 
 - `NTANetAnalytics` is populated by Traffic Analytics on a configurable interval (10 minutes in this lab). If the denied flows aren't appearing yet, wait for the next aggregation cycle.
-- The `FlowStatus` field in `NTANetAnalytics` stores the full word `"Denied"` (not `"D"` as in the older NSG flow log V1 format). The `nsg-deny-flow-investigation` skill already accounts for this.
+- The `FlowStatus` field in `NTANetAnalytics` stores the full word `"Denied"` (not `"D"` as in the older Network Security Group flow log version 1 format). The `connectivity-diagnostics` skill already accounts for this.
 - Traffic Analytics denied flow data lags real-time by the aggregation interval. Use NSG flow logs in storage for second-by-second forensics; use Traffic Analytics for pattern analysis over minutes to hours.
 - The `titleContains: Denied` condition in the `network-observability-review` response plan routes denied-flow spike alerts to the network analyst. The sibling `web-tier-nginx` plan uses `titleContains: nginx` to capture nginx failures — each filter owns a distinct keyword so alerts never overlap.

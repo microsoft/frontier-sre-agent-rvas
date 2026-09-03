@@ -1,7 +1,7 @@
 variable "location" {
   description = "Azure region for all resources."
   type        = string
-  default     = "uksouth"
+  default     = "swedencentral"
 }
 
 variable "rg_hub" {
@@ -43,10 +43,9 @@ variable "vm_admin_username" {
 }
 
 variable "vm_admin_password" {
-  description = "Admin password for the parking app VMs (Madrid and Paris)."
+  description = "Admin password supplied by the root module for all lab VMs."
   type        = string
   sensitive   = true
-  default     = "Change-Me-Before-Deploy-123!"
 }
 
 variable "deploy_madrid_vm" {

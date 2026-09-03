@@ -21,6 +21,7 @@ module "workload" {
   deploy_madrid_vm          = var.deploy_madrid_vm
   deploy_paris_vm           = var.deploy_paris_vm
   create_parking_public_ips = var.create_parking_public_ips
+  berlin_mcp_auth_token     = var.berlin_mcp_auth_token
 
   rg_parking_lisbon = var.rg_parking_lisbon
   rg_parking_berlin = var.rg_parking_berlin
@@ -50,10 +51,10 @@ module "sre_agent" {
   # Labels must match the keys used before the module refactor to preserve state.
   managed_scopes = {
     "/subscriptions/${data.azurerm_client_config.current.subscription_id}" = "/subscriptions/${data.azurerm_client_config.current.subscription_id}"
-    "hub-resource-group"         = module.workload.rg_hub_id
-    "web-api-resource-group"     = module.workload.rg_spoke_web_api_id
-    "data-resource-group"        = module.workload.rg_spoke_data_id
-    "sample-food-resource-group" = module.workload.rg_sample_food_id
-    "demo-log-analytics"         = module.workload.log_analytics_workspace_id
+    "hub-resource-group"                                                   = module.workload.rg_hub_id
+    "web-api-resource-group"                                               = module.workload.rg_spoke_web_api_id
+    "data-resource-group"                                                  = module.workload.rg_spoke_data_id
+    "sample-food-resource-group"                                           = module.workload.rg_sample_food_id
+    "demo-log-analytics"                                                   = module.workload.log_analytics_workspace_id
   }
 }

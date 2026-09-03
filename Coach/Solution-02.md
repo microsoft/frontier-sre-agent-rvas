@@ -13,11 +13,11 @@
 - Explain retrieval-augmented behavior: the model does not read all docs every turn; it retrieves the most relevant ones.
 - Point out the three knowledge families: `sample-food/`, `vnet-flow-logs/`, and `cost/`.
 - Useful contrast demo: ask about Grubify topology before and after `make knowledge-files`.
-- Highlight facts students should hear in answers: `lb-vflta-internal-web`, `10.20.2.100`, `Syslog`, Application Insights, and sample-food routes. (Traffic Analytics / `NTANetAnalytics` is not introduced until Challenge-03.)
+- Highlight facts students should hear in answers: `ca-food-api`, `ca-food-frontend`, `lb-internal-web`, `10.20.2.100`, `Syslog`, Application Insights, and the three VNet flow logs. (Traffic Analytics / `NTANetAnalytics` is not introduced until Challenge 03.)
 
 ## Expected Student Output
 
-- Portal shows uploaded knowledge documents after `make knowledge-files`.
+- Portal shows all 9 certified knowledge documents after `make knowledge-files`.
 - Agent names lab-specific components instead of generic Azure advice.
 - For nginx failure questions, agent references the `Syslog` table and correct VM/web-tier context.
 - When asked, the agent can cite or name the document it relied on.

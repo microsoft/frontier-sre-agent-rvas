@@ -2,8 +2,10 @@
 # app, and the Parking app. This is the infrastructure the Azure SRE Agent will
 # observe and manage.
 #
-# Challenge: deploy the SRE Agent (module "sre_agent" in Coach/Solutions/infra)
-# and configure it to watch this workload.
+# The Azure SRE Agent itself is deliberately not declared here. Creating it is the
+# participant's job in Challenge 00, and it starts empty: skills, knowledge,
+# subagents and connectors are added from Challenge 01 onwards. Record the agent's
+# resource group and name in Student/.env so the make targets can reach it.
 
 module "workload" {
   source = "../../../Coach/Solutions/infra/modules/workload"

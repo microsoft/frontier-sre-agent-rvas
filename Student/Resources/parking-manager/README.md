@@ -10,7 +10,7 @@ The **Parking Manager** application manages parking facilities across multiple c
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│           Azure App Service / Local  (port 8080)                     │
+│           Local development UI  (port 8080)                          │
 │         Express Proxy  +  React Parking Manager UI                   │
 └──┬──────────┬──────────┬──────────┬──────────┬──────────┬────────────┘
    │          │          │          │          │          │
@@ -33,7 +33,10 @@ Analytics  Event      (Linux)  /metrics
            Viewer
 ```
 
-The **Berlin MCP Server** (`backend/berlin-mcp-server`) is a separate Model Context Protocol service that exposes the Berlin API to AI tooling and is deployed as its own Container App.
+The **Berlin MCP Server** (`backend/berlin-mcp-server`) is a separate Model Context Protocol
+service that exposes the Berlin API to AI tooling and is deployed as its own Terraform-owned
+Container App. The React/Express frontend remains a local development UI; live workshop scenarios
+exercise the Terraform-deployed APIs and control services through the Makefile targets.
 
 ## Project Structure
 

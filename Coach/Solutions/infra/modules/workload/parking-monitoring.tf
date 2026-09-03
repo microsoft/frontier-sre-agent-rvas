@@ -131,17 +131,17 @@ resource "azapi_resource" "vm_health_table" {
       schema = {
         name = "VMHealthStatus_CL"
         columns = [
-          { name = "TimeGenerated",  type = "datetime" },
-          { name = "vmName",         type = "string" },
-          { name = "city",           type = "string" },
-          { name = "healthState",    type = "string" },
-          { name = "previousState",  type = "string" },
-          { name = "severity",       type = "string" },
-          { name = "source",         type = "string" },
-          { name = "message",        type = "string" },
-          { name = "resourceGroup",  type = "string" },
+          { name = "TimeGenerated", type = "datetime" },
+          { name = "vmName", type = "string" },
+          { name = "city", type = "string" },
+          { name = "healthState", type = "string" },
+          { name = "previousState", type = "string" },
+          { name = "severity", type = "string" },
+          { name = "source", type = "string" },
+          { name = "message", type = "string" },
+          { name = "resourceGroup", type = "string" },
           { name = "subscriptionId", type = "string" },
-          { name = "resourceType",   type = "string" },
+          { name = "resourceType", type = "string" },
         ]
       }
       retentionInDays = 30

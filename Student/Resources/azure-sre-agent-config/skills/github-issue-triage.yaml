@@ -1,0 +1,14 @@
+# Executable triage procedure extracted from the `issue-triager` prompt (2026-08-24). The
+# classification taxonomy, comment template, and guardrails stay in the knowledge base document
+# `sample-food/github-issue-triage.md`, which is reference content; this skill is the procedure
+# that executes against it. Source: https://learn.microsoft.com/en-us/azure/sre-agent/skills
+api_version: azuresre.ai/v1
+kind: Skill
+metadata:
+  name: github-issue-triage
+spec:
+  description: Use when open GitHub issues must be classified, labelled, and answered with a triage comment. Selects untriaged customer issues, classifies them against the project taxonomy, applies labels, posts a structured comment, and decides whether the evidence justifies escalating to a source fix.
+  files:
+    - ./github-issue-triage.md
+  tools:
+    - SearchMemory

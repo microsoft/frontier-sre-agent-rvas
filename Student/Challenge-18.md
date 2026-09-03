@@ -33,7 +33,7 @@ Run a subscription-wide cost optimization review using the cost-optimization-met
 Recommend only — do not modify any Azure resource.
 ```
 
-> **Why a short prompt?** The `cost-optimization-methodology.md` knowledge document contains the complete 8-step method, the four data planes, the de-duplication rules, and the Well-Architected guardrails. Embedding the method in the knowledge base — rather than repeating it in every prompt — means it stays accurate as the lab evolves, applies consistently across ad-hoc and scheduled invocations, and demonstrates the core SRE Agent design principle: prompts describe the *goal*, knowledge documents define the *method*.
+> **Why a short prompt?** The ordered 8-step method and its executable calls live in the `cost-optimization` skill (`Student/Resources/azure-sre-agent-config/skills/cost-optimization.md`); the `cost-optimization-methodology.md` knowledge document holds the guardrails, de-duplication rules, confidence model, and escalation criteria used to judge each candidate. Splitting *how to find* (skill) from *how to judge* (knowledge doc) means both stay accurate independently as the lab evolves, and it demonstrates the core SRE Agent design principle: prompts describe the *goal*, skills define the *procedure*, and knowledge documents define the *judgment criteria*.
 
 ### Step 2 — Review the output
 

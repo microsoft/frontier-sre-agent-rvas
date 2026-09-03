@@ -1,0 +1,20 @@
+# Shared source-analysis and fix-delivery procedure (2026-08-24). Extracted from the
+# duplicated prose that lived verbatim inside `aca-app-incident-handler` and
+# `code-analyzer`. Two specialists needed the same steps, so the steps belong in a skill
+# that both are granted through `allowed_skills`, not in two prompts that drift apart.
+# Source: https://learn.microsoft.com/en-us/azure/sre-agent/skills
+api_version: azuresre.ai/v1
+kind: Skill
+metadata:
+  name: source-fix-delivery
+spec:
+  description: Use when an incident is traced to a source-code defect and a fix must be delivered. Proves the causal mechanism from telemetry and code, derives the smallest change that removes the mechanism rather than masking the symptom, adds a regression test that fails before and passes after, and delivers issue plus pull request without merging.
+  files:
+    - ./source-fix-delivery.md
+  tools:
+    - SearchMemory
+    - RunAzCliReadCommands
+    - QueryAppInsightsByResourceId
+    - QueryLogAnalyticsByWorkspaceId
+    - ExecutePythonCode
+    - GetAzCliHelp

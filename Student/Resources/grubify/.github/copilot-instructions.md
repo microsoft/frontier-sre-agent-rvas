@@ -2,19 +2,20 @@
 
 # Grubify Food Delivery App
 
-This is a modern food delivery application with a React TypeScript frontend and .NET backend, designed for deployment to Azure Container Apps.
+This is a food delivery application with a React TypeScript frontend and .NET backend. Its source
+is retained for Azure SRE Agent investigation and remediation exercises.
 
 ## Tech Stack
 - **Frontend**: React 18 with TypeScript, Material-UI, React Router
 - **Backend**: .NET 9 Web API with Controllers
-- **Deployment**: Azure Container Apps
-- **Infrastructure**: Bicep templates
+- **Runtime**: Azure Container Apps provisioned by the workshop Terraform root
+- **Images**: canonical public `grubify-api:latest` and `grubify-frontend:latest` packages
 
 ## Architecture
 - Clean separation between frontend and backend
 - RESTful API design
 - Responsive Material-UI components
-- Azure Container Apps for scalable hosting
+- Terraform owns runtime image references, environment variables, and replica settings
 
 ## Development Guidelines
 - Use TypeScript strict mode
@@ -35,4 +36,7 @@ This is a modern food delivery application with a React TypeScript frontend and 
 - Step-by-step checkout process
 - Real-time order tracking
 
-When working on this project, prioritize user experience, maintain clean code architecture, and ensure proper error handling throughout the application.
+Source changes end at a reviewed pull request. Do not add deployment automation, Bicep/AZD
+infrastructure, registry credentials, or out-of-band Azure Container App updates. Prioritize user
+experience, maintain clean code architecture, and ensure proper error handling throughout the
+application.

@@ -20,7 +20,7 @@ Verify the Grubify app is healthy and the GitHub connector is authorized:
 make validate-food
 ```
 
-In the SRE Agent portal, confirm the **github** connector and the **grubify** repository link are active.
+In the SRE Agent portal, confirm the **GitHub MCP** (`github-mcp`) connector and the **grubify** repository link are active.
 
 ### Step 1 — Inject the OOM fault
 
@@ -32,7 +32,7 @@ This issues ~200 `POST /api/cart/demo-user/items` requests against the Grubify A
 
 ### Step 2 — Wait for the alert and autonomous response
 
-The `alert-vflta-food-http-5xx` Azure Monitor alert (Sev1, Container Apps HTTP 5xx rate) fires on a 1-minute evaluation window. The response plan `sample-food-http-errors` routes the incident to `aca-app-incident-handler` in **Autonomous** mode (up to 3 investigation attempts).
+The `alert-food-http-5xx` Azure Monitor alert (Sev1, Container Apps HTTP 5xx rate) fires on a 1-minute evaluation window. The response plan `sample-food-http-errors` routes the incident to `aca-app-incident-handler` in **Autonomous** mode (up to 3 investigation attempts).
 
 Watch the portal — within **3–5 minutes** the incident should appear and the agent should begin its investigation.
 
@@ -78,7 +78,7 @@ make food-status
 
 ## Success Criteria
 
-- [ ] The `alert-vflta-food-http-5xx` alert fired and the incident appeared in the portal
+- [ ] The `alert-food-http-5xx` alert fired and the incident appeared in the portal
 - [ ] The agent identified `/api/cart/{user}/items` as the fault path from telemetry
 - [ ] The `code-analyzer` subagent retrieved the cart endpoint source code from the Grubify repository
 - [ ] A GitHub issue was created with root cause, code evidence, and remediation steps

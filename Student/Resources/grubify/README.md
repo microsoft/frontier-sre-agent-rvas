@@ -1,6 +1,7 @@
 # Grubify - Food Delivery App
 
-A modern food delivery application built with React TypeScript frontend and .NET backend, designed for deployment to Azure Container Apps using Azure Developer CLI (azd).
+A food delivery application built with a React TypeScript frontend and a .NET backend. Its source
+is retained for Azure SRE Agent investigation and remediation exercises.
 
 ## 🍕 Features
 
@@ -8,104 +9,37 @@ A modern food delivery application built with React TypeScript frontend and .NET
 - **Real Food Content**: Sample restaurants and food items with real images from Unsplash
 - **Complete Food Delivery Flow**: Browse restaurants → Add to cart → Checkout → Track orders
 - **Azure Container Apps**: Scalable, serverless container hosting
-- **Azure Developer CLI**: One-command deployment and management
 
 ## 🏗️ Architecture
 
 - **Frontend**: React 18 + TypeScript + Material-UI
 - **Backend**: .NET 9 Web API with RESTful endpoints
-- **Infrastructure**: Azure Container Apps + Container Registry
-- **Deployment**: Azure Developer CLI (azd)
+- **Infrastructure**: Azure Container Apps, with images published to GitHub Packages
+- **Workshop deployment**: Terraform consumes the existing public GitHub Packages images
 
-## 🚀 Complete Deployment Guide
+## Where the remediation exercise ends
 
-This guide shows how to deploy Grubify with **both backend versions** (v1 with memory leak, v2 with payment failures) for testing Azure SRE Agent scenarios.
+This application is the subject of the Azure SRE Agent remediation exercise. The exercise ends at
+the pull request:
 
-## 📋 Prerequisites
+1. The agent diagnoses the production incident, opens an issue, and opens a pull request carrying
+   the source fix. It never pushes to the default branch and never merges its own pull request.
+2. You review the two artifacts it produced. That is the deliverable, and the exercise ends here.
 
-Before deploying Grubify, ensure you have the following tools installed and running:
+Approving, merging and re-releasing are deliberately outside the exercise. What is being assessed
+is the quality of the investigation and of the proposed change.
 
-### Required Tools
-- **[Azure Developer CLI (azd)](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/install-azd)** - Latest version
-- **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** - Must be **running** before deployment
-- **[Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)** - For additional Azure operations
-- **Azure Subscription** - With Contributor/Owner permissions
+## How the workshop runs the application
 
-### ⚠️ Important: Docker Desktop
-**Docker Desktop must be running before executing `azd up`**. The deployment will fail if Docker is not started.
+The workshop does not build or publish Grubify. Terraform deploys the two existing public images:
 
-To start Docker Desktop:
-- **macOS/Windows**: Launch Docker Desktop application
-- **Linux**: Run `sudo systemctl start docker`
+- `ghcr.io/microsoft/frontier-sre-agent-rvas/grubify-api:latest`
+- `ghcr.io/microsoft/frontier-sre-agent-rvas/grubify-frontend:latest`
 
-Verify Docker is running:
-```bash
-open -a Docker
-docker --version
-docker ps
-```
+Source remediation ends at the pull request. Publishing a modified image is intentionally outside
+the workshop scope.
 
-### Prerequisites
-
-## 🚀 Quick Start
-
-### 1. Prerequisites Check
-Before starting, run our prerequisites check script:
-
-```bash
-# Run the automated prerequisites check
-./scripts/check-prerequisites.sh
-
-
-### 2. Initial Azure Setup
-
-```bash
-# Clone the repository (Grubify lives under Student/Resources/grubify/)
-git clone https://github.com/microsoft/frontier-sre-agent-rvas.git
-cd frontier-sre-agent-rvas/Student/Resources/grubify
-
-# ⚠️ IMPORTANT: Start Docker Desktop before proceeding
-# Verify Docker is running
-docker ps
-
-# Login to Azure
-azd auth login
-az login --use-device-code
-
-# Initialize azd project (if not already done)
-azd init
-
-# Set Azure location
-azd env set AZURE_LOCATION eastus2
-```
-
-### 3. Deploy Infrastructure & Applications
-
-```bash
-# Deploy infrastructure and frontend first
-azd up
-```
-
-This creates:
-- **Resource Group**: `rg-grubify-app`
-- **Container Registry**: `crgrubify`
-- **Container Apps Environment**: `cae-grubify`
-- **API Container App**: `ca-grubify-api`
-- **Frontend Container App**: `ca-grubify-frontend`
-- **Log Analytics Workspace**: `log-grubify`
-
-### 6. Ready for SRE Scenarios
-
-Now you have:
-- ✅ **Frontend deployed** and working
-- ✅ **Backend deployed** and working
-- ✅ **Infrastructure configured** for testing scenarios
-
-**SRE Agent Setup:**
-1. **Create agent** - ([Azure SRE Agent Usage Guide](https://learn.microsoft.com/en-us/azure/sre-agent/usage))
-2. **Map GitHub repo** that you cloned this to: **https://github.com/microsoft/frontier-sre-agent-rvas** (Grubify source under `Student/Resources/grubify/`)
-3. **Connect Service Now** to your SRE agent
-4. **Setup incident handler** with custom instructions for automated diagnosis and mitigation
-5. **Simulate memory leak** using the deployed application endpoints
-6. **Create incident in Service Now** to trigger SRE agent response
+[`scripts/verify-cart-resilience.sh`](scripts/verify-cart-resilience.sh) replays 200 cart writes
+against a deployed interface and fails unless the error rate stays within the threshold. Use it to
+measure the behavior of a deployed interface.
 

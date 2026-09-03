@@ -36,7 +36,7 @@ Apply the subagent YAMLs from `Student/Resources/azure-sre-agent-config/subagent
 make subagents
 ```
 
-Verify in the portal under **Subagents** — you should see all **11** listed.
+Verify in the portal under **Subagents** — you should see all **12** listed.
 
 ### Step 3 — Invoke the network specialist
 

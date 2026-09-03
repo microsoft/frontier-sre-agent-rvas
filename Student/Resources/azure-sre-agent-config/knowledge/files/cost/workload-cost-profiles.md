@@ -43,6 +43,12 @@ Unknown production resources default to **business-critical** until profiled.
 
 > These are **lab baseline** values for the Contoso SRE Agent demo subscription. Replace them with
 > real workload data when this agent is pointed at a production subscription.
+>
+> **Status of the budget figures below.** They are provisional monthly allocations set by the demo
+> programme, derived from the deployed resource mix, not measured spend. They exist because budget
+> variance cannot be computed against an empty field: an absent budget silently disables a step of
+> the cost method. Reconcile each one against actual spend on the first optimization run and
+> replace it with the observed figure.
 
 ### grubify-app (Sample Food ordering application)
 
@@ -54,7 +60,7 @@ Unknown production resources default to **business-critical** until profiled.
 | SLA / SLO | Best-effort (demo); target no user-visible 5xx during a demo |
 | Resiliency | Single-region (Sweden Central), Container Apps managed redundancy |
 | Performance / scalability | Container Apps autoscale; API `targetPort` 8080 |
-| Monthly budget | Lab placeholder — set per demo program |
+| Monthly budget | EUR 150 — provisional allocation: two Container Apps and one Application Insights resource. Images are pulled from public GitHub Packages, so no Azure Container Registry cost is allocated. |
 | Owner | SRE Agent demo team |
 
 ### vflta-iaas-lab (hub-spoke IaaS demo)
@@ -67,10 +73,8 @@ Unknown production resources default to **business-critical** until profiled.
 | SLA / SLO | None (lab) |
 | Resiliency | Single-zone lab topology; internal Standard LB across web-1/web-2 |
 | Performance / scalability | Fixed small VM SKUs; no autoscale |
-| Monthly budget | Lab placeholder |
+| Monthly budget | EUR 700 — provisional allocation dominated by the two always-on fixed costs, Azure Firewall and Azure Bastion, plus six small virtual machines |
 | Owner | SRE Agent demo team |
-
-Optimization notes: dev-test → candidate for off-hours deallocation; Azure Firewall and Bastion are
 the dominant fixed costs (evaluate Bastion SKU and firewall tier vs lab need); the NVA VM is
 inactive (real NVA is Azure Firewall) → candidate for shutdown.
 
@@ -84,7 +88,7 @@ inactive (real NVA is Azure Firewall) → candidate for shutdown.
 | SLA / SLO | Telemetry freshness sufficient for demo scenarios |
 | Resiliency | Single-region |
 | Performance / scalability | LAW pay-as-you-go; flow logs + Traffic Analytics on demo scope |
-| Monthly budget | Lab placeholder |
+| Monthly budget | EUR 250 — provisional allocation driven by Log Analytics ingestion and retention, flow-log Storage, and agent unit consumption |
 | Owner | SRE Agent demo team |
 
 Optimization notes: Log Analytics retention and table plan (Basic logs), Traffic Analytics

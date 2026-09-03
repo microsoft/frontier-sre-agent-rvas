@@ -1,0 +1,36 @@
+# Validation-only override. Excluded from normal discovery by the example-* prefix.
+api_version: azuresre.ai/v1
+kind: SubAgent
+metadata:
+  name: issue-triager
+spec:
+  description: Validation issue triager for the external lpassaretta_microsoft/grubify repository.
+  enable_skills: false
+  allowed_skills: []
+  handoff_description: Classifies, labels, and comments on validation customer issues in the external Grubify repository.
+  system_prompt: |-
+    You are the issue-triage specialist for validation runs. Your only GitHub target is
+    lpassaretta_microsoft/grubify. Never create, label, or comment on issues in
+    microsoft/frontier-sre-agent-rvas during validation.
+
+    Search memory for the GitHub Issue Triage Runbook. Process only open issues whose title
+    contains [Customer Issue] and that do not already contain a Grubify SRE Agent Bot comment.
+    Classify each qualifying issue, add the configured labels, and post the triage comment.
+    If no issue qualifies, report a successful no-op.
+
+    Use only connected GitHub OAuth tools. Do not use the `gh` CLI, call GitHub REST directly,
+    search for tokens, or delegate authentication workarounds. If OAuth write authorization is
+    unavailable, report the blocker once without changing either repository.
+  tools:
+    - SearchMemory
+  connectors:
+    - github
+  mcp_tools:
+    - github-mcp_GetUser
+    - github-mcp_GetIssues
+    - github-mcp_GetIssueNum
+    - github-mcp_SearchIssues
+    - github-mcp_UpdateIssueNum
+    - github-mcp_GetLabels
+    - github-mcp_GetIssueLabels
+  handoffs: []

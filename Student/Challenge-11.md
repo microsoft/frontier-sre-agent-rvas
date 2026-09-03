@@ -28,13 +28,13 @@ Stop nginx on both web VMs:
 make trigger-nginx-down
 ```
 
-This stops nginx on both `vm-vflta-web-1` and `vm-vflta-web-2`. The internal load balancer (`lb-vflta-internal-web`, frontend `10.20.2.100`) will stop serving requests as both backends fail the HTTP health probe.
+This stops nginx on both `vm-web-1` and `vm-web-2`. The internal load balancer (`lb-internal-web`, frontend `10.20.2.100`) will stop serving requests as both backends fail the HTTP health probe.
 
 > **Why both VMs?** Stopping only one is not an outage — the load balancer keeps serving from the healthy instance. With all instances failing, the load balancer has no healthy backend to route to.
 
 ### Step 2 — Wait for the alert
 
-The Azure Monitor alert `alert-vflta-nginx-down` is configured on a 1-minute evaluation window. Within **2–3 minutes**, the alert should fire based on Syslog messages referencing nginx `Stopped` / `Deactivated` / `Failed`.
+The Azure Monitor alert `alert-nginx-down` is configured on a 1-minute evaluation window. Within **2–3 minutes**, the alert should fire based on Syslog messages referencing nginx `Stopped` / `Deactivated` / `Failed`.
 
 Monitor in the SRE Agent portal under **Incident Response**.
 
@@ -73,7 +73,7 @@ In the portal, read the agent's full investigation log. Note:
 
 ## Success Criteria
 
-- [ ] The `alert-vflta-nginx-down` alert fired and appeared in the SRE Agent portal
+- [ ] The `alert-nginx-down` alert fired and appeared in the SRE Agent portal
 - [ ] The agent's log shows it queried the Syslog table for nginx systemd messages
 - [ ] The agent identified **both** VMs as affected (blast radius correctly assessed)
 - [ ] The agent ran `az vm run-command invoke` on each VM to restart nginx
@@ -90,6 +90,6 @@ In the portal, read the agent's full investigation log. Note:
 
 ## Tips
 
-- The Syslog DCR (`dcr-vflta-web-syslog`) collects `daemon` facility logs from both VMs. The `Syslog` table in Log Analytics is the source of truth for guest-OS service failures.
+- The Syslog DCR (`dcr-web-syslog`) collects `daemon` facility logs from both VMs. The `Syslog` table in Log Analytics is the source of truth for guest-OS service failures.
 - The `iaas-vm-incident-handler` subagent runs this challenge **without a custom skill** — it relies entirely on its system prompt and built-in tools. This is intentional: it shows that a well-written system prompt with clear instructions can drive correct behavior without a separate skill YAML.
 - If only one VM's nginx is restarted, the load balancer will resume serving but the second VM remains broken — a silent partial failure. The agent is instructed to verify every instance, not just the first one.

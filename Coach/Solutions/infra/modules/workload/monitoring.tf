@@ -9,8 +9,20 @@ resource "azurerm_storage_account" "flow_logs" {
   min_tls_version                 = "TLS1_2"
   allow_nested_items_to_be_public = false
   public_network_access_enabled   = false
-  shared_access_key_enabled       = false
-  tags                            = local.resource_tags
+  shared_access_key_enabled = false
+  tags                      = local.resource_tags
+
+  # Keep the firewall default-deny and retain the trusted-service exception used by
+  # Microsoft.Network to write and analyze flow logs when public access is disabled.
+  network_rules {
+    default_action = "Deny"
+    bypass         = ["AzureServices"]
+
+    private_link_access {
+      endpoint_resource_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Security/datascanners/storageDataScanner"
+      endpoint_tenant_id   = data.azurerm_client_config.current.tenant_id
+    }
+  }
 
   blob_properties {
     delete_retention_policy {

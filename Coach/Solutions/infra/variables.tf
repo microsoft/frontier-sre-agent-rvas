@@ -1,7 +1,7 @@
 variable "location" {
   description = "Azure region for all resources."
   type        = string
-  default     = "uksouth"
+  default     = "swedencentral"
 }
 
 variable "rg_agent" {
@@ -49,7 +49,7 @@ variable "vm_admin_username" {
 }
 
 variable "vm_admin_password" {
-  description = "Admin password for the parking app VMs (Madrid and Paris)."
+  description = "Admin password supplied at runtime for all lab VMs."
   type        = string
   sensitive   = true
   default     = "Change-Me-Before-Deploy-123!"
@@ -101,4 +101,11 @@ variable "create_parking_public_ips" {
   description = "Create Standard public IPs for the Madrid and Paris VMs. Useful for direct SSH/RDP access in dev/test; set to false in production."
   type        = bool
   default     = false
+}
+
+variable "berlin_mcp_auth_token" {
+  description = "MCP auth token for the Berlin MCP server. Leave empty to disable authentication (dev/lab use only)."
+  type        = string
+  sensitive   = true
+  default     = ""
 }

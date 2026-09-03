@@ -3,10 +3,10 @@ set -euo pipefail
 
 usage() {
   cat >&2 <<'USAGE'
-Usage: ./Infra/scripts/run-kql.sh [top-talkers|denied|flow-types|public-ips|sample-food-http-errors|sample-food-latency|sample-food-console]
-       ./Infra/scripts/run-kql.sh "<KQL query>"
-       ./Infra/scripts/run-kql.sh --query "<KQL query>"
-       ./Infra/scripts/run-kql.sh - < query.kql
+Usage: Student/Resources/scenarios/scripts/run-kql.sh [top-talkers|denied|flow-types|public-ips|sample-food-http-errors|sample-food-latency|sample-food-console]
+       Student/Resources/scenarios/scripts/run-kql.sh "<KQL query>"
+       Student/Resources/scenarios/scripts/run-kql.sh --query "<KQL query>"
+       Student/Resources/scenarios/scripts/run-kql.sh - < query.kql
 USAGE
 }
 

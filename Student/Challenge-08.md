@@ -6,7 +6,7 @@
 
 ## Introduction
 
-When an application fails, the first question is always: *what does it depend on, and which dependency is the culprit?* For a distributed application like the Parking Manager — with multiple backend APIs, mixed hosting models, and third-party integrations — mapping the dependency graph is the foundation of every root-cause investigation.
+When an application fails, the first question is always: *what does it depend on, and which dependency is the culprit?* For a distributed application like **Grubify (Sample Food)** — with its Container Apps API/frontend plus a third-party integration outside Application Insights — mapping the dependency graph is the foundation of every root-cause investigation.
 
 In this challenge you'll use the agent to generate a dependency map from live telemetry, infer backend topology from Application Insights call data, and produce both a visual diagram and a structured summary table.
 
@@ -14,10 +14,10 @@ In this challenge you'll use the agent to generate a dependency map from live te
 
 ### Before you start
 
-Confirm the Parking Manager is healthy and generating Application Insights dependency telemetry:
+Confirm Grubify is healthy and generating Application Insights dependency telemetry:
 
 ```bash
-make validate
+make validate-food
 make food-traffic   # safe to re-run if skipped in Challenge 00
 ```
 
@@ -26,7 +26,7 @@ make food-traffic   # safe to re-run if skipped in Challenge 00
 Ask the agent:
 
 ```text
-Generate a diagram for the application dependencies of the Parking Manager application, including the frontend and all backend APIs. Analyze Application Insights dependency telemetry from the last 24 hours to infer the backend APIs if required. Produce two outputs:
+Generate a diagram for the application dependencies of the Grubify (Sample Food) application, including the frontend and its backend API. Analyze Application Insights dependency telemetry from the last 24 hours to infer the backend calls if required. Produce two outputs:
 1. A visual diagram including, for each dependency, the number of calls and average response time.
 2. A summary table with the same data.
 ```
@@ -49,7 +49,7 @@ Which of the dependencies has the highest error rate? Are there any dependencies
 ### Step 3 — Correlate with third-party telemetry
 
 ```text
-The Berlin API is a third-party integration not visible in Application Insights. Use the OpenTelemetry MCP server to retrieve its call metrics and add it to the dependency map.
+The Berlin Parking API is a separate, third-party-style integration not visible in Grubify's Application Insights. Use the OpenTelemetry MCP server to retrieve its call metrics and add it to the dependency map as an example of blending two different telemetry sources.
 ```
 
 ### Step 4 — Understand the topology
@@ -57,7 +57,7 @@ The Berlin API is a third-party integration not visible in Application Insights.
 Ask the agent to describe what it found:
 
 ```text
-Based on the dependency telemetry, describe the Parking Manager's call topology: which service is the entry point, which services are called synchronously, and are there any single points of failure in the dependency graph?
+Based on the dependency telemetry, describe Grubify's call topology: which service is the entry point, which services are called synchronously, and are there any single points of failure in the dependency graph?
 ```
 
 ## Success Criteria
@@ -65,7 +65,7 @@ Based on the dependency telemetry, describe the Parking Manager's call topology:
 - [ ] The agent produces a visual dependency diagram with call counts and response times
 - [ ] The agent produces a summary table with the same data in structured form
 - [ ] The agent identifies the dependency with the highest error rate or highest latency
-- [ ] The agent incorporates the Berlin API from the OpenTelemetry MCP into the dependency map
+- [ ] The agent incorporates the Berlin Parking API's OpenTelemetry data into the dependency map
 - [ ] **Explain to your coach** — what is the difference between Application Insights `dependencies` telemetry and `requests` telemetry? Which one do you use to build a dependency map, and why?
 
 ## Learning Resources

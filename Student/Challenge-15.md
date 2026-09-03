@@ -77,9 +77,9 @@ The agent should describe:
 
 ### Step 4 — Review the response plan
 
-In the portal under **Incident Response → Filters**, find and open the Parking Manager response plan.
+In the portal under **Incident Response → Filters**, find and open the `parking-vm-unhealthy` response plan.
 
-Identify the `max_attempts` field and the subagent assigned to this scenario.
+Identify the `maxAutomatedInvestigationAttempts` field and the subagent assigned to this scenario.
 
 ### Step 5 — Compare with manual remediation
 
@@ -93,7 +93,7 @@ How long did the autonomous remediation take from alert fire to validation succe
 
 - [ ] The `iaas-vm-incident-handler` subagent (or a custom Parking Manager specialist) restarted the VM and verified recovery
 - [ ] The agent describes its validation logic — what it checks and what it does if validation fails
-- [ ] You understand why no Parking Manager incident filter ships in the default bundle and what you would need to add one
+- [ ] You can explain the `parking-vm-unhealthy` incident filter — its `titleContains`, `handlingAgent`, and `maxAutomatedInvestigationAttempts` settings
 - [ ] **Explain to your coach** — what is the difference between *remediation* and *validated remediation*? Why is a validation loop essential for autonomous operations, and what is the risk of an agent that remediates without verifying?
 
 ## Learning Resources
@@ -106,5 +106,5 @@ How long did the autonomous remediation take from alert fire to validation succe
 ## Tips
 
 - Autonomous remediation is only safe when the fix is idempotent and the validation is reliable. A VM restart is a good candidate — it's reversible, it has a clear success signal (VM back to running + service responding), and the blast radius is contained.
-- If the agent's first remediation attempt fails validation, it will retry up to the `max_attempts` limit. Watch for this in the portal — it's the agent's equivalent of a human trying the same fix twice before escalating.
-- The key governance control here is that write actions (`az vm restart`) are in the skill's `tools` list AND the skill's `safety` block requires the action. This dual gate prevents a misconfigured response plan from triggering write operations unintentionally.
+- If the agent's first remediation attempt fails validation, it will retry up to the `maxAutomatedInvestigationAttempts` limit (2, for this filter). Watch for this in the portal — it's the agent's equivalent of a human trying the same fix twice before escalating.
+- The key governance control here is that write actions (`az vm restart`) are only reachable because the skill's `tools` list includes a write tool and the incident filter's `agentMode` is `Autonomous`. There is no `safety` block on the skill itself — remove either the write tool or set `agentMode: Review` to add a gate.

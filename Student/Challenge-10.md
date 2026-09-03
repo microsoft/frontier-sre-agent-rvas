@@ -20,7 +20,7 @@ Confirm the Parking Manager is running and the GitHub connector is authorized:
 make validate
 ```
 
-In the SRE Agent portal, verify the **github** connector shows as connected (green).
+In the SRE Agent portal, verify the **GitHub MCP** (`github-mcp`) connector shows as connected (green).
 
 ### Step 1 — Observe an active incident
 
@@ -45,7 +45,7 @@ The agent will:
 - Retrieve the incident details from the incident platform
 - Query Log Analytics or Application Insights for supporting telemetry
 - Compose a structured issue using the `incident-report-template.md` from the knowledge base
-- Create the issue via the GitHub MCP (`github` connector)
+- Create the issue via the GitHub MCP (`github-mcp` connector)
 
 ### Step 3 — Review the created issue
 

@@ -30,12 +30,12 @@ SRE_AGENT_SUB ?=
 ifneq ($(_TF_RG),)
 SRE_AGENT_RG := $(_TF_RG)
 endif
-SRE_AGENT_RG ?=
+SRE_AGENT_RG ?= rg-sre-agent
 
 ifneq ($(_TF_NAME),)
 SRE_AGENT_NAME := $(_TF_NAME)
 endif
-SRE_AGENT_NAME ?=
+SRE_AGENT_NAME ?= contoso-sre-agent-dev
 
 ifneq ($(_TF_BERLIN_MCP_URL),)
 BERLIN_MCP_URL := $(_TF_BERLIN_MCP_URL)
@@ -49,6 +49,11 @@ ifneq ($(BERLIN_MCP_AUTH_TOKEN),)
 TF_VAR_berlin_mcp_auth_token := $(BERLIN_MCP_AUTH_TOKEN)
 endif
 
+# Repository the agent clones for the Grubify exercise. It must be the copy the student owns,
+# so it is derived from the `origin` remote of this working copy. A Secure Shell remote is
+# rewritten to its browsable form because the agent needs a web address.
+GRUBIFY_REPO_URL ?= $(shell git config --get remote.origin.url 2>/dev/null | sed -e 's|^git@github.com:|https://github.com/|' -e 's|\.git$$||')
+
 # Optional Terraform variable overrides, passed directly to terraform apply.
 # Usage: make infra TF_VARS='-var="vm_admin_password=MySecret123!"'
 TF_VARS ?=
@@ -61,7 +66,7 @@ SCENARIOS  := Resources/scenarios/scripts
 include Resources/scenarios/Makefile
 
 .PHONY: deploy infra check-env \
-        connectors repos knowledge-files skills subagents incident-platforms incident-filters scheduled-tasks config-sre-agent
+        connectors repos knowledge-files skills subagents incident-filters scheduled-tasks config-sre-agent
 		
 ## deploy: provision lab infrastructure (Challenge 00)
 deploy: infra
@@ -99,10 +104,6 @@ skills: check-env
 ## subagents: apply subagent YAMLs (Challenge 05)
 subagents: check-env
 	$(SCRIPT) apply --target subagents --subscription $(SRE_AGENT_SUB) --resource-group $(SRE_AGENT_RG) --agent $(SRE_AGENT_NAME)
-
-## incident-platforms: connect Azure Monitor as the incident source (Challenge 06)
-incident-platforms: check-env
-	$(SCRIPT) apply --target incident-platforms --subscription $(SRE_AGENT_SUB) --resource-group $(SRE_AGENT_RG) --agent $(SRE_AGENT_NAME)
 
 ## incident-filters: apply incident filter / response plan YAMLs (Challenge 06)
 incident-filters: check-env

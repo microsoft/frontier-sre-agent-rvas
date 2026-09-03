@@ -6,7 +6,6 @@ metadata:
   name: madrid-api
 spec:
   description: SRE specialist for the Madrid API on Azure VMs. Analyzes API telemetry, dependency issues, and VM health from Log Analytics and related Azure Monitor tools.
-  agent_type: Autonomous
   enable_skills: false
   allowed_skills: []
   handoff_description: Delegate to this agent when investigating the Madrid API on Azure VMs, including HTTP status and latency trends, dependency issues, and VM CPU or memory correlation.

@@ -1,0 +1,17 @@
+# GitHub MCP server backed by the Azure managed GitHub connector. The connectorV2 flow
+# creates an OAuth connection and exposes its operations through an MCP server. OAuth
+# consent is completed interactively in the Azure SRE Agent portal; no PAT or other
+# long-lived GitHub credential is stored in this repository or deployment payload.
+api_version: azuresre.ai/v1
+kind: ConnectorV2
+metadata:
+  name: github-mcp
+spec:
+  apiName: github
+  displayName: GitHub MCP
+  connectionName: github-mcp
+  description: Governed GitHub issue, branch, fix, and pull-request operations for the Grubify validation workflow.
+  requireApprovalTools:
+    - CreateReference
+    - CreatePullRequest
+    - UpdatePullRequest

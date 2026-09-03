@@ -191,23 +191,11 @@ Lisbon emits custom logs to the `LisbonParkingLogs_CL` table. The module below c
 - `lisbon-chaos-latency-performance`
 - `lisbon-chaos-high-memory-guard-429`
 
-### Bicep module
+### Workshop ownership
 
-`infrastructure/modules/lisbon-chaos-alerts.bicep`
-
-This module is included by `infrastructure/main.bicep`, so the canonical deployment path is now the infrastructure workflows. The example below is only needed for standalone or break-glass deployment.
-
-### Example deployment
-
-```bash
-az deployment group create \
-  --resource-group rg-parking-hub-dev \
-  --template-file infrastructure/modules/lisbon-chaos-alerts.bicep \
-  --parameters \
-    location=swedencentral \
-    logAnalyticsWorkspaceId="/subscriptions/<subId>/resourceGroups/rg-parking-hub-dev/providers/Microsoft.OperationalInsights/workspaces/law-parking-hub" \
-    actionGroupResourceId="/subscriptions/<subId>/resourceGroups/<rg>/providers/Microsoft.Insights/actionGroups/<agName>"
-```
+The workshop Terraform module declares the Lisbon chaos alerts, Log Analytics destination, and
+optional action-group wiring. Apply changes through the reviewed workload Terraform state; this
+source folder has no standalone Bicep or break-glass deployment path.
 
 Notes:
 

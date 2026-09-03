@@ -4,17 +4,17 @@ A Model Context Protocol (MCP) server that provides monitoring and observability
 
 ## Purpose
 
-The Berlin API represents an **external/third-party service** that you don't directly control or monitor. This MCP server:
-- Lives in its own resource group (`rg-parking-berlin-mcp-dev`) 
+The Berlin API represents a simulated **external/third-party service** that you don't directly control or monitor. This MCP server:
+- Runs in the workshop resource group `rg-sre-parking-berlin`
 - Provides tools for SRE agents to query the Berlin API
-- Logs its own performance to Application Insights
+- Exports its performance logs to Application Insights when a connection string is configured
 - Allows SRE to monitor YOUR integration infrastructure, not the external API
 
 ## Architecture
 
 ```
-Azure SRE Agent → MCP Server (rg-parking-berlin-mcp-dev) → Berlin API (rg-parking-berlin-dev)
-                  [YOU MONITOR THIS]                       [EXTERNAL - NO MONITORING]
+Azure SRE Agent → MCP Server (ca-berlin-mcp) → Berlin API (simulated external dependency)
+                  [YOU MONITOR THIS]          [OBSERVED THROUGH THE MCP SERVER]
 ```
 
 ## Endpoints
@@ -66,8 +66,8 @@ Configure your Azure SRE Agent MCP connector with the following settings:
 | **Name** | `berlin-monitoring` |
 | **Connection Type** | `Streamable-HTTP` |
 | **URL** | `https://ca-berlin-mcp.ashyriver-65b8d9ff.swedencentral.azurecontainerapps.io/mcp` |
-| **Authentication Method** | `Bearer Token` |
-| **Token** | `your-token-from-github-secret` |
+| **Authentication Method** | `None` for the default lab; `Bearer Token` when the Terraform secret input is configured |
+| **Token** | Supplied through the approved Terraform secret input; never from a repository secret |
 
 ### Testing the MCP Endpoint
 
@@ -245,15 +245,12 @@ Write-Host "MCP_AUTH_TOKEN=$token"
 openssl rand -base64 32
 ```
 
-### Setting the Token in Azure Container App
+### Configuring the Token in the Workshop
 
-```bash
-# Update Container App with the token
-az containerapp update \
-  --name ca-berlin-mcp \
-  --resource-group rg-parking-berlin-mcp-dev \
-  --set-env-vars "MCP_AUTH_TOKEN=your-generated-token-here"
-```
+The workshop Terraform resource owns the Container App secret and environment variable. The lab
+leaves `berlin_mcp_auth_token` empty by default, which disables authentication for this isolated
+exercise. For a secured deployment, inject the token through the approved Terraform secret input
+and apply the reviewed Terraform state. Do not update the Container App out of band.
 
 ### Security Notes
 
@@ -276,8 +273,8 @@ If `MCP_AUTH_TOKEN` is not set, the server will:
 
 **Note:** DNS rebinding protection is **disabled** in this deployment because the MCP library's strict Host header validation is incompatible with Azure Container Apps ingress handling.
 
-This is acceptable because:
-- ✅ **Authentication is enabled** via `MCP_AUTH_TOKEN` (Bearer token)
+This is acceptable for this isolated workshop because:
+- ✅ **Bearer authentication is available** through `MCP_AUTH_TOKEN` when the Terraform input is configured
 - ✅ This is an **internal monitoring tool** within Azure infrastructure
 - ✅ Azure Container Apps provides **network-level security** (WAF, DDoS protection)
 - ✅ The ingress is already behind Azure's security infrastructure
@@ -313,113 +310,17 @@ Configure your MCP client to use the Streamable-HTTP transport:
 }
 ```
 
-## Deployment
+## Workshop Deployment Ownership
 
-The MCP server is deployed as an **Azure Container App**.
+The MCP server runs as the Terraform-owned Azure Container App `ca-berlin-mcp` in resource group
+`rg-sre-parking-berlin`. It shares the workshop Container Apps environment and uses the public
+image `ghcr.io/microsoft/frontier-sre-agent-rvas/berlin-mcp-server:latest`.
 
-### Resource Names
-- **Resource Group**: `rg-parking-berlin-mcp-dev`
-- **Container App Environment**: `cae-berlin-mcp`
-- **Container App**: `ca-berlin-mcp`
-- **Log Analytics**: `law-berlin-mcp`
-- **Application Insights**: `appi-parking-berlin-mcp`
-
-### GitHub Actions Deployment
-
-The MCP server is automatically deployed via GitHub Actions when code is pushed to the `main` branch.
-
-#### Required GitHub Secrets
-
-1. **`AZURE_CREDENTIALS`** - Azure service principal credentials
-   ```json
-   {
-     "clientId": "...",
-     "clientSecret": "...",
-     "subscriptionId": "...",
-     "tenantId": "..."
-   }
-   ```
-
-2. **`MCP_AUTH_TOKEN`** - Bearer token for authentication (recommended)
-   ```bash
-   # Generate a secure token
-   openssl rand -base64 32
-   ```
-
-#### Setting GitHub Secrets
-
-1. Go to your repository → **Settings** → **Secrets and variables** → **Actions**
-2. Click **New repository secret**
-3. Name: `MCP_AUTH_TOKEN`
-4. Value: Your generated token (from the command above)
-5. Click **Add secret**
-
-#### Required GitHub Variables
-
-1. **`AZURE_CONTAINER_REGISTRY`** - Name of your Azure Container Registry
-   - Example: `acrparkingdev`
-   - Set in: Repository → Settings → Variables → Actions
-
-#### Verifying Deployment
-
-After deployment, check that authentication is enabled:
-
-```powershell
-# Check health endpoint
-Invoke-RestMethod "https://ca-berlin-mcp.ashyriver-65b8d9ff.swedencentral.azurecontainerapps.io/health"
-
-# Should return:
-# {
-#   "status": "healthy",
-#   "auth_enabled": true  ← Should be true
-# }
-```
-
-#### Security Best Practices
-
-- ✅ Always use GitHub **Secrets** (not Variables) for tokens
-- ✅ Rotate the `MCP_AUTH_TOKEN` periodically
-- ✅ Use a cryptographically secure random token (at least 32 bytes)
-- ✅ Never commit tokens to source control
-- ✅ Use different tokens for different environments (dev/prod)
-
-### Manual Deployment
-
-If you need to deploy manually (outside of GitHub Actions):
-
-```bash
-# Set environment variables
-export RESOURCE_GROUP="rg-parking-berlin-mcp-dev"
-export CONTAINER_APP_NAME="ca-berlin-mcp"
-export IMAGE_TAG="your-registry.azurecr.io/berlin-mcp-server:latest"
-export BERLIN_API_URL="https://ca-parking-berlin..."
-export APPINSIGHTS_CONNECTION="InstrumentationKey=..."
-export MCP_AUTH_TOKEN="your-generated-token"
-
-# Update Container App
-az containerapp update \
-  --name $CONTAINER_APP_NAME \
-  --resource-group $RESOURCE_GROUP \
-  --image $IMAGE_TAG \
-  --set-env-vars \
-    "BERLIN_API_URL=$BERLIN_API_URL" \
-    "APPLICATIONINSIGHTS_CONNECTION_STRING=$APPINSIGHTS_CONNECTION" \
-    "MCP_AUTH_TOKEN=$MCP_AUTH_TOKEN"
-```
-
-### Infrastructure Deployment
-
-```bash
-# Deploy infrastructure
-az deployment group create \
-  --resource-group rg-parking-berlin-mcp-dev \
-  --template-file infrastructure/modules/berlin-mcp-server.bicep \
-  --parameters \
-    location=swedencentral \
-    environment=dev \
-    berlinApiUrl=https://ca-parking-berlin.braveocean-195c6009.swedencentral.azurecontainerapps.io \
-    containerImage=<your-image>
-```
+The Parking image workflow builds and publishes this image only when manually dispatched. It does
+not sign in to Azure and does not deploy or update the Container App. Terraform remains the single
+owner of the image reference, `BERLIN_API_URL`, optional authentication secret, replica settings,
+and ingress configuration. Runtime changes must be reviewed and applied through that Terraform
+state; no repository-level Azure credentials are required by the image workflow.
 
 ## Monitoring
 

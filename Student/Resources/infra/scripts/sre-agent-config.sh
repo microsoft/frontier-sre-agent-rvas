@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ── 1. Global state ───────────────────────────────────────────────────────────
-
-ARM_API_VERSION="${SRE_AGENT_ARM_API_VERSION:-2025-05-01-preview}"
+ARM_API_VERSION="${SRE_AGENT_ARM_API_VERSION:-2026-01-01}"
 DATA_PLANE_AUDIENCE="${SRE_AGENT_DATA_PLANE_AUDIENCE:-https://azuresre.dev}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-LAYOUT_FILE="${REPO_ROOT}/.sre-agent-layout.env"
+# This script lives at Student/Resources/infra/scripts/, so the Student folder is three
+# levels up. The Student Makefile exports the layout contract; direct script execution uses
+# the deterministic Student defaults below. Nothing outside the Student folder is read.
+STUDENT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 CONFIG_DIR=""
 CONFIG_DIR_EXPLICIT="false"
 
@@ -24,65 +24,6 @@ RESOURCE_FILE=""
 YES="false"
 APPLY_FAILURES=()
 
-# Token cache: written once in the main shell by _ensure_token; exported so
-# subshells created by $() command substitution can read the cached file path.
-export _TOKEN_FILE=""
-
-# ── 1b. Output formatting ─────────────────────────────────────────────────────
-
-# Auto-detect color support; suppressed when stdout is not a tty or NO_COLOR is set.
-if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
-  C_GREEN='\033[0;32m'; C_RED='\033[0;31m'; C_YELLOW='\033[1;33m'
-  C_CYAN='\033[0;36m';  C_BOLD='\033[1m';   C_DIM='\033[2m'; C_RESET='\033[0m'
-else
-  C_GREEN=''; C_RED=''; C_YELLOW=''; C_CYAN=''; C_BOLD=''; C_DIM=''; C_RESET=''
-fi
-
-_PASS_COUNT=0
-_FAIL_COUNT=0
-_WARN_COUNT=0
-
-_hr() { printf '%s\n' "$(printf '─%.0s' $(seq 1 62))"; }
-
-print_header() {
-  printf "\n${C_BOLD}%s${C_RESET}\n" "$*"
-  _hr
-}
-
-# print_check <ok|warn|fail> <label> [detail]
-print_check() {
-  local status="$1" label="$2" detail="${3:-}"
-  case "${status}" in
-    ok)
-      _PASS_COUNT=$((_PASS_COUNT + 1))
-      printf "  ${C_GREEN}✓${C_RESET}  %-32s ${C_DIM}%s${C_RESET}\n" "${label}" "${detail}"
-      ;;
-    warn)
-      _WARN_COUNT=$((_WARN_COUNT + 1))
-      printf "  ${C_YELLOW}⚠${C_RESET}  %-32s ${C_DIM}%s${C_RESET}\n" "${label}" "${detail}"
-      ;;
-    fail)
-      _FAIL_COUNT=$((_FAIL_COUNT + 1))
-      printf "  ${C_RED}✗${C_RESET}  %-32s %s\n" "${label}" "${detail}"
-      ;;
-  esac
-}
-
-print_summary() {
-  local total=$((_PASS_COUNT + _FAIL_COUNT + _WARN_COUNT))
-  printf '\n'
-  _hr
-  if [[ "${_FAIL_COUNT}" -eq 0 ]]; then
-    printf "${C_GREEN}${C_BOLD}  ✓  All checks passed${_WARN_COUNT:+ (${_WARN_COUNT} warning(s))}.${C_RESET}\n"
-  else
-    printf "${C_RED}${C_BOLD}  ✗  %d of %d check(s) failed.${C_RESET}\n" "${_FAIL_COUNT}" "${total}" >&2
-  fi
-  _hr
-  [[ "${_FAIL_COUNT}" -eq 0 ]]
-}
-
-# ── 2. Config resolution ──────────────────────────────────────────────────────
-
 usage() {
   cat <<'USAGE'
 Usage: sre-agent-config.sh <command> [options]
@@ -93,7 +34,6 @@ Commands:
   apply      Apply local configuration to the live Azure SRE Agent.
   verify     Query the live Azure SRE Agent and list configured surfaces.
   delete     Delete local desired-state resources from the live agent. Requires --yes.
-  prune      Reserved for explicit drift pruning. Always blocked in this v1 scaffold.
 
 Options:
   --subscription ID       Azure subscription ID.
@@ -104,17 +44,20 @@ Options:
   --target TARGET         Limit validate, plan, apply, verify, or delete to one configuration target.
   --name NAME             Limit the selected target to one manifest name.
   --file PATH             Limit the selected target to one YAML manifest or knowledge file.
-  --env-file PATH         Optional .env file loaded before placeholder substitution.
+  --env-file PATH         Override the default root .env file used for placeholder substitution.
   --yes                   Confirm destructive delete operations.
   -h, --help              Show help.
 
 Examples:
-  ./infra/scripts/sre-agent-config.sh validate
-  ./infra/scripts/sre-agent-config.sh plan --subscription <sub> --resource-group <rg> --agent <agent>
-  ./infra/scripts/sre-agent-config.sh apply --subscription <sub> --resource-group <rg> --agent <agent>
-  ./infra/scripts/sre-agent-config.sh plan --target skills --name sre-diagnostics-baseline --subscription <sub> --resource-group <rg> --agent <agent>
-  ./infra/scripts/sre-agent-config.sh verify --target skills --name sre-diagnostics-baseline --subscription <sub> --resource-group <rg> --agent <agent>
-  ./infra/scripts/sre-agent-config.sh delete --target skills --name sre-diagnostics-baseline --subscription <sub> --resource-group <rg> --agent <agent> --yes
+  make config-sre-agent
+  make config-sre-agent CONFIG_TARGET=skills CONFIG_NAME=source-fix-delivery
+
+The same operations, driving this script directly:
+  Resources/infra/scripts/sre-agent-config.sh validate
+  Resources/infra/scripts/sre-agent-config.sh plan --subscription <sub> --resource-group <rg> --agent <agent>
+  Resources/infra/scripts/sre-agent-config.sh apply --subscription <sub> --resource-group <rg> --agent <agent>
+  Resources/infra/scripts/sre-agent-config.sh verify --target skills --name source-fix-delivery --subscription <sub> --resource-group <rg> --agent <agent>
+  Resources/infra/scripts/sre-agent-config.sh delete --target skills --name source-fix-delivery --subscription <sub> --resource-group <rg> --agent <agent> --yes
 USAGE
 }
 
@@ -137,30 +80,12 @@ strip_optional_quotes() {
   printf '%s\n' "${value}"
 }
 
-layout_value() {
-  local key="$1"
-  local line candidate
-
-  [[ -f "${LAYOUT_FILE}" ]] || return 0
-
-  while IFS= read -r line || [[ -n "${line}" ]]; do
-    line="${line%%#*}"
-    line="$(trim_space "${line}")"
-    [[ -z "${line}" ]] && continue
-    [[ "${line}" == "${key}="* ]] || continue
-    candidate="${line#*=}"
-    candidate="$(trim_space "${candidate}")"
-    strip_optional_quotes "${candidate}"
-    return 0
-  done < "${LAYOUT_FILE}"
-}
-
 repo_path() {
   local value="$1"
   if [[ "${value}" = /* ]]; then
     printf '%s\n' "${value}"
   else
-    printf '%s/%s\n' "${REPO_ROOT}" "${value}"
+    printf '%s/%s\n' "${STUDENT_ROOT}" "${value}"
   fi
 }
 
@@ -176,7 +101,9 @@ config_dir_has_expected_shape() {
 }
 
 resolve_config_dir() {
-  local candidate="" layout_config_dir="" discovered source="auto-discovery"
+  local candidate=""
+  local discovered
+  local source="auto-discovery"
   local checked=()
 
   if [[ "${CONFIG_DIR_EXPLICIT}" == "true" ]]; then
@@ -185,12 +112,6 @@ resolve_config_dir() {
   elif [[ -n "${SRE_AGENT_CONFIG_DIR:-}" ]]; then
     candidate="$(repo_path "${SRE_AGENT_CONFIG_DIR}")"
     source="SRE_AGENT_CONFIG_DIR"
-  else
-    layout_config_dir="$(layout_value SRE_AGENT_CONFIG_DIR)"
-    if [[ -n "${layout_config_dir}" ]]; then
-      candidate="$(repo_path "${layout_config_dir}")"
-      source="${LAYOUT_FILE}:SRE_AGENT_CONFIG_DIR"
-    fi
   fi
 
   if [[ -n "${candidate}" ]]; then
@@ -208,9 +129,8 @@ resolve_config_dir() {
   fi
 
   for candidate in \
-    "${SCRIPT_DIR}/../../azure-sre-agent-config" \
-    "${REPO_ROOT}/azure-sre-agent-config" \
-    "${REPO_ROOT}/configuration"; do
+    "${STUDENT_ROOT}/Resources/azure-sre-agent-config" \
+    "${STUDENT_ROOT}/configuration"; do
     checked+=("${candidate}")
     if discovered="$(canonical_dir "${candidate}")" && config_dir_has_expected_shape "${discovered}"; then
       CONFIG_DIR="${discovered}"
@@ -221,49 +141,54 @@ resolve_config_dir() {
   printf 'ERROR: Could not resolve Azure SRE Agent configuration directory.\n' >&2
   printf 'Checked:\n' >&2
   printf '  - %s\n' "${checked[@]}" >&2
-  printf 'Set --config, SRE_AGENT_CONFIG_DIR, or SRE_AGENT_CONFIG_DIR in %s.\n' "${LAYOUT_FILE}" >&2
+  printf 'Set --config or SRE_AGENT_CONFIG_DIR.\n' >&2
   exit 1
 }
 
-# ── 3. Utilities ──────────────────────────────────────────────────────────────
+log() {
+  printf '%s\n' "$*"
+}
 
-log()  { printf "  ${C_CYAN}→${C_RESET}  %s\n" "$*"; }
-
-die() { printf "${C_RED}ERROR:${C_RESET} %s\n" "$*" >&2; exit 1; }
+die() {
+  printf 'ERROR: %s\n' "$*" >&2
+  exit 1
+}
 
 record_apply_failure() {
-  local label="$1" exit_code="$2"
+  local label="$1"
+  local exit_code="$2"
   APPLY_FAILURES+=("${label} (exit ${exit_code})")
-  printf "  ${C_RED}✗${C_RESET}  %s failed (exit %s) — continuing.\n" "${label}" "${exit_code}" >&2
+  printf 'ERROR: %s failed with exit code %s; continuing full apply.\n' "${label}" "${exit_code}" >&2
 }
 
 run_apply_step() {
   local label="$1"
   local exit_code
   shift
-  if ( "$@" ); then
-    return 0
-  else
-    exit_code="$?"
-    record_apply_failure "${label}" "${exit_code}"
+
+  set +e
+  ( set -e; "$@" )
+  exit_code="$?"
+  set -e
+
+  if [[ "${exit_code}" -eq 0 ]]; then
     return 0
   fi
+
+  record_apply_failure "${label}" "${exit_code}"
+  return 0
 }
 
 finish_full_apply() {
   local failure
-  printf '\n'
-  _hr
-  if [[ "${#APPLY_FAILURES[@]}" -eq 0 ]]; then
-    printf "${C_GREEN}${C_BOLD}  ✓  Apply completed — all steps succeeded.${C_RESET}\n"
-    _hr
-    return 0
-  fi
-  printf "${C_RED}${C_BOLD}  ✗  Apply completed with %d failure(s):${C_RESET}\n" "${#APPLY_FAILURES[@]}" >&2
+
+  [[ "${#APPLY_FAILURES[@]}" -eq 0 ]] && return 0
+
+  printf '\nERROR: Full desired-state apply completed with %s failure(s):\n' "${#APPLY_FAILURES[@]}" >&2
   for failure in "${APPLY_FAILURES[@]}"; do
-    printf "       ${C_RED}•${C_RESET}  %s\n" "${failure}" >&2
+    printf '  - %s\n' "${failure}" >&2
   done
-  _hr
+
   return 1
 }
 
@@ -275,19 +200,111 @@ require_yaml_parser() {
   if command -v python3 >/dev/null 2>&1 && python3 -c 'import yaml, json' >/dev/null 2>&1; then
     return 0
   fi
+
   if command -v yq >/dev/null 2>&1; then
     return 0
   fi
+
   die "Required YAML parser not found: install yq or Python 3 with PyYAML"
 }
 
 load_env_file() {
+  local line key value env_file_mode
+
+  if [[ -z "${ENV_FILE}" && -f "${STUDENT_ROOT}/.env" ]]; then
+    ENV_FILE="${STUDENT_ROOT}/.env"
+  fi
+
   [[ -z "${ENV_FILE}" ]] && return 0
   [[ -f "${ENV_FILE}" ]] || die "Environment file not found: ${ENV_FILE}"
-  set -a
-  # shellcheck disable=SC1090
-  source "${ENV_FILE}"
-  set +a
+
+  env_file_mode="$(stat -c '%a' "${ENV_FILE}")"
+  [[ "${env_file_mode}" =~ ^[0-7]?00$ ]] || die "Environment file ${ENV_FILE} has mode ${env_file_mode}; run: chmod 600 ${ENV_FILE}"
+
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    line="${line%$'\r'}"
+    line="$(trim_space "${line}")"
+    [[ -z "${line}" || "${line}" == \#* ]] && continue
+
+    if [[ "${line}" == export[[:space:]]* ]]; then
+      line="$(trim_space "${line#export}")"
+    fi
+
+    [[ "${line}" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]] || die "Invalid environment assignment in ${ENV_FILE}"
+    key="${line%%=*}"
+    value="$(trim_space "${line#*=}")"
+    value="$(strip_optional_quotes "${value}")"
+    printf -v "${key}" '%s' "${value}"
+    export "${key?}"
+  done < "${ENV_FILE}"
+}
+
+parse_args() {
+  [[ $# -eq 0 ]] && { usage; exit 1; }
+  # Asking for help must never require a resolvable configuration directory or Azure
+  # credentials, so the help flag is handled before any other argument is interpreted.
+  [[ "$1" == "-h" || "$1" == "--help" ]] && { usage; exit 0; }
+  COMMAND="$1"
+  shift
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --subscription)
+        SUBSCRIPTION_ID="${2:-}"
+        shift 2
+        ;;
+      --resource-group)
+        RESOURCE_GROUP="${2:-}"
+        shift 2
+        ;;
+      --agent)
+        AGENT_NAME="${2:-}"
+        shift 2
+        ;;
+      --endpoint)
+        ENDPOINT="${2:-}"
+        shift 2
+        ;;
+      --config)
+        [[ -n "${2:-}" ]] || die "--config requires a path"
+        CONFIG_DIR="$(repo_path "${2}")"
+        CONFIG_DIR_EXPLICIT="true"
+        shift 2
+        ;;
+      --target)
+        TARGET="${2:-}"
+        shift 2
+        ;;
+      --name)
+        RESOURCE_NAME="${2:-}"
+        shift 2
+        ;;
+      --file)
+        [[ -n "${2:-}" ]] || die "--file requires a path"
+        if [[ "${2}" = /* ]]; then
+          RESOURCE_FILE="${2}"
+        else
+          RESOURCE_FILE="$(cd "$(dirname "${2}")" && pwd)/$(basename "${2}")"
+        fi
+        shift 2
+        ;;
+      --env-file)
+        ENV_FILE="${2:-}"
+        shift 2
+        ;;
+      --yes)
+        YES="true"
+        shift
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      *)
+        die "Unknown option: $1"
+        ;;
+    esac
+  done
 }
 
 require_local_dependencies() {
@@ -302,45 +319,19 @@ require_azure_dependencies() {
   require_yaml_parser
 }
 
-# ── 4. Argument parsing ───────────────────────────────────────────────────────
-
-parse_args() {
-  [[ $# -eq 0 ]] && { usage; exit 1; }
-  COMMAND="$1"
-  shift
-
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      --subscription)   SUBSCRIPTION_ID="${2:-}"; shift 2 ;;
-      --resource-group) RESOURCE_GROUP="${2:-}";  shift 2 ;;
-      --agent)          AGENT_NAME="${2:-}";       shift 2 ;;
-      --endpoint)       ENDPOINT="${2:-}";         shift 2 ;;
-      --config)
-        [[ -n "${2:-}" ]] || die "--config requires a path"
-        CONFIG_DIR="$(repo_path "${2}")"
-        CONFIG_DIR_EXPLICIT="true"
-        shift 2
-        ;;
-      --target)   TARGET="${2:-}";   shift 2 ;;
-      --name)     RESOURCE_NAME="${2:-}"; shift 2 ;;
-      --file)
-        [[ -n "${2:-}" ]] || die "--file requires a path"
-        if [[ "${2}" = /* ]]; then
-          RESOURCE_FILE="${2}"
-        else
-          RESOURCE_FILE="$(cd "$(dirname "${2}")" && pwd)/$(basename "${2}")"
-        fi
-        shift 2
-        ;;
-      --env-file) ENV_FILE="${2:-}"; shift 2 ;;
-      --yes)      YES="true";        shift ;;
-      -h|--help)  usage; exit 0 ;;
-      *)          die "Unknown option: $1" ;;
-    esac
-  done
+yaml_to_json() {
+  if command -v python3 >/dev/null 2>&1 && python3 -c 'import yaml, json' >/dev/null 2>&1; then
+    python3 -c 'import json, sys, yaml; print(json.dumps(yaml.safe_load(sys.stdin.read())))'
+  else
+    yq -o=json '.' -
+  fi
 }
 
-# ── 5. File discovery ─────────────────────────────────────────────────────────
+require_arm_args() {
+  [[ -n "${SUBSCRIPTION_ID}" ]] || die "--subscription is required"
+  [[ -n "${RESOURCE_GROUP}" ]] || die "--resource-group is required"
+  [[ -n "${AGENT_NAME}" ]] || die "--agent is required"
+}
 
 find_yaml_files() {
   local directory="$1"
@@ -351,189 +342,119 @@ find_yaml_files() {
 
 find_all_yaml_files() {
   [[ -d "${CONFIG_DIR}" ]] || die "Configuration directory not found: ${CONFIG_DIR}"
+  # example-* manifests are kept in Git as templates but never deployed.
   find "${CONFIG_DIR}" -type f \( -name '*.yaml' -o -name '*.yml' \) ! -name 'example-*' | sort
 }
 
 find_knowledge_files() {
   local directory="$1"
+  local ignore_file="${CONFIG_DIR}/knowledge/.knowledgeignore"
+  local file relative_path
   [[ -d "${directory}" ]] || return 0
-  # Recurse into subdirectories so grouped knowledge bases are discovered.
-  # Basenames are unique across groups, so recursion cannot cause collisions.
-  find "${directory}" -type f ! -name 'example-*' | sort
-}
-
-# Emit the YAML files for the current selection (TARGET/RESOURCE_NAME/RESOURCE_FILE).
-# Falls back to all files in dir when no name/file selection is active.
-selected_or_all_yaml_files() {
-  local dir="$1"
-  local file name
-
-  if [[ -n "${RESOURCE_FILE}" ]]; then
-    printf '%s\n' "${RESOURCE_FILE}"
-    return 0
-  fi
-
   while IFS= read -r file; do
-    [[ -z "${file}" ]] && continue
-    if [[ -n "${RESOURCE_NAME}" ]]; then
-      name="$(manifest_raw_name "${file}")"
-      [[ "${name}" == "${RESOURCE_NAME}" ]] || continue
+    relative_path="${file#${directory}/}"
+    if [[ -f "${ignore_file}" ]] && grep -Fqx "${relative_path}" "${ignore_file}"; then
+      continue
     fi
     printf '%s\n' "${file}"
-  done < <(find_yaml_files "${CONFIG_DIR}/${dir}")
+  done < <(find "${directory}" -type f ! -name 'example-*' | sort)
 }
 
-# Emit the knowledge files for the current RESOURCE_NAME/RESOURCE_FILE selection.
-selected_or_all_knowledge_files() {
+validate_knowledge_exclusions() {
   local directory="${CONFIG_DIR}/knowledge/files"
-  local file base stem
+  local ignore_file="${CONFIG_DIR}/knowledge/.knowledgeignore"
+  local line
 
-  if [[ -n "${RESOURCE_FILE}" ]]; then
-    printf '%s\n' "${RESOURCE_FILE}"
-    return 0
-  fi
-
-  [[ -d "${directory}" ]] || return 0
-  while IFS= read -r file; do
-    [[ -z "${file}" ]] && continue
-    if [[ -n "${RESOURCE_NAME}" ]]; then
-      base="$(basename "${file}")"
-      stem="${base%.*}"
-      [[ "${base}" == "${RESOURCE_NAME}" || "${stem}" == "${RESOURCE_NAME}" ]] || continue
-    fi
-    printf '%s\n' "${file}"
-  done < <(find_knowledge_files "${directory}")
+  [[ -f "${ignore_file}" ]] || return 0
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    line="${line%$'\r'}"
+    line="$(trim_space "${line}")"
+    [[ -z "${line}" || "${line}" == \#* ]] && continue
+    [[ -f "${directory}/${line}" ]] || die "Knowledge exclusion references a missing file: ${line}"
+  done < "${ignore_file}"
 }
 
 selection_requested() {
   [[ -n "${TARGET}" || -n "${RESOURCE_NAME}" || -n "${RESOURCE_FILE}" ]]
 }
 
-# ── 6. Resource-type dispatch tables ─────────────────────────────────────────
-#
-# Each entry maps a --target name to the components needed to apply, delete,
-# and verify it without scattered case statements.
-#
-# T_DIR    - config subdirectory, relative to CONFIG_DIR
-# T_PUT    - function invoked to apply (plan or apply) one YAML file
-# T_DEL    - function invoked to delete one YAML file ("none" = unsupported)
-# T_VFY_EP - data-plane endpoint used to verify
-# T_VFY_MD - verify mode: "item" (GET /ep/name) or "list" (collection scan)
-#
-# Special targets NOT in this table (handled with dedicated code):
-#   incident-platforms  - ARM PATCH, not data-plane
-#   knowledge-files     - multipart upload, not JSON PUT
-
-declare -A T_DIR=(
-  [skills]="skills"
-  [subagents]="subagents"
-  [tools]="tools"
-  [common-prompts]="common-prompts"
-  [scheduled-tasks]="automations/scheduled-tasks"
-  [incident-filters]="automations/incident-filters"
-  [connectors]="connectors"
-  [repos]="repos"
-  [hooks]="hooks"
-  [plugin-configs]="plugin-configs"
-  [http-triggers]="automations/http-triggers"
-  [plugin-marketplaces]="plugins/marketplaces"
-  [plugin-installations]="plugins/installations"
-)
-
-declare -A T_PUT=(
-  [skills]="data_put_skill"
-  [subagents]="data_put_subagent"
-  [tools]="data_put_tool"
-  [common-prompts]="data_put_common_prompt"
-  [scheduled-tasks]="data_put_scheduled_task"
-  [incident-filters]="data_put_incident_filter"
-  [connectors]="data_put_connector"
-  [repos]="data_put_repo"
-  [hooks]="data_put_hook"
-  [plugin-configs]="data_put_plugin_config"
-  [http-triggers]="data_post_http_trigger"
-  [plugin-marketplaces]="data_post_plugin_marketplace"
-  [plugin-installations]="data_post_plugin_installation"
-)
-
-declare -A T_DEL=(
-  [skills]="data_delete_skill"
-  [subagents]="data_delete_subagent"
-  [tools]="data_delete_tool"
-  [common-prompts]="data_delete_common_prompt"
-  [scheduled-tasks]="data_delete_scheduled_task"
-  [incident-filters]="data_delete_incident_filter"
-  [connectors]="data_delete_connector"
-  [repos]="data_delete_repo"
-  [hooks]="data_delete_hook"
-  [plugin-configs]="data_delete_plugin_config"
-  [http-triggers]="none"
-  [plugin-marketplaces]="none"
-  [plugin-installations]="none"
-)
-
-declare -A T_VFY_EP=(
-  [skills]="/api/v2/extendedAgent/skills"
-  [subagents]="/api/v2/extendedAgent/agents"
-  [tools]="/api/v2/extendedAgent/tools"
-  [common-prompts]="/api/v2/extendedAgent/commonprompts"
-  [scheduled-tasks]="/api/v2/extendedAgent/scheduledtasks"
-  [incident-filters]="/api/v2/extendedAgent/incidentFilters"
-  [connectors]="/api/v2/extendedAgent/connectors"
-  [repos]="/api/v2/repos"
-  [hooks]="/api/v2/extendedAgent/hooks"
-  [plugin-configs]="/api/v2/extendedAgent/plugins"
-  [http-triggers]="/api/v1/httptriggers"
-  [plugin-marketplaces]="/api/v2/plugins/marketplaces"
-  [plugin-installations]="/api/v2/plugins/installations"
-)
-
-# "item" = verify by name via GET /endpoint/name
-# "list" = verify by scanning a collection endpoint
-declare -A T_VFY_MD=(
-  [skills]="item"          [subagents]="item"
-  [tools]="item"           [common-prompts]="item"
-  [scheduled-tasks]="item" [incident-filters]="item"
-  [connectors]="item"      [repos]="item"
-  [hooks]="item"           [plugin-configs]="item"
-  [http-triggers]="list"   [plugin-marketplaces]="list"
-  [plugin-installations]="list"
-)
-
 validate_target() {
-  # incident-platforms and knowledge-files are valid but handled specially.
   case "$1" in
-    incident-platforms|knowledge-files) ;;
-    *) [[ -n "${T_DIR[$1]:-}" ]] || die "Unknown target: $1" ;;
+    skills|subagents|tools|common-prompts|scheduled-tasks|incident-filters|connectors|repos|hooks|plugin-configs|http-triggers|plugin-marketplaces|plugin-installations|knowledge-files|custom-instructions)
+      ;;
+    *)
+      die "Unknown target: $1"
+      ;;
   esac
 }
 
 infer_target_from_file() {
-  local file="$1" relative_path="" target dir
+  local file="$1"
+  local relative_path=""
 
-  [[ "${file}" = "${CONFIG_DIR}/"* ]] || return 0
-  relative_path="${file#"${CONFIG_DIR}/"}"
+  if [[ "${file}" = "${CONFIG_DIR}/"* ]]; then
+    relative_path="${file#"${CONFIG_DIR}/"}"
+  fi
 
-  [[ "${relative_path}" == knowledge/files/* ]] && { printf 'knowledge-files\n'; return 0; }
-  [[ "${relative_path}" == incident-platforms/*.yaml || "${relative_path}" == incident-platforms/*.yml ]] \
-    && { printf 'incident-platforms\n'; return 0; }
+  [[ -n "${relative_path}" ]] || return 0
 
-  for target in "${!T_DIR[@]}"; do
-    dir="${T_DIR[$target]}"
-    if [[ "${relative_path}" == "${dir}/"*.yaml || "${relative_path}" == "${dir}/"*.yml ]]; then
-      printf '%s\n' "${target}"
-      return 0
-    fi
-  done
+  case "${relative_path}" in
+    skills/*.yaml|skills/*.yml)
+      printf 'skills\n'
+      ;;
+    subagents/*.yaml|subagents/*.yml)
+      printf 'subagents\n'
+      ;;
+    tools/*.yaml|tools/*.yml)
+      printf 'tools\n'
+      ;;
+    common-prompts/*.yaml|common-prompts/*.yml)
+      printf 'common-prompts\n'
+      ;;
+    automations/scheduled-tasks/*.yaml|automations/scheduled-tasks/*.yml)
+      printf 'scheduled-tasks\n'
+      ;;
+    automations/incident-filters/*.yaml|automations/incident-filters/*.yml)
+      printf 'incident-filters\n'
+      ;;
+    connectors/*.yaml|connectors/*.yml)
+      printf 'connectors\n'
+      ;;
+    repos/*.yaml|repos/*.yml)
+      printf 'repos\n'
+      ;;
+    hooks/*.yaml|hooks/*.yml)
+      printf 'hooks\n'
+      ;;
+    plugin-configs/*.yaml|plugin-configs/*.yml)
+      printf 'plugin-configs\n'
+      ;;
+    automations/http-triggers/*.yaml|automations/http-triggers/*.yml)
+      printf 'http-triggers\n'
+      ;;
+    plugins/marketplaces/*.yaml|plugins/marketplaces/*.yml)
+      printf 'plugin-marketplaces\n'
+      ;;
+    plugins/installations/*.yaml|plugins/installations/*.yml)
+      printf 'plugin-installations\n'
+      ;;
+    knowledge/files/*)
+      printf 'knowledge-files\n'
+      ;;
+    custom-instructions.md)
+      printf 'custom-instructions\n'
+      ;;
+  esac
 }
 
 normalize_selection() {
-  local inferred_target="" file_name=""
+  local inferred_target=""
+  local file_name=""
 
   selection_requested || return 0
 
-  [[ -n "${RESOURCE_NAME}" && -z "${TARGET}" && -z "${RESOURCE_FILE}" ]] \
-    && die "--name requires --target or --file"
+  [[ -n "${RESOURCE_NAME}" || -n "${TARGET}" || -n "${RESOURCE_FILE}" ]] || return 0
+  [[ -n "${RESOURCE_NAME}" && -z "${TARGET}" && -z "${RESOURCE_FILE}" ]] && die "--name requires --target or --file"
 
   if [[ -n "${RESOURCE_FILE}" ]]; then
     [[ -f "${RESOURCE_FILE}" ]] || die "File not found: ${RESOURCE_FILE}"
@@ -553,43 +474,31 @@ normalize_selection() {
   if [[ -n "${RESOURCE_FILE}" && -n "${RESOURCE_NAME}" ]]; then
     if [[ "${TARGET}" == "knowledge-files" ]]; then
       file_name="$(basename "${RESOURCE_FILE}")"
-      [[ "${file_name}" == "${RESOURCE_NAME}" || "${file_name%.*}" == "${RESOURCE_NAME}" ]] \
-        || die "--file ${RESOURCE_FILE} does not match --name ${RESOURCE_NAME}"
+      [[ "${file_name}" == "${RESOURCE_NAME}" || "${file_name%.*}" == "${RESOURCE_NAME}" ]] || die "--file ${RESOURCE_FILE} does not match --name ${RESOURCE_NAME}"
     else
       file_name="$(manifest_name "${RESOURCE_FILE}")"
-      [[ "${file_name}" == "${RESOURCE_NAME}" ]] \
-        || die "--file manifest name ${file_name} does not match --name ${RESOURCE_NAME}"
+      [[ "${file_name}" == "${RESOURCE_NAME}" ]] || die "--file manifest name ${file_name} does not match --name ${RESOURCE_NAME}"
     fi
   fi
 }
 
-# ── 7. Manifest helpers ───────────────────────────────────────────────────────
-
-yaml_to_json() {
-  if command -v python3 >/dev/null 2>&1 && python3 -c 'import yaml, json' >/dev/null 2>&1; then
-    python3 -c 'import json, sys, yaml; print(json.dumps(yaml.safe_load(sys.stdin.read())))'
-  else
-    yq -o=json '.' -
-  fi
-}
-
-require_arm_args() {
-  [[ -n "${SUBSCRIPTION_ID}" ]] || die "--subscription is required"
-  [[ -n "${RESOURCE_GROUP}" ]]  || die "--resource-group is required"
-  [[ -n "${AGENT_NAME}" ]]      || die "--agent is required"
-}
-
 placeholders_in_file() {
-  grep -Eo '\$\{[A-Za-z_][A-Za-z0-9_]*\}' "${1}" 2>/dev/null | sort -u || true
+  local file="$1"
+  grep -Eo '\$\{[A-Za-z_][A-Za-z0-9_]*\}' "${file}" 2>/dev/null | sort -u || true
 }
 
 validate_placeholders() {
-  local file="$1" placeholder variable
+  local file="$1"
+  local placeholder variable
   while IFS= read -r placeholder; do
     [[ -z "${placeholder}" ]] && continue
     variable="${placeholder#\$\{}"
     variable="${variable%\}}"
-    [[ -n "${!variable+x}" ]] || die "${file} references ${placeholder}, but ${variable} is not set"
+    # A variable that is exported but deliberately empty is a valid configuration choice:
+    # the Berlin parking MCP connector, for example, documents an empty authorisation token
+    # as the way to keep authentication disabled in the lab. Only a variable that was never
+    # declared at all is an operator mistake, so only that case fails the validation.
+    [[ -n "${!variable+declared}" ]] || die "${file} references ${placeholder}, but ${variable} is not set"
   done < <(placeholders_in_file "${file}")
 }
 
@@ -617,15 +526,40 @@ render_yaml_to_json() {
 
 manifest_json() {
   local file="$1"
-  local json content_file content_path content_json
+  local json content_file content_path content_json base_dir
   json="$(render_yaml_to_json "${file}")" || return $?
+  base_dir="$(cd "$(dirname "${file}")" && pwd)"
+
+  # Official authoring shape (sre.azure.com/docs/concepts/skills): `files:` is a list whose
+  # first entry is the SKILL.md body and whose remaining entries are supporting files.
+  if [[ "$(jq -r '(.spec.files // empty) | type' <<< "${json}")" == "array" ]]; then
+    local entries first extra_json entry entry_path
+    mapfile -t entries < <(jq -r '.spec.files[]' <<< "${json}")
+    [[ "${#entries[@]}" -gt 0 ]] || die "spec.files is empty in ${file}; declare the SKILL.md body as the first entry."
+    first="${entries[0]}"
+    [[ "${first}" = /* ]] && content_path="${first}" || content_path="${base_dir}/${first}"
+    [[ -f "${content_path}" ]] || die "Skill body file not found: ${content_path}"
+    content_json="$(render_text_file "${content_path}" | jq -Rs '.')" || return $?
+    extra_json='[]'
+    for entry in "${entries[@]:1}"; do
+      [[ "${entry}" = /* ]] && entry_path="${entry}" || entry_path="${base_dir}/${entry}"
+      [[ -f "${entry_path}" ]] || die "Skill supporting file not found: ${entry_path}"
+      # The service keys supporting files by filePath and preserves subdirectories.
+      extra_json="$(jq -c --arg p "${entry#./}" \
+        --rawfile body "${entry_path}" '. + [{filePath: $p, content: $body}]' <<< "${extra_json}")"
+    done
+    jq --argjson content "${content_json}" --argjson extra "${extra_json}" \
+      '.spec.content = $content | .spec.additionalFiles = $extra | del(.spec.files)' <<< "${json}"
+    return 0
+  fi
+
   content_file="$(jq -r '.spec.content_file // empty' <<< "${json}")"
   [[ -z "${content_file}" ]] && { printf '%s\n' "${json}"; return 0; }
 
   if [[ "${content_file}" = /* ]]; then
     content_path="${content_file}"
   else
-    content_path="$(cd "$(dirname "${file}")" && pwd)/${content_file}"
+    content_path="${base_dir}/${content_file}"
   fi
 
   [[ -f "${content_path}" ]] || die "Content file not found: ${content_path}"
@@ -634,47 +568,30 @@ manifest_json() {
 }
 
 manifest_raw_name() {
-  local file="$1" json name
+  local file="$1"
+  local json name
   json="$(yaml_to_json < "${file}")" || return $?
   name="$(jq -r '.metadata.name // .spec.name // .name // empty' <<< "${json}")"
   [[ -n "${name}" ]] || die "Manifest has no metadata.name, spec.name, or name: ${file}"
   printf '%s\n' "${name}"
 }
 
+manifest_raw_kind() {
+  local file="$1"
+  local kind
+  kind="$(yaml_to_json < "${file}" | jq -r '.kind // empty')"
+  [[ -n "${kind}" ]] || die "Manifest has no kind: ${file}"
+  printf '%s\n' "${kind}"
+}
+
 manifest_name() {
-  local file="$1" json name
+  local file="$1"
+  local json name
   json="$(manifest_json "${file}")" || return $?
   name="$(jq -r '.metadata.name // .spec.name // .name // empty' <<< "${json}")"
   [[ -n "${name}" ]] || die "Manifest has no metadata.name, spec.name, or name: ${file}"
   printf '%s\n' "${name}"
 }
-
-manifest_deployment_status() {
-  manifest_json "${1}" | jq -r '.spec.deployment.status // .deployment.status // empty'
-}
-
-is_manifest_api_preview_blocked() {
-  [[ "$(manifest_deployment_status "${1}")" == "api-preview-blocked" ]]
-}
-
-validate_manifest() {
-  local file="$1" json raw_json content_file content_path name kind
-  validate_placeholders "${file}"
-  json="$(manifest_json "${file}")" || return $?
-  name="$(jq -r '.metadata.name // .spec.name // .name // empty' <<< "${json}")"
-  kind="$(jq -r '.kind // empty' <<< "${json}")"
-  [[ -n "${name}" ]] || die "Missing manifest name in ${file}"
-  [[ -n "${kind}" ]] || die "Missing kind in ${file}"
-
-  raw_json="$(render_yaml_to_json "${file}")" || return $?
-  content_file="$(jq -r '.spec.content_file // empty' <<< "${raw_json}")"
-  [[ -z "${content_file}" ]] && return 0
-  content_path="$(cd "$(dirname "${file}")" && pwd)/${content_file}"
-  [[ "${content_file}" = /* ]] && content_path="${content_file}"
-  [[ -f "${content_path}" ]] || die "Missing content file ${content_path} referenced by ${file}"
-}
-
-# ── 8. Azure API primitives ───────────────────────────────────────────────────
 
 arm_agent_base_url() {
   printf 'https://management.azure.com/subscriptions/%s/resourceGroups/%s/providers/Microsoft.App/agents/%s' \
@@ -695,42 +612,222 @@ ensure_endpoint() {
   ENDPOINT="${ENDPOINT%/}"
 }
 
-# Fetch the data-plane access token once and write it to a temp file. This
-# function MUST be called in the main shell (not inside $()) so that the
-# exported _TOKEN_FILE path is visible to all subsequent subshells.
-_ensure_token() {
-  [[ -n "${_TOKEN_FILE}" && -f "${_TOKEN_FILE}" ]] && return 0
-  _TOKEN_FILE="$(mktemp)"
-  export _TOKEN_FILE
-  trap 'rm -f "${_TOKEN_FILE}"' EXIT
-  az account get-access-token \
-    --resource "${DATA_PLANE_AUDIENCE}" \
-    --query accessToken --output tsv > "${_TOKEN_FILE}"
-}
-
-# Return the cached bearer token. Falls back to a live fetch when called
-# before _ensure_token (e.g. verify, selective apply).
 data_plane_token() {
-  if [[ -n "${_TOKEN_FILE}" && -f "${_TOKEN_FILE}" ]]; then
-    cat "${_TOKEN_FILE}"
-  else
-    az account get-access-token \
-      --resource "${DATA_PLANE_AUDIENCE}" \
-      --query accessToken --output tsv
-  fi
+  az account get-access-token --resource "${DATA_PLANE_AUDIENCE}" --query accessToken --output tsv
 }
 
-data_put_manifest() {
-  local endpoint_path="$1" file="$2"
-  local name json body token url
+connector_properties() {
+  local file="$1"
+  local properties
+  properties="$(manifest_json "${file}" | jq -c '.spec.properties // .properties // {}')"
+
+  jq -c '
+    (.extendedProperties.headers.Authorization? // "") as $authorization
+    | if ($authorization | test("^Bearer[[:space:]]*$"; "i")) then
+        del(.extendedProperties.headers.Authorization)
+        | if ((.extendedProperties.headers // {}) | length) == 0 then
+            del(.extendedProperties.headers, .extendedProperties.authType)
+          else . end
+      else . end
+  ' <<< "${properties}"
+}
+
+arm_put_connector() {
+  local file="$1"
+  local name properties body body_file response request_status
+  local expected_endpoint stored_endpoint provisioning_state
+  validate_manifest "${file}"
+  name="$(manifest_name "${file}")"
+  properties="$(connector_properties "${file}")"
+  body="$(jq -c '{properties:.}' <<< "${properties}")"
+
+  if [[ "${COMMAND}" == "plan" ]]; then
+    log "PUT ARM connector ${name} from ${file}"
+    return 0
+  fi
+
+  body_file="$(mktemp)"
+  chmod 600 "${body_file}"
+  printf '%s' "${body}" > "${body_file}"
+  if response="$(az rest --method PUT \
+    --url "$(arm_agent_base_url)/connectors/${name}?api-version=${ARM_API_VERSION}" \
+    --headers 'Content-Type=application/json' \
+    --body "@${body_file}" \
+    --output json)"; then
+    rm -f "${body_file}"
+  else
+    request_status="$?"
+    rm -f "${body_file}"
+    return "${request_status}"
+  fi
+  expected_endpoint="$(jq -r '.endpoint // empty' <<< "${properties}")"
+  stored_endpoint="$(jq -r '.properties.endpoint // empty' <<< "${response}")"
+  provisioning_state="$(jq -r '.properties.provisioningState // empty' <<< "${response}")"
+
+  [[ "${provisioning_state}" != "Failed" ]] || die "ARM connector ${name} provisioning failed"
+  [[ -z "${expected_endpoint}" || "${stored_endpoint}" == "${expected_endpoint}" ]] || \
+    die "ARM connector ${name} did not persist the requested endpoint"
+  log "Applied ARM connector ${name}"
+}
+
+data_put_connector_v2() {
+  local file="$1" name json api_name display_name connection_name description
+  local approval_tools token connection_url server_url connection_json server_json
+  local connection_status server_state connection_body server_body
+
   validate_manifest "${file}"
   name="$(manifest_name "${file}")"
   json="$(manifest_json "${file}")"
-  body="$(jq --arg name "${name}" \
-    'if (.api_version? or .metadata? or .spec? or .kind?) then
-       {name:$name,type:(.kind // "Configuration"),tags:(.tags // []),
-        properties:(.spec.properties // .spec // .properties // {})}
-     else . end' <<< "${json}")"
+  api_name="$(jq -r '.spec.apiName // empty' <<< "${json}")"
+  display_name="$(jq -r '.spec.displayName // .metadata.name' <<< "${json}")"
+  connection_name="$(jq -r '.spec.connectionName // .metadata.name' <<< "${json}")"
+  description="$(jq -r '.spec.description // ""' <<< "${json}")"
+  approval_tools="$(jq -c '.spec.requireApprovalTools // []' <<< "${json}")"
+  [[ -n "${api_name}" ]] || die "ConnectorV2 ${name} is missing spec.apiName"
+
+  if [[ "${COMMAND}" == "plan" ]]; then
+    log "ENSURE connectorV2 connection ${connection_name} (${api_name}) from ${file}"
+    log "ENSURE connectorV2 MCP server ${name} from ${file}"
+    return 0
+  fi
+
+  token="$(data_plane_token)"
+  connection_url="${ENDPOINT}/api/v2/connectorV2/connections/${connection_name}"
+  server_url="${ENDPOINT}/api/v2/connectorV2/mcpservers/${name}"
+  connection_json="$(curl -sS -H "Authorization: Bearer ${token}" "${connection_url}" || true)"
+  server_json="$(curl -sS -H "Authorization: Bearer ${token}" "${server_url}" || true)"
+  connection_status="$(jq -r '.properties.overallStatus // empty' <<< "${connection_json}" 2>/dev/null || true)"
+  server_state="$(jq -r '.properties.state // empty' <<< "${server_json}" 2>/dev/null || true)"
+
+  if [[ "${connection_status}" == "Connected" && "${server_state}" == "Enabled" ]]; then
+    log "Preserved connected connectorV2 ${name}"
+    return 0
+  fi
+
+  if [[ -n "${connection_status}" || -n "${server_state}" ]]; then
+    log "Preserved connectorV2 ${name}; current connection status is ${connection_status:-NotFound} and OAuth consent or reauthorization is required"
+  fi
+
+  connection_body="$(jq -nc --arg displayName "${display_name}" --arg connectorName "${api_name}" \
+    '{displayName:$displayName,connectorName:$connectorName}')"
+  server_body="$(jq -nc --arg description "${description}" --arg connectionName "${connection_name}" \
+    --arg apiName "${api_name}" --argjson approvalTools "${approval_tools}" '
+      {properties:{description:$description,connectors:[{name:$apiName,connectionName:$connectionName}]}}
+      + if ($approvalTools | length) > 0
+        then {runtimeMcpConfiguration:{requireApprovalTools:$approvalTools}}
+        else {}
+        end')"
+
+  if [[ -z "${connection_status}" ]]; then
+    curl -fsS -X PUT -H "Authorization: Bearer ${token}" -H 'Content-Type: application/json' \
+      --data "${connection_body}" "${connection_url}" >/dev/null
+    log "Created connectorV2 connection ${connection_name}; OAuth consent is required"
+  fi
+
+  if [[ -z "${server_state}" ]]; then
+    curl -fsS -X PUT -H "Authorization: Bearer ${token}" -H 'Content-Type: application/json' \
+      --data "${server_body}" "${server_url}" >/dev/null
+    log "Created connectorV2 MCP server ${name}"
+  fi
+}
+
+connector_v2_status_json() {
+  local file="$1" name json connection_name token
+  name="$(manifest_raw_name "${file}")"
+  json="$(yaml_to_json < "${file}")"
+  connection_name="$(jq -r '.spec.connectionName // .metadata.name' <<< "${json}")"
+  token="$(data_plane_token)"
+  jq -nc \
+    --arg name "${name}" \
+    --argjson connection "$(curl -sS -H "Authorization: Bearer ${token}" \
+      "${ENDPOINT}/api/v2/connectorV2/connections/${connection_name}" 2>/dev/null || printf '{}')" \
+    --argjson server "$(curl -sS -H "Authorization: Bearer ${token}" \
+      "${ENDPOINT}/api/v2/connectorV2/mcpservers/${name}" 2>/dev/null || printf '{}')" \
+    '{name:$name,
+      connectionStatus:($connection.properties.overallStatus // "NotFound"),
+      mcpServerState:($server.properties.state // "NotFound")}'
+}
+
+verify_connector_v2_manifests() {
+  local file kind status failures=0
+  [[ -d "${CONFIG_DIR}/connectors" ]] || return 0
+  log "ConnectorV2 OAuth status:"
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    kind="$(manifest_raw_kind "${file}")"
+    [[ "${kind}" == "ConnectorV2" ]] || continue
+    status="$(connector_v2_status_json "${file}")"
+    jq -c '.' <<< "${status}"
+    if [[ "$(jq -r '.connectionStatus' <<< "${status}")" != "Connected" ]] || \
+      [[ "$(jq -r '.mcpServerState' <<< "${status}")" != "Enabled" ]]; then
+      printf 'ERROR: ConnectorV2 %s requires OAuth consent or reauthorization.\n' \
+        "$(jq -r '.name' <<< "${status}")" >&2
+      failures=$((failures + 1))
+    fi
+  done < <(if selection_requested; then selected_yaml_files "connectors"; else find_yaml_files "${CONFIG_DIR}/connectors"; fi)
+  [[ "${failures}" -eq 0 ]] || return 1
+}
+
+verify_agent_connector_manifest() {
+  local file="$1"
+  local name connector token result
+  name="$(manifest_raw_name "${file}")"
+  connector="$(az rest --method POST \
+    --url "$(arm_agent_base_url)/connectors/${name}/listSecrets?api-version=${ARM_API_VERSION}" \
+    --output json)"
+  token="$(data_plane_token)"
+  result="$(printf '%s' "${connector}" | curl -fsS -X POST \
+    -H "Authorization: Bearer ${token}" \
+    -H 'Content-Type: application/json' \
+    --data-binary @- \
+    "${ENDPOINT}/api/v2/extendedAgent/connectors/${name}/testconnection")"
+
+  jq -c '{connectorName,success,totalCount,errorMessage,responseTimeMs}' <<< "${result}"
+  [[ "$(jq -r '.success // false' <<< "${result}")" == "true" ]] || \
+    die "Connector ${name} failed its live connection test"
+}
+
+verify_agent_connector_manifests() {
+  local file kind
+  log "AgentConnector live connection tests:"
+
+  if selection_requested; then
+    while IFS= read -r file; do
+      [[ -z "${file}" ]] && continue
+      kind="$(manifest_raw_kind "${file}")"
+      [[ "${kind}" == "AgentConnector" ]] || continue
+      verify_agent_connector_manifest "${file}"
+    done < <(selected_yaml_files "connectors")
+    return 0
+  fi
+
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    kind="$(manifest_raw_kind "${file}")"
+    [[ "${kind}" == "AgentConnector" ]] || continue
+    verify_agent_connector_manifest "${file}"
+  done < <(find_yaml_files "${CONFIG_DIR}/connectors")
+}
+
+data_put_manifest() {
+  local endpoint_path="$1"
+  local file="$2"
+  local name json body token url kind
+  if [[ "${endpoint_path}" == "/api/v2/extendedAgent/connectors" ]]; then
+    kind="$(manifest_json "${file}" | jq -r '.kind // empty')"
+    if [[ "${kind}" == "ConnectorV2" ]]; then
+      data_put_connector_v2 "${file}"
+      return 0
+    fi
+    if [[ "${kind}" == "AgentConnector" ]]; then
+      arm_put_connector "${file}"
+      return 0
+    fi
+  fi
+  validate_manifest "${file}"
+  name="$(manifest_name "${file}")"
+  json="$(manifest_json "${file}")"
+  body="$(jq --arg name "${name}" 'if (.api_version? or .metadata? or .spec? or .kind?) then {name:$name,type:(.kind // "Configuration"),tags:(.tags // []),properties:(.spec.properties // .spec // .properties // {})} else . end' <<< "${json}")"
 
   if [[ "${COMMAND}" == "plan" ]]; then
     log "PUT data-plane ${endpoint_path}/${name} from ${file}"
@@ -747,17 +844,23 @@ data_put_manifest() {
 }
 
 data_put_extended() {
-  local endpoint_kind="$1" resource_type="$2" file="$3" props="$4"
-  # max_attempts and retry_sleep are optional; defaults preserve fail-fast
-  # behavior for every caller except incident-filters (which races an async
-  # AzMonitor PATCH and needs up to 5 retries).
-  local max_attempts="${5:-1}" retry_sleep="${6:-10}"
+  local endpoint_kind="$1"
+  local resource_type="$2"
+  local file="$3"
+  local props="$4"
+  # Optional resilience: max_attempts defaults to 1 (single try, fail-fast) so
+  # every existing caller keeps its current behavior. Callers that race an
+  # asynchronous prerequisite (for example incidentFilters after the AzMonitor
+  # platform PATCH) pass max_attempts>1 to retry transient non-2xx responses.
+  local max_attempts="${5:-1}"
+  local retry_sleep="${6:-10}"
   local name body token url attempt http_code
-
   validate_manifest "${file}"
   name="$(manifest_name "${file}")"
   body="$(jq -n \
-    --arg name "${name}" --arg type "${resource_type}" --argjson props "${props}" \
+    --arg name "${name}" \
+    --arg type "${resource_type}" \
+    --argjson props "${props}" \
     '{name:$name,type:$type,tags:[],properties:$props}')"
 
   if [[ "${COMMAND}" == "plan" ]]; then
@@ -787,20 +890,192 @@ data_put_extended() {
   done
 }
 
+skill_properties() {
+  local file="$1"
+  local json name
+  json="$(manifest_json "${file}")"
+  name="$(manifest_name "${file}")"
+  jq -c --arg name "${name}" '
+    {
+      name: $name,
+      description: (.metadata.description // .spec.description // ""),
+      tools: (.metadata.spec.tools // .spec.tools // []),
+      skillContent: (.skillContent // .spec.skillContent // .spec.content // ""),
+      additionalFiles: (.additionalFiles // .spec.additionalFiles // [])
+    }
+  ' <<< "${json}"
+}
+
+subagent_properties() {
+  local file="$1"
+  local json
+  json="$(manifest_json "${file}")"
+  jq -c '
+    .spec as $spec |
+    {
+      description: ($spec.description // ""),
+      instructions: ($spec.instructions // $spec.system_prompt // $spec.content // ""),
+      handoffDescription: ($spec.handoffDescription // $spec.handoff_description // ""),
+      handoffs: ($spec.handoffs // []),
+      tools: ($spec.tools // []),
+      temperature: ($spec.temperature // 0.2),
+      enableSkills: ($spec.enableSkills // $spec.enable_skills // false),
+      allowedSkills: ($spec.allowedSkills // $spec.allowed_skills // []),
+      mcpTools: ($spec.mcpTools // $spec.mcp_tools // [])
+    }
+  ' <<< "${json}"
+}
+
+tool_properties() {
+  local file="$1"
+  manifest_json "${file}" | jq -c '.spec // .properties // {}'
+}
+
+manifest_deployment_status() {
+  local file="$1"
+  manifest_json "${file}" | jq -r '.spec.deployment.status // .deployment.status // empty'
+}
+
+is_manifest_api_preview_blocked() {
+  local file="$1"
+  [[ "$(manifest_deployment_status "${file}")" == "api-preview-blocked" ]]
+}
+
+common_prompt_properties() {
+  local file="$1"
+  manifest_json "${file}" | jq -c '
+    .spec as $spec |
+    {
+      description: ($spec.description // ""),
+      prompt: ($spec.prompt // $spec.content // "")
+    }
+  '
+}
+
+scheduled_task_properties() {
+  local file="$1"
+  local json name
+  json="$(manifest_json "${file}")"
+  name="$(manifest_name "${file}")"
+  jq -c --arg name "${name}" '
+    .spec as $spec |
+    {
+      name: ($spec.name // $name),
+      description: ($spec.description // ""),
+      cronExpression: ($spec.cronExpression // $spec.schedule // ""),
+      agentPrompt: ($spec.agentPrompt // $spec.prompt // ""),
+      agentMode: ($spec.agentMode // $spec.mode // "Review"),
+      isEnabled: (if ($spec|has("isEnabled")) then $spec.isEnabled elif ($spec|has("enabled")) then $spec.enabled else true end),
+      timeZone: ($spec.timeZone // $spec.time_zone // "UTC")
+    }
+    | if (($spec.agent // "") == "") then . else . + {agent: $spec.agent} end
+  ' <<< "${json}"
+}
+
+incident_filter_properties() {
+  local file="$1"
+  manifest_json "${file}" | jq -c '
+    .spec as $spec |
+    $spec + {
+      incidentPlatform: ($spec.incidentPlatform // $spec.platformType // "AzMonitor"),
+      handlingAgent: ($spec.handlingAgent // $spec.action.run_skill // "default"),
+      isEnabled: (if ($spec|has("isEnabled")) then $spec.isEnabled elif ($spec|has("enabled")) then $spec.enabled else false end)
+    }
+  '
+}
+
+data_put_skill() {
+  local file="$1"
+  validate_manifest "${file}"
+  data_put_extended "skills" "Skill" "${file}" "$(skill_properties "${file}")"
+}
+
+data_put_subagent() {
+  local file="$1"
+  validate_manifest "${file}"
+  data_put_extended "agents" "ExtendedAgent" "${file}" "$(subagent_properties "${file}")"
+}
+
+data_put_tool() {
+  local file="$1"
+  if is_manifest_api_preview_blocked "${file}"; then
+    log "Skipped API-preview-blocked tool $(manifest_name "${file}")"
+    return 0
+  fi
+  validate_manifest "${file}"
+  data_put_extended "tools" "Tool" "${file}" "$(tool_properties "${file}")"
+}
+
+delete_tools_selected() {
+  local file count=0
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    count=$((count + 1))
+    if is_manifest_api_preview_blocked "${file}"; then
+      log "Skipped API-preview-blocked tool $(manifest_name "${file}")"
+      continue
+    fi
+    data_delete_manifest "/api/v2/extendedAgent/tools" "${file}"
+  done < <(selected_yaml_files "tools")
+
+  [[ "${count}" -gt 0 ]] || die "No manifest matched target ${TARGET} name ${RESOURCE_NAME:-<all>}"
+}
+
+delete_tools() {
+  local file
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    if is_manifest_api_preview_blocked "${file}"; then
+      log "Skipped API-preview-blocked tool $(manifest_name "${file}")"
+      continue
+    fi
+    data_delete_manifest "/api/v2/extendedAgent/tools" "${file}"
+  done < <(find_yaml_files "${CONFIG_DIR}/tools")
+}
+
+data_put_common_prompt() {
+  local file="$1"
+  validate_manifest "${file}"
+  data_put_extended "commonprompts" "CommonPrompt" "${file}" "$(common_prompt_properties "${file}")"
+}
+
+data_put_scheduled_task() {
+  local file="$1"
+  validate_manifest "${file}"
+  data_put_extended "scheduledtasks" "ScheduledTask" "${file}" "$(scheduled_task_properties "${file}")"
+}
+
+data_put_incident_filter() {
+  local file="$1"
+  validate_manifest "${file}"
+  # The Terraform-owned AzMonitor platform can still be reconciling when the first filter PUT
+  # runs, returning HTTP 400. Retry with a wait to absorb that propagation delay.
+  data_put_extended "incidentFilters" "IncidentFilter" "${file}" "$(incident_filter_properties "${file}")" \
+    "${SRE_AGENT_INCIDENT_FILTER_MAX_ATTEMPTS:-5}" "${SRE_AGENT_INCIDENT_FILTER_RETRY_SLEEP:-10}"
+}
+
+hook_properties() {
+  local file="$1"
+  manifest_json "${file}" | jq -c '.spec // .properties // {}'
+}
+
+data_put_hook() {
+  local file="$1"
+  validate_manifest "${file}"
+  data_put_extended "hooks" "GlobalHook" "${file}" "$(hook_properties "${file}")"
+}
+
 data_post_manifest() {
-  local endpoint_path="$1" file="$2"
+  local endpoint_path="$1"
+  local file="$2"
   local name json body token url
   validate_manifest "${file}"
   name="$(manifest_name "${file}")"
   json="$(manifest_json "${file}")"
   if [[ "${endpoint_path}" == "/api/v1/httptriggers/create" ]]; then
-    body="$(jq -c --arg name "${name}" \
-      'if (.api_version? or .metadata? or .spec? or .kind?) then ({name:$name} + (.spec // .properties // {})) else . end' \
-      <<< "${json}")"
+    body="$(jq -c --arg name "${name}" 'if (.api_version? or .metadata? or .spec? or .kind?) then ({name:$name} + (.spec // .properties // {})) else . end' <<< "${json}")"
   else
-    body="$(jq -c --arg name "${name}" \
-      'if (.api_version? or .metadata? or .spec? or .kind?) then {metadata:{name:$name},spec:(.spec // .properties // {})} else . end' \
-      <<< "${json}")"
+    body="$(jq -c --arg name "${name}" 'if (.api_version? or .metadata? or .spec? or .kind?) then {metadata:{name:$name},spec:(.spec // .properties // {})} else . end' <<< "${json}")"
   fi
 
   if [[ "${COMMAND}" == "plan" ]]; then
@@ -810,8 +1085,7 @@ data_post_manifest() {
     url="${ENDPOINT}${endpoint_path}"
     if [[ "${endpoint_path}" == "/api/v1/httptriggers/create" ]]; then
       if curl -fsS -H "Authorization: Bearer ${token}" "${ENDPOINT}/api/v1/httptriggers" \
-        | jq -e --arg name "${name}" \
-            '(if type == "array" then . else (.value // []) end) | any(.[]?; .name == $name)' >/dev/null; then
+        | jq -e --arg name "${name}" '(if type == "array" then . else (.value // []) end) | any(.[]?; .name == $name)' >/dev/null; then
         log "Skipped existing HTTP trigger ${name}"
         return 0
       fi
@@ -825,143 +1099,194 @@ data_post_manifest() {
   fi
 }
 
+apply_post_directory() {
+  local relative_dir="$1"
+  local endpoint_path="$2"
+  local file
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    data_post_manifest "${endpoint_path}" "${file}"
+  done < <(find_yaml_files "${CONFIG_DIR}/${relative_dir}")
+}
+
+apply_post_directory_best_effort() {
+  local relative_dir="$1"
+  local endpoint_path="$2"
+  local target_label="$3"
+  local file
+
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    run_apply_step "${target_label}: ${file}" data_post_manifest "${endpoint_path}" "${file}"
+  done < <(find_yaml_files "${CONFIG_DIR}/${relative_dir}")
+}
+
+selected_yaml_files() {
+  local relative_dir="$1"
+  local file name
+
+  if [[ -n "${RESOURCE_FILE}" ]]; then
+    printf '%s\n' "${RESOURCE_FILE}"
+    return 0
+  fi
+
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    if [[ -n "${RESOURCE_NAME}" ]]; then
+      name="$(manifest_raw_name "${file}")"
+      [[ "${name}" == "${RESOURCE_NAME}" ]] || continue
+    fi
+    printf '%s\n' "${file}"
+  done < <(find_yaml_files "${CONFIG_DIR}/${relative_dir}")
+}
+
+selected_knowledge_files() {
+  local directory="${CONFIG_DIR}/knowledge/files"
+  local file base stem
+
+  if [[ -n "${RESOURCE_FILE}" ]]; then
+    printf '%s\n' "${RESOURCE_FILE}"
+    return 0
+  fi
+
+  [[ -d "${directory}" ]] || return 0
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    if [[ -n "${RESOURCE_NAME}" ]]; then
+      base="$(basename "${file}")"
+      stem="${base%.*}"
+      [[ "${base}" == "${RESOURCE_NAME}" || "${stem}" == "${RESOURCE_NAME}" ]] || continue
+    fi
+    printf '%s\n' "${file}"
+  done < <(find_knowledge_files "${directory}")
+}
+
+apply_post_directory_selected() {
+  local relative_dir="$1"
+  local endpoint_path="$2"
+  local file count=0
+
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    count=$((count + 1))
+    data_post_manifest "${endpoint_path}" "${file}"
+  done < <(selected_yaml_files "${relative_dir}")
+
+  [[ "${count}" -gt 0 ]] || die "No manifest matched target ${TARGET} name ${RESOURCE_NAME:-<all>}"
+}
+
 data_delete_manifest() {
-  local endpoint_path="$1" file="$2"
-  local name token url
+  local endpoint_path="$1"
+  local file="$2"
+  local name token url kind
   name="$(manifest_name "${file}")"
+
+  if [[ "${endpoint_path}" == "/api/v2/extendedAgent/connectors" ]]; then
+    kind="$(manifest_json "${file}" | jq -r '.kind // empty')"
+    if [[ "${kind}" == "AgentConnector" ]]; then
+      az rest --method DELETE \
+        --url "$(arm_agent_base_url)/connectors/${name}?api-version=${ARM_API_VERSION}" \
+        --output none
+      log "Deleted ARM connector ${name}"
+      return 0
+    fi
+    if [[ "${kind}" == "ConnectorV2" ]]; then
+      die "ConnectorV2 delete is not implemented; remove its MCP server and OAuth connection through the SRE Agent portal"
+    fi
+  fi
+
   token="$(data_plane_token)"
   url="${ENDPOINT}${endpoint_path}/${name}"
   curl -fsS -X DELETE -H "Authorization: Bearer ${token}" "${url}" >/dev/null
   log "Deleted data-plane ${endpoint_path}/${name}"
 }
 
-# ── 9. Resource-type property builders ───────────────────────────────────────
+preflight_connector_delete() {
+  local file kind
 
-skill_properties() {
-  local json name
-  json="$(manifest_json "${1}")"
-  name="$(manifest_name "${1}")"
-  jq -c --arg name "${name}" '{
-    name: $name,
-    description: (.metadata.description // .spec.description // ""),
-    tools: (.metadata.spec.tools // .spec.tools // []),
-    skillContent: (.skillContent // .spec.skillContent // .spec.content // ""),
-    additionalFiles: (.additionalFiles // .spec.additionalFiles // [])
-  }' <<< "${json}"
+  if selection_requested && [[ "${TARGET}" == "connectors" ]]; then
+    while IFS= read -r file; do
+      [[ -z "${file}" ]] && continue
+      kind="$(manifest_json "${file}" | jq -r '.kind // empty')"
+      [[ "${kind}" != "ConnectorV2" ]] || \
+        die "ConnectorV2 delete is not implemented; remove its MCP server and OAuth connection through the SRE Agent portal"
+    done < <(selected_yaml_files "connectors")
+    return 0
+  fi
+
+  if ! selection_requested; then
+    while IFS= read -r file; do
+      [[ -z "${file}" ]] && continue
+      kind="$(manifest_json "${file}" | jq -r '.kind // empty')"
+      [[ "${kind}" != "ConnectorV2" ]] || \
+        die "Full delete includes ConnectorV2 resources and is refused before making changes; delete supported targets selectively"
+    done < <(find_yaml_files "${CONFIG_DIR}/connectors")
+  fi
 }
 
-subagent_properties() {
-  manifest_json "${1}" | jq -c '
-    .spec as $spec | {
-      description:        ($spec.description // ""),
-      instructions:       ($spec.instructions // $spec.system_prompt // $spec.content // ""),
-      handoffDescription: ($spec.handoffDescription // $spec.handoff_description // ""),
-      handoffs:           ($spec.handoffs // []),
-      tools:              ($spec.tools // []),
-      agentType:          ($spec.agentType // $spec.agent_type // "Review"),
-      temperature:        ($spec.temperature // 0.2),
-      enableSkills:       ($spec.enableSkills // $spec.enable_skills // false),
-      allowedSkills:      ($spec.allowedSkills // $spec.allowed_skills // []),
-      mcpTools:           ($spec.mcpTools // $spec.mcp_tools // [])
-    }'
+configure_github_pat() {
+  local token url body
+
+  # GitHub authentication in this workshop is delivered by the OAuth-based ConnectorV2
+  # manifest. The legacy PAT path remains available only when explicitly requested.
+  if [[ -z "${GITHUB_PAT:-}" ]]; then
+    log "Skipped GitHub Code Access PAT: no GITHUB_PAT exported, GitHub access is provided by the OAuth connector"
+    return 0
+  fi
+
+  if [[ "${COMMAND}" == "plan" ]]; then
+    log "PUT GitHub Code Access PAT from ${ENV_FILE:-${STUDENT_ROOT}/.env} (secret value hidden)"
+    return 0
+  fi
+
+  token="$(data_plane_token)"
+  url="${ENDPOINT}/api/v2/github/domains/github.com"
+  body="$(jq -nc --arg pat "${GITHUB_PAT}" '{AuthType:"Pat",Pat:$pat}')"
+  printf '%s' "${body}" | curl -fsS -X PUT \
+    -H "Authorization: Bearer ${token}" \
+    -H 'Content-Type: application/json' \
+    --data-binary @- \
+    "${url}" >/dev/null
+  log "Configured GitHub Code Access PAT for github.com"
 }
 
-tool_properties() {
-  manifest_json "${1}" | jq -c '.spec // .properties // {}'
+custom_instructions_file() {
+  printf '%s/custom-instructions.md\n' "${CONFIG_DIR}"
 }
 
-common_prompt_properties() {
-  manifest_json "${1}" | jq -c '.spec as $spec | {
-    description: ($spec.description // ""),
-    prompt:      ($spec.prompt // $spec.content // "")
-  }'
+validate_custom_instructions() {
+  local file content
+  file="$(custom_instructions_file)"
+  [[ -f "${file}" ]] || die "Custom instructions file not found: ${file}"
+  content="$(render_text_file "${file}")"
+  [[ -n "$(trim_space "${content}")" ]] || die "Custom instructions file is empty: ${file}"
 }
 
-scheduled_task_properties() {
-  local json name
-  json="$(manifest_json "${1}")"
-  name="$(manifest_name "${1}")"
-  jq -c --arg name "${name}" '
-    .spec as $spec |
-    {
-      name:            ($spec.name // $name),
-      description:     ($spec.description // ""),
-      cronExpression:  ($spec.cronExpression // $spec.schedule // ""),
-      agentPrompt:     ($spec.agentPrompt // $spec.prompt // ""),
-      agentMode:       ($spec.agentMode // $spec.mode // "Review"),
-      isEnabled:       (if ($spec|has("isEnabled")) then $spec.isEnabled
-                        elif ($spec|has("enabled")) then $spec.enabled
-                        else true end),
-      timeZone:        ($spec.timeZone // $spec.time_zone // "UTC")
-    }
-    | if (($spec.agent // "") == "") then . else . + {agent: $spec.agent} end
-  ' <<< "${json}"
-}
+apply_custom_instructions() {
+  local file content body token url
+  file="$(custom_instructions_file)"
+  validate_custom_instructions
+  content="$(render_text_file "${file}")"
 
-incident_filter_properties() {
-  manifest_json "${1}" | jq -c '
-    .spec as $spec |
-    $spec + {
-      incidentPlatform: ($spec.incidentPlatform // $spec.platformType // "AzMonitor"),
-      handlingAgent:    ($spec.handlingAgent // $spec.action.run_skill // "default"),
-      isEnabled:        (if ($spec|has("isEnabled")) then $spec.isEnabled
-                         elif ($spec|has("enabled")) then $spec.enabled
-                         else false end)
-    }'
-}
+  if [[ "${COMMAND}" == "plan" ]]; then
+    log "PUT agent-global custom instructions from ${file}"
+    return 0
+  fi
 
-hook_properties() {
-  manifest_json "${1}" | jq -c '.spec // .properties // {}'
-}
-
-# ── 10. Resource-type put / delete wrappers ───────────────────────────────────
-#
-# One put wrapper and one delete wrapper per resource type. These are the
-# function names stored in the T_PUT and T_DEL dispatch tables. Adding a new
-# resource type only requires adding wrappers here and a row in each table.
-
-data_put_skill()          { data_put_extended "skills"         "Skill"         "$1" "$(skill_properties         "$1")"; }
-data_put_subagent()       { data_put_extended "agents"         "ExtendedAgent" "$1" "$(subagent_properties      "$1")"; }
-data_put_common_prompt()  { data_put_extended "commonprompts"  "CommonPrompt"  "$1" "$(common_prompt_properties "$1")"; }
-data_put_scheduled_task() { data_put_extended "scheduledtasks" "ScheduledTask" "$1" "$(scheduled_task_properties "$1")"; }
-data_put_hook()           { data_put_extended "hooks"          "GlobalHook"    "$1" "$(hook_properties           "$1")"; }
-
-data_put_tool() {
-  is_manifest_api_preview_blocked "${1}" \
-    && { log "Skipped API-preview-blocked tool $(manifest_name "${1}")"; return 0; }
-  data_put_extended "tools" "Tool" "${1}" "$(tool_properties "${1}")"
-}
-
-# The AzMonitor incident platform PATCH is asynchronous; a freshly enabled
-# platform may not be ready for the first filter PUT (returns HTTP 400). Retry.
-data_put_incident_filter() {
-  data_put_extended "incidentFilters" "IncidentFilter" "$1" "$(incident_filter_properties "$1")" \
-    "${SRE_AGENT_INCIDENT_FILTER_MAX_ATTEMPTS:-5}" "${SRE_AGENT_INCIDENT_FILTER_RETRY_SLEEP:-10}"
-}
-
-data_put_connector()           { data_put_manifest "/api/v2/extendedAgent/connectors" "$1"; }
-data_put_plugin_config()       { data_put_manifest "/api/v2/extendedAgent/plugins"    "$1"; }
-data_post_http_trigger()       { data_post_manifest "/api/v1/httptriggers/create"      "$1"; }
-data_post_plugin_marketplace() { data_post_manifest "/api/v2/plugins/marketplaces"    "$1"; }
-data_post_plugin_installation(){ data_post_manifest "/api/v2/plugins/installations"   "$1"; }
-
-data_delete_skill()          { data_delete_manifest "/api/v2/extendedAgent/skills"          "$1"; }
-data_delete_subagent()       { data_delete_manifest "/api/v2/extendedAgent/agents"          "$1"; }
-data_delete_common_prompt()  { data_delete_manifest "/api/v2/extendedAgent/commonprompts"   "$1"; }
-data_delete_scheduled_task() { data_delete_manifest "/api/v2/extendedAgent/scheduledtasks"  "$1"; }
-data_delete_incident_filter(){ data_delete_manifest "/api/v2/extendedAgent/incidentFilters" "$1"; }
-data_delete_connector()      { data_delete_manifest "/api/v2/extendedAgent/connectors"      "$1"; }
-data_delete_hook()           { data_delete_manifest "/api/v2/extendedAgent/hooks"           "$1"; }
-data_delete_plugin_config()  { data_delete_manifest "/api/v2/extendedAgent/plugins"         "$1"; }
-
-data_delete_tool() {
-  is_manifest_api_preview_blocked "${1}" \
-    && { log "Skipped API-preview-blocked tool $(manifest_name "${1}")"; return 0; }
-  data_delete_manifest "/api/v2/extendedAgent/tools" "${1}"
+  token="$(data_plane_token)"
+  url="${ENDPOINT}/api/v2/agent/customInstructions"
+  body="$(jq -nc --arg instructions "${content}" '{instructions:$instructions}')"
+  printf '%s' "${body}" | curl -fsS -X PUT \
+    -H "Authorization: Bearer ${token}" \
+    -H 'Content-Type: application/json' \
+    --data-binary @- \
+    "${url}" >/dev/null
+  log "Applied agent-global custom instructions"
 }
 
 data_put_repo() {
-  local file="$1" name json body token url
+  local file="$1"
+  local name json body token url
   validate_manifest "${file}"
   name="$(manifest_name "${file}")"
   json="$(manifest_json "${file}")"
@@ -969,15 +1294,14 @@ data_put_repo() {
     .spec as $spec |
     ($spec.type // "GitHub" | ascii_downcase) as $repo_type |
     {
-      name: $name, type: "CodeRepo",
+      name: $name,
+      type: "CodeRepo",
       properties: {
-        url:  $spec.url,
-        type: (if $repo_type == "ado" or $repo_type == "azuredevops" or $repo_type == "azure-devops"
-               then "AzureDevOps" else "GitHub" end)
+        url: $spec.url,
+        type: (if $repo_type == "ado" or $repo_type == "azuredevops" or $repo_type == "azure-devops" then "AzureDevOps" else "GitHub" end)
       }
     }
-    | if (($spec.description     // "") == "") then . else .properties.description     = $spec.description     end
-    | if (($spec.authConnectorName // "") == "") then . else .properties.authConnectorName = $spec.authConnectorName end
+    | if (($spec.description // "") == "") then . else .properties.description = $spec.description end
   ' <<< "${json}")"
 
   if [[ "${COMMAND}" == "plan" ]]; then
@@ -995,20 +1319,126 @@ data_put_repo() {
 }
 
 data_delete_repo() {
+  local file="$1"
   local name token url
-  name="$(manifest_name "${1}")"
+  name="$(manifest_name "${file}")"
   token="$(data_plane_token)"
   url="${ENDPOINT}/api/v2/repos/${name}"
   curl -fsS -X DELETE -H "Authorization: Bearer ${token}" "${url}" >/dev/null
   log "Deleted data-plane repo ${name}"
 }
 
+upload_knowledge_files() {
+  local directory="${CONFIG_DIR}/knowledge/files"
+  local token file
+  [[ -d "${directory}" ]] || return 0
+  if [[ "${COMMAND}" != "plan" ]]; then
+    token="$(data_plane_token)"
+  fi
+
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    if [[ "${COMMAND}" == "plan" ]]; then
+      log "POST knowledge upload ${file}"
+    else
+      curl -fsS -X POST \
+        -H "Authorization: Bearer ${token}" \
+        -F "files=@${file}" \
+        "${ENDPOINT}/api/v1/agentmemory/upload" >/dev/null
+      log "Uploaded knowledge file ${file}"
+    fi
+  done < <(find_knowledge_files "${directory}")
+}
+
+upload_knowledge_file_for_apply() {
+  local file="$1"
+  local token=""
+
+  if [[ "${COMMAND}" != "plan" ]]; then
+    token="$(data_plane_token)"
+  fi
+
+  upload_knowledge_file "${file}" "${token}"
+}
+
+upload_knowledge_files_best_effort() {
+  local directory="${CONFIG_DIR}/knowledge/files"
+  local file
+
+  [[ -d "${directory}" ]] || return 0
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    run_apply_step "knowledge-files: ${file}" upload_knowledge_file_for_apply "${file}"
+  done < <(find_knowledge_files "${directory}")
+}
+
+delete_data_plane_resource_with_retry() {
+  local label="$1"
+  local url="$2"
+  local token="$3"
+  local max_attempts="${4:-5}"
+  local retry_sleep="${5:-5}"
+  local attempt=1 http_code
+
+  while true; do
+    http_code="$(curl -sS -o /dev/null -w '%{http_code}' -X DELETE \
+      -H "Authorization: Bearer ${token}" "${url}" || true)"
+    if [[ "${http_code}" == "2"* || "${http_code}" == "404" ]]; then
+      log "Removed ${label}"
+      return 0
+    fi
+    if [[ "${attempt}" -ge "${max_attempts}" ]]; then
+      die "DELETE ${label} failed with HTTP ${http_code} after ${attempt} attempt(s)"
+    fi
+    log "DELETE ${label} returned HTTP ${http_code}; retrying in ${retry_sleep}s (attempt ${attempt}/${max_attempts})"
+    sleep "${retry_sleep}"
+    attempt=$((attempt + 1))
+  done
+}
+
+remove_excluded_knowledge_files() {
+  local ignore_file="${CONFIG_DIR}/knowledge/.knowledgeignore"
+  local token="" line filename encoded_name
+
+  [[ -f "${ignore_file}" ]] || return 0
+  if [[ "${COMMAND}" != "plan" ]]; then
+    token="$(data_plane_token)"
+  fi
+
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    line="${line%$'\r'}"
+    line="$(trim_space "${line}")"
+    [[ -z "${line}" || "${line}" == \#* ]] && continue
+    filename="$(basename "${line}")"
+
+    if [[ "${COMMAND}" == "plan" ]]; then
+      log "DELETE excluded knowledge document ${filename}"
+      continue
+    fi
+
+    encoded_name="$(printf '%s' "${filename}" | jq -sRr @uri)"
+    delete_data_plane_resource_with_retry \
+      "excluded knowledge document ${filename}" \
+      "${ENDPOINT}/api/v1/agentmemory/document/${encoded_name}" \
+      "${token}"
+  done < "${ignore_file}"
+  return 0
+}
+
+knowledge_file_matches_name() {
+  local file="$1"
+  local name="$2"
+  local base
+  base="$(basename "${file}")"
+  [[ "${base}" == "${name}" || "${base%.*}" == "${name}" ]]
+}
+
 upload_knowledge_file() {
-  local file="$1" token
+  local file="$1"
+  local token="${2:-}"
   if [[ "${COMMAND}" == "plan" ]]; then
     log "POST knowledge upload ${file}"
   else
-    token="$(data_plane_token)"
     curl -fsS -X POST \
       -H "Authorization: Bearer ${token}" \
       -F "files=@${file}" \
@@ -1017,138 +1447,352 @@ upload_knowledge_file() {
   fi
 }
 
-delete_knowledge_file() {
-  local file="$1" filename encoded_name token url
-  filename="$(basename "${file}")"
-  encoded_name="$(printf '%s' "${filename}" | jq -sRr @uri)"
-  token="$(data_plane_token)"
-  url="${ENDPOINT}/api/v1/agentmemory/document/${encoded_name}"
-  curl -fsS -X DELETE -H "Authorization: Bearer ${token}" "${url}" >/dev/null
-  log "Deleted knowledge file ${filename}"
-}
-
-apply_incident_platform_file() {
-  local file="$1" name json platform_type connection_key body
-
-  validate_manifest "${file}"
-  name="$(manifest_name "${file}")"
-  json="$(manifest_json "${file}")"
-  platform_type="$(jq -r '.spec.platformType // .spec.incidentPlatform // empty' <<< "${json}")"
-  connection_key="$(jq -r '.spec.connectionKey // empty' <<< "${json}")"
-  [[ -n "${platform_type}" ]] || die "Incident platform ${file} must define spec.platformType"
-
-  if [[ "${COMMAND}" == "plan" ]]; then
-    log "PATCH ARM incident platform ${name} (${platform_type}) from ${file}"
-    return 0
+upload_knowledge_files_selected() {
+  local directory="${CONFIG_DIR}/knowledge/files"
+  local token file count=0
+  [[ -d "${directory}" || -n "${RESOURCE_FILE}" ]] || die "Knowledge directory not found: ${directory}"
+  if [[ "${COMMAND}" != "plan" ]]; then
+    token="$(data_plane_token)"
   fi
 
-  if [[ -n "${connection_key}" ]]; then
-    body="$(jq -n --arg type "${platform_type}" --arg connectionName "${name}" --arg connectionKey "${connection_key}" \
-      '{properties:{incidentManagementConfiguration:{type:$type,connectionName:$connectionName,connectionKey:$connectionKey}}}')"
+  if [[ -n "${RESOURCE_FILE}" ]]; then
+    count=1
+    upload_knowledge_file "${RESOURCE_FILE}" "${token:-}"
   else
-    body="$(jq -n --arg type "${platform_type}" --arg connectionName "${name}" \
-      '{properties:{incidentManagementConfiguration:{type:$type,connectionName:$connectionName}}}')"
+    while IFS= read -r file; do
+      [[ -z "${file}" ]] && continue
+      if [[ -n "${RESOURCE_NAME}" ]]; then
+        knowledge_file_matches_name "${file}" "${RESOURCE_NAME}" || continue
+      fi
+      count=$((count + 1))
+      upload_knowledge_file "${file}" "${token:-}"
+    done < <(find_knowledge_files "${directory}")
   fi
 
-  az rest --method PATCH \
-    --url "$(arm_agent_base_url)?api-version=${ARM_API_VERSION}" \
-    --body "${body}" \
-    --output none
-  log "Applied incident platform ${name} (${platform_type})"
+  [[ "${count}" -gt 0 ]] || die "No knowledge file matched target ${TARGET} name ${RESOURCE_NAME:-<all>}"
 }
 
-delete_incident_platform() {
-  az rest --method PATCH \
-    --url "$(arm_agent_base_url)?api-version=${ARM_API_VERSION}" \
-    --body '{"properties":{"incidentManagementConfiguration":{"type":"None"}}}' \
-    --output none
-  log "Cleared incident platform configuration"
+apply_extension_directory() {
+  local relative_dir="$1"
+  local put_function="$2"
+  local file
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    "${put_function}" "${file}"
+  done < <(find_yaml_files "${CONFIG_DIR}/${relative_dir}")
 }
 
-# ── 11. Generic apply / delete / verify loops ────────────────────────────────
-#
-# These three functions replace ~15 near-identical loop variants from the
-# original (apply_extension_directory, apply_extension_directory_best_effort,
-# apply_extension_directory_selected, apply_data_directory_*, etc.).
-
-# Apply (plan or apply) every YAML file in dir. In apply mode, failures are
-# recorded best-effort via run_apply_step; in plan mode, errors are fatal.
-# Pass assert_match=true to require at least one file match (selected ops).
-apply_directory() {
-  local put_fn="$1" dir="$2" label="$3" assert_match="${4:-false}"
-  local file count=0
+apply_extension_directory_best_effort() {
+  local relative_dir="$1"
+  local put_function="$2"
+  local target_label="$3"
+  local file
 
   while IFS= read -r file; do
     [[ -z "${file}" ]] && continue
-    count=$((count + 1))
-    if [[ "${COMMAND}" == "apply" ]]; then
-      run_apply_step "${label}: ${file}" "${put_fn}" "${file}"
-    else
-      "${put_fn}" "${file}"
-    fi
-  done < <(selected_or_all_yaml_files "${dir}")
-
-  [[ "${assert_match}" != "true" || "${count}" -gt 0 ]] \
-    || die "No manifest matched target ${TARGET} name ${RESOURCE_NAME:-<all>}"
+    run_apply_step "${target_label}: ${file}" "${put_function}" "${file}"
+  done < <(find_yaml_files "${CONFIG_DIR}/${relative_dir}")
 }
 
-# Delete every YAML file in dir. Pass assert_match=true for selective ops.
-delete_directory() {
-  local del_fn="$1" dir="$2" assert_match="${3:-false}"
+apply_extension_directory_selected() {
+  local relative_dir="$1"
+  local put_function="$2"
   local file count=0
-
   while IFS= read -r file; do
     [[ -z "${file}" ]] && continue
     count=$((count + 1))
-    "${del_fn}" "${file}"
-  done < <(selected_or_all_yaml_files "${dir}")
+    "${put_function}" "${file}"
+  done < <(selected_yaml_files "${relative_dir}")
 
-  [[ "${assert_match}" != "true" || "${count}" -gt 0 ]] \
-    || die "No manifest matched target ${TARGET} name ${RESOURCE_NAME:-<all>}"
+  [[ "${count}" -gt 0 ]] || die "No manifest matched target ${TARGET} name ${RESOURCE_NAME:-<all>}"
 }
 
-# Apply or plan knowledge files with the same semantics as apply_directory.
-apply_knowledge_files() {
-  local assert_match="${1:-false}" directory="${CONFIG_DIR}/knowledge/files"
-  local file count=0
+apply_data_directory() {
+  local relative_dir="$1"
+  local endpoint_path="$2"
+  local file
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    data_put_manifest "${endpoint_path}" "${file}"
+  done < <(find_yaml_files "${CONFIG_DIR}/${relative_dir}")
+}
 
-  if [[ ! -d "${directory}" && -z "${RESOURCE_FILE}" ]]; then
-    [[ "${assert_match}" != "true" ]] || die "Knowledge directory not found: ${directory}"
+apply_data_directory_best_effort() {
+  local relative_dir="$1"
+  local endpoint_path="$2"
+  local target_label="$3"
+  local file
+
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    run_apply_step "${target_label}: ${file}" data_put_manifest "${endpoint_path}" "${file}"
+  done < <(find_yaml_files "${CONFIG_DIR}/${relative_dir}")
+}
+
+apply_data_directory_selected() {
+  local relative_dir="$1"
+  local endpoint_path="$2"
+  local file count=0
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    count=$((count + 1))
+    data_put_manifest "${endpoint_path}" "${file}"
+  done < <(selected_yaml_files "${relative_dir}")
+
+  [[ "${count}" -gt 0 ]] || die "No manifest matched target ${TARGET} name ${RESOURCE_NAME:-<all>}"
+}
+
+delete_data_directory() {
+  local relative_dir="$1"
+  local endpoint_path="$2"
+  local file
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    data_delete_manifest "${endpoint_path}" "${file}"
+  done < <(find_yaml_files "${CONFIG_DIR}/${relative_dir}")
+}
+
+apply_repos() {
+  local file
+  configure_github_pat
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    data_put_repo "${file}"
+  done < <(find_yaml_files "${CONFIG_DIR}/repos")
+}
+
+apply_repos_best_effort() {
+  local file
+
+  run_apply_step "github-code-access PAT" configure_github_pat
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    run_apply_step "repos: ${file}" data_put_repo "${file}"
+  done < <(find_yaml_files "${CONFIG_DIR}/repos")
+}
+
+apply_repos_selected() {
+  local file count=0
+  configure_github_pat
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    count=$((count + 1))
+    data_put_repo "${file}"
+  done < <(selected_yaml_files "repos")
+
+  [[ "${count}" -gt 0 ]] || die "No manifest matched target ${TARGET} name ${RESOURCE_NAME:-<all>}"
+}
+
+delete_repos() {
+  local file
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    data_delete_repo "${file}"
+  done < <(find_yaml_files "${CONFIG_DIR}/repos")
+}
+
+delete_data_directory_selected() {
+  local relative_dir="$1"
+  local endpoint_path="$2"
+  local file count=0
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    count=$((count + 1))
+    data_delete_manifest "${endpoint_path}" "${file}"
+  done < <(selected_yaml_files "${relative_dir}")
+
+  [[ "${count}" -gt 0 ]] || die "No manifest matched target ${TARGET} name ${RESOURCE_NAME:-<all>}"
+}
+
+delete_repos_selected() {
+  local file count=0
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    count=$((count + 1))
+    data_delete_repo "${file}"
+  done < <(selected_yaml_files "repos")
+
+  [[ "${count}" -gt 0 ]] || die "No manifest matched target ${TARGET} name ${RESOURCE_NAME:-<all>}"
+}
+
+delete_knowledge_files() {
+  local directory="${CONFIG_DIR}/knowledge/files"
+  local file token filename encoded_name url
+  [[ -d "${directory}" ]] || return 0
+
+  token="$(data_plane_token)"
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    filename="$(basename "${file}")"
+    encoded_name="$(printf '%s' "${filename}" | jq -sRr @uri)"
+    url="${ENDPOINT}/api/v1/agentmemory/document/${encoded_name}"
+    curl -fsS -X DELETE -H "Authorization: Bearer ${token}" "${url}" >/dev/null
+    log "Deleted knowledge file ${filename}"
+  done < <(find_knowledge_files "${directory}")
+}
+
+delete_knowledge_files_selected() {
+  local file count=0 token filename encoded_name url
+  token="$(data_plane_token)"
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    count=$((count + 1))
+    filename="$(basename "${file}")"
+    encoded_name="$(printf '%s' "${filename}" | jq -sRr @uri)"
+    url="${ENDPOINT}/api/v1/agentmemory/document/${encoded_name}"
+    curl -fsS -X DELETE -H "Authorization: Bearer ${token}" "${url}" >/dev/null
+    log "Deleted knowledge file ${filename}"
+  done < <(selected_knowledge_files)
+
+  [[ "${count}" -gt 0 ]] || die "No knowledge file matched target ${TARGET} name ${RESOURCE_NAME:-<all>}"
+}
+
+delete_selected_config() {
+  case "${TARGET}" in
+    skills)
+      ensure_endpoint
+      delete_data_directory_selected "skills" "/api/v2/extendedAgent/skills"
+      ;;
+    subagents)
+      ensure_endpoint
+      delete_data_directory_selected "subagents" "/api/v2/extendedAgent/agents"
+      ;;
+    tools)
+      ensure_endpoint
+      delete_tools_selected
+      ;;
+    common-prompts)
+      ensure_endpoint
+      delete_data_directory_selected "common-prompts" "/api/v2/extendedAgent/commonprompts"
+      ;;
+    scheduled-tasks)
+      ensure_endpoint
+      delete_data_directory_selected "automations/scheduled-tasks" "/api/v2/extendedAgent/scheduledtasks"
+      ;;
+    incident-filters)
+      ensure_endpoint
+      delete_data_directory_selected "automations/incident-filters" "/api/v2/extendedAgent/incidentFilters"
+      ;;
+    connectors)
+      ensure_endpoint
+      delete_data_directory_selected "connectors" "/api/v2/extendedAgent/connectors"
+      ;;
+    repos)
+      ensure_endpoint
+      delete_repos_selected
+      ;;
+    hooks)
+      ensure_endpoint
+      delete_data_directory_selected "hooks" "/api/v2/extendedAgent/hooks"
+      ;;
+    plugin-configs)
+      ensure_endpoint
+      delete_data_directory_selected "plugin-configs" "/api/v2/extendedAgent/plugins"
+      ;;
+    knowledge-files)
+      ensure_endpoint
+      delete_knowledge_files_selected
+      ;;
+    http-triggers|plugin-marketplaces|plugin-installations)
+      die "delete is not implemented for target ${TARGET}; no stable DELETE route is documented in this script."
+      ;;
+    *)
+      die "Unknown target: ${TARGET}"
+      ;;
+  esac
+}
+
+validate_manifest() {
+  local file="$1"
+  local json raw_json content_file content_path name kind
+  validate_placeholders "${file}"
+  json="$(manifest_json "${file}")" || return $?
+  name="$(jq -r '.metadata.name // .spec.name // .name // empty' <<< "${json}")"
+  kind="$(jq -r '.kind // empty' <<< "${json}")"
+  [[ -n "${name}" ]] || die "Missing manifest name in ${file}"
+  [[ -n "${kind}" ]] || die "Missing kind in ${file}"
+  validate_current_api_contract "${file}" "${kind}" "${json}"
+
+  raw_json="$(render_yaml_to_json "${file}")" || return $?
+  if [[ "$(jq -r '(.spec.files // empty) | type' <<< "${raw_json}")" == "array" ]]; then
+    local entry entry_path
+    while IFS= read -r entry; do
+      [[ "${entry}" = /* ]] && entry_path="${entry}" || entry_path="$(cd "$(dirname "${file}")" && pwd)/${entry}"
+      [[ -f "${entry_path}" ]] || die "Missing file ${entry_path} referenced by ${file}"
+    done < <(jq -r '.spec.files[]' <<< "${raw_json}")
     return 0
   fi
-
-  while IFS= read -r file; do
-    [[ -z "${file}" ]] && continue
-    count=$((count + 1))
-    if [[ "${COMMAND}" == "apply" ]]; then
-      run_apply_step "knowledge-files: ${file}" upload_knowledge_file "${file}"
-    else
-      upload_knowledge_file "${file}"
-    fi
-  done < <(selected_or_all_knowledge_files)
-
-  [[ "${assert_match}" != "true" || "${count}" -gt 0 ]] \
-    || die "No knowledge file matched target ${TARGET} name ${RESOURCE_NAME:-<all>}"
+  content_file="$(jq -r '.spec.content_file // empty' <<< "${raw_json}")"
+  [[ -z "${content_file}" ]] && return 0
+  if [[ "${content_file}" = /* ]]; then
+    content_path="${content_file}"
+  else
+    content_path="$(cd "$(dirname "${file}")" && pwd)/${content_file}"
+  fi
+  [[ -f "${content_path}" ]] || die "Missing content file ${content_path} referenced by ${file}"
 }
 
-# Delete knowledge files, optionally asserting at least one match.
-delete_knowledge_files() {
-  local assert_match="${1:-false}" directory="${CONFIG_DIR}/knowledge/files"
-  local file count=0
+validate_current_api_contract() {
+  local file="$1"
+  local kind="$2"
+  local json="$3"
 
-  [[ -d "${directory}" || -n "${RESOURCE_FILE}" ]] || return 0
-
-  while IFS= read -r file; do
-    [[ -z "${file}" ]] && continue
-    count=$((count + 1))
-    delete_knowledge_file "${file}"
-  done < <(selected_or_all_knowledge_files)
-
-  [[ "${assert_match}" != "true" || "${count}" -gt 0 ]] \
-    || die "No knowledge file matched target ${TARGET} name ${RESOURCE_NAME:-<all>}"
+  case "${kind}" in
+    Skill)
+      jq -e '.spec | has("safety")' <<< "${json}" >/dev/null && \
+        die "${file}: skill safety metadata is not part of the current Skill API; run mode belongs on the trigger"
+      # Supporting files are keyed by filePath; any other element shape is rejected by the service.
+      jq -e '(.spec.additionalFiles // []) | all(has("filePath") and has("content"))' <<< "${json}" >/dev/null || \
+        die "${file}: every skill supporting file must resolve to an object with filePath and content"
+      ;;
+    SubAgent)
+      jq -e '.spec | has("agent_type") or has("agentType")' <<< "${json}" >/dev/null && \
+        die "${file}: subagent run mode belongs on its response plan or scheduled task; agent_type/agentType is not supported"
+      [[ "$(jq -r '(.spec.handoffs // []) | length' <<< "${json}")" -eq 0 ]] || \
+        die "${file}: new agent-to-agent handoffs are not supported in workspace mode"
+      [[ "$(jq -r '(.spec.agents_as_tools // .spec.agentsAsTools // []) | length' <<< "${json}")" -eq 0 ]] || \
+        die "${file}: new agents-as-tools entries are not supported in workspace mode"
+      ;;
+    IncidentFilter)
+      jq -e '.spec | has("customInstructions")' <<< "${json}" >/dev/null && \
+        die "${file}: customInstructions is not part of the current IncidentFilter API"
+      [[ "$(jq -r '.spec.agentMode // empty' <<< "${json}")" == "Autonomous" ]] || \
+        die "${file}: every demo incident filter must declare agentMode: Autonomous"
+      [[ "$(jq -r '.spec.isEnabled // .spec.enabled // false' <<< "${json}")" == "true" ]] || \
+        die "${file}: every demo incident filter must be enabled"
+      ;;
+    ScheduledTask)
+      [[ "$(jq -r '.spec.mode // .spec.agentMode // empty' <<< "${json}")" == "Autonomous" ]] || \
+        die "${file}: every demo scheduled task must declare mode: Autonomous"
+      [[ "$(jq -r '.spec.enabled // .spec.isEnabled // false' <<< "${json}")" == "true" ]] || \
+        die "${file}: every demo scheduled task must be enabled"
+      ;;
+    AgentConnector)
+      [[ "$(jq -r '.spec.properties.dataConnectorType // empty' <<< "${json}")" != "GitHubOAuth" ]] || \
+        die "${file}: GitHubOAuth is deprecated; configure GitHub authentication through the GitHub Domains PAT API"
+      if [[ "$(jq -r '.spec.properties.dataConnectorType // empty' <<< "${json}")" == "Mcp" ]]; then
+        [[ -n "$(jq -r '.spec.properties.endpoint // empty' <<< "${json}")" ]] || \
+          die "${file}: MCP connectors require spec.properties.endpoint"
+        [[ -n "$(jq -r '.spec.properties.dataSource // empty' <<< "${json}")" ]] || \
+          die "${file}: MCP connectors require spec.properties.dataSource"
+        [[ -n "$(jq -r '.spec.properties.extendedProperties.type // empty' <<< "${json}")" ]] || \
+          die "${file}: MCP connectors require spec.properties.extendedProperties.type"
+        [[ -z "$(jq -r '.spec.properties.identity // empty' <<< "${json}")" ]] || \
+          [[ "$(jq -r '.spec.properties.identity' <<< "${json}")" == /subscriptions/* ]] || \
+          die "${file}: connector identity must be empty or a full ARM resource ID"
+        jq -e '.spec.properties.extendedProperties | has("customHeaders")' <<< "${json}" >/dev/null && \
+          die "${file}: use extendedProperties.headers, not the obsolete customHeaders field"
+      fi
+      ;;
+    Repository)
+      if [[ "$(jq -r '(.spec.type // "GitHub") | ascii_downcase' <<< "${json}")" == "github" ]]; then
+        [[ -z "$(jq -r '.spec.authConnectorName // empty' <<< "${json}")" ]] || \
+          die "${file}: GitHub Code Access uses the GitHub Domains PAT API, not authConnectorName"
+      fi
+      ;;
+  esac
+  return 0
 }
-
-# ── 12. Command implementations ───────────────────────────────────────────────
 
 validate_config() {
   local file count=0
@@ -1156,79 +1800,189 @@ validate_config() {
   load_env_file
   [[ -d "${CONFIG_DIR}" ]] || die "Configuration directory not found: ${CONFIG_DIR}"
   normalize_selection
+  validate_knowledge_exclusions
 
   if selection_requested; then
-    if [[ "${TARGET}" == "knowledge-files" ]]; then
-      [[ -n "${RESOURCE_FILE}" && -f "${RESOURCE_FILE}" ]] \
-        && { print_check ok "$(basename "${RESOURCE_FILE}")" ""; print_summary; return; }
-      while IFS= read -r file; do
-        [[ -z "${file}" ]] && continue
-        count=$((count + 1))
-      done < <(selected_or_all_knowledge_files)
-      [[ "${count}" -gt 0 ]] || die "No knowledge file matched target ${TARGET} name ${RESOURCE_NAME:-<all>}"
-      print_check ok "${TARGET}${RESOURCE_NAME:+/${RESOURCE_NAME}}" "${count} file(s)"
-      print_summary
+    if [[ "${TARGET}" == "custom-instructions" ]]; then
+      validate_custom_instructions
+      log "Configuration validation succeeded: custom-instructions"
       return 0
     fi
 
-    local dir="${T_DIR[${TARGET}]:-incident-platforms}"
-    while IFS= read -r file; do
-      [[ -z "${file}" ]] && continue
-      count=$((count + 1))
-      validate_manifest "${file}"
-      print_check ok "$(basename "${file}")" ""
-    done < <(selected_or_all_yaml_files "${dir}")
-    [[ "${count}" -gt 0 ]] || die "No manifest matched target ${TARGET} name ${RESOURCE_NAME:-<all>}"
-    print_summary
+    if [[ "${TARGET}" == "knowledge-files" ]]; then
+      [[ -n "${RESOURCE_FILE}" ]] && [[ -f "${RESOURCE_FILE}" ]] && log "Configuration validation succeeded: ${RESOURCE_FILE}" && return 0
+      [[ -d "${CONFIG_DIR}/knowledge/files" ]] || die "Knowledge directory not found: ${CONFIG_DIR}/knowledge/files"
+      while IFS= read -r file; do
+        [[ -z "${file}" ]] && continue
+        if [[ -n "${RESOURCE_NAME}" ]]; then
+          knowledge_file_matches_name "${file}" "${RESOURCE_NAME}" || continue
+        fi
+        count=$((count + 1))
+      done < <(find_knowledge_files "${CONFIG_DIR}/knowledge/files")
+      [[ "${count}" -gt 0 ]] || die "No knowledge file matched target ${TARGET} name ${RESOURCE_NAME:-<all>}"
+      log "Configuration validation succeeded: ${TARGET}${RESOURCE_NAME:+/${RESOURCE_NAME}}"
+      return 0
+    fi
+
+    validate_selected_manifests
     return 0
   fi
 
-  print_header "Validating: ${CONFIG_DIR}"
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    validate_manifest "${file}"
+  done < <(find_all_yaml_files)
+
+  validate_custom_instructions
+
+  log "Configuration validation succeeded: ${CONFIG_DIR}"
+}
+
+validate_selected_manifests() {
+  local file count=0 relative_dir
+  relative_dir="$(target_relative_dir "${TARGET}")"
   while IFS= read -r file; do
     [[ -z "${file}" ]] && continue
     count=$((count + 1))
     validate_manifest "${file}"
-    print_check ok "${file#"${CONFIG_DIR}/"}" ""
-  done < <(find_all_yaml_files)
+  done < <(selected_yaml_files "${relative_dir}")
 
-  if [[ "${count}" -eq 0 ]]; then
-    print_check warn "No YAML files found" ""
-  fi
-  print_summary
+  [[ "${count}" -gt 0 ]] || die "No manifest matched target ${TARGET} name ${RESOURCE_NAME:-<all>}"
+  log "Configuration validation succeeded: ${TARGET}${RESOURCE_NAME:+/${RESOURCE_NAME}}"
+}
+
+target_relative_dir() {
+  case "$1" in
+    skills) printf 'skills\n' ;;
+    subagents) printf 'subagents\n' ;;
+    tools) printf 'tools\n' ;;
+    common-prompts) printf 'common-prompts\n' ;;
+    scheduled-tasks) printf 'automations/scheduled-tasks\n' ;;
+    incident-filters) printf 'automations/incident-filters\n' ;;
+    connectors) printf 'connectors\n' ;;
+    repos) printf 'repos\n' ;;
+    hooks) printf 'hooks\n' ;;
+    plugin-configs) printf 'plugin-configs\n' ;;
+    http-triggers) printf 'automations/http-triggers\n' ;;
+    plugin-marketplaces) printf 'plugins/marketplaces\n' ;;
+    plugin-installations) printf 'plugins/installations\n' ;;
+    *) die "Target $1 does not map to YAML manifests" ;;
+  esac
 }
 
 apply_all_config() {
   [[ "${COMMAND}" == "plan" ]] || ensure_endpoint
-  # Pre-fetch the token once in the main shell; all subshells will inherit
-  # the _TOKEN_FILE path and avoid repeated az account get-access-token calls.
-  [[ "${COMMAND}" == "plan" ]] || _ensure_token
 
-  [[ "${COMMAND}" != "apply" ]] || APPLY_FAILURES=()
+  if [[ "${COMMAND}" == "plan" ]]; then
+    apply_custom_instructions
+    apply_extension_directory "skills" data_put_skill
+    apply_extension_directory "subagents" data_put_subagent
+    apply_extension_directory "tools" data_put_tool
+    apply_extension_directory "common-prompts" data_put_common_prompt
+    apply_extension_directory "automations/scheduled-tasks" data_put_scheduled_task
+    apply_extension_directory "automations/incident-filters" data_put_incident_filter
 
-  local target
-  for target in skills subagents tools common-prompts scheduled-tasks incident-filters \
-                connectors repos hooks plugin-configs http-triggers \
-                plugin-marketplaces plugin-installations; do
-    apply_directory "${T_PUT[$target]}" "${T_DIR[$target]}" "${target}"
-  done
+    apply_data_directory "connectors" "/api/v2/extendedAgent/connectors"
+    apply_repos
+    apply_extension_directory "hooks" data_put_hook
+    apply_data_directory "plugin-configs" "/api/v2/extendedAgent/plugins"
+    apply_post_directory "automations/http-triggers" "/api/v1/httptriggers/create"
+    apply_post_directory "plugins/marketplaces" "/api/v2/plugins/marketplaces"
+    apply_post_directory "plugins/installations" "/api/v2/plugins/installations"
+    remove_excluded_knowledge_files
+    upload_knowledge_files
+    return 0
+  fi
 
-  # incident-platforms: ARM PATCH (not in T_PUT — uses a dedicated function).
-  apply_directory apply_incident_platform_file "incident-platforms" "incident-platforms"
+  APPLY_FAILURES=()
 
-  # knowledge-files: multipart upload (not a standard YAML PUT).
-  apply_knowledge_files
+  run_apply_step "custom-instructions" apply_custom_instructions
+  apply_extension_directory_best_effort "skills" data_put_skill "skills"
+  apply_extension_directory_best_effort "subagents" data_put_subagent "subagents"
+  apply_extension_directory_best_effort "tools" data_put_tool "tools"
+  apply_extension_directory_best_effort "common-prompts" data_put_common_prompt "common-prompts"
+  apply_extension_directory_best_effort "automations/scheduled-tasks" data_put_scheduled_task "scheduled-tasks"
+  apply_extension_directory_best_effort "automations/incident-filters" data_put_incident_filter "incident-filters"
 
-  [[ "${COMMAND}" != "apply" ]] || finish_full_apply
+  ensure_endpoint
+  apply_data_directory_best_effort "connectors" "/api/v2/extendedAgent/connectors" "connectors"
+  apply_repos_best_effort
+  apply_extension_directory_best_effort "hooks" data_put_hook "hooks"
+  apply_data_directory_best_effort "plugin-configs" "/api/v2/extendedAgent/plugins" "plugin-configs"
+  apply_post_directory_best_effort "automations/http-triggers" "/api/v1/httptriggers/create" "http-triggers"
+  apply_post_directory_best_effort "plugins/marketplaces" "/api/v2/plugins/marketplaces" "plugin-marketplaces"
+  apply_post_directory_best_effort "plugins/installations" "/api/v2/plugins/installations" "plugin-installations"
+  run_apply_step "knowledge-exclusions" remove_excluded_knowledge_files
+  upload_knowledge_files_best_effort
+
+  finish_full_apply
 }
 
 apply_selected_config() {
-  [[ "${COMMAND}" == "plan" ]] || ensure_endpoint
-  [[ "${COMMAND}" == "plan" ]] || _ensure_token
-
   case "${TARGET}" in
-    knowledge-files)    apply_knowledge_files "true" ;;
-    incident-platforms) apply_directory apply_incident_platform_file "incident-platforms" "incident-platforms" "true" ;;
-    *)                  apply_directory "${T_PUT[$TARGET]}" "${T_DIR[$TARGET]}" "${TARGET}" "true" ;;
+    custom-instructions)
+      [[ "${COMMAND}" == "plan" ]] || ensure_endpoint
+      apply_custom_instructions
+      ;;
+    skills)
+      [[ "${COMMAND}" == "plan" ]] || ensure_endpoint
+      apply_extension_directory_selected "skills" data_put_skill
+      ;;
+    subagents)
+      [[ "${COMMAND}" == "plan" ]] || ensure_endpoint
+      apply_extension_directory_selected "subagents" data_put_subagent
+      ;;
+    tools)
+      [[ "${COMMAND}" == "plan" ]] || ensure_endpoint
+      apply_extension_directory_selected "tools" data_put_tool
+      ;;
+    common-prompts)
+      [[ "${COMMAND}" == "plan" ]] || ensure_endpoint
+      apply_extension_directory_selected "common-prompts" data_put_common_prompt
+      ;;
+    scheduled-tasks)
+      [[ "${COMMAND}" == "plan" ]] || ensure_endpoint
+      apply_extension_directory_selected "automations/scheduled-tasks" data_put_scheduled_task
+      ;;
+    incident-filters)
+      [[ "${COMMAND}" == "plan" ]] || ensure_endpoint
+      apply_extension_directory_selected "automations/incident-filters" data_put_incident_filter
+      ;;
+    connectors)
+      [[ "${COMMAND}" == "plan" ]] || ensure_endpoint
+      apply_data_directory_selected "connectors" "/api/v2/extendedAgent/connectors"
+      ;;
+    repos)
+      [[ "${COMMAND}" == "plan" ]] || ensure_endpoint
+      apply_repos_selected
+      ;;
+    hooks)
+      [[ "${COMMAND}" == "plan" ]] || ensure_endpoint
+      apply_extension_directory_selected "hooks" data_put_hook
+      ;;
+    plugin-configs)
+      [[ "${COMMAND}" == "plan" ]] || ensure_endpoint
+      apply_data_directory_selected "plugin-configs" "/api/v2/extendedAgent/plugins"
+      ;;
+    http-triggers)
+      [[ "${COMMAND}" == "plan" ]] || ensure_endpoint
+      apply_post_directory_selected "automations/http-triggers" "/api/v1/httptriggers/create"
+      ;;
+    plugin-marketplaces)
+      [[ "${COMMAND}" == "plan" ]] || ensure_endpoint
+      apply_post_directory_selected "plugins/marketplaces" "/api/v2/plugins/marketplaces"
+      ;;
+    plugin-installations)
+      [[ "${COMMAND}" == "plan" ]] || ensure_endpoint
+      apply_post_directory_selected "plugins/installations" "/api/v2/plugins/installations"
+      ;;
+    knowledge-files)
+      [[ "${COMMAND}" == "plan" ]] || ensure_endpoint
+      if [[ -z "${RESOURCE_NAME}" && -z "${RESOURCE_FILE}" ]]; then
+        remove_excluded_knowledge_files
+      fi
+      upload_knowledge_files_selected
+      ;;
   esac
 }
 
@@ -1250,57 +2004,6 @@ apply_config() {
   fi
 }
 
-delete_all_config() {
-  ensure_endpoint
-  _ensure_token
-
-  # Delete in dependency order: infrastructure types first, then filter/task
-  # types that may reference them, and core types (skills, subagents) last.
-  local target
-  for target in plugin-configs hooks connectors repos; do
-    delete_directory "${T_DEL[$target]}" "${T_DIR[$target]}"
-  done
-
-  delete_knowledge_files
-
-  # Clear incident platform before removing filters (filters depend on platform).
-  local file
-  while IFS= read -r file; do
-    [[ -z "${file}" ]] && continue
-    delete_incident_platform
-    break
-  done < <(find_yaml_files "${CONFIG_DIR}/incident-platforms")
-
-  for target in incident-filters scheduled-tasks common-prompts tools subagents skills; do
-    delete_directory "${T_DEL[$target]}" "${T_DIR[$target]}"
-  done
-}
-
-delete_selected_config() {
-  ensure_endpoint
-  _ensure_token
-
-  case "${TARGET}" in
-    knowledge-files)    delete_knowledge_files "true" ;;
-    incident-platforms)
-      # Verify at least one manifest matches, then clear via ARM PATCH.
-      local file count=0
-      while IFS= read -r file; do
-        [[ -z "${file}" ]] && continue
-        count=$((count + 1))
-      done < <(selected_or_all_yaml_files "incident-platforms")
-      [[ "${count}" -gt 0 ]] || die "No manifest matched target ${TARGET} name ${RESOURCE_NAME:-<all>}"
-      delete_incident_platform
-      ;;
-    http-triggers|plugin-marketplaces|plugin-installations)
-      die "delete is not implemented for target ${TARGET}; no stable DELETE route is documented in this script."
-      ;;
-    *)
-      delete_directory "${T_DEL[$TARGET]}" "${T_DIR[$TARGET]}" "true"
-      ;;
-  esac
-}
-
 delete_config() {
   [[ "${YES}" == "true" ]] || die "delete requires --yes"
   require_azure_dependencies
@@ -1308,11 +2011,27 @@ delete_config() {
   require_arm_args
   normalize_selection
 
+  preflight_connector_delete
+
   if selection_requested; then
     delete_selected_config
-  else
-    delete_all_config
+    return 0
   fi
+
+  ensure_endpoint
+
+  delete_data_directory "plugin-configs" "/api/v2/extendedAgent/plugins"
+  delete_data_directory "hooks" "/api/v2/extendedAgent/hooks"
+  delete_data_directory "connectors" "/api/v2/extendedAgent/connectors"
+  delete_repos
+  delete_knowledge_files
+
+  delete_data_directory "automations/incident-filters" "/api/v2/extendedAgent/incidentFilters"
+  delete_data_directory "automations/scheduled-tasks" "/api/v2/extendedAgent/scheduledtasks"
+  delete_data_directory "common-prompts" "/api/v2/extendedAgent/commonprompts"
+  delete_tools
+  delete_data_directory "subagents" "/api/v2/extendedAgent/agents"
+  delete_data_directory "skills" "/api/v2/extendedAgent/skills"
 }
 
 selected_manifest_name() {
@@ -1325,67 +2044,106 @@ selected_manifest_name() {
   fi
 }
 
-verify_data_target() {
-  local endpoint_path="$1" name token
+verify_arm_target() {
+  local path="$1"
+  local name
   name="$(selected_manifest_name)"
-  token="$(data_plane_token)"
 
   if [[ -n "${name}" ]]; then
-    curl -fsS -H "Authorization: Bearer ${token}" "${ENDPOINT}${endpoint_path}/${name}" | jq '.'
+    az rest --method GET \
+      --url "$(arm_agent_base_url)/${path}/${name}?api-version=${ARM_API_VERSION}" \
+      --query '{name:name,type:type}' \
+      --output table
   else
-    curl -fsS -H "Authorization: Bearer ${token}" "${ENDPOINT}${endpoint_path}" \
-      | jq -r '(.value // . // []) | if type == "array" then .[]?.name // .[]?.metadata?.name // empty else empty end'
+    az rest --method GET \
+      --url "$(arm_agent_base_url)/${path}?api-version=${ARM_API_VERSION}" \
+      --query 'value[].name' \
+      --output table
+  fi
+}
+
+verify_data_target() {
+  local endpoint_path="$1"
+  local name
+  name="$(selected_manifest_name)"
+
+  if [[ -n "${name}" ]]; then
+    curl -fsS -H "Authorization: Bearer $(data_plane_token)" "${ENDPOINT}${endpoint_path}/${name}" | jq '.'
+  else
+    curl -fsS -H "Authorization: Bearer $(data_plane_token)" "${ENDPOINT}${endpoint_path}" | jq -r '(.value // . // []) | if type == "array" then .[]?.name // .[]?.metadata?.name // empty else empty end'
   fi
 }
 
 verify_data_collection_target() {
-  local endpoint_path="$1" name token
+  local endpoint_path="$1"
+  local name
   name="$(selected_manifest_name)"
-  token="$(data_plane_token)"
 
   if [[ -n "${name}" ]]; then
-    curl -fsS -H "Authorization: Bearer ${token}" "${ENDPOINT}${endpoint_path}" \
-      | jq -r --arg name "${name}" \
-          '(if type == "object" and has("value") then .value elif type == "array" then . else [] end)
-           | .[]? | (.name // .metadata.name // empty) | select(. == $name)'
+    curl -fsS -H "Authorization: Bearer $(data_plane_token)" "${ENDPOINT}${endpoint_path}" | jq -r --arg name "${name}" '(if type == "object" and has("value") then .value elif type == "array" then . else [] end) | .[]? | (.name // .metadata.name // empty) | select(. == $name)'
   else
-    curl -fsS -H "Authorization: Bearer ${token}" "${ENDPOINT}${endpoint_path}" \
-      | jq -r '(if type == "object" and has("value") then .value elif type == "array" then . else [] end)
-               | .[]? | (.name // .metadata.name // empty)'
+    curl -fsS -H "Authorization: Bearer $(data_plane_token)" "${ENDPOINT}${endpoint_path}" | jq -r '(if type == "object" and has("value") then .value elif type == "array" then . else [] end) | .[]? | (.name // .metadata.name // empty)'
   fi
 }
 
 verify_selected_target() {
   case "${TARGET}" in
-    incident-platforms)
-      az rest --method GET \
-        --url "$(arm_agent_base_url)?api-version=${ARM_API_VERSION}" \
-        --query 'properties.incidentManagementConfiguration' \
-        --output json | jq '.'
-      ;;
-    knowledge-files)
+    custom-instructions)
       curl -fsS -H "Authorization: Bearer $(data_plane_token)" \
-        "${ENDPOINT}/api/v1/agentmemory/status" | jq '.'
+        "${ENDPOINT}/api/v2/agent/customInstructions" | jq '.'
+      ;;
+    skills)
+      verify_data_target "/api/v2/extendedAgent/skills"
+      ;;
+    subagents)
+      verify_data_target "/api/v2/extendedAgent/agents"
       ;;
     tools)
       if [[ -n "${RESOURCE_NAME}" || -n "${RESOURCE_FILE}" ]]; then
-        local file
         while IFS= read -r file; do
           [[ -z "${file}" ]] && continue
           if is_manifest_api_preview_blocked "${file}"; then
             log "Skipped API-preview-blocked tool $(manifest_name "${file}")"
             return 0
           fi
-        done < <(selected_or_all_yaml_files "tools")
+        done < <(selected_yaml_files "tools")
       fi
-      verify_data_target "${T_VFY_EP[tools]}"
+      verify_data_target "/api/v2/extendedAgent/tools"
       ;;
-    *)
-      case "${T_VFY_MD[$TARGET]:-}" in
-        item) verify_data_target             "${T_VFY_EP[$TARGET]}" ;;
-        list) verify_data_collection_target  "${T_VFY_EP[$TARGET]}" ;;
-        *)    die "No verify implementation for target ${TARGET}" ;;
-      esac
+    common-prompts)
+      verify_data_target "/api/v2/extendedAgent/commonprompts"
+      ;;
+    scheduled-tasks)
+      verify_data_target "/api/v2/extendedAgent/scheduledtasks"
+      ;;
+    incident-filters)
+      verify_data_target "/api/v2/extendedAgent/incidentFilters"
+      ;;
+    connectors)
+      verify_agent_connector_manifests
+      verify_connector_v2_manifests
+      ;;
+    repos)
+      verify_data_target "/api/v2/repos"
+      ;;
+    hooks)
+      verify_data_target "/api/v2/extendedAgent/hooks"
+      ;;
+    plugin-configs)
+      verify_data_target "/api/v2/extendedAgent/plugins"
+      ;;
+    http-triggers)
+      verify_data_collection_target "/api/v1/httptriggers"
+      ;;
+    plugin-marketplaces)
+      verify_data_collection_target "/api/v2/plugins/marketplaces"
+      ;;
+    plugin-installations)
+      verify_data_collection_target "/api/v2/plugins/installations"
+      ;;
+    knowledge-files)
+      curl -fsS -H "Authorization: Bearer $(data_plane_token)" \
+        "${ENDPOINT}/api/v1/agentmemory/status" | jq '.'
       ;;
   esac
 }
@@ -1401,111 +2159,70 @@ verify_live() {
     return 0
   fi
 
-  _PASS_COUNT=0; _FAIL_COUNT=0; _WARN_COUNT=0
-
-  print_header "Azure SRE Agent — Live Configuration"
-  printf "  ${C_DIM}%s  /  %s  /  %s${C_RESET}\n" \
-    "${SUBSCRIPTION_ID}" "${RESOURCE_GROUP}" "${AGENT_NAME}"
-
-  # ── ARM: agent state ────────────────────────────────────────────────────────
-  print_header "ARM State"
-  local arm_json provisioning_state power_state endpoint_val
-  if arm_json="$(az rest --method GET \
+  log "Agent ARM state:"
+  az rest --method GET \
     --url "$(arm_agent_base_url)?api-version=${ARM_API_VERSION}" \
-    --query '{p:properties.provisioningState,s:properties.powerState,e:properties.agentEndpoint}' \
-    --output json 2>/dev/null)"; then
-    provisioning_state="$(jq -r '.p // "unknown"' <<< "${arm_json}")"
-    power_state="$(jq  -r '.s // "unknown"' <<< "${arm_json}")"
-    endpoint_val="$(jq  -r '.e // "unknown"' <<< "${arm_json}")"
-    [[ "${provisioning_state}" == "Succeeded" ]] \
-      && print_check ok   "Provisioning state" "${provisioning_state}" \
-      || print_check fail "Provisioning state" "${provisioning_state}"
-    [[ "${power_state}" == "Running" ]] \
-      && print_check ok   "Power state" "${power_state}" \
-      || print_check warn "Power state" "${power_state}"
-    print_check ok "Endpoint" "${endpoint_val}"
-  else
-    print_check fail "ARM GET" "failed — verify --subscription / --resource-group / --agent"
-  fi
+    --query '{name:name,provisioningState:properties.provisioningState,powerState:properties.powerState,endpoint:properties.agentEndpoint}' \
+    --output table
 
-  local connectors_json connector_names
-  if connectors_json="$(az rest --method GET \
-    --url "$(arm_agent_base_url)/DataConnectors?api-version=${ARM_API_VERSION}" \
-    --output json 2>/dev/null)"; then
-    connector_names="$(jq -r '[.value[].name] | join(", ")' <<< "${connectors_json}")"
-    [[ -n "${connector_names}" ]] \
-      && print_check ok   "DataConnectors" "${connector_names}" \
-      || print_check warn "DataConnectors" "(none configured)"
-  else
-    print_check fail "DataConnectors" "query failed"
-  fi
+  log "ARM sub-resource checks:"
+  log "- Connectors"
+  az rest --method GET \
+    --url "$(arm_agent_base_url)/connectors?api-version=${ARM_API_VERSION}" \
+    --query 'value[].name' \
+    --output tsv || true
 
-  # ── Data-plane: extended configuration ──────────────────────────────────────
-  print_header "Data-Plane Configuration"
-  local token
-  token="$(data_plane_token)"
+  log "Data-plane knowledge status:"
+  curl -fsS -H "Authorization: Bearer $(data_plane_token)" \
+    "${ENDPOINT}/api/v1/agentmemory/status" | jq '.' || true
 
-  _dp_check() {
-    local label="$1" path="$2" names
-    if names="$(curl -fsS -H "Authorization: Bearer ${token}" "${ENDPOINT}${path}" 2>/dev/null \
-      | jq -r '
-          (if type=="object" and has("value") then .value elif type=="array" then . else [] end)
-          | map(.name // .metadata.name // empty)
-          | map(select(length > 0))
-          | if length > 0 then join(", ") else "" end' 2>/dev/null)"; then
-      [[ -n "${names}" ]] \
-        && print_check ok   "${label}" "${names}" \
-        || print_check warn "${label}" "(none)"
-    else
-      print_check fail "${label}" "request failed"
-    fi
-  }
+  log "Agent-global custom instructions:"
+  curl -fsS -H "Authorization: Bearer $(data_plane_token)" \
+    "${ENDPOINT}/api/v2/agent/customInstructions" | jq -r '.instructions // empty' || true
 
-  _dp_check "Skills"               /api/v2/extendedAgent/skills
-  _dp_check "Subagents"            /api/v2/extendedAgent/agents
-  _dp_check "Tools"                /api/v2/extendedAgent/tools
-  _dp_check "Common prompts"       /api/v2/extendedAgent/commonprompts
-  _dp_check "Scheduled tasks"      /api/v2/extendedAgent/scheduledtasks
-  _dp_check "Incident filters"     /api/v2/extendedAgent/incidentFilters
-  _dp_check "Connectors"           /api/v2/extendedAgent/connectors
-  _dp_check "Hooks"                /api/v2/extendedAgent/hooks
-  _dp_check "Plugin configs"       /api/v2/extendedAgent/plugins
-  _dp_check "Repos"                /api/v2/repos
-  _dp_check "Plugin marketplaces"  /api/v2/plugins/marketplaces
-  _dp_check "Plugin installations" /api/v2/plugins/installations
-  _dp_check "HTTP triggers"        /api/v1/httptriggers
+  log "Data-plane extended config checks:"
+  for path in \
+    /api/v2/repos \
+    /api/v2/extendedAgent/skills \
+    /api/v2/extendedAgent/agents \
+    /api/v2/extendedAgent/tools \
+    /api/v2/extendedAgent/commonprompts \
+    /api/v2/extendedAgent/scheduledtasks \
+    /api/v2/extendedAgent/incidentFilters \
+    /api/v2/extendedAgent/hooks \
+    /api/v2/extendedAgent/plugins \
+    /api/v2/plugins/marketplaces \
+    /api/v2/plugins/installations \
+    /api/v1/httptriggers; do
+    log "- ${path}"
+    curl -fsS -H "Authorization: Bearer $(data_plane_token)" "${ENDPOINT}${path}" | jq -r '(if type == "object" and has("value") then .value elif type == "array" then . else [] end) | .[]? | (.name // .metadata.name // empty)' || true
+  done
 
-  # ── Knowledge base ───────────────────────────────────────────────────────────
-  print_header "Knowledge Base"
-  local kb_json kb_status
-  if kb_json="$(curl -fsS -H "Authorization: Bearer ${token}" \
-    "${ENDPOINT}/api/v1/agentmemory/status" 2>/dev/null)"; then
-    kb_status="$(jq -r '.status // .indexingStatus // "unknown"' <<< "${kb_json}" 2>/dev/null \
-      || printf 'unknown')"
-    [[ "${kb_status}" =~ ^(Ready|Indexed|Completed)$ ]] \
-      && print_check ok   "Status" "${kb_status}" \
-      || print_check warn "Status" "${kb_status}"
-  else
-    print_check warn "Status" "endpoint not available"
-  fi
-
-  print_summary
+  verify_agent_connector_manifests
+  verify_connector_v2_manifests
 }
-
-
-# ── 13. Entry point ───────────────────────────────────────────────────────────
 
 main() {
   parse_args "$@"
   resolve_config_dir
 
   case "${COMMAND}" in
-    validate)       validate_config ;;
-    plan|apply)     apply_config ;;
-    verify)         verify_live ;;
-    delete)         delete_config ;;
-    prune)          die "prune is intentionally blocked in v1. Export, diff, and explicitly delete reviewed resources instead." ;;
-    *)              usage; die "Unknown command: ${COMMAND}" ;;
+    validate)
+      validate_config
+      ;;
+    plan|apply)
+      apply_config
+      ;;
+    verify)
+      verify_live
+      ;;
+    delete)
+      delete_config
+      ;;
+    *)
+      usage
+      die "Unknown command: ${COMMAND}"
+      ;;
   esac
 }
 

@@ -1,15 +1,13 @@
 # Scheduled task that triages Grubify customer issues every 12 hours via the
 # issue-triager subagent. Imported from dm-chelupati/sre-agent-lab, retargeted to
-# microsoft/frontier-sre-agent-rvas (Grubify app under Student/Resources/grubify/).
-# Enabled and autonomous to match the lab.
-# GitHub access is provided by the github-mcp connector (PAT); the github OAuth connector
-# (connectors/github.yaml) is an optional redundant fallback that would need portal authorization.
+# lpassaretta_microsoft/grubify. Enabled and autonomous to match the lab.
+# GitHub access is provided by the interactively authorized github-mcp OAuth connector.
 api_version: azuresre.ai/v1
 kind: ScheduledTask
 metadata:
   name: triage-grubify-issues
 spec:
-  description: Triage customer issues in microsoft/frontier-sre-agent-rvas every 12 hours.
+  description: Triage customer issues in lpassaretta_microsoft/grubify every 12 hours.
   schedule: "0 */12 * * *"
   time_zone: UTC
   enabled: true
@@ -17,7 +15,7 @@ spec:
   mode: Autonomous
   prompt: >-
     Use the issue-triager subagent to list all open issues in
-    microsoft/frontier-sre-agent-rvas that have [Customer Issue] in the title and have
+    lpassaretta_microsoft/grubify that have [Customer Issue] in the title and have
     not been triaged yet. For each untriaged customer issue, classify it, add
     labels, and post a triage comment following the triage runbook in the
     knowledge base.

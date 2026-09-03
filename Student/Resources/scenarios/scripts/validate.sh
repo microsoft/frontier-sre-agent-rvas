@@ -22,7 +22,7 @@ printf '\nFlow log resources:\n'
 az resource list \
   --resource-group "${network_watcher_rg}" \
   --resource-type Microsoft.Network/networkWatchers/flowLogs \
-  --query "[?contains(name, 'vflta')].{name:name, location:location}" \
+  --query "[].{name:name, location:location}" \
   --output table || true
 
 printf '\nRaw flow log container check:\n'

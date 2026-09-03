@@ -81,7 +81,7 @@ resource "azurerm_linux_virtual_machine" "client" {
   network_interface_ids = [
     azurerm_network_interface.client.id
   ]
-  admin_password                  = "Use-A-Strong-Demo-Password-123!"
+  admin_password                  = var.vm_admin_password
   disable_password_authentication = false
   custom_data                     = local.demo_client_cloud_init
   tags                            = local.resource_tags
@@ -142,7 +142,7 @@ resource "azurerm_linux_virtual_machine" "web" {
   network_interface_ids = [
     azurerm_network_interface.web[count.index].id
   ]
-  admin_password                  = "Use-A-Strong-Demo-Password-123!"
+  admin_password                  = var.vm_admin_password
   disable_password_authentication = false
   custom_data                     = local.demo_web_cloud_init
   tags                            = local.resource_tags
@@ -207,7 +207,7 @@ resource "azurerm_linux_virtual_machine" "api" {
   network_interface_ids = [
     azurerm_network_interface.api.id
   ]
-  admin_password                  = "Use-A-Strong-Demo-Password-123!"
+  admin_password                  = var.vm_admin_password
   disable_password_authentication = false
   custom_data                     = local.demo_web_cloud_init
   tags                            = local.resource_tags
@@ -266,7 +266,7 @@ resource "azurerm_linux_virtual_machine" "db" {
   network_interface_ids = [
     azurerm_network_interface.db.id
   ]
-  admin_password                  = "Use-A-Strong-Demo-Password-123!"
+  admin_password                  = var.vm_admin_password
   disable_password_authentication = false
   custom_data                     = local.demo_web_cloud_init
   tags                            = local.resource_tags
@@ -325,7 +325,7 @@ resource "azurerm_linux_virtual_machine" "nva" {
   network_interface_ids = [
     azurerm_network_interface.nva.id
   ]
-  admin_password                  = "Use-A-Strong-Demo-Password-123!"
+  admin_password                  = var.vm_admin_password
   disable_password_authentication = false
   custom_data                     = local.demo_nva_cloud_init
   tags                            = local.resource_tags

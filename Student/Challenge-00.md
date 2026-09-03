@@ -1,6 +1,6 @@
 **[Home](../README.md)** — [Next Challenge >](./Challenge-01.md)
 
-# Challenge 00 — Prerequisites: Deploy the Lab & Create Your SRE Agent
+# Challenge 00 — Prerequisites: Deploy the Lab and Create Your SRE Agent
 
 ## Introduction
 
@@ -27,11 +27,11 @@ From the `Student/` directory:
 cd Student && make deploy
 ```
 
-This runs `terraform init` + `terraform apply` inside `Student/Resources/infra/`. It provisions all Azure workload resources (hub-spoke network, VMs, Grubify app, Parking Manager) but does **not** create an SRE Agent.
+This runs `terraform init` + `terraform apply` against the Student Terraform root at `Student/Resources/infra/`, then points the Grubify container apps at the published images. It provisions the workload only. Creating the Azure SRE Agent is your job, in Step 3.
 
 > First-time deployment takes approximately **15–20 minutes**. The Container Apps environment is the slowest resource to provision.
 
-### Step 3 — Create your SRE Agent
+### Step 3 — Create your Azure SRE Agent
 
 Before creating the agent, ensure the `Microsoft.App` resource provider is registered in your subscription:
 
@@ -39,44 +39,36 @@ Before creating the agent, ensure the `Microsoft.App` resource provider is regis
 az provider register --namespace "Microsoft.App"
 ```
 
-Then create the agent via the **SRE Agent portal**:
+Create the agent yourself in the **SRE Agent portal**. It is deliberately not part of the Terraform
+you just applied: building it, and then filling it with capabilities in Challenges 01 to 06, is the
+point of this workshop.
 
 1. Go to [https://sre.azure.com](https://sre.azure.com) and sign in.
-2. Select **Create agent**.
-3. Fill in: subscription, resource group, agent name, and region (i.e. Sweden Central).
-4. On **Resource groups**, add **all** of the following resource groups so the agent has visibility across the entire lab:
+2. Create an agent in a resource group of your choice, in **Sweden Central**, the same region as the
+   workload you just deployed.
+3. Confirm that its provisioning state is `Succeeded` and its power state is `Running`.
+4. Associate the four workload resource groups with the agent and give it **Contributor** permission.
+5. Print the resource groups the agent must watch, from the `Student/` directory:
 
    ```bash
-   # Print the full list from Terraform outputs
-   cd Student
-   terraform -chdir="Resources/infra" output -json parking_resource_groups
    terraform -chdir="Resources/infra" output hub_resource_group_name
+   terraform -chdir="Resources/infra" output web_api_resource_group_name
+   terraform -chdir="Resources/infra" output data_resource_group_name
+   terraform -chdir="Resources/infra" output sample_food_resource_group_name
    ```
 
-   The resource groups to associate are:
-   - `rg-hub` — hub network and Azure Firewall
-   - `rg-sre-spoke-web-api` — Grubify web and API VMs
-   - `rg-sre-spoke-data` — Grubify database VM
+   The certified profile is scoped to:
+   - `rg-sre-hub-connectivity` — hub network, Azure Firewall, Bastion, and shared observability
+   - `rg-sre-spoke-web-api-iaas` — client and web VMs
+   - `rg-sre-spoke-data-iaas` — API and database VMs
    - `rg-sre-spoke-foodapp-paas` — Sample Food / Grubify Container Apps
-   - `rg-sre-parking-lisbon` — Parking Manager Lisbon API
-   - `rg-sre-parking-berlin` — Parking Manager Berlin API and MCP server
-   - `rg-sre-parking-madrid` — Parking Manager Madrid API (Windows VM)
-   - `rg-sre-parking-paris` — Parking Manager Paris API (Ubuntu VM)
-   - `rg-sre-parking-chaos` — Parking Manager chaos control plane
 
-   > **If you skip any resource group the agent will be blind to that workload.** Challenges 07–18 span all of these resource groups — missing even one means the agent cannot query logs, metrics, or take remediation actions in that segment.
-
-5. Set permission level to **Contributor**.
-
-   > **Why Contributor, not Reader?** Challenges 11–15 require the agent to perform write actions — restarting VMs, deleting NSG rules, and removing UDRs. Reader permission allows investigation only; Contributor is required for autonomous remediation. All write actions are gated by skill tool grants and safety policies, so Contributor does not give the agent unconstrained access.
-
-6. Select **Create** and wait for deployment.
-
-Once provisioned, copy the **agent name** and **resource group** — you'll need them in the next step.
+The network analyst and the proactive scheduled tasks stay read-only even though the agent holds
+broader permissions for the remediation scenarios.
 
 ### Step 4 — Configure your .env file
 
-All subsequent `make` commands need to know your agent's resource group and name. Set them once now:
+Every `make` target that talks to the agent needs to know where it is. Record it once:
 
 ```bash
 cd Student
@@ -126,8 +118,8 @@ All four checks must succeed before proceeding. If `make validate` fails, re-run
 ## Success Criteria
 
 1. `make deploy` completes successfully and all workload resources are provisioned
-2. The SRE Agent resource exists in your resource group and the portal loads
-3. All 9 lab resource groups are associated with the agent in the portal
+2. You created the SRE Agent yourself and the portal loads it
+3. All lab resource groups are associated with the agent in the portal
 4. The agent permission level is **Contributor**
 5. `Student/.env` is configured with your `SRE_AGENT_RG` and `SRE_AGENT_NAME`
 6. Both `validate.sh` and `validate-sample-food-app.sh` return healthy

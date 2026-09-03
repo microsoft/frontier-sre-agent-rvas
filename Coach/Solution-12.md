@@ -11,7 +11,7 @@
 ## Mini-Lecture (3–5 min before challenge)
 
 - Draw the 5-tuple: app tier `10.20.0.0/16` → DB `10.30.2.10:5432/TCP` blocked by `Demo-Deny-App-To-Db-5432`.
-- Show the autonomous routing path: `alert-vflta-denied-flow-spike` → `network-observability-review` → `network-traffic-analyst`.
+- Show the autonomous routing path: `alert-denied-flow-spike` → `network-observability-review` → `network-traffic-analyst`.
 - Critical callout: in `NTANetAnalytics`, `FlowStatus` is the full word **`Denied`**, not `D`.
 - Explain Traffic Analytics lag: this is pattern analytics, not packet capture.
 
@@ -28,7 +28,7 @@
 - **Symptom:** Student filters on `FlowStatus == "D"`. **Fix:** correct them to `Denied` or denied counters.
 - **Symptom:** Agent finds a deny but not the rule name. **Fix:** push them to correlate `AclRule`/NSG rule output, not stop at the tuple.
 - **Symptom:** Application recovered but denied rows still appear in 24h window. **Fix:** narrow the time window and distinguish historical evidence from current state.
-- **Symptom:** Agent identifies the blocking rule but `az network nsg rule delete` is refused with a permission error. **Fix:** student set the agent permission to Reader in Challenge 00. In the SRE Agent portal → **Managed Resources**, change the permission to **Contributor** on the affected resource groups (`rg-sre-spoke-web-api` or the relevant network RG).
+- **Symptom:** Agent identifies the blocking rule but `az network nsg rule delete` is refused with a permission error. **Fix:** verify the Terraform-managed Contributor assignment covers `rg-sre-spoke-data-iaas`, where `nsg-data` owns the injected rule.
 
 ## Debrief Discussion Guide
 

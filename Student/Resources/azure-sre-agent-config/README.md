@@ -4,8 +4,6 @@ This directory is the Git source of truth for Azure SRE Agent configuration that
 
 The deployment script reads YAML files, optionally injects Markdown content through `spec.content_file`, converts the result to JSON, and calls the documented Azure SRE Agent APIs.
 
-For the complete operational manual, including one-by-one deployment commands for every manifest in this directory, full desired-state deployment, verification, troubleshooting, and serious examples, see [SRE Agent Config Script Guide](../docs/azure-sre-agent/sre-agent-config-script-guide.md).
-
 ## Directory Map
 
 | Directory | Purpose | API path |
@@ -13,12 +11,11 @@ For the complete operational manual, including one-by-one deployment commands fo
 | `skills/` | Reusable skills and their instructions | Data plane `/api/v2/extendedAgent/skills/{name}` |
 | `subagents/` | Specialized subagents | Data plane `/api/v2/extendedAgent/agents/{name}` |
 | `tools/` | Tool definitions | Data plane `/api/v2/extendedAgent/tools/{name}` |
-| `connectors/` | Data-plane connectors such as MCP or knowledge connectors | Data plane `/api/v2/extendedAgent/connectors/{name}` |
+| `connectors/` | MCP connectors and OAuth connector definitions | ARM `Microsoft.App/agents/connectors@2026-01-01` for `AgentConnector`; ConnectorV2 data-plane APIs for interactive OAuth |
 | `common-prompts/` | Shared prompts | Data plane `/api/v2/extendedAgent/commonprompts/{name}` |
 | `automations/scheduled-tasks/` | Recurring work | Data plane `/api/v2/extendedAgent/scheduledtasks/{name}` |
 | `automations/incident-filters/` | Incident routing filters | Data plane `/api/v2/extendedAgent/incidentFilters/{name}` |
 | `automations/http-triggers/` | HTTP trigger definitions | Data plane `/api/v1/httptriggers/create` |
-| `incident-platforms/` | Incident platform configuration (credential-bearing platforms only) | ARM agent PATCH for `incidentManagementConfiguration`. Note: the Azure Monitor platform is now owned by Terraform in the agent body; only `example-*` manifests remain here. |
 | `repos/` | Code repository connections | Data plane `/api/v2/repos/{name}` |
 | `hooks/` | Governance hooks | Data plane `/api/v2/extendedAgent/hooks/{name}` |
 | `plugin-configs/` | Plugin configurations | Data plane `/api/v2/extendedAgent/plugins/{name}` |
@@ -39,11 +36,15 @@ spec:
   description: Example description
 ```
 
-Long instructions should live in Markdown and be referenced from YAML:
+Long instructions should live in Markdown and be referenced from YAML. A skill declares an
+ordered list of files: the first entry is the skill body, every following entry is a supporting
+reference document that the agent can consult on demand.
 
 ```yaml
 spec:
-  content_file: ./example.md
+  files:
+    - ./example.md
+    - ./example/references/commands.md
 ```
 
 ### Example manifests
@@ -54,19 +55,26 @@ Files whose names start with `example-` are **excluded from deployment** by ever
 
 The VNet Flow Logs and Sample Food demo lab imports Azure SRE Agent configuration from the external branch `feature/app-sample-food-container-app` and normalizes it into this repository's YAML-plus-Markdown desired-state format.
 
-Skills (8 - the seven imported networking skills were consolidated into five on 2026-07-02 to
-stay within the official five-active-skills cap; see
-https://learn.microsoft.com/en-us/azure/sre-agent/skills):
+Skills (9). The seven imported networking skills were first consolidated into five to stay
+within the official five-active-skills cap
+(https://learn.microsoft.com/en-us/azure/sre-agent/skills). A later consolidation folded
+`nsg-deny-flow-investigation` and `udr-asymmetry-investigation` into `connectivity-diagnostics`,
+and three delivery-oriented skills were added:
 
 - `cost-optimization` (evolved from the imported `cost-retention-optimization` into a
-  subscription-wide FinOps skill - see [cost-optimization-agent.md](../docs/azure-sre-agent/cost-optimization-agent.md))
+  subscription-wide FinOps skill - the specialist that uses it is `subagents/cost-optimization-agent.yaml`)
 - `sample-food-container-app-incident-analysis`
 - `rbac-and-resource-access-check`
 - `vnet-flow-logs-and-ingestion` (merge of `vnet-flow-logs-troubleshooting` + `storage-flow-log-ingestion-check`)
-- `connectivity-diagnostics` (merge of `network-watcher-diagnostics` + `private-endpoint-traffic-analysis`)
+- `connectivity-diagnostics` (merge of `network-watcher-diagnostics` + `private-endpoint-traffic-analysis`,
+  and since the 2026-08 alignment also of `nsg-deny-flow-investigation` + `udr-asymmetry-investigation`)
 - `traffic-analytics-kql-analysis`
-- `nsg-deny-flow-investigation`
-- `udr-asymmetry-investigation`
+- `github-issue-triage` — turns a customer-reported GitHub issue into a triaged, labelled and
+  prioritised work item
+- `iaas-linux-service-recovery` — recovers a failed Linux service on an infrastructure virtual
+  machine, in guest, without a human operator
+- `source-fix-delivery` — delivers a proven code fix as a branch and a pull request, never a
+  direct write to the default branch
 
 Imported knowledge files:
 
@@ -77,9 +85,9 @@ Imported knowledge files:
 
 ## Imported Sample Food / Grubify Operational Assets
 
-The Sample Food / Grubify operational layer is imported from `dm-chelupati/sre-agent-lab`. The Grubify application now lives inside this repository (`microsoft/frontier-sre-agent-rvas`) under `Student/Resources/grubify/`, and the agent reads its source and opens fix pull requests there.
+The Sample Food / Grubify operational layer is imported from `dm-chelupati/sre-agent-lab`. The workshop source under `Student/Resources/grubify/` is immutable. Validation issue, branch, fix, and pull-request tests target `lpassaretta_microsoft/grubify` and are executed manually.
 
-Subagents (autonomous, with Azure CLI write tools, faithful to the upstream lab):
+Subagents:
 
 - `aca-app-incident-handler` (imported as `incident-handler`, renamed 2026-06-14 to a domain-speaking name)
 - `code-analyzer`
@@ -87,12 +95,46 @@ Subagents (autonomous, with Azure CLI write tools, faithful to the upstream lab)
 
 GitHub and incident-response surfaces:
 
-- `connectors/example-github-mcp.yaml` — **alternative GitHub path (disabled).** GitHub remote MCP server connector (`dataConnectorType: Mcp`, `type: http`, endpoint `https://api.githubcopilot.com/mcp/`, `authType: BearerToken`): inject a PAT via `${GITHUB_PAT}` at runtime. Non-interactive and scriptable. To enable instead of the OAuth connector: rename to `github-mcp.yaml`, set `GITHUB_PAT`, and add `mcp_tools: [github-mcp/*]` to the relevant subagents.
-- `connectors/github.yaml` — **active GitHub OAuth connector** (`dataConnectorType: GitHubOAuth`). Requires a **one-time interactive OAuth authorization in the SRE Agent portal** after first apply before GitHub tools become available. No secrets to manage. Covers S1/S2/S3 (issues, PRs, code search).
-- `repos/grubify.yaml` — Grubify source repository; `spec.authConnectorName` links it to the `github` OAuth connector.
-- Azure Monitor incident platform — **owned by Terraform** in the agent body (`incidentManagementConfiguration = { type: AzMonitor, connectionName: azmonitor }`, migrated 2026-06-14); there is no data-plane manifest for it.
-- `automations/incident-filters/` — three domain-routed response plans (domain-routing rule, 2026-06-14; each owns a failure domain keyed by incident title, disjoint by construction, and each wired to a real Azure Monitor alert in this lab): `sample-food-http-errors` (Sev1 `food` → `aca-app-incident-handler`, ACA app), `web-tier-nginx` (Sev2 `nginx` → `iaas-vm-incident-handler`, IaaS web tier), `network-observability-review` (Sev2 not `nginx` → `network-traffic-analyst`, hub networking). All Autonomous. The former dormant `hub-firewall-network` (Sev1 `afw`) and `config-audit-review` (Sev3) plans were removed 2026-07-02 because no Azure Monitor alert fires them in this lab.
-- `automations/scheduled-tasks/triage-grubify-issues.yaml` — triages Grubify customer issues every 12 hours via the `issue-triager` subagent.
+- `connectors/github-mcp.yaml` — GitHub managed connector exposed through ConnectorV2 as an MCP
+  server. OAuth consent is completed interactively in the portal; no Personal Access Token is
+  stored or injected anywhere in this repository. Branch and pull-request operations require
+  approval. This single connector now provides all GitHub access: the separate legacy
+  `connectors/github.yaml` manifest was removed because its `dataConnectorType: GitHubOAuth`
+  shape is deprecated and is rejected by the configuration contract validation.
+- `connectors/example-github-mcp.yaml` — historical Personal Access Token reference only;
+  excluded from deployment by the `example-` prefix rule.
+- `repos/grubify.yaml` — the repository the agent clones for the source-fix delivery flow. It is
+  **this workshop repository**, resolved automatically from the `origin` remote, because the
+  application source lives under `Student/Resources/grubify` and because the person running the
+  workshop must be able to review and merge the proposed fix on a repository they own.
+
+  Scope warning: the Azure SRE Agent repository resource exposes no field that restricts the agent
+  to a subdirectory, so the whole repository is cloned. Confining the agent to the Grubify folder
+  is a behavioural rule stated in `custom-instructions.md`, in the `code-analyzer` and
+  `aca-app-incident-handler` subagents and in the `source-fix-delivery` skill. It is not a
+  boundary enforced by the platform, and the workshop material says so openly.
+- Azure Monitor incident platform — **owned by Terraform** in the agent body
+  (`incidentManagementConfiguration = { type: AzMonitor, connectionName: azmonitor }`); there is
+  no data-plane manifest for it.
+- `automations/incident-filters/` — three domain-routed response plans: `sample-food-http-errors`,
+  `web-tier-nginx`, and `network-observability-review`, plus the workshop-specific
+  `parking-vm-unhealthy` plan. The network specialist runs fully autonomously and applies the
+  proven remediation itself; scenario restore scripts remain available to the operator.
+- `automations/scheduled-tasks/triage-grubify-issues.yaml` — triages Grubify customer issues
+  every 12 hours via the `issue-triager` subagent.
+- `automations/scheduled-tasks/agent-quality-review.yaml` — periodically reviews the agent's own
+  investigation quality through the `agent-quality-reviewer` subagent, so configuration drift and
+  degraded reasoning are detected without waiting for a live incident.
+
+## Agent-global custom instructions and retrieval exclusions
+
+- `custom-instructions.md` — instructions applied to every investigation the agent performs,
+  independently of which subagent or skill handles it.
+- `knowledge/.knowledgeignore` — documents that must stay in Git but must never enter agent
+  retrieval. The decisive rule is scenario integrity: any document that names a fault-injection or
+  restore script is excluded, because an agent that retrieved it during an investigation would
+  cite the script that caused the fault instead of discovering the cause from the evidence, which
+  destroys the demonstrative value of the exercise.
 
 ## Domain-routing re-architecting (2026-06-14)
 
@@ -101,9 +143,11 @@ Incident response plans were re-architected from severity-only bands to a **doma
 - `subagents/iaas-vm-incident-handler.yaml` — new Autonomous IaaS web-tier handler (Syslog-based diagnosis + autonomous in-guest `az vm run-command` restart) that owns the NGINX-down / VM service-health domain, previously mis-routed to `network-traffic-analyst`.
 - `automations/incident-filters/web-tier-nginx.yaml` — the new Sev2 web-tier domain plan; `network-traffic-analyst` keeps the hub networking domain (NSG/UDR/VNet-flow) via `network-observability-review`.
 
-> **Pruned 2026-07-02.** The originally-added `hub-firewall-network` (Sev1 `afw`) and the severity-only `config-audit-review` (Sev3) plans were removed as dormant: this lab has no `afw`-titled or Sev3 Azure Monitor alert, so neither ever fired. Official guidance is to keep only response plans wired to real incidents (https://learn.microsoft.com/en-us/azure/sre-agent/incident-response-plans).
-
-All incident-handling plans and subagents run Autonomous (maximum-autonomy posture); for the production-posture exception see [ADR 0001](../docs/azure-sre-agent/adr/0001-sre-agent-iac-boundaries.md).
+Network observability now runs fully autonomously: `network-traffic-analyst` diagnoses the fault
+and applies the smallest reversible remediation itself, then verifies that the symptom is gone.
+This is deliberate for a non-production demo laboratory in which every scenario ships a restore
+script. The run mode is declared on the response plan and on the scheduled task that invoke the
+subagent, never inside the subagent manifest: the configuration contract rejects `agent_type`.
 
 ## Secrets
 
@@ -115,7 +159,8 @@ Enterprise deployments should use CI/CD secrets or Key Vault-backed injection.
 
 The script requires `jq` and either Python 3 with PyYAML or a compatible `yq`. Python/PyYAML is preferred because `yq` implementations differ across platforms.
 
-Run commands from the repository root. The script resolves this directory through `.sre-agent-layout.env` by default.
+Run commands from `Student/Resources/`. The Student Makefile exports this configuration directory;
+direct script execution resolves the same deterministic Student default.
 
 ```bash
 ./infra/scripts/sre-agent-config.sh validate
@@ -124,7 +169,10 @@ Run commands from the repository root. The script resolves this directory throug
 ./infra/scripts/sre-agent-config.sh verify --subscription <sub> --resource-group <rg> --agent <agent>
 ```
 
-By default, `plan` and `apply` process the full desired state under this directory. Use selective deployment when validating one surface or one manifest at a time.
+Use `make config-sre-agent` for the default broad deployment. It runs validate,
+plan, apply, and verify across every non-`example-*` object and knowledge file in this inventory.
+The wrapper resolves the Berlin MCP endpoint from Terraform output; its authentication token is
+optional for the lab and can be supplied through `Student/.env`.
 
 Full desired-state deployment:
 
@@ -135,11 +183,33 @@ Full desired-state deployment:
 ./infra/scripts/sre-agent-config.sh verify --subscription <sub> --resource-group <rg> --agent <agent>
 ```
 
-The `connectors/example-github-mcp.yaml` connector (MCP/PAT alternative) is disabled. The active GitHub connector is `connectors/github.yaml` (OAuth). After the first apply, complete the **one-time OAuth authorization** in the SRE Agent portal (Connectors → github → Authorize) before GitHub tools become available to subagents. The Outlook and Teams notification connectors are portal-provisioned (`example-*`, excluded from apply) and need no repo secret.
+The certified profile has three connector manifests: ARM-managed `berlin-monitoring-v6` and
+`microsoft-learn-mcp`, plus the data-plane ConnectorV2 `github-mcp`. Complete OAuth consent for
+`github-mcp` in the SRE Agent portal. Files prefixed `example-*` remain excluded unless explicitly
+selected for a controlled validation run.
 
 ## Selective Deployment
 
-Use `--target` to deploy one configuration surface, `--name` to deploy one manifest inside that surface, and `--file` to deploy one manifest by path.
+Selection is optional and intended for focused tests or controlled maintenance. With Make, use
+`CONFIG_TARGET`, `CONFIG_NAME`, or `CONFIG_FILE`:
+
+```bash
+# Broad validate -> plan -> apply -> verify (default)
+make config-sre-agent
+
+# Focus all four phases on one connector
+make config-sre-agent \
+  CONFIG_TARGET=connectors \
+  CONFIG_NAME=github-mcp
+
+# Apply every non-example skill, or one named skill
+make skills
+make skills CONFIG_NAME=traffic-analytics-kql-analysis
+```
+
+With the script, use `--target` to deploy one configuration surface, `--name` to deploy one
+manifest inside that surface, and `--file` to deploy one manifest by path. Omitting all three
+selectors performs the broad operation.
 
 Examples:
 
@@ -190,7 +260,6 @@ Important shell note: multi-line commands require a trailing `\` on every contin
 | `common-prompts` | `common-prompts/` | Data-plane extendedAgent PUT |
 | `scheduled-tasks` | `automations/scheduled-tasks/` | Data-plane extendedAgent PUT |
 | `incident-filters` | `automations/incident-filters/` | Data-plane extendedAgent PUT |
-| `incident-platforms` | `incident-platforms/` | ARM agent PATCH |
 | `connectors` | `connectors/` | Data-plane PUT |
 | `repos` | `repos/` | Data-plane PUT |
 | `hooks` | `hooks/` | Data-plane PUT |

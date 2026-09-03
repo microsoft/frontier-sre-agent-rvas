@@ -35,5 +35,5 @@ Expected evidence after Traffic Analytics ingestion:
 - NTANetAnalytics FlowStatus == "Denied" (full word; the field is not the single letter "D")
 - AclRule contains Demo-Deny-App-To-Db-5432
 - SrcIp around ${client} and DestIp ${db} / DestPort 5432
-Restore with: ./Infra/scripts/restore-nsg-block.sh
+Restore with: make restore-nsg-block
 EOF

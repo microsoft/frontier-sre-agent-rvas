@@ -1,16 +1,11 @@
+---
+name: rbac-and-resource-access-check
+description: Diagnose Azure SRE Agent access, managed identity permissions, user roles, and least-privilege RBAC gaps.
+---
+
 # rbac-and-resource-access-check
 
 Use this skill when Azure SRE Agent cannot see Azure resources, cannot query Log Analytics, cannot read monitoring data, cannot list Storage blobs, cannot use Resource Graph, or needs temporary elevation through On-Behalf-Of authorization.
-
-## Builder Upload Settings
-
-| Field | Value |
-| --- | --- |
-| Skill name | `rbac-and-resource-access-check` |
-| Primary purpose | Diagnose Azure SRE Agent access, managed identity permissions, user roles and least-privilege RBAC gaps. |
-| Recommended tools | `RunAzCliReadCommands`, `GetAzCliHelp`, `MicrosoftLearnMCP` |
-| Recommended knowledge files | `azure-sre-agent/azure-sre-agent-implementation-guide.md`, `documentation/deployment-guide.md`, `documentation/terraform-design.md` |
-| Default run mode | Review for any RBAC change; read-only diagnostics only by default. |
 
 ## Trigger Conditions
 
@@ -35,15 +30,12 @@ Azure SRE Agent access has three different layers. Diagnose the right layer.
 | Agent permissions on Azure resources | What the managed identity can access. | Reader, Log Analytics Reader, Monitoring Reader. |
 | Run mode | Whether the agent asks before acting. | Review or Autonomous per response plan/task. |
 
-## Recommended Least-Privilege Roles
+## Reference File
 
-| Scope | Role | Purpose |
-| --- | --- | --- |
-| Project resource group | Reader | Discover resources and properties. |
-| Project resource group or workspace | Log Analytics Reader | Query workspace/log data. |
-| Project resource group | Monitoring Reader | Read metrics and monitoring data. |
-| Subscription | Monitoring Contributor | Only if alert acknowledge/close lifecycle is required. |
-| Project resource group | Contributor | Avoid by default; only controlled Privileged scenarios. |
+`rbac-and-resource-access-check/references/rbac-commands.md` holds the least-privilege role map,
+the read-only diagnostic commands, the recommended assignment commands and the Terraform pattern.
+The path above is the exact name the file is registered under. Read it before proposing any role,
+so the recommendation matches the documented least-privilege map instead of a remembered one.
 
 ## Non-Goals
 
@@ -63,64 +55,6 @@ Azure SRE Agent access has three different layers. Diagnose the right layer.
 7. Recommend the narrowest missing role at the narrowest scope.
 8. If a write operation is requested and permissions are absent, explain OBO and require SRE Agent Administrator approval.
 9. Return exact CLI/Terraform examples as recommendations, not automatic changes.
-
-## Azure CLI Read Command Patterns
-
-### Get Current Account
-
-```bash
-az account show --output table
-```
-
-### List Role Assignments For Agent Principal
-
-```bash
-az role assignment list \
-  --assignee <sre-agent-principal-id> \
-  --all \
-  --output table
-```
-
-### Check Role Assignments At Scope
-
-```bash
-az role assignment list \
-  --assignee <sre-agent-principal-id> \
-  --scope <scope-resource-id> \
-  --output table
-```
-
-### Recommended Reader Assignment Command
-
-Do not run automatically unless explicitly approved.
-
-```bash
-az role assignment create \
-  --assignee <sre-agent-principal-id> \
-  --role Reader \
-  --scope /subscriptions/<subscription-id>/resourceGroups/<resource-group-name>
-```
-
-### Recommended Log Analytics Reader Assignment Command
-
-```bash
-az role assignment create \
-  --assignee <sre-agent-principal-id> \
-  --role "Log Analytics Reader" \
-  --scope /subscriptions/<subscription-id>/resourceGroups/<resource-group-name>
-```
-
-## Terraform Recommendation Pattern
-
-Recommend this only when the team wants RBAC managed as IaC.
-
-```hcl
-resource "azurerm_role_assignment" "sre_agent_reader" {
-  scope                = azurerm_resource_group.demo.id
-  role_definition_name = "Reader"
-  principal_id         = var.sre_agent_principal_id
-}
-```
 
 ## OBO Guidance
 
@@ -153,7 +87,7 @@ Scope: <resource/resource group/subscription>
 Current permissions: <roles found or unknown>
 Missing permission: <role/action/data action>
 Recommended fix: <least-privilege role + scope>
-Execution mode: Read-only recommendation | Review-mode RBAC change | OBO approval required
+Execution path: Read-only recommendation | active-trigger-permitted RBAC change | OBO approval required
 References:
 - <official RBAC/SRE Agent URL>
 ```

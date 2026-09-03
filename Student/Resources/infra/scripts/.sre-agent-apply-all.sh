@@ -20,8 +20,19 @@ ENV_FILE="${SCRIPT_DIR}/../../.env"
 [[ -n "${BERLIN_MCP_URL:-}" ]] && export BERLIN_MCP_URL
 [[ -n "${BERLIN_MCP_AUTH_TOKEN:-}" ]] && export BERLIN_MCP_AUTH_TOKEN
 
-# Layout contract: config dir relative to this script.
-export SRE_AGENT_CONFIG_DIR=../../azure-sre-agent-config
+# Layout contract: sre-agent-config.sh resolves a relative SRE_AGENT_CONFIG_DIR against
+# STUDENT_ROOT (Student/), not against this script's directory.
+export SRE_AGENT_CONFIG_DIR=Resources/azure-sre-agent-config
+
+# The agent clones this repository for the Grubify exercise, so the address must be the copy the
+# operator owns. It is derived from the `origin` remote, with a Secure Shell remote rewritten to
+# its browsable form. Export GRUBIFY_REPO_URL beforehand to override it.
+if [[ -z "${GRUBIFY_REPO_URL:-}" ]]; then
+  GRUBIFY_REPO_URL="$(git config --get remote.origin.url 2>/dev/null |
+    sed -e 's|^git@github.com:|https://github.com/|' -e 's|\.git$||')"
+fi
+: "${GRUBIFY_REPO_URL:?GRUBIFY_REPO_URL is not set and no origin remote was found. Export it or add an origin remote.}"
+export GRUBIFY_REPO_URL
 
 # Resolve subscription from Terraform outputs if not already set.
 if [[ -z "${SRE_AGENT_SUB:-}" ]]; then

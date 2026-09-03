@@ -1,0 +1,22 @@
+# Weekly measurement loop over the agent's own output quality. Read-only.
+api_version: azuresre.ai/v1
+kind: ScheduledTask
+metadata:
+  name: agent-quality-review
+spec:
+  description: Weekly read-only review of the SRE Agent's own investigation and report quality, with pass rates per criterion and week-over-week trend.
+  schedule: "0 9 * * 1"
+  time_zone: UTC
+  enabled: true
+  agent: agent-quality-reviewer
+  mode: Autonomous
+  prompt: >-
+    Review the quality of this agent's own work over the last seven days. Sample the
+    investigations, incident threads, and scheduled-task runs in that window. Score each one
+    against the incident report template completeness, evidence citation, verification of any
+    claimed remediation, the explicit distinction between proposed, executed, and verified, the
+    Italian operator language with literal technical identifiers, and for source-code work whether
+    the change removed the causal mechanism and showed a regression test failing before and
+    passing after. Report the sample size, the pass rate per criterion, the week-over-week trend,
+    the three weakest items with the responsible sub-agent, and the smallest instruction or skill
+    change that would prevent each recurring defect. Recommend only; change nothing.

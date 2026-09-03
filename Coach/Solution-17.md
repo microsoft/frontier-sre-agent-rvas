@@ -10,22 +10,22 @@
 
 ## Mini-Lecture (3–5 min before challenge)
 
-- Draw the pipeline with expected timing: VNet Flow Logs blob write (~1 min) → Traffic Analytics aggregation (~10 min) → Log Analytics ingestion (2–5 min) → about 15 minutes end to end.
+- Draw the evidence chain: enabled VNet Flow Log → configured private Storage destination → recent Storage `Transactions` metrics → Traffic Analytics aggregation (10 min) → newest `NTANetAnalytics` record.
 - Name the scheduled task exactly: `flow-log-ingestion-freshness`, every 6 hours, `network-traffic-analyst`, `Autonomous`.
 - Explain desired-state comparison: expected VNets from Terraform vs actual VNets seen in `NTANetAnalytics`.
 - Stress that a healthy app plus stale telemetry is still an operational emergency.
 
 ## Expected Student Output
 
-- Student checks blob freshness per VNet flow-log source and latest `NTANetAnalytics` timestamps.
+- Student checks all three flow-log ARM configurations, recent Storage `Transactions`, and latest `NTANetAnalytics` timestamps.
 - Output calls out expected vs actual VNet coverage: hub, app spoke, data spoke.
 - Student can explain the full telemetry chain and where it can break silently.
 - Student can justify the higher cadence relative to the daily network health report.
 
 ## Common Issues and Hints
 
-- **Symptom:** Student only queries Log Analytics. **Fix:** require storage-side blob freshness too; otherwise they are not validating the full pipeline.
-- **Symptom:** They expect zero lag. **Fix:** remind them ~15 minutes is normal end-to-end latency.
+- **Symptom:** Student only queries Log Analytics. **Fix:** require flow-log ARM state and Storage transaction metrics too; otherwise they are not validating the full pipeline.
+- **Symptom:** They expect zero lag. **Fix:** compare against the configured 10-minute processing interval and observed ingestion delay.
 - **Symptom:** Missing VNet not detected. **Fix:** compare against Terraform outputs or documented expected VNets explicitly.
 - **Symptom:** Storage data-plane read fails. **Fix:** treat that as a permission finding, not proof the blobs are absent.
 
@@ -38,4 +38,4 @@
 ## Success Criteria Notes
 
 - Be strict on the full chain, not just one hop.
-- Accept conceptual explanation of blob checks if RBAC blocks storage listing, but have the student name that RBAC gap explicitly.
+- Do not accept weakening Storage access as a workaround; require the metrics-based evidence path.

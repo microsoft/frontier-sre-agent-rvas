@@ -6,7 +6,7 @@
 - Severity:
 - Start time UTC:
 - End time UTC:
-- Affected component: API | Frontend | Container Apps Environment | ACR | Observability
+- Affected component: API | Frontend | Container Apps Environment | Public image dependency | Observability
 - Customer/user impact:
 
 ## Evidence
@@ -44,6 +44,3 @@
 - Preventive action:
 - Terraform or documentation update needed:
 - Alert/query tuning needed:
-
-- Documentation update:
-- Alert/query update:

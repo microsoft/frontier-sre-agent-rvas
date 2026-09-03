@@ -8,7 +8,7 @@ The Sample Food Ordering App lab is an optional application workload integrated 
 | --- | --- | --- |
 | Frontend | Azure Container Apps | `sample_food_frontend_container_app_name`, `sample_food_frontend_url` |
 | API | Azure Container Apps | `sample_food_api_container_app_name`, `sample_food_api_url` |
-| Container registry | Azure Container Registry | `sample_food_container_registry_name` |
+| Container registry | GitHub Packages, public. Images are pulled anonymously, so the container apps hold no registry credential and no pull identity | `ghcr.io/<owner>/<repository>/grubify-api` and `.../grubify-frontend` |
 | Runtime environment | Azure Container Apps Environment | `sample_food_resource_names.container_apps_environment` |
 | App telemetry | Application Insights | `sample_food_application_insights_resource_id` |
 | Log store | Log Analytics workspace | `log_analytics_workspace_customer_id` |
@@ -27,11 +27,4 @@ The Sample Food Ordering App lab is an optional application workload integrated 
 Azure Container Apps workload traffic is not supported by Azure Virtual Network Flow Logs. Use Container Apps logs and Application Insights for application incident analysis. Use `NTANetAnalytics` for the existing VM/network lab and any explicitly deployed supported probe workload.
 
 Official source: https://learn.microsoft.com/en-us/azure/network-watcher/vnet-flow-logs-overview#incompatible-services
-
-## Operational Entry Points
-
-- Deploy images: `scripts/deploy-sample-food-images.sh`.
-- Validate runtime: `scripts/validate-sample-food-app.sh`.
-- Generate app traffic: `scripts/generate-sample-food-app-traffic.sh`.
-- Trigger controlled cart load: `scripts/break-sample-food-app.sh`.
 

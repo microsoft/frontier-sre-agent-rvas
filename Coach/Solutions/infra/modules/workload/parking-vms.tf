@@ -36,7 +36,7 @@ resource "azurerm_windows_virtual_machine" "madrid" {
   name                = "vm-parking-madrid"
   location            = azurerm_resource_group.parking_madrid.location
   resource_group_name = azurerm_resource_group.parking_madrid.name
-  size                = "Standard_B2s"
+  size                = "Standard_B2s_v2"
   computer_name       = "madrid-api"
   admin_username      = var.vm_admin_username
   admin_password      = var.vm_admin_password
@@ -55,7 +55,7 @@ resource "azurerm_windows_virtual_machine" "madrid" {
   os_disk {
     name                 = "osdisk-parking-madrid"
     caching              = "ReadWrite"
-    storage_account_type = "StandardSSD_LRS"
+    storage_account_type = "Standard_LRS"
     disk_size_gb         = 64
   }
 
@@ -134,13 +134,16 @@ resource "azurerm_linux_virtual_machine" "paris" {
   name                = "vm-parking-paris"
   location            = azurerm_resource_group.parking_paris.location
   resource_group_name = azurerm_resource_group.parking_paris.name
-  size                = "Standard_B2s"
+  size                = "Standard_B2s_v2"
   admin_username      = var.vm_admin_username
   network_interface_ids = [
     azurerm_network_interface.paris[0].id
   ]
   admin_password                  = var.vm_admin_password
   disable_password_authentication = false
+  encryption_at_host_enabled      = false
+  secure_boot_enabled             = false
+  vtpm_enabled                    = false
   tags                            = local.resource_tags
 
 
@@ -149,13 +152,14 @@ resource "azurerm_linux_virtual_machine" "paris" {
   bypass_platform_safety_checks_on_user_schedule_enabled = true
 
   identity {
-    type = "SystemAssigned"
+    identity_ids = []
+    type         = "SystemAssigned"
   }
 
   os_disk {
     name                 = "osdisk-parking-paris"
     caching              = "ReadWrite"
-    storage_account_type = "StandardSSD_LRS"
+    storage_account_type = "Standard_LRS"
     disk_size_gb         = 30
   }
 
@@ -192,6 +196,7 @@ resource "azurerm_virtual_machine_extension" "paris_ama" {
   type_handler_version       = "1.0"
   auto_upgrade_minor_version = true
   automatic_upgrade_enabled  = true
+  provision_after_extensions = []
   tags                       = local.resource_tags
 
 }
@@ -205,6 +210,8 @@ resource "azurerm_virtual_machine_extension" "paris_node_setup" {
   type                       = "CustomScript"
   type_handler_version       = "2.1"
   auto_upgrade_minor_version = true
+  automatic_upgrade_enabled  = false
+  provision_after_extensions = []
   tags                       = local.resource_tags
 
 
@@ -213,8 +220,8 @@ resource "azurerm_virtual_machine_extension" "paris_node_setup" {
       #!/bin/bash
       set -e
 
-      apt-get update
-      apt-get install -y ca-certificates curl gnupg rsyslog
+      apt-get -o DPkg::Lock::Timeout=300 update
+      apt-get -o DPkg::Lock::Timeout=300 install -y ca-certificates curl gnupg rsyslog
 
       mkdir -p /etc/apt/keyrings
       curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
@@ -222,8 +229,8 @@ resource "azurerm_virtual_machine_extension" "paris_node_setup" {
       echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main" \
         | tee /etc/apt/sources.list.d/nodesource.list
 
-      apt-get update
-      apt-get install -y nodejs
+      apt-get -o DPkg::Lock::Timeout=300 update
+      apt-get -o DPkg::Lock::Timeout=300 install -y nodejs
 
       node --version
       npm --version

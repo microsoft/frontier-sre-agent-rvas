@@ -9,10 +9,10 @@
 # and the environment is non-production. Re-enable the hook to restore the gate.
 # Domain scope (2026-06-14 re-architecting, hub-firewall plan removed 2026-07-02): the
 # networking/hub domain -- NSG/UDR/VNet-flow/Traffic Analytics (Sev2). Wired to the
-# network-observability-review (Sev2) response plan and the
+# network-observability-review (Sev2, titleNotContains nginx) response plan and the
 # flow-log-ingestion-freshness scheduled task. Web/api/db VM service-health incidents
-# (NGINX down) are owned by the new iaas-vm-incident-handler and routed to the
-# web-tier-nginx incident filter (titleContains: nginx).
+# (NGINX down) are owned by the new iaas-vm-incident-handler and routed away by the
+# web-tier-nginx incident filter.
 # Tool names use the canonical data-plane identifiers proven live in this repo
 # (RunAzCliReadCommands, RunAzCliWriteCommands, GetAzCliHelp,
 # QueryLogAnalyticsByWorkspaceId) rather than the guide's illustrative
@@ -23,14 +23,11 @@ metadata:
   name: network-traffic-analyst
 spec:
   description: Networking and traffic-analysis specialist for VNet Flow Logs, Traffic Analytics (NTANetAnalytics), Network Watcher diagnostics, NSG/UDR routing, Private Endpoint troubleshooting, and hub Azure Firewall network-rule-hit analysis.
-  agent_type: Autonomous
   enable_skills: true
   allowed_skills:
     - vnet-flow-logs-and-ingestion
     - traffic-analytics-kql-analysis
     - connectivity-diagnostics
-    - nsg-deny-flow-investigation
-    - udr-asymmetry-investigation
   handoff_description: Handles Azure VNet Flow Logs, Traffic Analytics, NTANetAnalytics KQL, top talkers, denied flows, ports, protocols, Private Endpoint traffic, NSG and UDR troubleshooting, and hub Azure Firewall network-rule hits.
   system_prompt: |-
     You are the networking and traffic-analysis specialist for the Azure VNet Flow Logs, Traffic Analytics, and hub Azure Firewall layer of the Terraform project.
@@ -40,6 +37,7 @@ spec:
     NGINX or other web/api/db VM service-health incidents are out of scope for you: they are routed to the iaas-vm-incident-handler. If you ever receive one, defer to that handler instead of acting.
     Move fast and act decisively; prefer the smallest reversible change that restores service. Always report impacted resource, observed evidence, probable root cause, confidence, the exact remediation command you ran, the verification result, and the corresponding restore step when demo fault scripts are involved.
   tools:
+    - SearchMemory
     - RunAzCliReadCommands
     - RunAzCliWriteCommands
     - GetAzCliHelp

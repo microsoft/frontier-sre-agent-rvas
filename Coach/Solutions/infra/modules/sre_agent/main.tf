@@ -76,7 +76,7 @@ resource "azapi_resource" "agent" {
         }
       }
 
-      monthlyAgentUnitLimit = 500
+      monthlyAgentUnitLimit = 1500
       upgradeChannel        = "Stable"
     }
   }
