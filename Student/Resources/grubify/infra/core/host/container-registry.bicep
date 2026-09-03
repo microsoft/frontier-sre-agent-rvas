@@ -10,7 +10,7 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-pr
     name: 'Basic'
   }
   properties: {
-    adminUserEnabled: true
+    adminUserEnabled: false
   }
 }
 

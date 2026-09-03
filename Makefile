@@ -23,6 +23,9 @@ build-web: clean-web
 	@mkdir -p _site
 	@# Web source (index.html + assets)
 	@cp -r web/. _site/
+	@# Publish the briefing at /signalops/ and preserve the mission board.
+	@cp _site/signalops/index.html _site/signalops/missions.html
+	@cp _site/signalops/capabilities.html _site/signalops/index.html
 	@# README linked from the page
 	@cp README.md _site/README.md
 	@# Student challenge markdown files (directly in Student/)
@@ -32,6 +35,17 @@ build-web: clean-web
 	@mkdir -p _site/Coach/Solutions
 	@find Coach -maxdepth 1 -name "Solution-*.md" -exec cp {} _site/Coach/ \; 2>/dev/null || true
 	@find Coach/Solutions -maxdepth 1 -name "Solution-*.md" -exec cp {} _site/Coach/Solutions/ \; 2>/dev/null || true
+	@# Standalone SRE SignalOps challenge track
+	@mkdir -p _site/sre-signalops/Coach
+	@cp "SRE SignalOps/README.md" _site/sre-signalops/README.md
+	@cp "SRE SignalOps/Lab-Details.md" _site/sre-signalops/Lab-Details.md
+	@find "SRE SignalOps" -maxdepth 1 -name "Challenge-*.md" -exec cp {} _site/sre-signalops/ \; 2>/dev/null || true
+	@mkdir -p _site/sre-signalops/Scripts
+	@cp "SRE SignalOps/Scripts/README.md" _site/sre-signalops/Scripts/README.md
+	@find "SRE SignalOps/Scripts" -maxdepth 1 -name "*.ps1" -exec cp {} _site/sre-signalops/Scripts/ \; 2>/dev/null || true
+	@cp "SRE SignalOps/Coach/README.md" _site/sre-signalops/Coach/README.md
+	@cp "SRE SignalOps/Coach/Lab-Details.md" _site/sre-signalops/Coach/Lab-Details.md
+	@find "SRE SignalOps/Coach" -maxdepth 1 -name "Solution-*.md" -exec cp {} _site/sre-signalops/Coach/ \; 2>/dev/null || true
 	@echo "Done → _site/"
 
 clean-web:

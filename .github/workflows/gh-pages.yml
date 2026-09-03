@@ -8,6 +8,8 @@ on:
       - 'README.md'
       - 'Student/**'
       - 'Coach/**'
+      - 'SRE SignalOps/**'
+      - 'Makefile'
 
   workflow_dispatch:
 

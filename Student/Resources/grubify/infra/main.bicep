@@ -19,12 +19,13 @@ param apiImage string = ''
 param frontendImage string = ''
 
 var abbrs = loadJsonContent('abbreviations.json')
-var resourceToken = 'grubify'  // Fixed naming instead of random string
+var normalizedEnvironmentName = replace(toLower(environmentName), '-', '')
+var resourceToken = take('grubify${normalizedEnvironmentName}${uniqueString(subscription().id, environmentName)}', 20)
 var tags = { 'azd-env-name': environmentName }
 
 // Organize resources in a resource group
 resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
-  name: !empty(resourceGroupName) ? resourceGroupName : 'rg-grubify-app'
+  name: !empty(resourceGroupName) ? resourceGroupName : 'rg-grubify-${environmentName}'
   location: location
   tags: tags
 }
@@ -51,6 +52,17 @@ module containerAppsEnvironment 'core/host/container-apps-environment.bicep' = {
   }
 }
 
+module applicationInsights 'core/monitor/application-insights.bicep' = {
+  name: 'application-insights'
+  scope: rg
+  params: {
+    name: 'appi-${resourceToken}'
+    location: location
+    logAnalyticsWorkspaceId: containerAppsEnvironment.outputs.logAnalyticsWorkspaceId
+    tags: tags
+  }
+}
+
 // Container app for the API
 module api 'core/host/container-app.bicep' = {
   name: 'api'
@@ -64,6 +76,7 @@ module api 'core/host/container-app.bicep' = {
     containerName: 'grubify-api'
     containerImage: !empty(apiImage) ? apiImage : 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
     targetPort: 8080
+    healthPath: '/health'
     external: true
     minReplicas: 1  // Always keep 1 instance running
     maxReplicas: 1  // No autoscaling - single instance only
@@ -75,6 +88,10 @@ module api 'core/host/container-app.bicep' = {
       {
         name: 'AllowedOrigins__0'
         value: 'https://ca-grubify-frontend.${containerAppsEnvironment.outputs.defaultDomain}'
+      }
+      {
+        name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+        value: applicationInsights.outputs.connectionString
       }
     ]
   }
@@ -113,6 +130,9 @@ output RESOURCE_GROUP_ID string = rg.id
 
 output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerRegistry.outputs.loginServer
 output AZURE_CONTAINER_REGISTRY_NAME string = containerRegistry.outputs.name
+output APPLICATIONINSIGHTS_NAME string = applicationInsights.outputs.name
+output APPLICATIONINSIGHTS_RESOURCE_ID string = applicationInsights.outputs.id
+output LOG_ANALYTICS_WORKSPACE_ID string = containerAppsEnvironment.outputs.logAnalyticsWorkspaceId
 
 output API_BASE_URL string = 'https://${api.outputs.fqdn}'
 output FRONTEND_URL string = 'https://${frontend.outputs.fqdn}'

@@ -1,0 +1,35 @@
+name: sre-signalops
+metadata:
+  template: sre-signalops@1.0.0
+
+infra:
+  provider: bicep
+  path: infra
+
+services:
+  api:
+    project: ../Student/Resources/grubify/GrubifyApi
+    language: dotnet
+    host: containerapp
+    docker:
+      remoteBuild: true
+  frontend:
+    project: ../Student/Resources/grubify/grubify-frontend
+    language: js
+    host: containerapp
+    docker:
+      remoteBuild: true
+
+hooks:
+  postprovision:
+    shell: pwsh
+    run: |
+      Write-Host "SignalOps infrastructure reconciled for $env:AZURE_ENV_NAME"
+      Write-Host "Workload resource group: $env:AZURE_RESOURCE_GROUP"
+      if ($env:SRE_AGENT_NAME) { Write-Host "SRE Agent: $env:SRE_AGENT_NAME" }
+  postdeploy:
+    shell: pwsh
+    run: |
+      Write-Host "SignalOps applications deployed"
+      Write-Host "Frontend: $env:FRONTEND_URL"
+      Write-Host "API: $env:API_BASE_URL"
