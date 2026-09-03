@@ -27,5 +27,5 @@ echo baseline-traffic-generated
 cat <<EOF
 Baseline traffic generated.
 Traffic Analytics processes data every configured interval, typically 10 or 60 minutes.
-Use docs/demo-lab/kql-catalog.md after ingestion to show top talkers and flow types.
+Use the Traffic Analytics workbook after ingestion to show top talkers and flow types.
 EOF

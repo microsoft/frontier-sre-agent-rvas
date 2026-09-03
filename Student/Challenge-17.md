@@ -59,7 +59,7 @@ Each hop can fail silently: Log Analytics can appear healthy even if the storage
 Ask the agent how it would detect a missing VNet:
 
 ```text
-If fl-vflta-spoke-data (the data spoke flow log) stopped writing, what would the freshness check look like 20 minutes later? What is the earliest you could detect it with this schedule?
+If fl-spoke-data (the data spoke flow log) stopped writing, what would the freshness check look like 20 minutes later? What is the earliest you could detect it with this schedule?
 ```
 
 ### Step 4 — Inspect the scheduled task
@@ -95,5 +95,5 @@ How would you apply the same "monitoring the monitoring" pattern to Application 
 ## Tips
 
 - VNet Flow Logs write blobs to the storage account every 1 minute. Traffic Analytics aggregates them every 10 minutes. Log Analytics ingestion adds a further 2–5 minutes. Total expected end-to-end latency: ~15 minutes under normal conditions. Any gap beyond 20–30 minutes is a signal to investigate.
-- The Terraform outputs include the list of VNets with Flow Logs enabled. The `vnet-flow-logs-and-ingestion` skill references these expected VNets for the coverage comparison. If a VNet was added after the initial Terraform apply, the skill's expected list may need to be updated.
+- The Terraform outputs only partially cover the expected VNets: `demo_lab_scenario_resource_names` exposes `app_vnet` and `data_vnet`, but not the hub VNet name — that one is only visible in the Terraform configuration itself (`vnet-hub` in `modules/workload/network.tf`). The `vnet-flow-logs-and-ingestion` skill's expected-VNet list (hub, spoke-app, spoke-data) is hardcoded from the Terraform configuration for this reason, not derived purely from outputs. If a VNet is added, update both the Terraform configuration and the skill's expected list.
 - This pattern — desired state (Terraform) versus actual state (Log Analytics) — is the same pattern used throughout the lab for resource configuration. Apply it to any telemetry pipeline where silent loss is possible.

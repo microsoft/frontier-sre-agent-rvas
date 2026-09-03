@@ -38,7 +38,7 @@ Apply the skill YAMLs from `Student/Resources/azure-sre-agent-config/skills/`:
 make skills
 ```
 
-Verify under **Skills** in the portal — you should see 8 skills listed.
+Verify under **Skills** in the portal — you should see 9 skills listed.
 
 ### Step 3 — Ask the same questions again
 
@@ -74,17 +74,21 @@ What skills do you have loaded? For each one, describe its purpose and the tools
 If you found the root cause was an NSG deny rule, could you delete the rule right now without asking me?
 ```
 
-This surfaces the `safety.default_mode` and `requires_approval_for_actions` fields. The agent should explain what requires approval and what it will never do autonomously.
+This surfaces the boundary between autonomous action and approval-gated action. The agent should
+explain that skills only declare read/write tools and a natural-language runbook — there is no
+`safety` block on the skill itself. Autonomy is governed elsewhere: by which tools a skill lists
+(e.g. `RunAzCliReadCommands` vs. write commands), by the subagent's own instructions, and by the
+`agentMode` (`Review` vs. `Autonomous`) set on the incident filter or scheduled task that invokes it.
 
 ### Step 6 — Read a skill definition in the portal
 
-In the portal under **Skills**, click on `connectivity-diagnostics` to view its definition. Note the `tools` list, the `safety` block, and the runbook steps.
+In the portal under **Skills**, click on `connectivity-diagnostics` to view its definition. Note the `tools` list and the runbook steps referenced in its files.
 
 ## Success Criteria
 
 - [ ] Before adding skills, the agent describes investigation steps but cannot execute any
 - [ ] After adding skills, the agent runs real KQL queries and returns data from the lab
-- [ ] The agent lists all 8 loaded skills with correct names and purposes
+- [ ] The agent lists all 9 loaded skills with correct names and purposes
 - [ ] The agent correctly describes what requires approval vs. what it can do autonomously
 - [ ] **Explain to your coach** — why do skills list tools explicitly rather than giving the agent all tools? What is the security benefit of this constraint?
 

@@ -8,9 +8,9 @@ set -euo pipefail
 # stop nginx on BOTH web VMs, so every HTTP health probe fails and the LB sends no
 # new flows to the backend pool. Azure Monitor Agent ships the systemd
 # "Stopped nginx" events into the Syslog table, the scheduled query alert
-# "alert-vflta-nginx-down" (Sev2) fires, and the SRE Agent iaas-vm-incident-handler
+# "alert-nginx-down" (Sev2) fires, and the SRE Agent iaas-vm-incident-handler
 # subagent investigates and restarts nginx on both VMs autonomously.
-# Restore manually with: ./Infra/scripts/restore-nginx.sh
+# Restore manually with: make restore-nginx
 #
 # LB probe-down behavior (certified):
 # https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview#probe-down-behavior
@@ -55,7 +55,7 @@ so the internal LB frontend ${lb_ip} stops serving new connections
 ('all instances probe down -> no new flows are sent to the backend pool').
 Expected detection and remediation path:
 - AMA collects the systemd 'Stopped nginx' events from both web VMs into Syslog (LAW).
-- Scheduled query alert 'alert-vflta-nginx-down' (Sev2) fires (PT1M evaluation).
+- Scheduled query alert 'alert-nginx-down' (Sev2) fires (PT1M evaluation).
 - The alert is routed to the SRE Agent iaas-vm-incident-handler subagent (Autonomous),
   which must restart nginx on BOTH web VMs via Run Command and verify recovery.
 Watch ingestion with KQL:
@@ -63,5 +63,5 @@ Watch ingestion with KQL:
   | where TimeGenerated > ago(15m)
   | where SyslogMessage has "nginx"
   | order by TimeGenerated desc
-Manual restore (if needed): ./Infra/scripts/restore-nginx.sh
+Manual restore (if needed): make restore-nginx
 EOF

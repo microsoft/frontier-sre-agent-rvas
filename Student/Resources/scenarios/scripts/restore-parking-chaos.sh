@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TERRAFORM_DIR="$(cd "${SCRIPT_DIR}/../../infra" && pwd)"
+TERRAFORM_DIR="${TERRAFORM_DIR:-$(cd "${SCRIPT_DIR}/../../infra" && pwd)}"
 source "${SCRIPT_DIR}/common.sh"
 
 require_command curl

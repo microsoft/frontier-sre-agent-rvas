@@ -10,7 +10,7 @@
 
 ## Mini-Lecture (3–5 min before challenge)
 
-- Reinforce the GitHub prerequisites: `github` connector green and `grubify` repo linked.
+- Reinforce the GitHub prerequisites: `github-mcp` connector green and `grubify` repo linked.
 - Name the knowledge template: `sample-food/incident-report-template.md` drives consistent issue structure.
 - Show the expected lifecycle: incident context → telemetry evidence → issue creation → follow-up comment with updated findings.
 - If no live Parking Manager incident exists, it is valid to use a realistic incident derived from Challenge 09’s health report.
@@ -24,7 +24,7 @@
 
 ## Common Issues and Hints
 
-- **Symptom:** Agent says GitHub is not authorized. **Fix:** re-check portal OAuth status on the `github` connector.
+- **Symptom:** Agent says GitHub is not authorized. **Fix:** re-check portal OAuth status on the `github-mcp` connector.
 - **Symptom:** Issue is created but structure is inconsistent. **Fix:** ask the student to explicitly tell the agent to use the incident report template.
 - **Symptom:** No active incident is available. **Fix:** allow a health-report-derived incident narrative from Challenge 09.
 - **Symptom:** Comment update lacks fresh evidence. **Fix:** ask specifically for last-hour error rate and top three errors.

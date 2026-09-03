@@ -13,7 +13,7 @@
 - Name the scheduled task exactly: `daily-network-observability-health`, cron `0 6 * * *`, agent `network-traffic-analyst`, mode `Autonomous`.
 - Explain the five report dimensions students should hear: denied flows, top talkers, missing VNet coverage, unusual ports, ingestion delays.
 - Connect it to earlier labs: historical artifacts from NSG/UDR faults may still appear inside a 24-hour window.
-- Clarify that this task is narrative-only: safe, read-only, decision-ready output.
+- Clarify that the task's safety comes from its narrative-only prompt ("Do not change resources") and the subagent having no write path invoked for this task — not from an `agentMode: Review` gate, since this task is configured `Autonomous`.
 
 ## Expected Student Output
 
@@ -26,7 +26,7 @@
 
 - **Symptom:** Report is raw KQL dump. **Fix:** ask for a decision-ready narrative report.
 - **Symptom:** Missing coverage is not addressed. **Fix:** coach should ask explicitly whether hub, app spoke, and data spoke all produced records.
-- **Symptom:** Student thinks scheduled task should remediate. **Fix:** remind them this one intentionally says “Do not change resources.”
+- **Symptom:** Student thinks scheduled task should remediate. **Fix:** remind them this one says “Do not change resources” in its prompt — that's the safety control here, since the task mode is `Autonomous`, not `Review`.
 
 ## Debrief Discussion Guide
 

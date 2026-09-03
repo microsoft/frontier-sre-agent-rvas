@@ -1,8 +1,8 @@
-SCENARIOS  ?= Resources/scenarios/scripts
+SCENARIOS  ?=scripts
 
 .PHONY: validate validate-food \
         baseline-traffic food-traffic \
-        break-food food-status \
+		break-food food-status \
         trigger-nginx-down restore-nginx \
         trigger-nsg-block restore-nsg-block \
         trigger-udr restore-udr \
@@ -34,7 +34,7 @@ break-food:
 
 ## food-status: check Grubify container image deployment status (Challenges 06, 14)
 food-status:
-	$(SCENARIOS)/deploy-sample-food-images.sh --status
+	$(SCENARIOS)/show-sample-food-status.sh
 
 ## trigger-nginx-down: stop nginx on web-tier VMs to simulate outage (Challenge 11)
 trigger-nginx-down:

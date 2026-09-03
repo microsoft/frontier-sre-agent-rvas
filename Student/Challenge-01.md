@@ -49,7 +49,7 @@ make connectors
 Applying the YAML registers the connector. The OAuth authorization is a separate, mandatory step:
 
 1. In the SRE Agent portal, navigate to **Connectors**
-2. Click on **github**
+2. Click on **GitHub MCP**
 3. Click **Authorize** and complete the GitHub sign-in
 
 The connector should show as connected (green).
@@ -111,6 +111,6 @@ The agent should confirm that only explicitly connected repositories are reachab
 ## Tips
 
 - The OAuth authorization in the portal is a separate step from applying the YAML — both are required before GitHub tools become available.
-- The `authConnectorName` field in the repository YAML links the repository to the GitHub connector. If the connector name changes, the repo spec must match.
+- The repository is linked to the GitHub connector implicitly, through the connector's own repository access — the repository YAML has no `authConnectorName` field to configure.
 - This challenge unlocks all source-code use cases in the workshop: root cause correlation (Challenge 14), incident-to-issue (Challenge 10), and autonomous fix pull requests (Challenge 14).
 - After this challenge: the agent can read code but knows nothing about your Azure environment or operational runbooks. Knowledge documents come next.

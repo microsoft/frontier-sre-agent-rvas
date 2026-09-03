@@ -28,9 +28,33 @@ az containerapp show \
 
 echo "Checking HTTP endpoints"
 for endpoint in "${api_url}/WeatherForecast" "${api_url}/api/FoodItems" "${api_url}/api/Restaurants" "${frontend_url}"; do
-  http_code="$(curl -m 10 -s -o /dev/null -w "%{http_code}" "${endpoint}" || echo "000")"
+  http_code="$(curl -s -o /dev/null -w "%{http_code}" "${endpoint}" || echo "000")"
   echo "${endpoint} -> HTTP ${http_code}"
 done
+
+cors_origin_from_headers() {
+  tr -d '\r' | awk -F ': ' 'tolower($1) == "access-control-allow-origin" { print $2; exit }'
+}
+
+echo "Checking browser CORS from ${frontend_url}"
+cors_get_origin="$({
+  curl -sS -D - -o /dev/null \
+    -H "Origin: ${frontend_url}" \
+    "${api_url}/api/Restaurants"
+} | cors_origin_from_headers)"
+cors_preflight_origin="$({
+  curl -sS -X OPTIONS -D - -o /dev/null \
+    -H "Origin: ${frontend_url}" \
+    -H "Access-Control-Request-Method: GET" \
+    -H "Access-Control-Request-Headers: content-type" \
+    "${api_url}/api/Restaurants"
+} | cors_origin_from_headers)"
+
+if [[ "${cors_get_origin}" != "${frontend_url}" || "${cors_preflight_origin}" != "${frontend_url}" ]]; then
+  echo "CORS validation failed: expected ${frontend_url}, GET returned '${cors_get_origin:-<missing>}', preflight returned '${cors_preflight_origin:-<missing>}'" >&2
+  exit 1
+fi
+echo "CORS GET and preflight allow ${frontend_url}"
 
 echo "Checking recent Container Apps logs in Log Analytics"
 az monitor log-analytics query \

@@ -1,19 +1,14 @@
+---
+name: cost-optimization
+description: Analyze and optimize Azure cost across a scope using resource inventory and configuration, actual spend, utilization, and Azure Advisor, weighted by each workload's criticality, SLA, resiliency, performance, and budget. Recommendations only; never modifies resources.
+---
+
 # cost-optimization
 
 Use this skill to analyze and optimize Azure cost across a scope (subscription by default).
 Correlate inventory and configuration, actual spend, utilization, and Azure Advisor with each
 workload's criticality, SLA, resiliency, performance, and budget, then propose prioritized,
 read-only optimizations with trade-offs.
-
-## Builder Upload Settings
-
-| Field | Value |
-| --- | --- |
-| Skill name | `cost-optimization` |
-| Description | Optimize Azure cost across a scope from inventory, spend, utilization, and Advisor, weighted by workload criticality and budget. |
-| Recommended tools | `RunAzCliReadCommands`, `QueryLogAnalyticsByWorkspaceId`, `QueryAppInsightsByResourceId`, `ExecutePythonCode`, `GetAzCliHelp` |
-| Recommended knowledge files | `cost/cost-optimization-methodology.md`, `cost/workload-cost-profiles.md`, `cost/azure-cost-levers-by-service.md` |
-| Default run mode | Autonomous for read-only reporting; the skill never applies changes |
 
 ## Operating Principles
 
@@ -41,6 +36,11 @@ environment from demo to production-like operations.
 
 ## Procedure
 
+Every executable call for the steps below lives in
+`cost-optimization/references/cost-queries.md`, which is the exact name the file is registered
+under. Read it when you need a call. The steps here define what to establish and why, which is
+what determines whether a saving is real.
+
 ### Step 1 — Establish scope and business context
 
 Read `workload-cost-profiles`. Map each resource to a workload by resource group or tag. Record
@@ -49,129 +49,45 @@ business-critical.
 
 ### Step 2 — Inventory and configuration (Azure Resource Graph)
 
-```bash
-az graph query --first 1000 -q "
-Resources
-| project name, type, kind, sku=sku.name, tier=sku.tier, location, resourceGroup, tags
-| order by type asc"
-```
-
-Flag obvious waste: resources with no dependents, premium SKUs in dev-test, GRS/ZRS where the
-profile allows LRS.
+Inventory every resource with its SKU, tier, location and tags. Flag obvious waste: resources with
+no dependents, premium SKUs in dev-test, GRS or ZRS where the profile allows LRS.
 
 ### Step 3 — Actual spend (Cost Management Query API)
 
-Cost by resource group and service, last month and month-to-date. Compare to flag anomalies.
-
-```bash
-az rest --method post \
-  --url "https://management.azure.com/subscriptions/<sub>/providers/Microsoft.CostManagement/query?api-version=2025-03-01" \
-  --headers "Content-Type=application/json" \
-  --body '{
-    "type": "ActualCost",
-    "timeframe": "TheLastMonth",
-    "dataset": {
-      "granularity": "None",
-      "aggregation": { "totalCost": { "name": "PreTaxCost", "function": "Sum" } },
-      "grouping": [
-        { "type": "Dimension", "name": "ResourceGroup" },
-        { "type": "Dimension", "name": "ServiceName" }
-      ]
-    }
-  }'
-```
-
-Re-run with `"timeframe": "MonthToDate"` to derive the trend. Flag any resource group up more than
-~20% versus the prior period. Use `ExecutePythonCode` to aggregate large responses and compute
-saving percentages. For line-item detail, `az consumption usage list`.
+Get cost by resource group and service for the last full month and for month-to-date, then compare
+the two to expose anomalies. Flag any resource group up more than roughly 20% versus the prior
+period. Configuration alone never proves waste: spend does.
 
 ### Step 3b — Forecast, budget variance, and cost allocation
 
-Forecast the next 30/60/90 days and compare to budget; allocate spend by team and environment.
-
-```bash
-# Forecast (subscription scope, next 90 days)
-az rest --method post \
-  --url "https://management.azure.com/subscriptions/<sub>/providers/Microsoft.CostManagement/forecast?api-version=2025-03-01" \
-  --headers "Content-Type=application/json" \
-  --body '{ "type": "ActualCost", "timeframe": "Custom",
-    "timePeriod": { "from": "<today>", "to": "<today+90d>" },
-    "dataset": { "granularity": "Daily", "aggregation": { "totalCost": { "name": "Cost", "function": "Sum" } } },
-    "includeActualCost": true }'
-
-# Budgets (read-only)
-az consumption budget list -o json
-
-# Cost allocation by team and environment tags
-az rest --method post \
-  --url "https://management.azure.com/subscriptions/<sub>/providers/Microsoft.CostManagement/query?api-version=2025-03-01" \
-  --headers "Content-Type=application/json" \
-  --body '{ "type": "ActualCost", "timeframe": "TheLastMonth",
-    "dataset": { "granularity": "None",
-      "aggregation": { "totalCost": { "name": "PreTaxCost", "function": "Sum" } },
-      "grouping": [ { "type": "TagKey", "name": "team" }, { "type": "TagKey", "name": "env" } ] } }'
-```
-
-Compute budget variance (actual + forecast vs budget amount) with `ExecutePythonCode`.
+Forecast the next 30, 60 and 90 days, compare against the budget, and allocate spend by team and
+environment. Compute budget variance as actual plus forecast against the budget amount with
+`ExecutePythonCode`.
 
 ### Step 4 — Utilization / consumption
 
-Confirm low utilization before any right-sizing or shutdown.
-
-```bash
-az monitor metrics list --resource "<resource-id>" --metric "Percentage CPU" \
-  --interval PT1H --aggregation Average --start-time "<iso>" --end-time "<iso>"
-```
-
-```kql
-// Log Analytics ingestion by table (cost driver), last 30 days
-Usage
-| where TimeGenerated > ago(30d)
-| summarize IngestedGB = sum(Quantity) / 1000.0 by DataType
-| order by IngestedGB desc
-```
-
-Use `QueryAppInsightsByResourceId` to confirm an app's throughput/latency tolerates a smaller SKU.
+Confirm low utilization before proposing any right-sizing or shutdown. A resource that looks
+oversized on paper but runs hot is not waste. Use `QueryAppInsightsByResourceId` to confirm that an
+application's throughput and latency tolerate a smaller SKU.
 
 ### Step 4b — Unit economics (cost-to-serve)
 
-Divide workload spend by business volume to expose structural waste hidden by volume growth.
-
-```kql
-// Business volume: successful requests over the period (Application Insights)
-requests
-| where timestamp > ago(30d)
-| summarize Transactions = count() by bin(timestamp, 1d)
-```
-
-Unit cost = workload spend (Step 3) ÷ Transactions. Flag when unit cost rises materially while
-volume is flat — e.g. unit cost +18% with volume +4% indicates over-provisioning, excessive
-retention, an oversized database, or non-production left running, not traffic growth.
+Divide workload spend by business volume to expose structural waste that volume growth would
+otherwise hide. Unit cost is workload spend from Step 3 divided by transactions. Flag when unit
+cost rises materially while volume is flat: unit cost up 18% with volume up 4% indicates
+over-provisioning, excessive retention, an oversized database, or non-production left running, not
+traffic growth.
 
 ### Step 5 — Azure Advisor cost pass
 
-```bash
-az advisor recommendation list --category Cost -o json                 # subscription scope
-az advisor recommendation list --category Cost -g <resource-group> -o json
-```
-
-Read-only; never pass `--refresh`. For each recommendation extract `impactedValue`,
-`shortDescription.problem`/`.solution`, `impact`, and `extendedProperties` (estimated savings such
-as `annualSavingsAmount`). Subscription-scope items include reservations and savings plans.
+Collect Advisor cost recommendations at subscription and resource-group scope. Subscription-scope
+items include reservations and savings plans.
 
 ### Step 5b — Commitment analytics (coverage, utilization, break-even)
 
-Assess existing reservations and savings plans before recommending new commitments.
-
-```bash
-# Reservation utilization (monthly grain): avgUtilizationPercentage, usedHours/reservedHours
-az rest --method get \
-  --url "https://management.azure.com/subscriptions/<sub>/providers/Microsoft.Consumption/reservationSummaries?api-version=2024-08-01&grain=monthly"
-```
-
-Report coverage and utilization, flag low-utilization commitments and ones expiring soon (Advisor
-"Configure automatic renewal for the expiring reservations"), and for any *new* reservation or
-savings plan compute the break-even period (commitment cost vs on-demand savings) with
+Assess existing reservations and savings plans before recommending new ones. Report coverage and
+utilization, flag low-utilization commitments and ones expiring soon, and for any new reservation
+or savings plan compute the break-even period, commitment cost against on-demand savings, with
 `ExecutePythonCode`. Recommend commitments only for workloads the profile marks steady-state.
 
 ### Step 6 — Correlate and de-duplicate

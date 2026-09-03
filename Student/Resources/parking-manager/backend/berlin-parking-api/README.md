@@ -455,7 +455,10 @@ The API includes an automatic parking simulation that:
 
 ## Deployment
 
-This API is designed to run as an Azure Container App without Log Analytics integration. See the infrastructure module at `infrastructure/modules/berlin-api.bicep` for deployment details.
+This API runs as a Terraform-owned Azure Container App using the public
+`ghcr.io/microsoft/frontier-sre-agent-rvas/berlin-parking-api:latest` image. Runtime image,
+ingress, probes, and environment variables are declared in the workshop Terraform module; this
+source folder has no standalone deployment path.
 
 ## Differences from Other Parking APIs
 

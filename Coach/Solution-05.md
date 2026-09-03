@@ -10,14 +10,14 @@
 
 ## Mini-Lecture (3–5 min before challenge)
 
-- Introduce the **eleven** specialists: `aca-app-incident-handler`, `iaas-vm-incident-handler`, `network-traffic-analyst`, `code-analyzer`, `issue-triager`, `cost-optimization-agent`, `azure-resource-config-auditor`, `access-to-3rd-party-logs`, `dependency-analyzer`, `madrid-api`, `paris-api`.
+- Introduce six primary specialists among the certified roster: `aca-app-incident-handler`, `iaas-vm-incident-handler`, `network-traffic-analyst`, `code-analyzer`, `issue-triager`, and `cost-optimization-agent`.
 - Show the contrast prompt: `/agent network-traffic-analyst` before config fails; after config it should answer with `NTANetAnalytics`, routes, NSGs, and next-hop language.
 - Emphasize that narrow tool grants are a governance feature, not a limitation.
 - Good whiteboard diagram: main agent → specialist roster → each specialist owns a failure domain.
 
 ## Expected Student Output
 
-- Portal shows all **eleven** subagents after `make subagents`.
+- Portal shows all **12** certified subagents after `make subagents`.
 - `/agent network-traffic-analyst` returns domain-specific network investigation steps.
 - `/agent aca-app-incident-handler` returns Container Apps-specific investigation steps.
 - Students can articulate why a scoped system prompt changes answer quality.
@@ -27,6 +27,7 @@
 - **Symptom:** `/agent network-traffic-analyst` not found. **Fix:** subagents were not applied or portal needs refresh.
 - **Symptom:** Specialist still sounds generic. **Fix:** use a prompt in its exact domain, e.g. routing/NSG for network or HTTP 503 for ACA.
 - **Symptom:** Students conflate skill and subagent. **Fix:** explain that the subagent is the specialist identity; skills are tools/runbooks it may use.
+- **Symptom:** GitHub specialist can clone code but cannot create an issue. **Fix:** verify the `github-mcp` connector is authorized (OAuth) and that its `mcp_tools` list includes the needed `github-mcp_*` write tools (e.g. `github-mcp_create_pull_request`).
 
 ## Debrief Discussion Guide
 

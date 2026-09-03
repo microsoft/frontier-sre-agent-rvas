@@ -47,6 +47,11 @@ resource "azurerm_virtual_network_peering" "hub_to_sample_food" {
   virtual_network_name      = azurerm_virtual_network.hub.name
   remote_virtual_network_id = azurerm_virtual_network.sample_food.id
   allow_forwarded_traffic   = true
+
+  depends_on = [
+    azurerm_subnet.sample_food_container_apps,
+    azurerm_subnet.sample_food_probe,
+  ]
 }
 
 resource "azurerm_virtual_network_peering" "sample_food_to_hub" {
@@ -55,6 +60,14 @@ resource "azurerm_virtual_network_peering" "sample_food_to_hub" {
   virtual_network_name      = azurerm_virtual_network.sample_food.name
   remote_virtual_network_id = azurerm_virtual_network.hub.id
   allow_forwarded_traffic   = true
+
+  depends_on = [
+    azurerm_subnet.hub_mgmt,
+    azurerm_subnet.hub_nva,
+    azurerm_subnet.hub_firewall,
+    azurerm_subnet.hub_firewall_management,
+    azurerm_subnet.hub_bastion,
+  ]
 }
 
 resource "azurerm_route_table" "sample_food_probe_to_firewall" {

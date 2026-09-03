@@ -1,63 +1,47 @@
 # Cost Optimization Methodology
 
-Reference knowledge for the `cost-optimization-agent`. It defines the method, the data sources,
-the de-duplication rules, and the Well-Architected guardrails the agent applies when reasoning
-about Azure cost. The agent searches this document automatically when a cost question is in scope.
+Reference knowledge for cost reasoning: the guardrails, the de-duplication rules, the confidence
+model, and the escalation criteria that bound every recommendation.
+
+**This document does not contain the procedure.** The ordered method and the executable calls
+belong to the `cost-optimization` skill, which owns them as a single source of truth. This document
+answers *how to judge a candidate*; the skill answers *how to find one*.
 
 ## Objective
 
-Reduce Azure spend across a scope (subscription by default) **without degrading** the reliability,
-performance, security, or compliance any workload requires. The agent is strictly **read-only**:
+Reduce Azure spend across a scope, subscription by default, **without degrading** the reliability,
+performance, security, or compliance any workload requires. The analysis is strictly **read-only**:
 it produces prioritized recommendations with trade-offs; it never mutates a resource.
 
 ## The four data planes
 
 Cost optimization is only credible when configuration, spend, utilization, and native
-recommendations are correlated. Reason over all four, never one in isolation.
+recommendations are correlated. Reason over all four, never one in isolation: configuration alone
+shows what could be wasteful, spend alone shows what is expensive, and only their intersection
+shows what is actually waste.
 
-| Data plane | Question it answers | Tool / command |
+| Data plane | Question it answers | Why it is insufficient alone |
 | --- | --- | --- |
-| Inventory + configuration | What exists, and how is it provisioned (SKU, tier, redundancy, tags)? | `RunAzCliReadCommands` → `az graph query` (Azure Resource Graph) |
-| Actual spend | What does each resource group / service actually cost, and is it trending up? | `RunAzCliReadCommands` → `az rest` POST to `Microsoft.CostManagement/query` |
-| Utilization / consumption | Is the resource actually used, or over-provisioned? | `QueryLogAnalyticsByWorkspaceId`, `QueryAppInsightsByResourceId`, `az monitor metrics list` |
-| Native recommendations | What does Azure itself flag as idle, right-sizable, or commitment-eligible? | `RunAzCliReadCommands` → `az advisor recommendation list --category Cost` |
+| Inventory and configuration | What exists, and how is it provisioned in SKU, tier, redundancy and tags? | An oversized SKU that runs hot is not waste. |
+| Actual spend | What does each resource group and service actually cost, and is it trending up? | A high bill can be correct for a critical workload. |
+| Utilization and consumption | Is the resource actually used, or over-provisioned? | Low utilization can be a deliberate headroom or DR choice. |
+| Native recommendations | What does Azure itself flag as idle, right-sizable, or commitment-eligible? | Advisor does not know the workload's criticality or compliance constraints. |
 
-Business context (criticality, SLA, resiliency, performance, budget) is not an API: read it from
-the `workload-cost-profiles` knowledge file before judging any candidate.
-
-## The 8-step method
-
-1. **Establish scope and business context.** Read `workload-cost-profiles`. Map each resource to a
-   workload via resource group or tags. Unknown production defaults to business-critical
-   (conservative).
-2. **Inventory and configuration.** `az graph query` for every resource with SKU, tier,
-   redundancy, and tags.
-3. **Actual spend.** Cost Management Query for cost by resource group and service, `TheLastMonth`
-   and `MonthToDate`; flag any group up more than ~20% versus the prior period.
-4. **Utilization.** For each right-sizing or shutdown candidate, confirm low utilization from
-   Monitor metrics / Log Analytics / App Insights **before** recommending a smaller SKU.
-5. **Azure Advisor.** `az advisor recommendation list --category Cost` at subscription and per
-   resource-group scope. Read-only; never pass `--refresh`. Capture `impactedValue`,
-   `shortDescription`, `impact`, and `extendedProperties` savings.
-6. **Correlate and de-duplicate.** Merge overlapping signals into a single recommendation; never
-   double-count Advisor and configuration findings for the same resource.
-7. **Apply Well-Architected guardrails.** Filter candidates against each workload's criticality,
-   SLA, resiliency, performance, and budget (see below).
-8. **Prioritized savings report.** One ranked table: action, evidence, estimated saving, risk,
-   rollback, scope, decision criteria. Sort by impact × confidence.
+Business context, meaning criticality, SLA, resiliency, performance and budget, is not an API: read
+it from the `workload-cost-profiles` knowledge file before judging any candidate.
 
 ## Advanced FinOps signals
 
-Beyond spend, configuration, utilization, and Advisor, correlate these to see *where value per
-euro is dropping* and *which commitments to make* (all read-only):
+Beyond spend, configuration, utilization and Advisor, these signals show *where value per euro is
+dropping* and *which commitments to make*.
 
-| Signal | What it answers | Tool / command |
-| --- | --- | --- |
-| Unit economics (cost-to-serve) | Is cost per transaction rising faster than volume? | App Insights `requests` count (`QueryAppInsightsByResourceId`) ÷ workload spend |
-| Forecast (30/60/90) | Where is spend heading; will it breach budget? | `POST .../Microsoft.CostManagement/forecast?api-version=2025-03-01` |
-| Budget variance | Actual + forecast vs the workload budget | `az consumption budget list` / `show` |
-| Reservation / Savings Plan coverage and utilization | Are commitments under/over-used? Any expiring? Break-even? | `GET .../Microsoft.Consumption/reservationSummaries?api-version=2024-08-01&grain=monthly` + Advisor expiring-reservation finding |
-| Cost allocation | Spend per team / environment / subscription | Cost Management Query `grouping` on `TagKey` (`team`, `env`) |
+| Signal | What it answers |
+| --- | --- |
+| Unit economics, or cost-to-serve | Is cost per transaction rising faster than volume? |
+| Forecast over 30, 60 and 90 days | Where is spend heading, and will it breach budget? |
+| Budget variance | How does actual plus forecast compare against the workload budget? |
+| Reservation and savings plan coverage and utilization | Are commitments under-used or over-used, are any expiring, and what is the break-even? |
+| Cost allocation | What is the spend per team, environment or subscription? |
 
 Interpretation: unit cost rising 18% while volume rises 4% points to structural waste
 (over-provisioning, excessive retention, oversized DB, non-prod left running), not traffic growth.

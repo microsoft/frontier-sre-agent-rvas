@@ -1,18 +1,13 @@
+---
+name: connectivity-diagnostics
+description: Diagnose Azure VM/VNet reachability by selecting and correlating Network Watcher tests, effective NSG rules, effective routes, next hop, Traffic Analytics, Private Endpoint source-side evidence, and private DNS; remediate only the exact proven NSG or UDR fault when the active trigger permits it.
+---
+
 # connectivity-diagnostics
 
 Use this skill when diagnosing Azure networking reachability that requires Network Watcher-style reasoning: IP flow verify, NSG diagnostics, next hop, effective security rules, connection troubleshoot, packet capture scoping, topology or flow-log visibility — including the optional Azure Private Endpoint scenario, where traffic is captured from the source VM side rather than at the Private Endpoint itself.
 
 This skill unifies general VM/VNet connectivity diagnostics with Private Endpoint path analysis: the Private Endpoint case is the same "can the source reach the destination?" procedure, with a DNS-resolution and source-side-capture special case.
-
-## Builder Upload Settings
-
-| Field | Value |
-| --- | --- |
-| Skill name | `connectivity-diagnostics` |
-| Primary purpose | Select and run the right read-only Network Watcher connectivity diagnostic for VM/VNet reachability, including Private Endpoint source-side path and DNS analysis. |
-| Recommended tools | `RunAzCliReadCommands`, `QueryLogAnalyticsByWorkspaceId`, `GetAzCliHelp` |
-| Recommended knowledge files | `vnet-flow-logs/architecture.md`, `vnet-flow-logs/troubleshooting-scenarios.md`, `vnet-flow-logs/vm-application-calls-and-services.md`, `vnet-flow-logs/kql-catalog.md` |
-| Default run mode | Read-only diagnostics can run autonomously if the response plan allows; Review for packet capture, DNS, route, NSG, or Private Endpoint changes. |
 
 ## Trigger Conditions
 
@@ -39,8 +34,8 @@ Load this skill when the user reports any of the following:
 
 ## Non-Goals
 
-- Do not modify NSGs, UDRs, route tables, firewall policy, private DNS zones, Private Endpoints, or Storage network rules without Review-mode approval.
-- Do not start packet capture without explicit human approval.
+- Do not modify NSGs, UDRs, route tables, firewall policy, private DNS zones, Private Endpoints, or Storage network rules unless the active trigger permits the action and the evidence identifies the exact minimal change.
+- Do not start packet capture unless the active trigger permits it and scope and retention are bounded.
 - Do not assume a Network Watcher result is the only truth; correlate with Terraform and Traffic Analytics.
 - Do not troubleshoot PaaS web analytics as Network Watcher IaaS diagnostics.
 - Do not assume missing Private Endpoint-side logs mean no traffic occurred.
@@ -58,7 +53,7 @@ Load this skill when the user reports any of the following:
 5. Compare effective Azure state with the Terraform source of truth.
 6. Correlate with `NTANetAnalytics` if historical flow evidence is needed.
 7. Classify the root cause: NSG, UDR, firewall, DNS, no traffic generated, missing telemetry, RBAC, or unknown.
-8. Recommend a read-only next step or a Review-mode remediation.
+8. Recommend or execute the smallest reversible remediation allowed by the active trigger, then verify the path end to end.
 
 ### Private Endpoint special case
 
@@ -72,114 +67,37 @@ When the destination is (or may be) a Private Endpoint:
 | Observation | Interpretation | Next step |
 | --- | --- | --- |
 | No records for the Private Endpoint IP | No traffic, wrong source side, ingestion delay, or DNS resolves public. | Verify DNS and source VM traffic generation. |
-| Records show `FlowStatus contains "Denied"` (or `DeniedInFlows`/`DeniedOutFlows` > 0) | NSG/security rule may block the source-to-Private-Endpoint flow. | Hand off to `nsg-deny-flow-investigation`. |
+| Records show `FlowStatus contains "Denied"` (or `DeniedInFlows`/`DeniedOutFlows` > 0) | NSG/security rule may block the source-to-Private-Endpoint flow. | Follow the NSG denial branch below. |
 | Records show a public destination instead of the private IP | DNS likely resolving the public endpoint. | Review the private DNS zone and VNet links. |
 | Records show `PrivateEndpointResourceId` | Private Endpoint traffic identified. | Continue with bytes, ports, and source mapping. |
-| Route/next hop unexpected | UDR/firewall path issue. | Use next hop / `udr-asymmetry-investigation`. |
+| Route/next hop unexpected | UDR/firewall path issue. | Follow the routing asymmetry branch below. |
 
-## Azure CLI Read Command Patterns
+## Reference File
 
-Use `GetAzCliHelp` if command syntax differs in the installed Azure CLI version.
+`connectivity-diagnostics/references/diagnostic-commands.md` holds the read-only Azure CLI probes,
+the KQL correlation queries and the table that maps each investigative question to the right probe.
+The path above is the exact name the file is registered under. Read it when you need a command,
+rather than composing one from memory.
 
-### Effective NSG rules
+## NSG denial branch
 
-```bash
-az network nic list-effective-nsg \
-  --resource-group <resource-group> \
-  --name <nic-name> \
-  --output table
-```
+1. Fix the observed five-tuple: source IP, destination IP, destination port, protocol, and direction.
+2. Query denied Traffic Analytics records for that tuple and capture `AclRule`, capture point, and timestamp.
+3. Run IP Flow Verify and inspect effective security rules on every applicable source and destination NIC/subnet.
+4. Resolve the NSG and rule that actually made the decision; do not infer it from a demo name or alert title.
+5. Compare the effective rule with the Terraform baseline and classify it as expected policy, temporary overlay, drift, or unknown.
+6. If the active trigger permits remediation and impact is proven, remove or correct only the exact offending rule. Preserve unrelated rules and rule ordering.
+7. Re-run IP Flow Verify, the application connectivity test, and the denied-flow query. Report success only when the expected path is restored and unrelated policy remains intact.
 
-### Effective routes
+## Routing asymmetry branch
 
-```bash
-az network nic show-effective-route-table \
-  --resource-group <resource-group> \
-  --name <nic-name> \
-  --output table
-```
-
-### Next hop
-
-```bash
-az network watcher show-next-hop \
-  --resource-group <source-vm-resource-group> \
-  --vm <source-vm-name> \
-  --source-ip <source-private-ip> \
-  --dest-ip <destination-ip>
-```
-
-### IP flow verify
-
-```bash
-az network watcher test-ip-flow \
-  --resource-group <source-vm-resource-group> \
-  --vm <source-vm-name> \
-  --direction Outbound \
-  --protocol TCP \
-  --local <source-private-ip>:<source-port> \
-  --remote <destination-ip>:<destination-port>
-```
-
-### Connection troubleshoot
-
-```bash
-az network watcher test-connectivity \
-  --source-resource <source-vm-resource-id> \
-  --dest-address <destination-ip-or-fqdn> \
-  --dest-port <destination-port>
-```
-
-### Private Endpoint inventory
-
-```bash
-az network private-endpoint list \
-  --resource-group <resource-group-name> \
-  --query "[].{name:name, location:location, subnet:subnet.id, privateLinkServiceConnections:privateLinkServiceConnections[].privateLinkServiceId}" \
-  --output table
-```
-
-```bash
-az network private-endpoint show \
-  --resource-group <resource-group-name> \
-  --name <private-endpoint-name> \
-  --query "{name:name, subnet:subnet.id, customDnsConfigs:customDnsConfigs, networkInterfaces:networkInterfaces}"
-```
-
-## KQL Correlation Snippets
-
-### Endpoint conversation
-
-```kql
-let EndpointA = "<source-ip>";
-let EndpointB = "<destination-ip>";
-NTANetAnalytics
-| where SubType == "FlowLog" and TimeGenerated > ago(24h)
-| where (SrcIp == EndpointA and DestIp == EndpointB) or (SrcIp == EndpointB and DestIp == EndpointA)
-| project TimeGenerated, SrcIp, DestIp, DestPort, L4Protocol, FlowDirection, FlowStatus, BytesSrcToDest, BytesDestToSrc, AclRule, SrcSubnet, DestSubnet, IsFlowCapturedAtUDRHop
-| order by TimeGenerated desc
-```
-
-### Subnet conversations
-
-```kql
-NTANetAnalytics
-| where SubType == "FlowLog" and TimeGenerated > ago(24h)
-| where isnotempty(SrcSubnet) and isnotempty(DestSubnet)
-| summarize TotalBytes=sum(BytesSrcToDest + BytesDestToSrc) by SrcSubnet, DestSubnet, L4Protocol, DestPort
-| order by TotalBytes desc
-```
-
-### Private Endpoint traffic
-
-```kql
-let PrivateEndpointIp = "<private-endpoint-private-ip>";
-NTANetAnalytics
-| where SubType == "FlowLog" and TimeGenerated > ago(24h)
-| where DestIp == PrivateEndpointIp or SrcIp == PrivateEndpointIp
-| project TimeGenerated, SrcIp, DestIp, DestPort, L4Protocol, FlowDirection, FlowStatus, FlowType, BytesSrcToDest, BytesDestToSrc, SrcSubnet, DestSubnet, PrivateEndpointResourceId, AclRule
-| order by TimeGenerated desc
-```
+1. Capture effective routes and Network Watcher next hop for both directions of the failing conversation.
+2. Apply longest-prefix-match reasoning to determine which route wins for each direction.
+3. Compare effective state with the Terraform routing baseline and all route-table associations.
+4. Correlate Traffic Analytics direction, byte counters, capture point, and missing return traffic; unequal bytes alone do not prove asymmetry.
+5. Classify the fault as wrong prefix, wrong next hop, missing association, firewall path, blackhole, or insufficient evidence.
+6. If the active trigger permits remediation, change only the exact route or association proven faulty; preserve every unrelated route.
+7. Re-run effective route, next-hop, connectivity, and flow-evidence checks in both directions before declaring recovery.
 
 ## Evidence Required
 
@@ -207,7 +125,7 @@ Evidence:
 - PrivateEndpointResourceId (if applicable): <value>
 Likely root cause: <NSG | UDR | firewall | DNS | no traffic | telemetry | RBAC | unknown>
 Confidence: High | Medium | Low
-Recommended next step: <read-only or Review-mode remediation>
+Recommended next step: <read-only validation or active-trigger-permitted remediation>
 References:
 - <project doc>
 - <official source>
@@ -227,8 +145,6 @@ Escalate when:
 ## Related Skills
 
 - `traffic-analytics-kql-analysis`
-- `nsg-deny-flow-investigation`
-- `udr-asymmetry-investigation`
 - `vnet-flow-logs-and-ingestion`
 - `rbac-and-resource-access-check`
 

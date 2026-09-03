@@ -22,9 +22,11 @@ Trigger the Grubify HTTP 5xx fault:
 make break-food
 ```
 
-Wait 3–5 minutes for the Azure Monitor alert `alert-vflta-food-http-5xx` to fire.
+Wait 3–5 minutes for the Azure Monitor alert `alert-food-http-5xx` to fire.
 
 Open the SRE Agent portal under **Incident Response**. The alert will appear as an **unrouted incident** — the agent received it but has no rule for how to handle it. Nothing happens automatically.
+
+### Step 2 — Restore the app
 
 Restore the app before continuing:
 
@@ -35,18 +37,6 @@ make validate-food
 # If container revision still shows unhealthy after 3 minutes:
 make food-status
 ```
-
-### Step 2 — Connect Azure Monitor as the incident platform
-
-Before applying filters, connect Azure Monitor as the incident source:
-
-```bash
-make incident-platforms
-```
-
-This runs an ARM PATCH that sets `incidentManagementConfiguration` on your agent. Wait ~30 seconds for the change to propagate before continuing — the `make incident-filters` retry loop (5 attempts × 10 s) handles the race window automatically.
-
-> **Note:** After connecting, the portal may automatically create a default **Quickstart** response plan. Delete it before proceeding — go to **Incident Response → Filters → Table view** in the [Azure SRE Agent portal](https://ai.azure.com/sreagent) and remove any plan named *Quickstart*, as it will conflict with the filters you're about to apply.
 
 ### Step 3 — Add the incident filters (response plans)
 
@@ -59,7 +49,7 @@ make incident-filters
 Verify under **Incident Response → Filters** in the portal — you should see 4 filters listed:
 - `sample-food-http-errors` — Sev1, titleContains: food → `aca-app-incident-handler`
 - `web-tier-nginx` — Sev2, titleContains: nginx → `iaas-vm-incident-handler`
-- `network-observability-review` — Sev2, titleContains: Denied → `network-traffic-analyst`
+- `network-observability-review` — Sev2, titleContains: network- (excludes nginx) → `network-traffic-analyst`
 - `parking-vm-unhealthy` — Sev2, titleContains: parking → `iaas-vm-incident-handler`
 
 ### Step 4 — Trigger the same alert again
@@ -99,7 +89,9 @@ Response plans handle reactive automation. Scheduled tasks handle proactive auto
 make scheduled-tasks
 ```
 
-Verify under **Scheduled Tasks** in the portal. You should see **4 active scheduled tasks** (`cost-optimization-review`, `daily-network-observability-health`, `flow-log-ingestion-freshness`, `triage-grubify-issues`). A fifth task (`post-demo-drift-check`) ships in the bundle but is **disabled** — it will appear in the portal as inactive and can be ignored.
+Verify under **Scheduled Tasks** in the portal. You should see **6 active scheduled tasks**:
+`agent-quality-review`, `cost-optimization-review`, `daily-network-observability-health`,
+`flow-log-ingestion-freshness`, `post-demo-drift-check`, and `triage-grubify-issues`.
 
 ## Success Criteria
 

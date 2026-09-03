@@ -7,13 +7,12 @@ spec:
     Analyze and optimize Azure cost across a scope using resource inventory and configuration,
     actual spend, utilization, and Azure Advisor, weighted by each workload's criticality, SLA,
     resiliency, performance, and budget. Recommendations only; never modifies resources.
-  content_file: ./cost-optimization.md
+  files:
+    - ./cost-optimization.md
+    - ./cost-optimization/references/cost-queries.md
   tools:
     - RunAzCliReadCommands
     - QueryLogAnalyticsByWorkspaceId
     - QueryAppInsightsByResourceId
     - ExecutePythonCode
     - GetAzCliHelp
-  safety:
-    default_mode: read_only
-    requires_approval_for_actions: true

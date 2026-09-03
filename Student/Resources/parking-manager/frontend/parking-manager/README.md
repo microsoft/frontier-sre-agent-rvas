@@ -82,25 +82,14 @@ Open **http://localhost:8080**.
 npm test
 ```
 
-## Azure App Service Deployment
+## Workshop Scope
 
-The frontend is deployed as a Node.js App Service running `server.js`. The workflow in `.github/workflows/deploy-frontend.yml` handles CI/CD automatically on push to `main`.
+This React/Express frontend is retained for local development and demonstrations. The workshop
+Terraform does not deploy an Azure App Service for it, and no frontend deployment workflow is
+registered in this repository. The live Makefile scenarios exercise the city APIs and control
+services directly.
 
-### Manual deployment
-
-```bash
-npm install && npm run build
-
-az webapp up \
-  --name <app-service-name> \
-  --resource-group <resource-group> \
-  --runtime "NODE:18-lts" \
-  --src-path .
-```
-
-### Application Settings in Azure
-
-Set the following Application Settings in the Azure App Service to configure backend URLs:
+For local proxy testing, set these environment variables before starting `server.js`:
 
 ```
 REACT_APP_LISBON_API_URL=https://<lisbon-api-fqdn>
@@ -110,8 +99,6 @@ REACT_APP_BERLIN_API_URL=https://<berlin-api-fqdn>
 REACT_APP_CHAOS_CONTROL_URL=https://<chaos-control-fqdn>
 REACT_APP_VM_HEALTH_CONTROL_URL=https://<vm-health-control-fqdn>
 ```
-
-For CI/CD setup, see [.github/workflows/README.md](../../.github/workflows/README.md).
 
 ## Project Structure
 

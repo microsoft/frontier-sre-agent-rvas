@@ -1,21 +1,18 @@
 # Consolidated skill (2026-07-02): merges the former vnet-flow-logs-troubleshooting and
 # storage-flow-log-ingestion-check skills into one flow-log pipeline-health skill. The two
-# covered the same diagnostic funnel (flow-log enablement -> raw blobs in Storage -> Log
-# Analytics / Traffic Analytics ingestion), so they are unified to stay within the official
-# five-active-skills cap and follow the "one focused, non-overlapping procedure per skill"
-# best practice. Source: https://learn.microsoft.com/en-us/azure/sre-agent/skills
-# (Limits and constraints: "Active skills - Maximum five concurrent").
+# covered the same diagnostic funnel (flow-log enablement -> successful Storage writes -> Log
+# Analytics / Traffic Analytics ingestion), so they are unified into one focused,
+# non-overlapping procedure. Source: https://learn.microsoft.com/en-us/azure/sre-agent/skills
 api_version: azuresre.ai/v1
 kind: Skill
 metadata:
   name: vnet-flow-logs-and-ingestion
 spec:
-  description: Diagnose VNet Flow Logs enablement and the raw-blob to Storage to Log Analytics / Traffic Analytics ingestion pipeline - missing, delayed, mis-scoped, duplicated, or storage-blocked flow data.
-  content_file: ./vnet-flow-logs-and-ingestion.md
+  description: Diagnose VNet Flow Logs enablement and the Storage-write to Log Analytics / Traffic Analytics ingestion pipeline - missing, delayed, mis-scoped, duplicated, or storage-blocked flow data.
+  files:
+    - ./vnet-flow-logs-and-ingestion.md
+    - ./vnet-flow-logs-and-ingestion/references/ingestion-diagnostics.md
   tools:
     - RunAzCliReadCommands
     - QueryLogAnalyticsByWorkspaceId
     - GetAzCliHelp
-  safety:
-    default_mode: read_only
-    requires_approval_for_actions: true

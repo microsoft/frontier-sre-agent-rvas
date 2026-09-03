@@ -40,7 +40,7 @@ resource "azurerm_container_app" "sample_food_api" {
 
     container {
       name   = "grubify-api"
-      image  = local.sample_food_api_placeholder_image
+      image  = "ghcr.io/microsoft/frontier-sre-agent-rvas/grubify-api:latest"
       cpu    = 0.5
       memory = "1Gi"
 
@@ -61,15 +61,9 @@ resource "azurerm_container_app" "sample_food_api" {
 
       env {
         name  = "AllowedOrigins__0"
-        value = "https://placeholder.invalid"
+        value = "https://${local.sample_food_names.frontend_container_app}.${azurerm_container_app_environment.sample_food.default_domain}"
       }
     }
-  }
-
-  lifecycle {
-    ignore_changes = [
-      template[0].container[0].env,
-    ]
   }
 }
 
@@ -99,7 +93,7 @@ resource "azurerm_container_app" "sample_food_frontend" {
 
     container {
       name   = "grubify-frontend"
-      image  = local.sample_food_frontend_placeholder_image
+      image  = "ghcr.io/microsoft/frontier-sre-agent-rvas/grubify-frontend:latest"
       cpu    = 0.25
       memory = "0.5Gi"
 
@@ -108,11 +102,5 @@ resource "azurerm_container_app" "sample_food_frontend" {
         value = "https://${azurerm_container_app.sample_food_api.ingress[0].fqdn}/api"
       }
     }
-  }
-
-  lifecycle {
-    ignore_changes = [
-      template[0].container[0].env,
-    ]
   }
 }

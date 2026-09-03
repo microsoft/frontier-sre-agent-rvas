@@ -6,7 +6,6 @@ metadata:
   name: dependency-analyzer
 spec:
   description: Dependency-mapping specialist for Parking Manager. Uses Application Insights and Log Analytics to infer frontend-to-backend topology, dependency health, latency hotspots, and observability gaps.
-  agent_type: Autonomous
   enable_skills: false
   allowed_skills: []
   handoff_description: Use this agent to build or explain the Parking Manager dependency graph from telemetry, especially frontend HTTP dependencies to backend APIs. Invoke with `/agent dependency-analyzer`.

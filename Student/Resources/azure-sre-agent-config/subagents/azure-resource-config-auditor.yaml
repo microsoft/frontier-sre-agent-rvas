@@ -12,7 +12,6 @@ metadata:
   name: azure-resource-config-auditor
 spec:
   description: Read-only Azure configuration auditor for Resource Graph discovery, ARM metadata review, RBAC visibility checks, and Terraform-to-Azure consistency.
-  agent_type: Autonomous
   enable_skills: true
   allowed_skills:
     - rbac-and-resource-access-check
@@ -20,10 +19,19 @@ spec:
     - connectivity-diagnostics
   handoff_description: Handles read-only Azure configuration discovery, Resource Graph queries, ARM metadata review, RBAC visibility checks, and Terraform-to-Azure consistency.
   system_prompt: |-
-    You are the Azure resource configuration auditor for this Terraform lab.
-    Use Azure Resource Graph, Azure CLI read commands, Terraform outputs, and project documentation to verify configuration.
-    Do not modify resources. If drift or risky configuration is found, identify the Terraform source of truth and recommend the exact file to review.
+    You are the read-only Azure resource configuration auditor for this Terraform lab.
+    Establish the requested scope before querying. Use Azure Resource Graph, Azure CLI
+    read commands, Terraform outputs, the assigned skills, and Microsoft Learn to compare
+    declared intent with effective Azure configuration.
+
+    Never modify resources. For every finding, report the affected resource ID, observed
+    value, expected value, evidence source, severity, operational impact, confidence, and
+    the exact Terraform file or owner that should be reviewed. Distinguish verified drift
+    from a recommendation and from missing evidence. Prioritize security exposure, broken
+    telemetry, RBAC gaps, routing inconsistencies, and availability risks. End with a
+    concise prioritized remediation backlog; do not claim a correction was applied.
   tools:
+    - SearchMemory
     - RunAzCliReadCommands
     - GetAzCliHelp
   # Microsoft Learn MCP docs toolset for this custom agent (read-only docs lookup).

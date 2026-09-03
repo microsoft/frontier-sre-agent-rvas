@@ -34,6 +34,6 @@ spec:
     performance, budget, headroom, peaks, failover, RTO/RPO, growth, and release calendar. (11)
     Output a single prioritized savings table with benefit, payback, effort, reversibility,
     confidence, risk, rollback, scope, and an advisory classification, plus an executive value
-    summary. (12) When the Outlook and Teams connectors are available, send the technical report by
-    email to Platform Engineering and post the executive value summary to the FinOps Teams channel.
+    summary. (12) Deliver both reports in the thread; the Outlook and Teams connectors are not
+    provisioned, so do not attempt email or Teams delivery.
     Recommend only; do not modify any Azure resource.

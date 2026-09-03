@@ -4,56 +4,48 @@
 # under the domain-routing rule: each owner declares its failure domain, mirroring
 # `iaas-vm-incident-handler` (IaaS web tier). This handler owns the Sev1 ACA app domain
 # (HTTP 5xx) routed by the `sample-food-http-errors` filter (titleContains: food).
-# It is Autonomous and write-capable, so it investigates AND remediates (revision
-# restart/rollback) and files the GitHub issue in microsoft/frontier-sre-agent-rvas
-# (the Grubify app lives under Student/Resources/grubify/ in that repository).
-#
-# NOTE: agent-to-agent handoffs are not supported in workspace mode. The code-analysis
-# capability (source code correlation, PR creation) is inlined into this agent's prompt
-# instead of delegating to code-analyzer. code-analyzer remains registered as a
-# standalone subagent for direct invocation from the portal.
+# It is Autonomous and write-capable, so it investigates and can restart a stuck revision,
+# files the GitHub issue, and proposes a source fix through a
+# pull request in lpassaretta_microsoft/grubify when the root cause is in code.
 api_version: azuresre.ai/v1
 kind: SubAgent
 metadata:
   name: aca-app-incident-handler
 spec:
-  description: Azure Container Apps application incident handler for the Sample Food / Grubify PaaS app. Owns the Sev1 ACA app domain (HTTP 5xx); investigates with runbooks, collects evidence, remediates (Container Apps revision restart/rollback), and creates GitHub issues with root cause and remediation. Imported from dm-chelupati/sre-agent-lab (Grubify) as `incident-handler`, renamed 2026-06-14.
-  agent_type: Autonomous
+  description: Azure Container Apps application incident handler for the Sample Food / Grubify PaaS app. Owns the Sev1 ACA app domain (HTTP 5xx); investigates with runbooks, collects evidence, can restart a stuck revision as a temporary mitigation, and creates a GitHub issue plus a pull request for confirmed source-code or Terraform-owned desired-state defects. It never rolls back or replaces images out of band. Imported from dm-chelupati/sre-agent-lab (Grubify) as `incident-handler`, renamed 2026-06-14.
   enable_skills: true
   allowed_skills:
     - sample-food-container-app-incident-analysis
-  handoff_description: Investigates incidents using runbooks and creates GitHub issues with findings.
+    - source-fix-delivery
+  handoff_description: Investigates incidents using runbooks and creates GitHub issues and source-fix pull requests with verified findings.
   system_prompt: |-
     You are an expert in triaging and diagnosing incidents. When triggered,
     search the knowledge base for the relevant runbook, execute the diagnostic
     steps, collect evidence, and create a GitHub issue in
-    microsoft/frontier-sre-agent-rvas with your findings including root cause,
+    lpassaretta_microsoft/grubify with your findings including root cause,
     evidence, and remediation actions.
 
-    For deep root-cause analysis, correlate the failure to specific source code in
-    the Grubify application — located under Student/Resources/grubify/ in
-    microsoft/frontier-sre-agent-rvas — by reading relevant files with GitHub tools
-    (`get_file_contents`, `search_code`) to provide file:line references. If a code
-    fix is warranted, create a branch, apply the minimal change, and open a pull
-    request via GitHub tools (`create_branch`, `push_files`, `create_pull_request`).
+    For incidents that require deep source-code root-cause analysis or a code fix,
+    read the source from the connected `grubify` repository under `codeRefs/` and
+    follow the `source-fix-delivery` skill end to end: it defines the engineering
+    standard the change must meet, the failing-then-passing regression evidence, and
+    the issue plus pull-request delivery workflow. Workspace mode does not support
+    handoffs or agents-as-tools, so complete that workflow yourself.
 
-    GitHub access: create and update issues and PRs through the GitHub tools available
-    to you (for example `issue_write`, `add_issue_comment`, `list_issues`,
-    `search_issues`, `create_branch`, `push_files`, `create_pull_request`). The
-    connector authenticates via OAuth — do NOT use the `gh` CLI, do NOT call the
-    GitHub REST API from ExecutePythonCode, and do NOT search for a GitHub token in
-    environment variables or Key Vault.
+    Scope: the connected repository is the workshop repository and contains much more
+    than the application. Read and change ONLY files under `Student/Resources/grubify`.
+    If the evidence points outside that folder, report it and stop.
 
-    Always search memory for similar past incidents first.
+    GitHub access: create and update issues ONLY through the GitHub MCP connector
+    tools available to you (for example `issue_write` to create or update an issue,
+    `add_issue_comment` to comment, `list_issues`/`search_issues` to find existing
+    issues). The connector authenticates for you, so do NOT use the `gh` CLI, do NOT
+    call the GitHub REST API from ExecutePythonCode, and do NOT search for a GitHub
+    token in environment variables or Key Vault. If no GitHub tool is available, state
+    that the `github-mcp` OAuth connection must be authorized in the portal and include
+    the full issue body in your response instead of improvising another method.
 
     Use ExecutePythonCode to plot metrics charts when presenting evidence.
-
-    Search memory for "incident report template" and follow that format exactly
-    when creating GitHub issues — include structured sections for Summary,
-    Impact, Timeline, Evidence, Root Cause, Remediation, and Action Items.
-    IMPORTANT: Fill out EVERY section completely — do not leave any section
-    empty or skip the References section. Include full ARM resource IDs,
-    workspace IDs, and App Insights resource IDs in References.
   tools:
     - SearchMemory
     - RunAzCliReadCommands
@@ -62,4 +54,28 @@ spec:
     - QueryLogAnalyticsByWorkspaceId
     - QueryAppInsightsByResourceId
     - ExecutePythonCode
+  # GitHub MCP tools assigned to THIS custom agent. The connector-level portal
+  # selection (extendedProperties.toolsVisibleToMetaAgent) only reaches the main/meta
+  # agent; a custom agent needs its own mcp_tools, or its GitHub tools are absent at
+  # run time ("no GitHub MCP connector tools are available"). Use an explicit
+  # least-privilege set instead of the all-tools wildcard. Source:
+  # https://learn.microsoft.com/en-us/azure/sre-agent/connectors#connectors-and-custom-agents
+  # push_files is deliberately absent: it writes an arbitrary set of paths in one call, which is a
+  # wider grant than this role needs. create_or_update_file commits one reviewed file at a time on
+  # a dedicated branch, which is the operation the source-fix workflow actually performs.
+  mcp_tools:
+    - github-mcp_add_issue_comment
+    - github-mcp_create_branch
+    - github-mcp_create_or_update_file
+    - github-mcp_create_pull_request
+    - github-mcp_get_file_contents
+    - github-mcp_issue_read
+    - github-mcp_issue_write
+    - github-mcp_pull_request_read
+    - github-mcp_search_code
+    - github-mcp_search_issues
+    - github-mcp_update_pull_request
+  # Agent-to-agent handoffs are rejected by the data-plane API in workspace mode
+  # ("New agent-to-agent handoffs are not supported in workspace mode. Deliver
+  # cross-agent capabilities through skills and Task-based subagents instead.").
   handoffs: []

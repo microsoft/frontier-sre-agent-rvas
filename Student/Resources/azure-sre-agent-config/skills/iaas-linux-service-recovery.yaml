@@ -1,0 +1,13 @@
+api_version: azuresre.ai/v1
+kind: Skill
+metadata:
+  name: iaas-linux-service-recovery
+spec:
+  description: Use when a Linux service on one or more Azure Virtual Machines is stopped, failed, or unhealthy; prove the failure from Syslog, apply the smallest reversible in-guest recovery through Azure Run Command, and verify each VM plus the load-balanced endpoint.
+  files:
+    - ./iaas-linux-service-recovery.md
+  tools:
+    - RunAzCliReadCommands
+    - RunAzCliWriteCommands
+    - QueryLogAnalyticsByWorkspaceId
+    - GetAzCliHelp

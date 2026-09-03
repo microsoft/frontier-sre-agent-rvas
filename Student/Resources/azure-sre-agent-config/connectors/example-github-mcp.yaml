@@ -1,35 +1,4 @@
 # GitHub remote MCP server connector (Option B: MCP + PAT, no interactive OAuth).
-#
-# Rationale: the imported GitHub OAuth connector (connectors/github.yaml,
-# dataConnectorType: GitHubOAuth) requires a one-time interactive authorization in
-# the SRE Agent portal before GitHub tools work. This connector is the alternative:
-# it registers GitHub's official remote MCP server as a data-plane MCP connector,
-# authenticated with a GitHub Personal Access Token (PAT) injected at runtime.
-# Once applied with a valid PAT, the GitHub MCP toolset (default: context, repos,
-# issues, pull_requests, users) becomes available to the autonomous subagents
-# (code-analyzer for S2, issue-triager for S3) without any interactive OAuth step.
-#
-# Official sources (verified):
-#   - Remote endpoint + HTTP transport + PAT Bearer header:
-#     https://github.com/github/github-mcp-server  (Remote GitHub MCP Server,
-#     "Using a GitHub PAT": type "http", url "https://api.githubcopilot.com/mcp/",
-#     headers { "Authorization": "Bearer <PAT>" }).
-#   - Default toolset (context, repos, issues, pull_requests, users):
-#     https://github.com/github/github-mcp-server#default-toolset
-#   - GitHub MCP server usage and PAT scopes:
-#     https://docs.github.com/en/copilot/how-tos/provide-context/use-mcp/use-the-github-mcp-server
-#
-# Shape follows the proven remote-MCP-over-HTTP-with-Bearer pattern (for a no-auth HTTP MCP
-# connector example, see connectors/microsoft-learn-mcp.yaml). The connector object type must be "AgentConnector"
-# (kind below maps to body type; type "Connector" returns HTTP 400 InvalidObjectType,
-# verified live for microsoft-learn-mcp). No partnerType is set: this is a generic
-# remote MCP server, not a built-in partner integration.
-#
-# Secret handling: the PAT is NEVER committed. bearerToken uses the ${GITHUB_PAT}
-# placeholder (already declared in .env.example); sre-agent-config.sh substitutes it
-# at runtime via envsubst. Provide a fine-grained PAT scoped to the Grubify repo with,
-# at minimum, Contents: Read and Issues: Read and write (add Pull requests: Read and
-# write for S2 PR creation). Inject it in the shell before apply, do not store it here.
 api_version: azuresre.ai/v1
 kind: AgentConnector
 metadata:
@@ -43,20 +12,6 @@ spec:
       endpoint: https://api.githubcopilot.com/mcp/
       authType: BearerToken
       bearerToken: ${GITHUB_PAT}
-      # Tools exposed to the MAIN/meta agent for interactive portal chat. The portal
-      # "Edit connector > MCP Tools" selection is persisted HERE
-      # (extendedProperties.toolsVisibleToMetaAgent). It was absent from this manifest,
-      # so any `apply --target connectors --name github-mcp` (a full PUT) would have
-      # WIPED the portal selection. Codified to keep re-apply idempotent and to answer
-      # "the YAML doesn't show the tools I selected".
-      # IMPORTANT: this field controls ONLY the main agent's chat tools. Each CUSTOM
-      # agent (sub-agent) needs its OWN tool grant via `mcp_tools` in subagents/*.yaml
-      # (here: mcp_tools: [github-mcp/*]); that is what the autonomous S1/S2/S3 runs use.
-      # Least-privilege note: this is the full toolset ("select all"). For production
-      # you can trim to the issue/PR/code-read tools you actually use (issue_read,
-      # issue_write, add_issue_comment, list_issues, search_issues, get_label,
-      # list_issue_types, get_file_contents, search_code, pull_request_read,
-      # create_pull_request).
       toolsVisibleToMetaAgent:
         - github-mcp_add_comment_to_pending_review
         - github-mcp_add_issue_comment

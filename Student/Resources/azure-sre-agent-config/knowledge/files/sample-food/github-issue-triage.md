@@ -1,10 +1,12 @@
-# Sample Food Ordering App GitHub Issue Triage Runbook
+# Sample Food Ordering App GitHub Issue Triage Reference
 
-Use this runbook when GitHub OAuth/source tools are connected to Azure SRE Agent and the team wants issue triage for the Sample Food Ordering App repository.
+Reference material for issue triage on the Sample Food Ordering App repository: the classification
+taxonomy, the comment format, and the boundaries that must not be crossed. The ordered triage steps
+belong to the `github-issue-triage` skill; this document supplies the vocabulary that skill applies.
 
 ## Scope
 
-- Repository: `microsoft/frontier-sre-agent-rvas` (the Grubify application source is under `Student/Resources/grubify/`), or the repo configured in Terraform output `sample_food_app_source_repo`.
+- Repository: `lpassaretta_microsoft/grubify`, the repository connected to this agent under `codeRefs/grubify`.
 - Issue focus: customer issues, bugs, performance reports, memory pressure, frontend/API failures, deployment failures.
 
 ## Classification
@@ -15,7 +17,7 @@ Use this runbook when GitHub OAuth/source tools are connected to Azure SRE Agent
 | `performance` | Latency, memory, CPU, or scaling symptoms are reported. |
 | `frontend` | UI, React, API base URL, or browser-side behavior is involved. |
 | `api` | .NET API endpoint, cart, menu, checkout, or server exception is involved. |
-| `infrastructure` | Container Apps, ACR, identity, revision, ingress, or Terraform is involved. |
+| `infrastructure` | Container Apps, container image or registry, identity, revision, ingress, or Terraform is involved. |
 | `needs-repro` | Issue lacks steps, timestamp, or affected endpoint. |
 
 ## Triage Comment Template

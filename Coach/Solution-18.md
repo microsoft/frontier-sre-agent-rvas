@@ -19,7 +19,7 @@
 
 - Agent produces a prioritized savings table with multiple recommendations and trade-offs.
 - Recommendations reference workload context from cost knowledge docs.
-- At least one orphaned/idle resource opportunity is surfaced.
+- Every recommendation is evidence-supported; uncertain items are classified as needs-more-data.
 - Student can drill into evidence for the top recommendation.
 
 ## Common Issues and Hints
@@ -28,6 +28,7 @@
 - **Symptom:** Output is generic Advisor paraphrase. **Fix:** press for utilization data and knowledge-doc context.
 - **Symptom:** Agent suggests immediate deletes/resizes. **Fix:** remind students the agent is read-only and should recommend only.
 - **Symptom:** Duplicate recommendations appear. **Fix:** ask the student to explain how Advisor and inventory findings should be de-duplicated.
+- **Symptom:** New subscription has insufficient cost or utilization history. **Fix:** accept a needs-more-data classification.
 
 ## Debrief Discussion Guide
 
