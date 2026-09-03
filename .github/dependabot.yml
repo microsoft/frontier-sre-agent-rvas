@@ -1,0 +1,115 @@
+version: 2
+updates:
+  # --- npm: Grubify ---
+  - package-ecosystem: "npm"
+    directories:
+      - "/Student/Resources/grubify/grubify-frontend"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "javascript"
+      - "grubify"
+    groups:
+      grubify-npm-dependencies:
+        patterns:
+          - "*"
+
+  # --- npm: Parking Manager ---
+  - package-ecosystem: "npm"
+    directories:
+      - "/Student/Resources/parking-manager/frontend/parking-manager"
+      - "/Student/Resources/parking-manager/backend/berlin-parking-api"
+      - "/Student/Resources/parking-manager/backend/chaos-control"
+      - "/Student/Resources/parking-manager/backend/lisbon-parking-api"
+      - "/Student/Resources/parking-manager/backend/madrid-parking-api"
+      - "/Student/Resources/parking-manager/backend/paris-parking-api"
+      - "/Student/Resources/parking-manager/backend/vm-health-control"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "javascript"
+      - "parking-manager"
+    groups:
+      parking-manager-npm-dependencies:
+        patterns:
+          - "*"
+
+  # --- pip: Parking Manager ---
+  - package-ecosystem: "pip"
+    directories:
+      - "/Student/Resources/parking-manager/backend/berlin-mcp-server"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "python"
+      - "parking-manager"
+    groups:
+      parking-manager-pip-dependencies:
+        patterns:
+          - "*"
+
+  # --- nuget: Grubify ---
+  - package-ecosystem: "nuget"
+    directories:
+      - "/Student/Resources/grubify/GrubifyApi"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "dotnet"
+      - "grubify"
+    groups:
+      grubify-nuget-dependencies:
+        patterns:
+          - "*"
+
+  # --- docker: Grubify ---
+  - package-ecosystem: "docker"
+    directories:
+      - "/Student/Resources/grubify/grubify-frontend"
+      - "/Student/Resources/grubify/GrubifyApi"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "grubify"
+    groups:
+      grubify-docker-dependencies:
+        patterns:
+          - "*"
+
+  # --- docker: Parking Manager ---
+  - package-ecosystem: "docker"
+    directories:
+      - "/Student/Resources/parking-manager/backend/berlin-mcp-server"
+      - "/Student/Resources/parking-manager/backend/berlin-parking-api"
+      - "/Student/Resources/parking-manager/backend/chaos-control"
+      - "/Student/Resources/parking-manager/backend/lisbon-parking-api"
+      - "/Student/Resources/parking-manager/backend/vm-health-control"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "parking-manager"
+    groups:
+      parking-manager-docker-dependencies:
+        patterns:
+          - "*"
+
+  # --- GitHub Actions ---
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    groups:
+      github-actions-dependencies:
+        patterns:
+          - "*"
