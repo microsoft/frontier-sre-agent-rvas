@@ -38,6 +38,36 @@ output "rg_sample_food_id" {
   value       = azurerm_resource_group.sample_food.id
 }
 
+output "rg_parking_lisbon_id" {
+  description = "Lisbon Parking resource group ID."
+  value       = azurerm_resource_group.parking_lisbon.id
+}
+
+output "rg_parking_berlin_id" {
+  description = "Berlin Parking resource group ID."
+  value       = azurerm_resource_group.parking_berlin.id
+}
+
+output "rg_parking_madrid_id" {
+  description = "Madrid Parking resource group ID."
+  value       = azurerm_resource_group.parking_madrid.id
+}
+
+output "rg_parking_paris_id" {
+  description = "Paris Parking resource group ID."
+  value       = azurerm_resource_group.parking_paris.id
+}
+
+output "rg_parking_chaos_id" {
+  description = "Parking control services resource group ID."
+  value       = azurerm_resource_group.parking_chaos.id
+}
+
+output "rg_parking_frontend_id" {
+  description = "Parking Manager frontend resource group ID."
+  value       = azurerm_resource_group.parking_frontend.id
+}
+
 output "managed_resource_ids" {
   description = "List of resource IDs for the SRE Agent knowledge graph (subscription + workload resource groups + demo Log Analytics workspace)."
   value = distinct([
@@ -46,6 +76,12 @@ output "managed_resource_ids" {
     azurerm_resource_group.spoke_web_api.id,
     azurerm_resource_group.spoke_data.id,
     azurerm_resource_group.sample_food.id,
+    azurerm_resource_group.parking_lisbon.id,
+    azurerm_resource_group.parking_berlin.id,
+    azurerm_resource_group.parking_madrid.id,
+    azurerm_resource_group.parking_paris.id,
+    azurerm_resource_group.parking_chaos.id,
+    azurerm_resource_group.parking_frontend.id,
     azurerm_log_analytics_workspace.demo.id,
   ])
 }
@@ -261,6 +297,26 @@ output "parking_vm_health_control_url" {
   value       = "https://${azurerm_container_app.vm_health_control.ingress[0].fqdn}"
 }
 
+output "parking_frontend_name" {
+  description = "Name of the Parking Manager frontend Web App."
+  value       = azurerm_linux_web_app.parking_frontend.name
+}
+
+output "parking_frontend_url" {
+  description = "Public HTTPS URL for the Parking Manager frontend Web App."
+  value       = "https://${azurerm_linux_web_app.parking_frontend.default_hostname}"
+}
+
+output "parking_frontend_resource_group_name" {
+  description = "Resource group containing the Parking Manager frontend Web App."
+  value       = azurerm_resource_group.parking_frontend.name
+}
+
+output "parking_frontend_service_plan_name" {
+  description = "Name of the Parking Manager frontend App Service plan."
+  value       = azurerm_service_plan.parking_frontend.name
+}
+
 output "parking_madrid_vm_name" {
   description = "Name of the Madrid Windows Server VM (parking API on port 3002)."
   value       = var.deploy_madrid_vm ? azurerm_windows_virtual_machine.madrid[0].name : ""
@@ -294,10 +350,11 @@ output "parking_paris_api_url" {
 output "parking_resource_groups" {
   description = "Resource group names for each parking app component."
   value = {
-    lisbon = azurerm_resource_group.parking_lisbon.name
-    berlin = azurerm_resource_group.parking_berlin.name
-    madrid = azurerm_resource_group.parking_madrid.name
-    paris  = azurerm_resource_group.parking_paris.name
-    chaos  = azurerm_resource_group.parking_chaos.name
+    lisbon   = azurerm_resource_group.parking_lisbon.name
+    berlin   = azurerm_resource_group.parking_berlin.name
+    madrid   = azurerm_resource_group.parking_madrid.name
+    paris    = azurerm_resource_group.parking_paris.name
+    chaos    = azurerm_resource_group.parking_chaos.name
+    frontend = azurerm_resource_group.parking_frontend.name
   }
 }

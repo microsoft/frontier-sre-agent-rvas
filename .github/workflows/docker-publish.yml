@@ -37,6 +37,9 @@ jobs:
           - name: vm-health-control
             context: Student/Resources/parking-manager/backend/vm-health-control
             dockerfile: Student/Resources/parking-manager/backend/vm-health-control/Dockerfile
+          - name: parking-manager-frontend
+            context: Student/Resources/parking-manager/frontend/parking-manager
+            dockerfile: Student/Resources/parking-manager/frontend/parking-manager/Dockerfile
           - name: grubify-api
             context: Student/Resources/grubify/GrubifyApi
             dockerfile: Student/Resources/grubify/GrubifyApi/Dockerfile

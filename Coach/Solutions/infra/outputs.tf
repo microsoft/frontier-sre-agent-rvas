@@ -201,6 +201,22 @@ output "parking_vm_health_control_url" {
   value = module.workload.parking_vm_health_control_url
 }
 
+output "parking_frontend_name" {
+  value = module.workload.parking_frontend_name
+}
+
+output "parking_frontend_url" {
+  value = module.workload.parking_frontend_url
+}
+
+output "parking_frontend_resource_group_name" {
+  value = module.workload.parking_frontend_resource_group_name
+}
+
+output "parking_frontend_service_plan_name" {
+  value = module.workload.parking_frontend_service_plan_name
+}
+
 output "parking_madrid_vm_name" {
   value = module.workload.parking_madrid_vm_name
 }

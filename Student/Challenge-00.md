@@ -8,7 +8,7 @@ Before the learning starts, two things must exist: the Azure lab infrastructure,
 
 You'll deploy the workload infrastructure with Terraform and then create your own Azure SRE Agent — an empty agent with no skills, no knowledge, no subagents, and no connectors. That emptiness is intentional. In Challenges 01 through 06 you will add each capability yourself, one at a time, and observe exactly what each addition unlocks. By the end of Challenge 06 you'll have built the fully configured agent from scratch — and you'll understand every piece of it.
 
-The lab infrastructure includes: a hub-spoke network with Azure Firewall, IaaS VMs running a web/API/DB tier, VNet Flow Logs with Traffic Analytics, and the **Grubify** food-ordering app on Azure Container Apps. All of this is provisioned by Terraform — the SRE Agent creation and configuration are entirely up to you.
+The lab infrastructure includes: a hub-spoke network with Azure Firewall, IaaS VMs running a web/API/DB tier, VNet Flow Logs with Traffic Analytics, the **Grubify** food-ordering app on Azure Container Apps, and the containerized **Parking Manager** frontend on a public Azure Web App. The Parking Manager uses VNet integration to reach its private VM-hosted APIs without routing through the firewall. All of this is provisioned by Terraform — the SRE Agent creation and configuration are entirely up to you.
 
 ## Description
 
@@ -25,6 +25,13 @@ From the `Student/` directory:
 
 ```bash
 cd Student && make deploy
+```
+
+The default deployment location is `swedencentral`. To deploy to a different Azure region, pass
+the Terraform `location` variable through `TF_VARS`:
+
+```bash
+make deploy TF_VARS='-var="location=xxxxx"'
 ```
 
 This runs `terraform init` + `terraform apply` against the Student Terraform root at `Student/Resources/infra/`, then points the Grubify container apps at the published images. It provisions the workload only. Creating the Azure SRE Agent is your job, in Step 3.
@@ -47,7 +54,7 @@ point of this workshop.
 2. Create an agent in a resource group of your choice, in **Sweden Central**, the same region as the
    workload you just deployed.
 3. Confirm that its provisioning state is `Succeeded` and its power state is `Running`.
-4. Associate the four workload resource groups with the agent and give it **Contributor** permission.
+4. Associate all workload resource groups with the agent and give it **Contributor** permission.
 5. Print the resource groups the agent must watch, from the `Student/` directory:
 
    ```bash
@@ -55,6 +62,7 @@ point of this workshop.
    terraform -chdir="Resources/infra" output web_api_resource_group_name
    terraform -chdir="Resources/infra" output data_resource_group_name
    terraform -chdir="Resources/infra" output sample_food_resource_group_name
+   terraform -chdir="Resources/infra" output parking_resource_groups
    ```
 
    The certified profile is scoped to:
@@ -62,6 +70,12 @@ point of this workshop.
    - `rg-sre-spoke-web-api-iaas` — client and web VMs
    - `rg-sre-spoke-data-iaas` — API and database VMs
    - `rg-sre-spoke-foodapp-paas` — Sample Food / Grubify Container Apps
+   - `rg-sre-parking-lisbon` — Lisbon Parking API
+   - `rg-sre-parking-berlin` — Berlin Parking API and MCP server
+   - `rg-sre-parking-madrid` — Madrid Parking VM
+   - `rg-sre-parking-paris` — Paris Parking VM
+   - `rg-sre-parking-chaos` — Chaos Control and VM Health Control
+   - `rg-sre-parking-frontend` — public Parking Manager Web App and App Service plan
 
 The network analyst and the proactive scheduled tasks stay read-only even though the agent holds
 broader permissions for the remediation scenarios.

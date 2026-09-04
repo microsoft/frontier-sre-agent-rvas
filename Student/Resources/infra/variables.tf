@@ -89,6 +89,12 @@ variable "rg_parking_chaos" {
   default     = "rg-sre-parking-chaos"
 }
 
+variable "rg_parking_frontend" {
+  description = "Resource group name for the Parking Manager frontend Web App."
+  type        = string
+  default     = "rg-sre-parking-frontend"
+}
+
 variable "create_parking_public_ips" {
   description = "Create Standard public IPs for the Madrid and Paris VMs. Useful for direct SSH/RDP access in dev/test."
   type        = bool

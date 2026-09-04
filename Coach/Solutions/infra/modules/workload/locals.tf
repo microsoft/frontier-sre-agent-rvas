@@ -22,6 +22,7 @@ locals {
     data_api          = "10.30.1.0/24"
     data_db           = "10.30.2.0/24"
     data_privatelink  = "10.30.3.0/24"
+    parking_frontend  = "10.30.4.0/26"
   }
 
   demo_network_watcher_name = var.create_network_watcher ? azurerm_network_watcher.demo[0].name : data.azurerm_network_watcher.demo_existing[0].name
@@ -70,5 +71,6 @@ locals {
     berlin_mcp    = "ghcr.io/microsoft/frontier-sre-agent-rvas/berlin-mcp-server:latest"
     chaos_control = "ghcr.io/microsoft/frontier-sre-agent-rvas/chaos-control:latest"
     vm_health     = "ghcr.io/microsoft/frontier-sre-agent-rvas/vm-health-control:latest"
+    frontend      = "ghcr.io/microsoft/frontier-sre-agent-rvas/parking-manager-frontend:latest"
   }
 }

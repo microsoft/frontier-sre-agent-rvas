@@ -107,6 +107,26 @@ resource "azurerm_subnet" "data_privatelink" {
   private_endpoint_network_policies = "Disabled"
 }
 
+# Dedicated regional VNet integration subnet for the public Parking Manager
+# Web App. It deliberately has no route-table association, so public API and
+# registry traffic uses App Service egress rather than the hub firewall.
+resource "azurerm_subnet" "parking_frontend" {
+  name                            = "snet-parking-frontend-integration"
+  resource_group_name             = azurerm_resource_group.spoke_data.name
+  virtual_network_name            = azurerm_virtual_network.spoke_data.name
+  address_prefixes                = [local.demo_subnets.parking_frontend]
+  default_outbound_access_enabled = false
+
+  delegation {
+    name = "app-service-integration"
+
+    service_delegation {
+      name    = "Microsoft.Web/serverFarms"
+      actions = ["Microsoft.Network/virtualNetworks/subnets/action"]
+    }
+  }
+}
+
 resource "azurerm_virtual_network_peering" "hub_to_app" {
   name                      = "peer-hub-to-app"
   resource_group_name       = azurerm_resource_group.hub.name
@@ -187,6 +207,18 @@ resource "azurerm_network_security_group" "data" {
   location            = azurerm_resource_group.spoke_data.location
   resource_group_name = azurerm_resource_group.spoke_data.name
   tags                = local.resource_tags
+
+  security_rule {
+    name                       = "AllowParkingFrontendToPrivateApis"
+    priority                   = 190
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_ranges    = ["3002", "3003"]
+    source_address_prefix      = local.demo_subnets.parking_frontend
+    destination_address_prefix = local.demo_subnets.data_api
+  }
 
   security_rule {
     name                       = "AllowAppToDataPorts"

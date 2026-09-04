@@ -82,12 +82,15 @@ Open **http://localhost:8080**.
 npm test
 ```
 
-## Workshop Scope
+## Workshop Deployment
 
-This React/Express frontend is retained for local development and demonstrations. The workshop
-Terraform does not deploy an Azure App Service for it, and no frontend deployment workflow is
-registered in this repository. The live Makefile scenarios exercise the city APIs and control
-services directly.
+The workshop Terraform deploys this React/Express application as a custom container on a public
+Azure Linux Web App. Regional VNet integration lets the server-side proxy reach the private Madrid
+and Paris APIs. The integration subnet has no route-table association and App Service route-all is
+disabled, so public API traffic does not traverse the lab firewall.
+
+The repository's Docker publishing workflow publishes the frontend image to GitHub Container
+Registry. Run that workflow before deploying a new image tag.
 
 For local proxy testing, set these environment variables before starting `server.js`:
 
