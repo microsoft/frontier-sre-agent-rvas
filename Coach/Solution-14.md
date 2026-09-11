@@ -2,6 +2,8 @@
 
 # Coach Guide — Challenge 14: Application Root Cause Analysis
 
+> **Application focus:** Grubify (Sample Food) only
+
 ## Purpose
 
 - Deliver the end-to-end “wow” moment: telemetry → failing endpoint → source code evidence → GitHub artifact.

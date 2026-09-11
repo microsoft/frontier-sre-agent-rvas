@@ -2,6 +2,8 @@
 
 # Challenge 16 — Daily Network Health Report
 
+> **Application focus:** Infrastructure/platform only
+
 > **Capability**: Scheduled Tasks · Proactive Operations · Continuous Monitoring
 
 ## Introduction

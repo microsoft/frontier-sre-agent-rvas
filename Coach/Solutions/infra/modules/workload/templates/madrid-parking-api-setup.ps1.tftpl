@@ -1,0 +1,114 @@
+$ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+$nodePath = "C:\Program Files\nodejs\node.exe"
+$npmPath = "C:\Program Files\nodejs\npm.cmd"
+if (-not (Test-Path $nodePath)) {
+    $nodeMsi = Join-Path $env:TEMP "node-v20.18.1-x64.msi"
+    Invoke-WebRequest -Uri "https://nodejs.org/dist/v20.18.1/node-v20.18.1-x64.msi" -OutFile $nodeMsi
+    $install = Start-Process msiexec.exe -ArgumentList "/i", $nodeMsi, "/qn", "/norestart" -Wait -PassThru
+    if ($install.ExitCode -ne 0) {
+        throw "Node.js installation failed with exit code $($install.ExitCode)"
+    }
+}
+
+$appRoot = "C:\ParkingManager"
+$appDirectory = Join-Path $appRoot "madrid-parking-api"
+$sharedDirectory = Join-Path $appRoot "shared"
+New-Item -ItemType Directory -Force -Path $appDirectory, $sharedDirectory | Out-Null
+
+$sourceBaseUrl = "${source_base_url}"
+Invoke-WebRequest -Uri "$sourceBaseUrl/madrid-parking-api/server.js" -OutFile (Join-Path $appDirectory "server.js")
+Invoke-WebRequest -Uri "$sourceBaseUrl/madrid-parking-api/windowsEventLogger.js" -OutFile (Join-Path $appDirectory "windowsEventLogger.js")
+Invoke-WebRequest -Uri "$sourceBaseUrl/madrid-parking-api/package.json" -OutFile (Join-Path $appDirectory "package.json")
+Invoke-WebRequest -Uri "$sourceBaseUrl/shared/chaosMiddleware.js" -OutFile (Join-Path $sharedDirectory "chaosMiddleware.js")
+
+$serverPath = Join-Path $appDirectory "server.js"
+$ErrorActionPreference = "SilentlyContinue"
+& $nodePath --check $serverPath 2>$null
+$syntaxExitCode = $LASTEXITCODE
+$ErrorActionPreference = "Stop"
+if ($syntaxExitCode -ne 0) {
+    # Temporary compatibility repair for the malformed source currently on main.
+    $lines = Get-Content $serverPath
+    $fixed = @($lines[0..66]; '    });'; '  });'; ''; '  next();'; '});'; ''; $lines[76..343]; '    process.exit(0);'; '  }'; '});'; ''; "process.on('SIGINT', async () => {"; $lines[357..369])
+    [IO.File]::WriteAllLines($serverPath, $fixed)
+}
+
+& $nodePath --check $serverPath
+if ($LASTEXITCODE -ne 0) {
+    throw "Downloaded Madrid server.js failed Node.js syntax validation"
+}
+
+Push-Location $appDirectory
+try {
+    & $npmPath install --omit=dev --no-audit --no-fund
+    if ($LASTEXITCODE -ne 0) {
+        throw "npm install failed with exit code $LASTEXITCODE"
+    }
+} finally {
+    Pop-Location
+}
+
+if (-not (Get-NetFirewallRule -DisplayName "Madrid Parking API" -ErrorAction SilentlyContinue)) {
+    New-NetFirewallRule -DisplayName "Madrid Parking API" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 3002 | Out-Null
+}
+
+$runnerPath = Join-Path $appDirectory "start-api.ps1"
+@(
+    '$env:PORT = "3002"'
+    '$env:NODE_ENV = "production"'
+    '$env:CHAOS_CONTROL_URL = "${chaos_control_url}"'
+    '$env:EVENT_LOG_BACKEND = "eventcreate"'
+    '$env:EVENT_LOG_SOURCE = "MadridParkingAPI"'
+    '$env:EVENT_LOG_NAME = "Application"'
+    '& "C:\Program Files\nodejs\node.exe" "C:\ParkingManager\madrid-parking-api\server.js" *>> "C:\ParkingManager\madrid-parking-api\service.log"'
+    'exit $LASTEXITCODE'
+) | Set-Content -Path $runnerPath -Encoding UTF8
+
+$taskName = "MadridParkingAPI"
+$action = New-ScheduledTaskAction `
+    -Execute "powershell.exe" `
+    -Argument "-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$runnerPath`"" `
+    -WorkingDirectory $appDirectory
+$trigger = New-ScheduledTaskTrigger -AtStartup
+$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+$settings = New-ScheduledTaskSettingsSet `
+    -RestartCount 999 `
+    -RestartInterval (New-TimeSpan -Minutes 1) `
+    -StartWhenAvailable `
+    -ExecutionTimeLimit ([TimeSpan]::Zero)
+
+Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+Register-ScheduledTask `
+    -TaskName $taskName `
+    -Action $action `
+    -Trigger $trigger `
+    -Principal $principal `
+    -Settings $settings `
+    -Description "Madrid Parking API on TCP 3002" `
+    -Force | Out-Null
+
+Start-ScheduledTask -TaskName $taskName
+
+$healthy = $false
+for ($attempt = 1; $attempt -le 30; $attempt++) {
+    Start-Sleep -Seconds 2
+    try {
+        $response = Invoke-RestMethod -Uri "http://localhost:3002/api/parking" -TimeoutSec 5
+        if ($response.success -eq $true) {
+            $healthy = $true
+            break
+        }
+    } catch {
+        Write-Output "Waiting for Madrid Parking API (attempt $attempt/30)"
+    }
+}
+
+if (-not $healthy) {
+    $task = Get-ScheduledTaskInfo -TaskName $taskName
+    throw "Madrid Parking API failed to become healthy. Last task result: $($task.LastTaskResult)"
+}
+
+Write-Output "Madrid Parking API is running and configured to start on boot."

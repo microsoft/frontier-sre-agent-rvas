@@ -2,6 +2,8 @@
 
 # Challenge 18 — Subscription Cost Optimization Review
 
+> **Application focus:** Infrastructure/platform only
+
 > **Capability**: FinOps · Azure Advisor · Resource Graph · Cost governance
 
 ## Introduction

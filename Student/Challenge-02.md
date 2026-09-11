@@ -2,6 +2,8 @@
 
 # Challenge 02 — Explore the Knowledge Base
 
+> **Application focus:** Grubify (Sample Food) only
+
 > **Capabilities added in this challenge**: Knowledge Documents
 
 ## Introduction
@@ -22,10 +24,18 @@ Explain the Grubify application topology. What are its components, how are they 
 
 Note the response carefully — does it match the actual lab? Does it name specific resources, IP ranges, or monitoring configurations? Or does it give generic Container Apps advice?
 
+Also try asking about the Web IaaS application topology:
+
+```text
+Explain the Web IaaS application topology. What are its components, how are they connected, and what is the hosting model for each tier?
+```
+
+Note the response carefully — does it match the actual lab? Does it name specific resources, IP ranges, or monitoring configurations?
+
 Also try:
 
 ```text
-What KQL query would I use to detect nginx service failures on the Grubify web VMs?
+What KQL query would I use to detect nginx service failures on the Web IaaS VMs?
 ```
 
 Without knowledge documents, the agent cannot give the correct workspace name, table name, or query structure for this lab.
@@ -38,7 +48,7 @@ Upload the knowledge documents from `Student/Resources/azure-sre-agent-config/kn
 make knowledge-files
 ```
 
-Wait ~30 seconds for ingestion, then verify under **Knowledge** in the portal — you should see the uploaded documents listed.
+Wait ~30 seconds for ingestion, then verify under **Knowledge sources** in the portal — you should see the uploaded documents listed and indexed.
 
 ### Step 3 — Ask the same questions again
 
@@ -50,8 +60,16 @@ Explain the Grubify application topology. What are its components, how are they 
 
 The agent should now describe:
 
-- The hub-and-spoke network layout with specific IP ranges
 - The Container Apps services (`ca-food-api`, `ca-food-frontend`) and their ports
+- The monitoring stack (Log Analytics workspace, Application Insights, Syslog DCR)
+
+```text
+Explain the Web IaaS application topology. What are its components, how are they connected, and what is the hosting model for each tier?
+```
+
+The agent should now describe:
+
+- The hub-and-spoke network layout with specific IP ranges
 - The IaaS web tier (nginx VMs behind the internal load balancer at `10.20.2.100`)
 - The monitoring stack (Log Analytics workspace, Application Insights, Syslog DCR)
 
@@ -79,7 +97,7 @@ For your last response, which knowledge document did you reference? Can you cite
 
 ### Step 6 — Browse the documents in the portal
 
-In the portal under **Knowledge**, open 2–3 uploaded documents. Confirm the agent's responses matched what is written in the documents.
+In the portal under **Knowledge sources**, open 2–3 uploaded documents. Confirm the agent's responses matched what is written in the documents.
 
 ## Success Criteria
 

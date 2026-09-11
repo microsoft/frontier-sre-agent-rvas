@@ -4,7 +4,7 @@ kind: ScheduledTask
 metadata:
   name: triage-grubify-issues
 spec:
-  description: Triage validation customer issues in lpassaretta_microsoft/grubify every 12 hours.
+  description: Triage validation customer issues in <your-github-username>/frontier-sre-agent-rvas every 12 hours.
   schedule: "0 */12 * * *"
   time_zone: UTC
   enabled: true
@@ -12,7 +12,7 @@ spec:
   mode: Autonomous
   prompt: >-
     Use the issue-triager validation specialist to list open issues in
-    lpassaretta_microsoft/grubify whose title contains [Customer Issue] and that have not been
+    <your-github-username>/frontier-sre-agent-rvas whose title contains [Customer Issue] and that have not been
     triaged. Classify, label, and comment on each qualifying issue according to the knowledge-base
     runbook. Do not access or modify microsoft/frontier-sre-agent-rvas. Report a successful no-op
     when no issue qualifies.

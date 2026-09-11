@@ -184,8 +184,8 @@ class WindowsEventLogger {
 
     const eventIdMap = {
       INFO: '1000',
-      WARNING: '1001',
-      ERROR: '1002'
+      WARNING: '999',
+      ERROR: '998'
     };
 
     const entryType = levelMap[logEntry.level] || 'INFORMATION';
@@ -222,7 +222,7 @@ class WindowsEventLogger {
    */
   _consoleLog(logEntry) {
     const prefix = `[Event Viewer ${logEntry.level}]`;
-    
+
     switch (logEntry.level) {
       case 'ERROR':
         console.error(prefix, JSON.stringify(logEntry, null, 2));

@@ -2,6 +2,8 @@
 
 # Coach Guide — Challenge 09: Daily Application Health Report
 
+> **Application focus:** Parking Manager only
+
 ## Purpose
 
 - Teach daily operational summarization and introduce SLI/SLO language in a concrete report format.

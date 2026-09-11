@@ -2,6 +2,8 @@
 
 # Coach Guide — Challenge 17: Observability Freshness Verification
 
+> **Application focus:** Infrastructure/platform only
+
 ## Purpose
 
 - Teach “monitoring the monitoring”: proving the telemetry pipeline is alive, fresh, and complete.

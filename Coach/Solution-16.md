@@ -2,6 +2,8 @@
 
 # Coach Guide — Challenge 16: Daily Network Health Report
 
+> **Application focus:** Infrastructure/platform only
+
 ## Purpose
 
 - Demonstrate proactive operations: the agent scans for patterns before a specific incident is raised.

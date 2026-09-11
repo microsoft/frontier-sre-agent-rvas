@@ -9,6 +9,7 @@ locals {
     hub        = ["10.10.0.0/16"]
     spoke_app  = ["10.20.0.0/16"]
     spoke_data = ["10.30.0.0/16"]
+    parking    = ["10.50.0.0/16"]
   }
 
   demo_subnets = {
@@ -22,10 +23,12 @@ locals {
     data_api          = "10.30.1.0/24"
     data_db           = "10.30.2.0/24"
     data_privatelink  = "10.30.3.0/24"
+    parking_vms       = "10.50.1.0/24"
+    parking_frontend  = "10.50.2.0/26"
   }
 
-  demo_network_watcher_name = var.create_network_watcher ? azurerm_network_watcher.demo[0].name : data.azurerm_network_watcher.demo_existing[0].name
-  demo_network_watcher_rg   = var.create_network_watcher ? azurerm_network_watcher.demo[0].resource_group_name : data.azurerm_network_watcher.demo_existing[0].resource_group_name
+  demo_network_watcher_name = data.azurerm_network_watcher.demo_existing.name
+  demo_network_watcher_rg   = data.azurerm_network_watcher.demo_existing.resource_group_name
 
   demo_web_cloud_init    = base64encode(templatefile("${path.module}/templates/demo-lab-web-cloud-init.yaml", {}))
   demo_nva_cloud_init    = base64encode(templatefile("${path.module}/templates/demo-lab-nva-cloud-init.yaml", {}))
@@ -70,5 +73,6 @@ locals {
     berlin_mcp    = "ghcr.io/microsoft/frontier-sre-agent-rvas/berlin-mcp-server:latest"
     chaos_control = "ghcr.io/microsoft/frontier-sre-agent-rvas/chaos-control:latest"
     vm_health     = "ghcr.io/microsoft/frontier-sre-agent-rvas/vm-health-control:latest"
+    frontend      = "ghcr.io/microsoft/frontier-sre-agent-rvas/parking-manager-frontend:latest"
   }
 }

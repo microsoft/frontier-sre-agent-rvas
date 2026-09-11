@@ -1,0 +1,9 @@
+$ErrorActionPreference="Stop"
+$p=[Convert]::FromBase64String("${script_base64gzip}")
+$m=[IO.MemoryStream]::new($p)
+$g=[IO.Compression.GzipStream]::new($m,[IO.Compression.CompressionMode]::Decompress)
+$s=[IO.StreamReader]::new($g).ReadToEnd()
+$f="$env:TEMP\madrid-api.ps1"
+[IO.File]::WriteAllText($f,$s)
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $f
+exit $LASTEXITCODE

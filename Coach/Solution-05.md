@@ -2,6 +2,8 @@
 
 # Coach Guide — Challenge 05: Discover Specialist Agents
 
+> **Application focus:** Grubify (Sample Food) and Parking Manager
+
 ## Purpose
 
 - Teach subagents as scoped domain experts with their own prompts, tools, and skill allow-lists.

@@ -70,6 +70,7 @@ copy .env.example .env
 ```
 
 Environment variables:
+- `EVENT_LOG_BACKEND` - Logging backend (`eventcreate`, `node-windows`, `console`, or `auto`). The VM deployment uses `eventcreate` so JSON is passed as a process argument instead of through a shell command.
 - `EVENT_LOG_SOURCE` - Event source name (default: MadridParkingAPI)
 - `EVENT_LOG_NAME` - Event log name (default: Application)
 - `PORT` - API port (default: 3002)

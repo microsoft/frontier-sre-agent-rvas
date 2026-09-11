@@ -26,7 +26,7 @@ spec:
     Syslog
     | where TimeGenerated >= ago(24h)
     | where tolower(ProcessName) == "parisparkingapi"
-    | extend msg_raw = trim(@"\"", SyslogMessage)
+    | extend msg_raw = trim("\"", SyslogMessage)
     | extend msg = parse_json(msg_raw)
     | where tostring(msg.message) == "HTTP Response"
     | extend

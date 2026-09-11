@@ -2,6 +2,8 @@
 
 # Coach Guide — Challenge 08: Application Dependency Mapping
 
+> **Application focus:** Grubify (Sample Food) only
+
 ## Purpose
 
 - Show how live telemetry can be turned into topology: dependencies, call counts, latency, and hotspots.

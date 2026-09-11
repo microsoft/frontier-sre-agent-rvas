@@ -10,7 +10,7 @@ const createChaosMiddleware = require('../shared/chaosMiddleware');
 
 const app = express();
 const PORT = process.env.PORT || 3003;
-const DEPENDENCY_URL = process.env.PARIS_DEPENDENCY_URL || 'https://timeapi.io/api/time/current/zone?timeZone=Europe%2FParis';
+const DEPENDENCY_URL = process.env.PARIS_DEPENDENCY_URL || 'https://management.azure.com/metadata/endpoints?api-version=2020-06-01';
 const DEPENDENCY_TIMEOUT_MS = Number(process.env.PARIS_DEPENDENCY_TIMEOUT_MS || 2500);
 const PARIS_SELF_PROBE_ENABLED = process.env.PARIS_SELF_PROBE_ENABLED !== 'false';
 const PARIS_SELF_PROBE_INTERVAL_MS = Number(process.env.PARIS_SELF_PROBE_INTERVAL_MS || 10000);
@@ -63,14 +63,13 @@ const fetchExternalDependency = async () => {
 
   const payload = response.data;
   return {
-    dependency: 'timeapi',
+    dependency: 'azure-management-metadata',
     url: DEPENDENCY_URL,
     status: 'healthy',
     responseTimeMs: Date.now() - startedAt,
     data: {
-      datetime: payload.dateTime,
-      timezone: payload.timeZone,
-      dstActive: payload.dstActive
+      cloudCount: Array.isArray(payload) ? payload.length : 0,
+      portal: Array.isArray(payload) ? payload[0]?.portal : undefined
     }
   };
 };
@@ -134,8 +133,8 @@ app.use(createChaosMiddleware('paris', {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'healthy', 
+  res.json({
+    status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'paris-parking-api',
     city: parkingState.city,
@@ -228,9 +227,9 @@ app.get('/api/parking/levels/:levelNumber', async (req, res) => {
     const levelNumber = parseInt(req.params.levelNumber);
 
     if (isNaN(levelNumber) || levelNumber < 0 || levelNumber >= parkingState.numberOfLevels) {
-      return res.status(400).json({ 
-        success: false, 
-        error: `Invalid level number. Must be between 0 and ${parkingState.numberOfLevels - 1}` 
+      return res.status(400).json({
+        success: false,
+        error: `Invalid level number. Must be between 0 and ${parkingState.numberOfLevels - 1}`
       });
     }
 
@@ -258,23 +257,23 @@ app.patch('/api/parking/levels/:levelNumber', async (req, res) => {
     const { availableSlots } = req.body;
 
     if (isNaN(levelNumber) || levelNumber < 0 || levelNumber >= parkingState.numberOfLevels) {
-      return res.status(400).json({ 
-        success: false, 
-        error: `Invalid level number. Must be between 0 and ${parkingState.numberOfLevels - 1}` 
+      return res.status(400).json({
+        success: false,
+        error: `Invalid level number. Must be between 0 and ${parkingState.numberOfLevels - 1}`
       });
     }
 
     if (availableSlots === undefined || availableSlots < 0 || availableSlots > parkingState.parkingSlotsPerLevel) {
-      return res.status(400).json({ 
-        success: false, 
-        error: `Invalid slot count. Must be between 0 and ${parkingState.parkingSlotsPerLevel}` 
+      return res.status(400).json({
+        success: false,
+        error: `Invalid slot count. Must be between 0 and ${parkingState.parkingSlotsPerLevel}`
       });
     }
 
     parkingState.availableSlotsPerLevel[levelNumber] = availableSlots;
     parkingState.lastUpdated = new Date().toISOString();
 
-    logger.logOperation('UPDATE_LEVEL_SLOTS', parkingState.id, { 
+    logger.logOperation('UPDATE_LEVEL_SLOTS', parkingState.id, {
       level: levelNumber,
       availableSlots
     });
@@ -303,7 +302,7 @@ app.put('/api/parking/config', async (req, res) => {
 
     parkingState.lastUpdated = new Date().toISOString();
 
-    logger.logOperation('UPDATE_CONFIG', parkingState.id, { 
+    logger.logOperation('UPDATE_CONFIG', parkingState.id, {
       changes: Object.keys(req.body)
     });
 
@@ -320,13 +319,13 @@ const simulateParkingActivity = () => {
   parkingState.availableSlotsPerLevel = parkingState.availableSlotsPerLevel.map((current, index) => {
     const change = Math.floor(Math.random() * 7) - 3; // Random change between -3 and +3
     let newValue = current + change;
-    
+
     // Keep within valid range [0, parkingSlotsPerLevel]
     newValue = Math.max(0, Math.min(parkingState.parkingSlotsPerLevel, newValue));
-    
+
     return newValue;
   });
-  
+
   parkingState.lastUpdated = new Date().toISOString();
 };
 
@@ -366,9 +365,9 @@ if (useHttps) {
     console.log(`📝 Syslog: ${logger.isAvailable() ? 'Enabled' : 'Not available (using console logging)'}`);
     console.log(`🎲 Parking activity simulation: Enabled (updates every 5 seconds)`);
     console.log(`🔎 Dependency self-probe: ${PARIS_SELF_PROBE_ENABLED && !useHttps ? `Enabled (${PARIS_SELF_PROBE_INTERVAL_MS}ms)` : 'Disabled'}`);
-    
+
     // Log server start
-    logger.logOperation('SERVER_START', parkingState.id, { 
+    logger.logOperation('SERVER_START', parkingState.id, {
       port: PORT,
       city: parkingState.city,
       protocol: 'HTTPS',
@@ -385,9 +384,9 @@ if (useHttps) {
     console.log(`📝 Syslog: ${logger.isAvailable() ? 'Enabled' : 'Not available (using console logging)'}`);
     console.log(`🎲 Parking activity simulation: Enabled (updates every 5 seconds)`);
     console.log(`🔎 Dependency self-probe: ${PARIS_SELF_PROBE_ENABLED && !useHttps ? `Enabled (${PARIS_SELF_PROBE_INTERVAL_MS}ms)` : 'Disabled'}`);
-    
+
     // Log server start
-    logger.logOperation('SERVER_START', parkingState.id, { 
+    logger.logOperation('SERVER_START', parkingState.id, {
       port: PORT,
       city: parkingState.city,
       protocol: 'HTTP',
@@ -400,9 +399,9 @@ if (useHttps) {
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('SIGTERM signal received: closing server');
-  logger.logOperation('SERVER_SHUTDOWN', parkingState.id, { 
+  logger.logOperation('SERVER_SHUTDOWN', parkingState.id, {
     city: parkingState.city,
-    reason: 'SIGTERM' 
+    reason: 'SIGTERM'
   });
   logger.close();
   if (server) {
@@ -416,9 +415,9 @@ process.on('SIGTERM', async () => {
 
 process.on('SIGINT', async () => {
   console.log('SIGINT signal received: closing HTTP server');
-  logger.logOperation('SERVER_SHUTDOWN', parkingState.id, { 
+  logger.logOperation('SERVER_SHUTDOWN', parkingState.id, {
     city: parkingState.city,
-    reason: 'SIGINT' 
+    reason: 'SIGINT'
   });
   logger.close();
   process.exit(0);

@@ -2,6 +2,8 @@
 
 # Coach Guide — Challenge 15: Autonomous Remediation
 
+> **Application focus:** Parking Manager only
+
 ## Purpose
 
 - Focus the class on the validation loop: a remediation is only complete when the agent proves it worked.

@@ -2,6 +2,8 @@
 
 # Challenge 13 — Routing Failure Investigation
 
+> **Application focus:** Infrastructure/platform only
+
 > **Capability**: UDRs · Effective Routes · Next Hop Analysis
 
 ## Introduction

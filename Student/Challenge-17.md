@@ -2,6 +2,8 @@
 
 # Challenge 17 — Observability Freshness Verification
 
+> **Application focus:** Infrastructure/platform only
+
 > **Capability**: Telemetry validation · Monitoring the monitoring · Coverage analysis
 
 ## Introduction

@@ -2,6 +2,8 @@
 
 # Challenge 08 — Application Dependency Mapping
 
+> **Application focus:** Grubify (Sample Food) only
+
 > **Capabilities added in this challenge**: Service Dependency Analysis · Application Topology · Correlation
 
 ## Introduction

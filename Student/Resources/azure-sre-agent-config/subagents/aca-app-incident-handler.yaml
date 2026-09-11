@@ -6,7 +6,7 @@
 # (HTTP 5xx) routed by the `sample-food-http-errors` filter (titleContains: food).
 # It is Autonomous and write-capable, so it investigates and can restart a stuck revision,
 # files the GitHub issue, and proposes a source fix through a
-# pull request in lpassaretta_microsoft/grubify when the root cause is in code.
+# pull request in <your-github-username>/frontier-sre-agent-rvas when the root cause is in code.
 api_version: azuresre.ai/v1
 kind: SubAgent
 metadata:
@@ -22,7 +22,7 @@ spec:
     You are an expert in triaging and diagnosing incidents. When triggered,
     search the knowledge base for the relevant runbook, execute the diagnostic
     steps, collect evidence, and create a GitHub issue in
-    lpassaretta_microsoft/grubify with your findings including root cause,
+    <your-github-username>/frontier-sre-agent-rvas with your findings including root cause,
     evidence, and remediation actions.
 
     For incidents that require deep source-code root-cause analysis or a code fix,
@@ -42,7 +42,7 @@ spec:
     issues). The connector authenticates for you, so do NOT use the `gh` CLI, do NOT
     call the GitHub REST API from ExecutePythonCode, and do NOT search for a GitHub
     token in environment variables or Key Vault. If no GitHub tool is available, state
-    that the `github-mcp` OAuth connection must be authorized in the portal and include
+    that the `github-mcp-v1` connection must be authorized in the portal and include
     the full issue body in your response instead of improvising another method.
 
     Use ExecutePythonCode to plot metrics charts when presenting evidence.
@@ -64,17 +64,17 @@ spec:
   # wider grant than this role needs. create_or_update_file commits one reviewed file at a time on
   # a dedicated branch, which is the operation the source-fix workflow actually performs.
   mcp_tools:
-    - github-mcp_add_issue_comment
-    - github-mcp_create_branch
-    - github-mcp_create_or_update_file
-    - github-mcp_create_pull_request
-    - github-mcp_get_file_contents
-    - github-mcp_issue_read
-    - github-mcp_issue_write
-    - github-mcp_pull_request_read
-    - github-mcp_search_code
-    - github-mcp_search_issues
-    - github-mcp_update_pull_request
+    - github-mcp-v1_add_issue_comment
+    - github-mcp-v1_create_branch
+    - github-mcp-v1_create_or_update_file
+    - github-mcp-v1_create_pull_request
+    - github-mcp-v1_get_file_contents
+    - github-mcp-v1_issue_read
+    - github-mcp-v1_issue_write
+    - github-mcp-v1_pull_request_read
+    - github-mcp-v1_search_code
+    - github-mcp-v1_search_issues
+    - github-mcp-v1_update_pull_request
   # Agent-to-agent handoffs are rejected by the data-plane API in workspace mode
   # ("New agent-to-agent handoffs are not supported in workspace mode. Deliver
   # cross-agent capabilities through skills and Task-based subagents instead.").

@@ -86,6 +86,25 @@ app.use('/api/vm-health-control', createProxy(
   (pathReq) => pathReq.replace(/^\/api\/vm-health-control/, '/api/vm-health')
 ));
 
+// Health check for the container and App Service.
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'healthy' });
+});
+
+// Diagnostic endpoint
+app.get('/api/diagnostics', (req, res) => {
+  const buildPath = path.join(__dirname, 'build');
+  const fs = require('fs');
+  res.json({
+    buildExists: fs.existsSync(buildPath),
+    filesInBuild: fs.existsSync(buildPath) ? fs.readdirSync(buildPath).slice(0, 20) : [],
+    serverRunning: true,
+    backendConfig,
+    nodeVersion: process.version,
+    env: process.env.NODE_ENV
+  });
+});
+
 // Disable CSP entirely (allow all sources)
 app.use((req, res, next) => {
   res.removeHeader('Content-Security-Policy');
@@ -105,20 +124,6 @@ app.get('*', (req, res) => {
       console.error('Error sending index.html:', err);
       res.status(500).send('Error loading application');
     }
-  });
-});
-
-// Diagnostic endpoint
-app.get('/api/diagnostics', (req, res) => {
-  const buildPath = path.join(__dirname, 'build');
-  const fs = require('fs');
-  res.json({
-    buildExists: fs.existsSync(buildPath),
-    filesInBuild: fs.existsSync(buildPath) ? fs.readdirSync(buildPath).slice(0, 20) : [],
-    serverRunning: true,
-    backendConfig,
-    nodeVersion: process.version,
-    env: process.env.NODE_ENV
   });
 });
 
