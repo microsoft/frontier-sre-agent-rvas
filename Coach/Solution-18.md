@@ -2,6 +2,8 @@
 
 # Coach Guide — Challenge 18: Subscription Cost Optimization Review
 
+> **Application focus:** Infrastructure/platform only
+
 ## Purpose
 
 - Teach FinOps-style, evidence-backed cost review with business context, not blind “downsize everything” advice.

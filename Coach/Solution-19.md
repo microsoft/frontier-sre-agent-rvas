@@ -2,6 +2,8 @@
 
 # Coach Guide — Challenge 19: Build Your Own Production-Ready SRE Agent
 
+> **Application focus:** Infrastructure/platform only
+
 ## Purpose
 
 - Capstone: students synthesize skills, knowledge, subagents, routing, and governance into a use case that matters to them.

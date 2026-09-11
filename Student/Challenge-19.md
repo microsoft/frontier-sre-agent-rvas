@@ -2,6 +2,8 @@
 
 # Challenge 19 — Build Your Own Production-Ready SRE Agent
 
+> **Application focus:** Infrastructure/platform only
+
 ## Introduction
 
 You've configured skills, subagents, incident filters, connectors, and scheduled tasks. You've watched the Azure SRE Agent autonomously detect, investigate, and remediate faults across PaaS, IaaS, and network layers.

@@ -2,6 +2,8 @@
 
 # Challenge 15 — Autonomous Remediation
 
+> **Application focus:** Parking Manager only
+
 > **Capability**: Response Plans · Auto-remediation · Validation loops
 
 ## Introduction

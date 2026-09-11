@@ -9,12 +9,11 @@ module "workload" {
     random  = random
   }
 
-  location               = var.location
-  rg_hub                 = var.rg_hub
-  rg_spoke_web_api       = var.rg_spoke_web_api
-  rg_spoke_data          = var.rg_spoke_data
-  rg_sample_food         = var.rg_sample_food
-  create_network_watcher = var.create_network_watcher
+  location         = var.location
+  rg_hub           = var.rg_hub
+  rg_spoke_web_api = var.rg_spoke_web_api
+  rg_spoke_data    = var.rg_spoke_data
+  rg_sample_food   = var.rg_sample_food
 
   vm_admin_username         = var.vm_admin_username
   vm_admin_password         = var.vm_admin_password
@@ -23,11 +22,12 @@ module "workload" {
   create_parking_public_ips = var.create_parking_public_ips
   berlin_mcp_auth_token     = var.berlin_mcp_auth_token
 
-  rg_parking_lisbon = var.rg_parking_lisbon
-  rg_parking_berlin = var.rg_parking_berlin
-  rg_parking_madrid = var.rg_parking_madrid
-  rg_parking_paris  = var.rg_parking_paris
-  rg_parking_chaos  = var.rg_parking_chaos
+  rg_parking_lisbon   = var.rg_parking_lisbon
+  rg_parking_berlin   = var.rg_parking_berlin
+  rg_parking_madrid   = var.rg_parking_madrid
+  rg_parking_paris    = var.rg_parking_paris
+  rg_parking_chaos    = var.rg_parking_chaos
+  rg_parking_frontend = var.rg_parking_frontend
 }
 
 module "sre_agent" {
@@ -55,6 +55,12 @@ module "sre_agent" {
     "web-api-resource-group"                                               = module.workload.rg_spoke_web_api_id
     "data-resource-group"                                                  = module.workload.rg_spoke_data_id
     "sample-food-resource-group"                                           = module.workload.rg_sample_food_id
+    "parking-lisbon-resource-group"                                        = module.workload.rg_parking_lisbon_id
+    "parking-berlin-resource-group"                                        = module.workload.rg_parking_berlin_id
+    "parking-madrid-resource-group"                                        = module.workload.rg_parking_madrid_id
+    "parking-paris-resource-group"                                         = module.workload.rg_parking_paris_id
+    "parking-chaos-resource-group"                                         = module.workload.rg_parking_chaos_id
+    "parking-frontend-resource-group"                                      = module.workload.rg_parking_frontend_id
     "demo-log-analytics"                                                   = module.workload.log_analytics_workspace_id
   }
 }

@@ -2,6 +2,8 @@
 
 # Coach Guide — Challenge 07: Hybrid Ecosystem Telemetry
 
+> **Application focus:** Parking Manager only
+
 ## Purpose
 
 - Teach the hybrid-observability pattern: one investigation spans Azure Monitor and a non-Azure telemetry plane.
@@ -23,7 +25,7 @@
 
 ## Common Issues and Hints
 
-- **Symptom:** Madrid query returns no recent data. **Fix:** run `make validate` again and widen the window from 1 hour to 6 hours.
+- **Symptom:** Madrid query returns no recent data. **Fix:** run `make validate-parking` again and widen the window from 1 hour to 6 hours.
 - **Symptom:** Student gives a platform comparison with no source distinction. **Fix:** ask them to label which findings came from Azure Monitor vs. MCP.
 - **Symptom:** `/agent access-to-3rd-party-logs` returns "subagent not found" or routes to the main agent instead. **Fix:** confirm the `access-to-3rd-party-logs` subagent was applied in Challenge 05 (`make subagents`) and that `make connectors` was re-run to register the `berlin-mcp` connector endpoint.
 

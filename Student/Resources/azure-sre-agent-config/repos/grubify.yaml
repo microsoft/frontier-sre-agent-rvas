@@ -1,6 +1,7 @@
-# Repository that the agent clones for source correlation, issue creation and pull-request
-# delivery. It must be the copy the student actually owns, because the student has to review and
-# merge the proposed fix, and because the deployed application is built from this same code.
+# Code Access repository that the agent clones for source correlation. GitHub issue, branch,
+# file, and pull-request operations are provided separately by the ConnectorV2 github-mcp
+# connector. It must be the copy the student actually owns, because the student has to review
+# and merge proposed fixes against this same code.
 #
 # The address is resolved automatically from the `origin` remote of the working copy, so no
 # manual configuration is needed. Set GRUBIFY_REPO_URL to override it.
@@ -16,4 +17,4 @@ metadata:
 spec:
   url: ${GRUBIFY_REPO_URL}
   type: GitHub
-  description: Workshop repository containing the Grubify source under Student/Resources/grubify, mounted for incident correlation, code fixes, issue creation and pull-request delivery.
+  description: Workshop Code Access repository containing the Grubify source under Student/Resources/grubify, mounted for source search, file reads, and incident correlation.

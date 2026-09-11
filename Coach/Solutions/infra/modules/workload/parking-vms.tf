@@ -15,15 +15,18 @@ resource "azurerm_public_ip" "madrid" {
 resource "azurerm_network_interface" "madrid" {
   count = var.deploy_madrid_vm ? 1 : 0
 
-  name                = "nic-parking-madrid"
+  name                = "nic-parking-madrid-vnet"
   location            = azurerm_resource_group.parking_madrid.location
   resource_group_name = azurerm_resource_group.parking_madrid.name
   tags                = local.resource_tags
 
+  lifecycle {
+    create_before_destroy = true
+  }
 
   ip_configuration {
     name                          = "ipconfig1"
-    subnet_id                     = azurerm_subnet.data_api.id
+    subnet_id                     = azurerm_subnet.parking_vms.id
     private_ip_address_allocation = "Dynamic"
 
     public_ip_address_id = var.create_parking_public_ips ? azurerm_public_ip.madrid[0].id : null
@@ -68,17 +71,10 @@ resource "azurerm_windows_virtual_machine" "madrid" {
 
   boot_diagnostics {}
 
-  # Ordering guard: egress through the hub firewall must be established before
-  # provisioning so that the Azure Monitor Windows Agent can reach Azure Monitor.
+  # Ensure independent Parking VNet egress is ready before the VM agent starts.
   depends_on = [
-    azurerm_firewall.hub,
-    azurerm_firewall_policy_rule_collection_group.hub_demo,
-    azurerm_route.data_default_egress_via_firewall,
-    azurerm_route.data_to_app_via_firewall,
-    azurerm_subnet_route_table_association.data_api,
-    azurerm_subnet_route_table_association.data_db,
-    azurerm_virtual_network_peering.hub_to_data,
-    azurerm_virtual_network_peering.data_to_hub,
+    azurerm_nat_gateway_public_ip_association.parking,
+    azurerm_subnet_nat_gateway_association.parking_vms,
   ]
 }
 
@@ -94,6 +90,29 @@ resource "azurerm_virtual_machine_extension" "madrid_ama" {
   automatic_upgrade_enabled  = true
   tags                       = local.resource_tags
 
+}
+
+resource "azurerm_virtual_machine_extension" "madrid_api_setup" {
+  count = var.deploy_madrid_vm ? 1 : 0
+
+  name                       = "MadridParkingApiSetup"
+  virtual_machine_id         = azurerm_windows_virtual_machine.madrid[0].id
+  publisher                  = "Microsoft.Compute"
+  type                       = "CustomScriptExtension"
+  type_handler_version       = "1.10"
+  auto_upgrade_minor_version = true
+  tags                       = local.resource_tags
+
+  settings = jsonencode({
+    commandToExecute = "powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${textencodebase64(templatefile("${path.module}/templates/windows-gzip-bootstrap.ps1.tftpl", {
+      script_base64gzip = base64gzip(templatefile("${path.module}/templates/madrid-parking-api-setup.ps1.tftpl", {
+        source_base_url   = "https://raw.githubusercontent.com/microsoft/frontier-sre-agent-rvas/main/Student/Resources/parking-manager/backend"
+        chaos_control_url = "https://${azurerm_container_app.chaos_control.ingress[0].fqdn}"
+      }))
+    }), "UTF-16LE")}"
+  })
+
+  depends_on = [azurerm_virtual_machine_extension.madrid_ama]
 }
 
 # ─── Paris — Ubuntu Server 22.04 LTS ──────────────────────────────────────────
@@ -113,15 +132,18 @@ resource "azurerm_public_ip" "paris" {
 resource "azurerm_network_interface" "paris" {
   count = var.deploy_paris_vm ? 1 : 0
 
-  name                = "nic-parking-paris"
+  name                = "nic-parking-paris-vnet"
   location            = azurerm_resource_group.parking_paris.location
   resource_group_name = azurerm_resource_group.parking_paris.name
   tags                = local.resource_tags
 
+  lifecycle {
+    create_before_destroy = true
+  }
 
   ip_configuration {
     name                          = "ipconfig1"
-    subnet_id                     = azurerm_subnet.data_api.id
+    subnet_id                     = azurerm_subnet.parking_vms.id
     private_ip_address_allocation = "Dynamic"
 
     public_ip_address_id = var.create_parking_public_ips ? azurerm_public_ip.paris[0].id : null
@@ -172,17 +194,10 @@ resource "azurerm_linux_virtual_machine" "paris" {
 
   boot_diagnostics {}
 
-  # Ordering guard: internet egress through the hub firewall must be established
-  # before provisioning so that the CustomScript extension can run apt-get.
+  # Ensure independent Parking VNet egress is ready before CustomScript runs apt-get.
   depends_on = [
-    azurerm_firewall.hub,
-    azurerm_firewall_policy_rule_collection_group.hub_demo,
-    azurerm_route.data_default_egress_via_firewall,
-    azurerm_route.data_to_app_via_firewall,
-    azurerm_subnet_route_table_association.data_api,
-    azurerm_subnet_route_table_association.data_db,
-    azurerm_virtual_network_peering.hub_to_data,
-    azurerm_virtual_network_peering.data_to_hub,
+    azurerm_nat_gateway_public_ip_association.parking,
+    azurerm_subnet_nat_gateway_association.parking_vms,
   ]
 }
 
@@ -204,7 +219,7 @@ resource "azurerm_virtual_machine_extension" "paris_ama" {
 resource "azurerm_virtual_machine_extension" "paris_node_setup" {
   count = var.deploy_paris_vm ? 1 : 0
 
-  name                       = "CustomScript"
+  name                       = "ParisParkingApiSetup"
   virtual_machine_id         = azurerm_linux_virtual_machine.paris[0].id
   publisher                  = "Microsoft.Azure.Extensions"
   type                       = "CustomScript"
@@ -216,26 +231,13 @@ resource "azurerm_virtual_machine_extension" "paris_node_setup" {
 
 
   settings = jsonencode({
-    script = base64encode(<<-SCRIPT
-      #!/bin/bash
-      set -e
-
-      apt-get -o DPkg::Lock::Timeout=300 update
-      apt-get -o DPkg::Lock::Timeout=300 install -y ca-certificates curl gnupg rsyslog
-
-      mkdir -p /etc/apt/keyrings
-      curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
-        | gpg --dearmor --batch --yes -o /etc/apt/keyrings/nodesource.gpg 2>/dev/null || true
-      echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main" \
-        | tee /etc/apt/sources.list.d/nodesource.list
-
-      apt-get -o DPkg::Lock::Timeout=300 update
-      apt-get -o DPkg::Lock::Timeout=300 install -y nodejs
-
-      node --version
-      npm --version
-    SCRIPT
-    )
+    script = base64encode(templatefile("${path.module}/templates/paris-parking-api-setup.sh.tftpl", {
+      server_js_base64        = filebase64("${path.module}/../../../../../Student/Resources/parking-manager/backend/paris-parking-api/server.js")
+      logger_js_base64        = filebase64("${path.module}/../../../../../Student/Resources/parking-manager/backend/paris-parking-api/syslogLogger.js")
+      package_json_base64     = filebase64("${path.module}/../../../../../Student/Resources/parking-manager/backend/paris-parking-api/package.json")
+      chaos_middleware_base64 = filebase64("${path.module}/../../../../../Student/Resources/parking-manager/backend/shared/chaosMiddleware.js")
+      chaos_control_url       = "https://${azurerm_container_app.chaos_control.ingress[0].fqdn}"
+    }))
   })
 
   depends_on = [azurerm_virtual_machine_extension.paris_ama]

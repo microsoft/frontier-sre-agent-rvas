@@ -2,6 +2,8 @@
 
 # Coach Guide — Challenge 13: Routing Failure Investigation
 
+> **Application focus:** Infrastructure/platform only
+
 ## Purpose
 
 - Teach UDR precedence, effective routes, next-hop reasoning, and why one-way success can still be an outage.

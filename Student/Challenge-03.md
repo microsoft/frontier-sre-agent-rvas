@@ -2,6 +2,8 @@
 
 # Challenge 03 — Discover Operational Skills
 
+> **Application focus:** Infrastructure/platform only
+
 > **Capabilities added in this challenge**: Skills
 
 ## Introduction
@@ -38,7 +40,7 @@ Apply the skill YAMLs from `Student/Resources/azure-sre-agent-config/skills/`:
 make skills
 ```
 
-Verify under **Skills** in the portal — you should see 9 skills listed.
+Verify custom skills under **Skills** in the portal — you should see 9 skills listed.
 
 ### Step 3 — Ask the same questions again
 

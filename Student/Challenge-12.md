@@ -2,6 +2,8 @@
 
 # Challenge 12 — Network Security Investigation
 
+> **Application focus:** Infrastructure/platform only
+
 > **Capability**: NSGs · Flow Logs · Traffic Analytics · Network forensics
 
 ## Introduction

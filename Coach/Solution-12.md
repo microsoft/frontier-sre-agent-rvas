@@ -2,6 +2,8 @@
 
 # Coach Guide — Challenge 12: Network Security Investigation
 
+> **Application focus:** Infrastructure/platform only
+
 ## Purpose
 
 - Teach denied-flow forensics from Traffic Analytics through to the exact NSG rule and remediation.

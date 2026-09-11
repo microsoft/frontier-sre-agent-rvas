@@ -30,24 +30,8 @@ resource "azurerm_resource_group" "spoke_data" {
   tags     = local.resource_tags
 }
 
-# Network Watcher — set var.create_network_watcher=true to create; false (default) reads the existing one.
+# Network Watcher must already be enabled for the deployment region.
 data "azurerm_network_watcher" "demo_existing" {
-  count               = var.create_network_watcher ? 0 : 1
   name                = "NetworkWatcher_${var.location}"
   resource_group_name = "NetworkWatcherRG"
-}
-
-resource "azurerm_resource_group" "network_watcher" {
-  count    = var.create_network_watcher ? 1 : 0
-  name     = "NetworkWatcherRG"
-  location = var.location
-  tags     = local.resource_tags
-}
-
-resource "azurerm_network_watcher" "demo" {
-  count               = var.create_network_watcher ? 1 : 0
-  name                = "NetworkWatcher_${var.location}"
-  location            = var.location
-  resource_group_name = azurerm_resource_group.network_watcher[0].name
-  tags                = local.resource_tags
 }

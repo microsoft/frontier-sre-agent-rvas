@@ -2,6 +2,8 @@
 
 # Coach Guide — Challenge 02: Explore the Knowledge Base
 
+> **Application focus:** Grubify (Sample Food) only
+
 ## Purpose
 
 - Show how knowledge docs reduce hallucination by grounding the agent in the workshop’s actual topology, runbooks, and KQL.

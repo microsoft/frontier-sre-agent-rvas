@@ -10,7 +10,7 @@ spec:
   apiName: github
   displayName: GitHub MCP
   connectionName: github-mcp
-  description: Governed GitHub issue, branch, fix, and pull-request operations for the Grubify validation workflow.
+  description: Governed GitHub issue, branch, file, and pull-request operations for the Grubify and Parking Manager workflows.
   requireApprovalTools:
     - CreateReference
     - CreatePullRequest
