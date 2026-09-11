@@ -6,7 +6,7 @@ belong to the `github-issue-triage` skill; this document supplies the vocabulary
 
 ## Scope
 
-- Repository: `lpassaretta_microsoft/grubify`, the repository connected to this agent under `codeRefs/grubify`.
+- Repository: `<your-github-username>/frontier-sre-agent-rvas`, the repository connected to this agent under `codeRefs/grubify`.
 - Issue focus: customer issues, bugs, performance reports, memory pressure, frontend/API failures, deployment failures.
 
 ## Classification

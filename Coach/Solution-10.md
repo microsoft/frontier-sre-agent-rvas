@@ -10,7 +10,10 @@
 
 ## Mini-Lecture (3–5 min before challenge)
 
-- Reinforce the GitHub prerequisites: `github-mcp` connector green and `grubify` repo linked.
+- Reinforce the hybrid prerequisites: Code Access contains the `grubify` repository,
+	ConnectorV2 `github-mcp` is green, the `parking-vm-unhealthy` filter routes to
+	`parking-vm-incident-reporter`, and the Parking reporter, issue skill, and incident
+	template are deployed.
 - Name the knowledge template: `sample-food/incident-report-template.md` drives consistent issue structure.
 - Show the expected lifecycle: incident context → telemetry evidence → issue creation → follow-up comment with updated findings.
 - If no live Parking Manager incident exists, it is valid to use a realistic incident derived from Challenge 09’s health report.
@@ -24,7 +27,9 @@
 
 ## Common Issues and Hints
 
-- **Symptom:** Agent says GitHub is not authorized. **Fix:** re-check portal OAuth status on the `github-mcp` connector.
+- **Symptom:** Agent says GitHub is not authorized. **Fix:** re-check the `github-mcp` ConnectorV2 OAuth status and issue access under **Builder > Connectors**.
+- **Symptom:** The incident appears but no autonomous investigation starts. **Fix:** confirm the `parking-vm-unhealthy` filter is enabled, matches Sev2 Parking alerts, and routes to `parking-vm-incident-reporter` in Autonomous mode.
+- **Symptom:** The reporter cannot find a GitHub operation. **Fix:** redeploy the reporter and skill, then confirm `github-mcp` exposes `github-mcp_issue_write`, `github-mcp_search_issues`, and `github-mcp_add_issue_comment`.
 - **Symptom:** Issue is created but structure is inconsistent. **Fix:** ask the student to explicitly tell the agent to use the incident report template.
 - **Symptom:** No active incident is available. **Fix:** allow a health-report-derived incident narrative from Challenge 09.
 - **Symptom:** Comment update lacks fresh evidence. **Fix:** ask specifically for last-hour error rate and top three errors.

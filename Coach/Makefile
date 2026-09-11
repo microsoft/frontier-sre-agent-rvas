@@ -64,7 +64,7 @@ TF_VARS ?=
 
 .DEFAULT_GOAL := deploy
 
-.PHONY: deploy infra config-sre-agent
+.PHONY: deploy infra destroy config-sre-agent
 
 include ../Student/Resources/scenarios/Makefile
 
@@ -75,6 +75,11 @@ deploy: infra config-sre-agent
 infra:
 	terraform -chdir="$(INFRA_DIR)" init
 	terraform -chdir="$(INFRA_DIR)" apply $(TF_VARS)
+
+## destroy: destroy all infrastructure managed by the Coach Terraform state
+destroy:
+	terraform -chdir="$(INFRA_DIR)" init
+	terraform -chdir="$(INFRA_DIR)" destroy $(TF_VARS)
 
 ## config-sre-agent: broad cycle by default; CONFIG_* optionally narrows all phases
 ## (script and config files live in Student/Resources — single source of truth)

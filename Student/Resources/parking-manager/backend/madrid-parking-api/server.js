@@ -65,14 +65,11 @@ app.use((req, res, next) => {
       statusCode: res.statusCode,
       responseTimeMs,
       city: parkingState.city
-      const pfxPath = process.env.PFX_PATH || path.join(__dirname, 'madrid.pfx');
-      const pfxPassphrase = process.env.PFX_PASSPHRASE || '';
     });
   });
-      const hasPfx = fs.existsSync(pfxPath);
 
   next();
-      const useHttps = hasPfx || (fs.existsSync(certPath) && fs.existsSync(keyPath));
+});
 
 app.use(createChaosMiddleware('madrid', {
   onChaosInject: (details) => {
@@ -82,8 +79,8 @@ app.use(createChaosMiddleware('madrid', {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'healthy', 
+  res.json({
+    status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'madrid-parking-api',
     city: parkingState.city,
@@ -166,9 +163,9 @@ app.get('/api/parking/levels/:levelNumber', async (req, res) => {
     const levelNumber = parseInt(req.params.levelNumber);
 
     if (isNaN(levelNumber) || levelNumber < 0 || levelNumber >= parkingState.numberOfLevels) {
-      return res.status(400).json({ 
-        success: false, 
-        error: `Invalid level number. Must be between 0 and ${parkingState.numberOfLevels - 1}` 
+      return res.status(400).json({
+        success: false,
+        error: `Invalid level number. Must be between 0 and ${parkingState.numberOfLevels - 1}`
       });
     }
 
@@ -196,23 +193,23 @@ app.patch('/api/parking/levels/:levelNumber', async (req, res) => {
     const { availableSlots } = req.body;
 
     if (isNaN(levelNumber) || levelNumber < 0 || levelNumber >= parkingState.numberOfLevels) {
-      return res.status(400).json({ 
-        success: false, 
-        error: `Invalid level number. Must be between 0 and ${parkingState.numberOfLevels - 1}` 
+      return res.status(400).json({
+        success: false,
+        error: `Invalid level number. Must be between 0 and ${parkingState.numberOfLevels - 1}`
       });
     }
 
     if (availableSlots === undefined || availableSlots < 0 || availableSlots > parkingState.parkingSlotsPerLevel) {
-      return res.status(400).json({ 
-        success: false, 
-        error: `Invalid slot count. Must be between 0 and ${parkingState.parkingSlotsPerLevel}` 
+      return res.status(400).json({
+        success: false,
+        error: `Invalid slot count. Must be between 0 and ${parkingState.parkingSlotsPerLevel}`
       });
     }
 
     parkingState.availableSlotsPerLevel[levelNumber] = availableSlots;
     parkingState.lastUpdated = new Date().toISOString();
 
-    logger.logOperation('UPDATE_LEVEL_SLOTS', parkingState.id, { 
+    logger.logOperation('UPDATE_LEVEL_SLOTS', parkingState.id, {
       level: levelNumber,
       availableSlots
     });
@@ -241,7 +238,7 @@ app.put('/api/parking/config', async (req, res) => {
 
     parkingState.lastUpdated = new Date().toISOString();
 
-    logger.logOperation('UPDATE_CONFIG', parkingState.id, { 
+    logger.logOperation('UPDATE_CONFIG', parkingState.id, {
       changes: Object.keys(req.body)
     });
 
@@ -258,13 +255,13 @@ const simulateParkingActivity = () => {
   parkingState.availableSlotsPerLevel = parkingState.availableSlotsPerLevel.map((current, index) => {
     const change = Math.floor(Math.random() * 7) - 3; // Random change between -3 and +3
     let newValue = current + change;
-    
+
     // Keep within valid range [0, parkingSlotsPerLevel]
     newValue = Math.max(0, Math.min(parkingState.parkingSlotsPerLevel, newValue));
-    
+
     return newValue;
   });
-  
+
   parkingState.lastUpdated = new Date().toISOString();
 };
 
@@ -300,9 +297,9 @@ if (useHttps) {
     console.log(`🪟 Platform: ${process.platform}`);
     console.log(`📝 Windows Event Viewer: ${logger.isAvailable() ? 'Enabled' : 'Not available (using console logging)'}`);
     console.log(`🎲 Parking activity simulation: Enabled (updates every 5 seconds)`);
-    
+
     // Log server start
-    logger.logOperation('SERVER_START', parkingState.id, { 
+    logger.logOperation('SERVER_START', parkingState.id, {
       port: PORT,
       city: parkingState.city,
       protocol: 'HTTPS',
@@ -318,9 +315,9 @@ if (useHttps) {
     console.log(`🪟 Platform: ${process.platform}`);
     console.log(`📝 Windows Event Viewer: ${logger.isAvailable() ? 'Enabled' : 'Not available (using console logging)'}`);
     console.log(`🎲 Parking activity simulation: Enabled (updates every 5 seconds)`);
-    
+
     // Log server start
-    logger.logOperation('SERVER_START', parkingState.id, { 
+    logger.logOperation('SERVER_START', parkingState.id, {
       port: PORT,
       city: parkingState.city,
       protocol: 'HTTP',
@@ -333,32 +330,24 @@ if (useHttps) {
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('SIGTERM signal received: closing server');
-  logger.logOperation('SERVER_SHUTDOWN', parkingState.id, { 
+  logger.logOperation('SERVER_SHUTDOWN', parkingState.id, {
     city: parkingState.city,
-    reason: 'SIGTERM' 
+    reason: 'SIGTERM'
   });
   if (server) {
     server.close(() => {
       process.exit(0);
     });
   } else {
-          ? {
-              pfx: fs.readFileSync(pfxPath),
-              passphrase: pfxPassphrase || undefined
-            }
-          : {
-              key: fs.readFileSync(keyPath),
-              cert: fs.readFileSync(certPath)
-            };
     process.exit(0);
   }
 });
 
-          console.log(`🔒 Using HTTPS with ${hasPfx ? 'PFX certificate bundle' : 'self-signed certificate'}`);
+process.on('SIGINT', async () => {
   console.log('SIGINT signal received: closing server');
-  logger.logOperation('SERVER_SHUTDOWN', parkingState.id, { 
+  logger.logOperation('SERVER_SHUTDOWN', parkingState.id, {
     city: parkingState.city,
-    reason: 'SIGINT' 
+    reason: 'SIGINT'
   });
   if (server) {
     server.close(() => {

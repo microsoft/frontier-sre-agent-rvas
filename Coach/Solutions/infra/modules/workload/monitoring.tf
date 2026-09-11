@@ -9,8 +9,8 @@ resource "azurerm_storage_account" "flow_logs" {
   min_tls_version                 = "TLS1_2"
   allow_nested_items_to_be_public = false
   public_network_access_enabled   = false
-  shared_access_key_enabled = false
-  tags                      = local.resource_tags
+  shared_access_key_enabled       = false
+  tags                            = local.resource_tags
 
   # Keep the firewall default-deny and retain the trusted-service exception used by
   # Microsoft.Network to write and analyze flow logs when public access is disabled.
@@ -45,6 +45,7 @@ resource "azurerm_network_watcher_flow_log" "vnet" {
     hub        = azurerm_virtual_network.hub.id
     spoke-app  = azurerm_virtual_network.spoke_app.id
     spoke-data = azurerm_virtual_network.spoke_data.id
+    parking    = azurerm_virtual_network.parking.id
   }
 
   network_watcher_name = local.demo_network_watcher_name

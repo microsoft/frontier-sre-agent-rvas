@@ -12,14 +12,14 @@
 
 - Distinguish skills from connectors: a skill governs built-in tool usage; a connector surfaces new external tools.
 - Call out the working Learn connector details: `microsoft-learn-mcp`, Streamable HTTP endpoint `https://learn.microsoft.com/api/mcp`, no auth beyond empty custom headers.
-- Clarify that `make connectors` applies the full bundle (`github-mcp`, `microsoft-learn-mcp`, and `berlin-mcp`, deployed as connector `berlin-monitoring-v6`) — the Learn connector is the focus of this challenge, but Berlin is not held back.
+- Clarify that `make connectors-learn` applies only the Microsoft Learn connector; `make connectors` manages the GitHub and Berlin connectors used in Challenges 01 and 07.
 - Mention the three surfaced tools at a concept level: docs search, docs fetch, code sample search.
 - Demonstrate the before/after difference with “cite the official article” prompts.
 
 ## Expected Student Output
 
 - Before setup, docs answers are uncited or training-data-only.
-- After `make connectors`, the `microsoft-learn-mcp` connector is green.
+- After `make connectors-learn`, the `microsoft-learn-mcp` connector is green.
 - The agent returns a real Learn URL and can blend it with Grubify/Azure troubleshooting guidance.
 
 ## Common Issues and Hints

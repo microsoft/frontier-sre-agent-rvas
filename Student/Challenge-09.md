@@ -19,7 +19,7 @@ Unlike Challenge 08 (which traced topology and dependencies for a single app), t
 Confirm the Parking Manager is running and that there is sufficient monitoring data:
 
 ```bash
-make validate
+make validate-parking
 ```
 
 ### Step 1 — Generate the health report
@@ -63,7 +63,15 @@ Ask the agent to describe how this could be automated:
 How would you configure a scheduled task to run this health report every morning at 07:00 UTC and post the results somewhere actionable? Walk me through the scheduled task YAML fields you would use.
 ```
 
-Compare the agent's description to the scheduled task configurations already in the lab — browse them in the portal under **Scheduled Tasks**.
+Compare the agent's description to the scheduled task configurations already in the lab — browse them in the portal under **Automation**.
+
+You can tell the agent to create the scheduled  task:
+
+```text
+Create this scheduled task.
+```
+
+The agent will create it and you can browse it in the portal under **Automation**.
 
 ## Success Criteria
 
@@ -85,4 +93,4 @@ Compare the agent's description to the scheduled task configurations already in 
 
 - For Azure-hosted APIs, CPU and memory metrics come from Container Apps metrics (for ACA services) or from Performance counters in the Log Analytics workspace (for VM-hosted services).
 - Berlin API data requires the OpenTelemetry MCP server — if it's unavailable, the table will show "N/A" for Berlin. Note this explicitly; it's a realistic gap in observability coverage.
-- The lab ships a real scheduled task you can use as a structural reference for Step 4: `daily-network-observability-health` (runs at 06:00 UTC via the `network-traffic-analyst` specialist in Autonomous mode). Browse it in the portal under **Scheduled Tasks** or open `Resources/azure-sre-agent-config/automations/scheduled-tasks/daily-network-observability-health.yaml`.
+- The lab ships a real scheduled task you can use as a structural reference for Step 4: `daily-network-observability-health` (runs at 06:00 UTC via the `network-traffic-analyst` specialist in Autonomous mode). Browse it in the portal under **Automation** or open `Resources/azure-sre-agent-config/automations/scheduled-tasks/daily-network-observability-health.yaml`.

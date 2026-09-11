@@ -198,6 +198,11 @@ resource "azurerm_container_app" "parking_lisbon" {
     type = "SystemAssigned"
   }
 
+  secret {
+    name  = "log-analytics-shared-key"
+    value = azurerm_log_analytics_workspace.demo.primary_shared_key
+  }
+
   ingress {
     external_enabled           = true
     target_port                = 3001
@@ -232,7 +237,7 @@ resource "azurerm_container_app" "parking_lisbon" {
 
       env {
         name  = "PARKING_LOCATION"
-        value = "Lisbon, Portugal"
+        value = "Av. Liberdade, Lisbon, Portugal"
       }
 
       env {
@@ -243,6 +248,11 @@ resource "azurerm_container_app" "parking_lisbon" {
       env {
         name  = "LOG_TYPE"
         value = "LisbonParkingLogs"
+      }
+
+      env {
+        name        = "SHARED_KEY"
+        secret_name = "log-analytics-shared-key"
       }
 
       env {

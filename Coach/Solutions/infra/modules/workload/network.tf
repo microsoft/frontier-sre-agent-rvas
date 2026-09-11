@@ -22,6 +22,14 @@ resource "azurerm_virtual_network" "spoke_data" {
   tags                = local.resource_tags
 }
 
+resource "azurerm_virtual_network" "parking" {
+  name                = "vnet-parking"
+  location            = azurerm_resource_group.parking_frontend.location
+  resource_group_name = azurerm_resource_group.parking_frontend.name
+  address_space       = local.demo_address_spaces.parking
+  tags                = local.resource_tags
+}
+
 resource "azurerm_subnet" "hub_mgmt" {
   name                            = "snet-mgmt"
   resource_group_name             = azurerm_resource_group.hub.name
@@ -105,6 +113,34 @@ resource "azurerm_subnet" "data_privatelink" {
   address_prefixes                  = [local.demo_subnets.data_privatelink]
   default_outbound_access_enabled   = false
   private_endpoint_network_policies = "Disabled"
+}
+
+# Dedicated regional VNet integration subnet for the public Parking Manager
+# Web App. It deliberately has no route-table association, so public API and
+# registry traffic uses App Service egress rather than the hub firewall.
+resource "azurerm_subnet" "parking_vms" {
+  name                            = "snet-parking-vms"
+  resource_group_name             = azurerm_resource_group.parking_frontend.name
+  virtual_network_name            = azurerm_virtual_network.parking.name
+  address_prefixes                = [local.demo_subnets.parking_vms]
+  default_outbound_access_enabled = false
+}
+
+resource "azurerm_subnet" "parking_frontend" {
+  name                            = "snet-parking-frontend-integration"
+  resource_group_name             = azurerm_resource_group.parking_frontend.name
+  virtual_network_name            = azurerm_virtual_network.parking.name
+  address_prefixes                = [local.demo_subnets.parking_frontend]
+  default_outbound_access_enabled = false
+
+  delegation {
+    name = "app-service-integration"
+
+    service_delegation {
+      name    = "Microsoft.Web/serverFarms"
+      actions = ["Microsoft.Network/virtualNetworks/subnets/action"]
+    }
+  }
 }
 
 resource "azurerm_virtual_network_peering" "hub_to_app" {
@@ -213,6 +249,37 @@ resource "azurerm_network_security_group" "data" {
   }
 }
 
+resource "azurerm_network_security_group" "parking" {
+  name                = "nsg-parking-vms"
+  location            = azurerm_resource_group.parking_frontend.location
+  resource_group_name = azurerm_resource_group.parking_frontend.name
+  tags                = local.resource_tags
+
+  security_rule {
+    name                       = "AllowParkingFrontendToPrivateApis"
+    priority                   = 190
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_ranges    = ["3002", "3003"]
+    source_address_prefix      = local.demo_subnets.parking_frontend
+    destination_address_prefix = local.demo_subnets.parking_vms
+  }
+
+  security_rule {
+    name                       = "DenyInternetInbound"
+    priority                   = 4000
+    direction                  = "Inbound"
+    access                     = "Deny"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "Internet"
+    destination_address_prefix = "*"
+  }
+}
+
 resource "azurerm_network_security_group" "hub" {
   name                = "nsg-hub"
   location            = azurerm_resource_group.hub.location
@@ -250,6 +317,11 @@ resource "azurerm_subnet_network_security_group_association" "data_api" {
 resource "azurerm_subnet_network_security_group_association" "data_db" {
   subnet_id                 = azurerm_subnet.data_db.id
   network_security_group_id = azurerm_network_security_group.data.id
+}
+
+resource "azurerm_subnet_network_security_group_association" "parking_vms" {
+  subnet_id                 = azurerm_subnet.parking_vms.id
+  network_security_group_id = azurerm_network_security_group.parking.id
 }
 
 resource "azurerm_subnet_network_security_group_association" "hub_nva" {
@@ -399,6 +471,38 @@ resource "azurerm_route_table" "data_to_nva" {
   tags                = local.resource_tags
 }
 
+resource "azurerm_public_ip" "parking_nat" {
+  name                = "pip-parking-nat"
+  location            = azurerm_resource_group.parking_frontend.location
+  resource_group_name = azurerm_resource_group.parking_frontend.name
+  allocation_method   = "Static"
+  sku                 = "Standard"
+  tags                = local.resource_tags
+
+  lifecycle {
+    ignore_changes = [ip_tags, zones]
+  }
+}
+
+resource "azurerm_nat_gateway" "parking" {
+  name                    = "nat-parking"
+  location                = azurerm_resource_group.parking_frontend.location
+  resource_group_name     = azurerm_resource_group.parking_frontend.name
+  sku_name                = "Standard"
+  idle_timeout_in_minutes = 10
+  tags                    = local.resource_tags
+}
+
+resource "azurerm_nat_gateway_public_ip_association" "parking" {
+  nat_gateway_id       = azurerm_nat_gateway.parking.id
+  public_ip_address_id = azurerm_public_ip.parking_nat.id
+}
+
+resource "azurerm_subnet_nat_gateway_association" "parking_vms" {
+  subnet_id      = azurerm_subnet.parking_vms.id
+  nat_gateway_id = azurerm_nat_gateway.parking.id
+}
+
 resource "azurerm_route" "app_to_data_via_firewall" {
   name                   = "Default-App-To-Data-Via-Firewall"
   resource_group_name    = azurerm_resource_group.spoke_web_api.name
@@ -454,3 +558,4 @@ resource "azurerm_subnet_route_table_association" "data_db" {
   subnet_id      = azurerm_subnet.data_db.id
   route_table_id = azurerm_route_table.data_to_nva.id
 }
+

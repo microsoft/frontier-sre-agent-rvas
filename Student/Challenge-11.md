@@ -14,7 +14,7 @@ In this challenge you'll inject a guest-OS failure that the platform cannot dete
 
 ### Before you start
 
-Verify the Grubify web tier is serving traffic normally:
+Verify the Web IaaS application web tier is serving traffic normally:
 
 ```bash
 make validate
@@ -48,6 +48,8 @@ The response plan `web-tier-nginx` routes the incident to `iaas-vm-incident-hand
 4. Re-verify that nginx is active on every instance before closing the investigation
 
 > If the alert hasn't fired after 5 minutes, trigger the investigation manually using the prompt below.
+
+> Tool approval required: The platform classifies `az vm run-command invoke` as a write operation because it can execute arbitrary scripts on a VM. The agent therefore routes the command through `RunAzCliWriteCommands`, which requires explicit approval by default. To fully automate this incident response, configure a Tool Access Policy that automatically approves only the required VM Run Command operations. In the portal, go to **Capabilities → Tools -> Advanced permissions**, and add an Allow rule like `RunAzCliWriteCommands(az vm run-command invoke *)`, understanding that this permits any VM Run Command available to the agent.
 
 **Manual fallback prompt:**
 ```text

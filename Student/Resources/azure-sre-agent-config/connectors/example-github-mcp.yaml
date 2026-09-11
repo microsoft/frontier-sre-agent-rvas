@@ -1,4 +1,5 @@
-# GitHub remote MCP server connector (Option B: MCP + PAT, no interactive OAuth).
+# Excluded reference only: GitHub remote MCP server with a PAT. The active workshop path is
+# connectors/github-mcp.yaml using ConnectorV2 OAuth; this file is never discovered by default.
 api_version: azuresre.ai/v1
 kind: AgentConnector
 metadata:

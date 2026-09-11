@@ -34,10 +34,10 @@ Again — the agent may answer, but it cannot produce a real, current article UR
 
 Apply the connector YAML from `Student/Resources/azure-sre-agent-config/connectors/`:
 
-> **Note:** `make connectors` applies **all** connectors in the bundle (`github-mcp`, `microsoft-learn-mcp`, `berlin-mcp`, deployed as `berlin-monitoring-v6`). If you ran it in Challenge 01, this re-apply is idempotent and safe — it updates any endpoints from Terraform outputs without disrupting the GitHub connector you already authorized.
+> **Note:** `make connectors-learn` applies only the `microsoft-learn-mcp` connector. The GitHub and Berlin connectors remain managed by `make connectors`.
 
 ```bash
-make connectors
+make connectors-learn
 ```
 
 Verify in the portal under **Connectors** — the `microsoft-learn-mcp` connector should show as connected (green).

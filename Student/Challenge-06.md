@@ -2,7 +2,7 @@
 
 # Challenge 06 — Understand Response Plans
 
-> **Capabilities added in this challenge**: Incident Filters & Response Plans
+> **Capabilities added in this challenge**: Incident Platform, Incident Filters & Response Plans
 
 ## Introduction
 
@@ -10,11 +10,21 @@ Your agent is fully capable now — it has a connected codebase, knowledge, skil
 
 **Incident filters** (response plans) close that gap. Each filter watches for incoming Azure Monitor alerts that match a severity and title pattern, routes the alert to the right specialist, and launches an autonomous investigation — without a human trigger. This is the difference between an *assistant* and an *autonomous operator*.
 
-In this challenge you'll send an alert into the agent with no response plan configured, observe nothing happens, then add the response plans and watch the same alert trigger an autonomous investigation.
+In this challenge you'll first connect Azure Monitor as the incident platform, then fire an alert with no matching response plan configured. You will observe that the alert remains in Azure Monitor without creating an SRE Agent investigation, add response plans, and watch the same alert type trigger an autonomous investigation.
 
 ## Description
 
-### Step 1 — Send an alert with no response plan
+### Step 1 — Connect the incident platform
+
+Apply the Azure Monitor incident platform from `Student/Resources/azure-sre-agent-config/incident-platforms/azure-monitor.yaml`:
+
+```bash
+make incident-platforms
+```
+
+Verify under **Incident** in the portal that Azure Monitor is connected as the incident platform. This connection is required before the agent can receive alerts or apply incident filters. You might need to wait 10-30 seconds and refresh the SRE Portal page to see the incident platform connected.
+
+### Step 2 — Send an alert with no response plan
 
 Trigger the Grubify HTTP 5xx fault:
 
@@ -24,9 +34,13 @@ make break-food
 
 Wait 3–5 minutes for the Azure Monitor alert `alert-food-http-5xx` to fire.
 
-Open the SRE Agent portal under **Incident Response**. The alert will appear as an **unrouted incident** — the agent received it but has no rule for how to handle it. Nothing happens automatically.
+Confirm that the alert fired in Azure Monitor, then open the SRE Agent portal under **Incidents**. With no enabled response plan matching the alert, SRE Agent does not pick it up and does not create an investigation incident/thread. The alert can still appear in the **Incidents preview** while creating a response plan because that preview queries historical Azure Monitor alerts.
 
-### Step 2 — Restore the app
+> If Azure Monitor is not the active incident platform, the alert still fires in Azure Monitor but does not become an SRE Agent incident. Only one incident platform can be active at a time.
+
+> At this stage, the absence of an SRE Agent incident is expected. A response plan tells the agent which alerts to pick up and which custom agent should investigate them. No action group or webhook is required because SRE Agent polls Azure Monitor by using its managed identity.
+
+### Step 3 — Restore the app
 
 Restore the app before continuing:
 
@@ -38,7 +52,7 @@ make validate-food
 make food-status
 ```
 
-### Step 3 — Add the incident filters (response plans)
+### Step 4 — Add the incident filters (response plans)
 
 Apply the incident filter YAMLs from `Student/Resources/azure-sre-agent-config/automations/incident-filters/`:
 
@@ -52,19 +66,19 @@ Verify under **Incident Response → Filters** in the portal — you should see 
 - `network-observability-review` — Sev2, titleContains: network- (excludes nginx) → `network-traffic-analyst`
 - `parking-vm-unhealthy` — Sev2, titleContains: parking → `iaas-vm-incident-handler`
 
-### Step 4 — Trigger the same alert again
+### Step 5 — Trigger the same alert again
 
 ```bash
 make break-food
 ```
 
-Wait 3–5 minutes for the alert to fire. This time, in the portal under **Incident Response**, the incident should be **automatically routed** to `aca-app-incident-handler` and an autonomous investigation should begin.
+Wait 3–5 minutes for the alert to fire. This time, in the portal under **Triggers & response plans**, the incident should be **automatically routed** to `aca-app-incident-handler` and an autonomous investigation should begin.
 
 Watch the agent's tool call log — it will query Application Insights, analyze the failing revision, and attempt remediation without any human input.
 
-### Step 5 — Inspect the response plan definitions
+### Step 6 — Inspect the response plan definitions
 
-In the portal under **Incident Response → Filters**, click each of the 4 response plans. For each plan, identify:
+In the portal under **Triggers & response plans**, click each of the 4 response plans. For each plan, identify:
 
 - The severity and title pattern (routing trigger)
 - The assigned subagent
@@ -73,7 +87,7 @@ In the portal under **Incident Response → Filters**, click each of the 4 respo
 
 > **Preview:** Each filter you've just configured will fire in an upcoming scenario — `web-tier-nginx` in Challenge 11, `network-observability-review` in Challenge 12, `parking-vm-unhealthy` in Challenge 15, and `sample-food-http-errors` in Challenge 14. By the end of those challenges, you'll have seen every filter trigger an autonomous investigation end-to-end.
 
-### Step 6 — Understand Review vs Autonomous
+### Step 7 — Understand Review vs Autonomous
 
 Ask the agent:
 
@@ -81,7 +95,7 @@ Ask the agent:
 What is the difference between Review mode and Autonomous mode in a response plan? Give me a concrete example of when you would choose Review over Autonomous, and why.
 ```
 
-### Step 7 — Also apply scheduled tasks
+### Step 8 — Also apply scheduled tasks
 
 Response plans handle reactive automation. Scheduled tasks handle proactive automation. Apply them from `Student/Resources/azure-sre-agent-config/automations/scheduled-tasks/`:
 
@@ -89,12 +103,13 @@ Response plans handle reactive automation. Scheduled tasks handle proactive auto
 make scheduled-tasks
 ```
 
-Verify under **Scheduled Tasks** in the portal. You should see **6 active scheduled tasks**:
+Verify under **Automation** in the portal. You should see **6 active scheduled tasks**:
 `agent-quality-review`, `cost-optimization-review`, `daily-network-observability-health`,
 `flow-log-ingestion-freshness`, `post-demo-drift-check`, and `triage-grubify-issues`.
 
 ## Success Criteria
 
+- [ ] Azure Monitor is connected as the SRE Agent incident platform
 - [ ] Before adding incident filters, the alert fires but nothing happens in the portal (unrouted incident)
 - [ ] After adding incident filters, the same alert triggers an autonomous investigation routed to `aca-app-incident-handler`
 - [ ] You can read an incident filter YAML and identify severity, titleContains, subagent, mode, and max_attempts

@@ -13,6 +13,7 @@
 - Draw the failure chain: `trigger-nginx-down.sh` stops nginx on both `vm-web-1` and `vm-web-2` → load balancer `lb-internal-web` has no healthy backends → `alert-nginx-down` fires.
 - Explain why both VMs are targeted: one failed backend is tolerated; two create a visible outage.
 - Name the evidence and automation path exactly: `Syslog` table → `web-tier-nginx` filter → `iaas-vm-incident-handler` → `az vm run-command invoke`.
+- Tool approval required: The platform classifies `az vm run-command invoke` as a write operation because it can execute arbitrary scripts on a VM. The agent therefore routes the command through `RunAzCliWriteCommands`, which requires explicit approval by default. To fully automate this incident response, configure a Tool Access Policy that automatically approves only the required VM Run Command operations. In the portal, go to **Capabilities → Tools → Advanced permissions**, and add an Allow rule like `RunAzCliWriteCommands(az vm run-command invoke *)`, understanding that this permits any VM Run Command available to the agent.
 - Stress blast-radius validation: partial repair is not enough.
 
 ## Expected Student Output
@@ -29,6 +30,7 @@
 - **Symptom:** Student relies on VM power state as proof of health. **Fix:** redirect them to Syslog and nginx service state.
 - **Symptom:** Service still down after automation. **Fix:** run `make restore-nginx` and use the failure as a debrief point about verification loops.
 - **Symptom:** Agent correctly diagnoses the failure but `az vm run-command invoke` is refused with a permission error. **Fix:** verify the Terraform-managed Contributor assignment covers `rg-sre-spoke-web-api-iaas`; do not create an ad hoc portal-only permission path.
+- **Symptom:** The Allow rule appears correctly saved in the agent's configuration snapshot and has been present for about 10 minutes, but the command still requests approval. **Fix:** open a new thread and retry the investigation. An existing thread may retain the tool policy state from when it was created.
 
 ## Debrief Discussion Guide
 
