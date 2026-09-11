@@ -65,8 +65,8 @@ SCENARIOS  := Resources/scenarios/scripts
 # Scenarios Makefile (includes Parking Manager fault controls)
 include Resources/scenarios/Makefile
 
-.PHONY: deploy infra check-env \
-        connectors repos knowledge-files skills subagents incident-filters scheduled-tasks config-sre-agent
+.PHONY: deploy infra destroy drift check-env \
+	connectors connectors-learn repos knowledge-files skills subagents incident-platforms incident-filters scheduled-tasks config-sre-agent
 		
 ## deploy: provision lab infrastructure (Challenge 00)
 deploy: infra
@@ -75,6 +75,15 @@ deploy: infra
 infra:
 	terraform -chdir="$(INFRA_DIR)" init
 	terraform -chdir="$(INFRA_DIR)" apply $(TF_VARS)
+
+## destroy: destroy all infrastructure managed by the Student Terraform state
+destroy:
+	terraform -chdir="$(INFRA_DIR)" init
+	terraform -chdir="$(INFRA_DIR)" destroy $(TF_VARS)
+
+## drift: compare deployed Azure resources with the local Terraform state (read-only)
+drift:
+	bash "$(INFRA_DIR)/scripts/detect-drift.sh" $(TF_VARS)
 
 # Validate that agent env vars are set before any agent configuration target.
 check-env:
@@ -85,9 +94,13 @@ ifndef SRE_AGENT_NAME
 	$(error SRE_AGENT_NAME is not set. See the .env instructions at the top of this Makefile.)
 endif
 
-## connectors: apply connector YAMLs — GitHub OAuth + Microsoft Learn MCP + Berlin MCP (Challenges 01, 04, 07)
+## connectors: apply connector YAMLs — GitHub OAuth + Berlin MCP (Challenges 01, 07)
 connectors: check-env
-	$(SCRIPT) apply --target connectors --subscription $(SRE_AGENT_SUB) --resource-group $(SRE_AGENT_RG) --agent $(SRE_AGENT_NAME)
+	$(SCRIPT) apply --target connectors --exclude-name microsoft-learn-mcp --subscription $(SRE_AGENT_SUB) --resource-group $(SRE_AGENT_RG) --agent $(SRE_AGENT_NAME)
+
+## connectors-learn: apply the Microsoft Learn MCP connector (Challenge 04)
+connectors-learn: check-env
+	$(SCRIPT) apply --target connectors --name microsoft-learn-mcp --subscription $(SRE_AGENT_SUB) --resource-group $(SRE_AGENT_RG) --agent $(SRE_AGENT_NAME)
 
 ## repos: apply repository link YAMLs — Grubify (Challenge 01)
 repos: check-env
@@ -104,6 +117,10 @@ skills: check-env
 ## subagents: apply subagent YAMLs (Challenge 05)
 subagents: check-env
 	$(SCRIPT) apply --target subagents --subscription $(SRE_AGENT_SUB) --resource-group $(SRE_AGENT_RG) --agent $(SRE_AGENT_NAME)
+
+## incident-platforms: connect Azure Monitor as the incident platform (Challenge 06)
+incident-platforms: check-env
+	$(SCRIPT) apply --target incident-platforms --subscription $(SRE_AGENT_SUB) --resource-group $(SRE_AGENT_RG) --agent $(SRE_AGENT_NAME)
 
 ## incident-filters: apply incident filter / response plan YAMLs (Challenge 06)
 incident-filters: check-env

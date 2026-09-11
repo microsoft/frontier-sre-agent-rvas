@@ -1,0 +1,20 @@
+api_version: azuresre.ai/v1
+kind: Skill
+metadata:
+  name: parking-issues-creator
+spec:
+  description: >
+    Creates GitHub issues for the Parking Manager service. Use when the user asks
+    to file, create, or open a GitHub issue related to parking VMs, APIs, or
+    infrastructure (Paris, Madrid, Lisbon, Berlin).
+  files:
+    - ./parking-issues-creator.md
+  tools:
+    - SearchMemory
+    - github-mcp-v1_add_issue_comment
+    - github-mcp-v1_get_label
+    - github-mcp-v1_issue_read
+    - github-mcp-v1_issue_write
+    - github-mcp-v1_list_issues
+    - github-mcp-v1_search_issues
+

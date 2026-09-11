@@ -17,7 +17,7 @@ In this challenge you'll query a hybrid ecosystem from a single agent session �
 Confirm the Parking Manager is running and generating data:
 
 ```bash
-make validate
+make validate-parking
 ```
 
 ### Step 1 — Query Azure-native logs for the Madrid API
@@ -25,13 +25,13 @@ make validate
 Ask the agent:
 
 ```text
-Check the status of the Madrid-API and check any relevant logs. Highlight the top 3 failures and output the results in a summary table including the average response time. The logs are stored in Log Analytics.
+Check the status of the Madrid-API and check any relevant logs. Highlight the top 3 failures and output the results in a summary table including the average response time.
 ```
 
 The agent will:
 
 - Query the Log Analytics workspace for HTTP status codes, error rates, and latency
-- Pull Syslog and Windows Event Log data from the VM-hosted backends
+- Pull Windows Event Log data from the VM-hosted backend
 - Identify the top error patterns by frequency
 
 ### Step 2 — Query third-party telemetry

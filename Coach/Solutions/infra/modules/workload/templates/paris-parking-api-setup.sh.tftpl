@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -euo pipefail
+export DEBIAN_FRONTEND=noninteractive
+
+apt-get -o DPkg::Lock::Timeout=300 update
+apt-get -o DPkg::Lock::Timeout=300 install -y build-essential ca-certificates curl gnupg python3 rsyslog
+
+install -d -m 0755 /etc/apt/keyrings
+curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+  | gpg --dearmor --batch --yes -o /etc/apt/keyrings/nodesource.gpg
+echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" \
+  > /etc/apt/sources.list.d/nodesource.list
+apt-get -o DPkg::Lock::Timeout=300 update
+apt-get -o DPkg::Lock::Timeout=300 install -y nodejs
+
+app_root=/opt/parking-manager
+app_directory=$app_root/paris-parking-api
+shared_directory=$app_root/shared
+install -d -m 0755 "$app_directory" "$shared_directory"
+
+printf '%s' '${server_js_base64}' | base64 --decode > "$app_directory/server.js"
+printf '%s' '${logger_js_base64}' | base64 --decode > "$app_directory/syslogLogger.js"
+printf '%s' '${package_json_base64}' | base64 --decode > "$app_directory/package.json"
+printf '%s' '${chaos_middleware_base64}' | base64 --decode > "$shared_directory/chaosMiddleware.js"
+
+cd "$app_directory"
+npm install --omit=dev --no-audit --no-fund
+
+cat > /etc/systemd/system/paris-parking-api.service <<'UNIT'
+[Unit]
+Description=Paris Parking API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/parking-manager/paris-parking-api
+ExecStart=/usr/bin/node server.js
+Environment=NODE_ENV=production
+Environment=PORT=3003
+Environment=CHAOS_CONTROL_URL=${chaos_control_url}
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable paris-parking-api.service
+systemctl restart paris-parking-api.service
+
+for attempt in $(seq 1 30); do
+  if curl --fail --silent --show-error --max-time 5 http://localhost:3003/api/parking \
+    | grep -q '"success":true'; then
+    echo "Paris Parking API is running and configured to start on boot."
+    exit 0
+  fi
+  echo "Waiting for Paris Parking API (attempt $attempt/30)"
+  sleep 2
+done
+
+systemctl status paris-parking-api.service --no-pager || true
+journalctl -u paris-parking-api.service --no-pager -n 50 || true
+exit 1

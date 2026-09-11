@@ -12,6 +12,6 @@ spec:
   priorities:
     - Sev2
   titleContains: parking
-  handlingAgent: iaas-vm-incident-handler
+  handlingAgent: parking-vm-incident-reporter
   agentMode: Autonomous
   maxAutomatedInvestigationAttempts: 2

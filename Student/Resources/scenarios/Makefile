@@ -1,7 +1,7 @@
 SCENARIOS  ?=scripts
 
-.PHONY: validate validate-food \
-        baseline-traffic food-traffic \
+.PHONY: validate validate-food validate-parking \
+		baseline-traffic food-traffic parking-traffic \
 		break-food food-status \
         trigger-nginx-down restore-nginx \
         trigger-nsg-block restore-nsg-block \
@@ -20,6 +20,10 @@ validate:
 validate-food:
 	$(SCENARIOS)/validate-sample-food-app.sh
 
+## validate-parking: check the Parking Manager Web App, VNet integration, and APIs
+validate-parking:
+	@bash $(SCENARIOS)/validate-parking-manager.sh
+
 ## baseline-traffic: generate IaaS/network traffic (Challenges 00, 12, 13, 17)
 baseline-traffic:
 	@$(SCENARIOS)/generate-baseline-traffic.sh
@@ -27,6 +31,10 @@ baseline-traffic:
 ## food-traffic: generate Grubify food app traffic (Challenges 00, 08)
 food-traffic:
 	@$(SCENARIOS)/generate-sample-food-app-traffic.sh
+
+## parking-traffic: generate traffic through the Parking Manager frontend (Challenge 00)
+parking-traffic:
+	@bash $(SCENARIOS)/generate-parking-manager-traffic.sh
 
 ## break-food: inject HTTP 5xx fault into Grubify (Challenges 06, 14, 15)
 break-food:

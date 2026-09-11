@@ -30,6 +30,7 @@
 - **Symptom:** No live data appears. **Fix:** verify earlier validation/traffic steps and remember monitoring tables may have short ingestion lag.
 - **Symptom:** Students think skills themselves contain all content. **Fix:** open one `.yaml` and one paired `.md` to show the separation.
 - **Symptom:** Student expects the skill's local `safety` metadata to enforce runtime approval. **Fix:** point to the custom agent's live tools and the trigger's Review/Autonomous mode as the effective controls.
+- **Symptom:** There are zero denied flows in the last hour — and zero flow data of any kind in NTANetAnalytics right now. **Fix:** to generate denied flows for testing, run `make trigger-nsg-block` from the scenarios Makefile, which modifies an NSG rule to block traffic (it might take ~15 minutes to have denied traffic in the NTANetAnalytics table). After testing, run `make restore-nsg-block` to restore the NSG rule.
 
 ## Debrief Discussion Guide
 

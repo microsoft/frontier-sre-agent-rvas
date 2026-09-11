@@ -5,6 +5,7 @@ WORKDIR /app
 # Install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+RUN python -c "from mcp.server.fastmcp import FastMCP"
 
 # Copy server code
 COPY berlin_mcp_server.py .

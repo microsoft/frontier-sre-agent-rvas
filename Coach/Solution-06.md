@@ -10,6 +10,7 @@
 
 ## Mini-Lecture (5–7 min before challenge)
 
+- Establish the prerequisite: `make incident-platforms` connects Azure Monitor before alerts can reach the agent or filters can be applied.
 - Draw the routing stack: Azure Monitor alert → incident filter → handling agent → mode (`Autonomous`/`Review`) → max attempts.
 - Name the four filters exactly: `sample-food-http-errors`, `web-tier-nginx`,
 	`parking-vm-unhealthy`, and `network-observability-review`.
@@ -21,6 +22,7 @@
 
 ## Expected Student Output
 
+- After `make incident-platforms`, Azure Monitor is configured as the agent's incident platform.
 - Before filters, `make break-food` eventually produces an unrouted incident.
 - After `make incident-filters`, the same `alert-food-http-5xx` routes automatically to `aca-app-incident-handler`.
 - After `make scheduled-tasks`, all six tasks appear in the portal.
@@ -28,6 +30,7 @@
 
 ## Common Issues and Hints
 
+- **Symptom:** No incident appears and filters fail to apply. **Fix:** run `make incident-platforms` and confirm Azure Monitor is connected before troubleshooting filter matching.
 - **Symptom:** No incident appears after `make break-food`. **Fix:** wait 3–5 minutes, confirm Sample Food is actually generating 5xx, and re-run if needed.
 - **Symptom:** Incident appears but is still unrouted after filters were applied. **Fix:** check severity/title matching and refresh the portal.
 - **Symptom:** Students think scheduled tasks are the same as incident filters. **Fix:** reactive = alert-driven; proactive = cron-driven.

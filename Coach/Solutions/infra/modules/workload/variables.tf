@@ -28,12 +28,6 @@ variable "rg_sample_food" {
   default     = "rg-sre-spoke-foodapp-paas"
 }
 
-variable "create_network_watcher" {
-  description = "Set to true to create NetworkWatcherRG and the Network Watcher. Set to false (default) to read an existing one via data source."
-  type        = bool
-  default     = false
-}
-
 # ─── Parking App ───────────────────────────────────────────────────────────────
 
 variable "vm_admin_username" {
@@ -88,6 +82,12 @@ variable "rg_parking_chaos" {
   description = "Resource group name for Chaos Control and VM Health Control."
   type        = string
   default     = "rg-sre-parking-chaos"
+}
+
+variable "rg_parking_frontend" {
+  description = "Resource group name for the Parking Manager frontend Web App."
+  type        = string
+  default     = "rg-sre-parking-frontend"
 }
 
 variable "create_parking_public_ips" {

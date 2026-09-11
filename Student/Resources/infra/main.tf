@@ -16,12 +16,11 @@ module "workload" {
     random  = random
   }
 
-  location               = var.location
-  rg_hub                 = var.rg_hub
-  rg_spoke_web_api       = var.rg_spoke_web_api
-  rg_spoke_data          = var.rg_spoke_data
-  rg_sample_food         = var.rg_sample_food
-  create_network_watcher = var.create_network_watcher
+  location         = var.location
+  rg_hub           = var.rg_hub
+  rg_spoke_web_api = var.rg_spoke_web_api
+  rg_spoke_data    = var.rg_spoke_data
+  rg_sample_food   = var.rg_sample_food
 
   vm_admin_username         = var.vm_admin_username
   vm_admin_password         = var.vm_admin_password
@@ -30,9 +29,10 @@ module "workload" {
   create_parking_public_ips = var.create_parking_public_ips
   berlin_mcp_auth_token     = var.berlin_mcp_auth_token
 
-  rg_parking_lisbon = var.rg_parking_lisbon
-  rg_parking_berlin = var.rg_parking_berlin
-  rg_parking_madrid = var.rg_parking_madrid
-  rg_parking_paris  = var.rg_parking_paris
-  rg_parking_chaos  = var.rg_parking_chaos
+  rg_parking_lisbon   = var.rg_parking_lisbon
+  rg_parking_berlin   = var.rg_parking_berlin
+  rg_parking_madrid   = var.rg_parking_madrid
+  rg_parking_paris    = var.rg_parking_paris
+  rg_parking_chaos    = var.rg_parking_chaos
+  rg_parking_frontend = var.rg_parking_frontend
 }

@@ -62,7 +62,7 @@ For the current Grubify 5xx incident, analyze the API repository, identify the l
 ### Step 5 — Review the GitHub issue
 
 ```bash
-gh issue list --repo microsoft/frontier-sre-agent-rvas --state open
+gh issue list --repo <your-github-username>/frontier-sre-agent-rvas --state open
 ```
 
 The issue should contain: alert trigger, telemetry evidence, container restart timeline, code path identified, and recommended remediation.

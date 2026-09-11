@@ -24,7 +24,7 @@ In the SRE Agent portal, ask:
 What are the first 5 steps you would take to investigate a database connectivity failure from the app tier?
 ```
 
-Without subagents configured, `/agent network-traffic-analyst` will fail — no specialist with that name exists.
+Without subagents configured, `/agent network-traffic-analyst` will fail or give a generalist answer — no specialist with that name exists.
 
 Also note: if you ask the main agent to investigate a network issue, it answers with generic advice rather than the precise VNet Flow Log KQL queries and effective-route analysis a real network specialist would start with.
 
@@ -86,7 +86,7 @@ The agent should list all **11** specialists. The roster includes:
 
 ### Step 6 — Inspect a subagent definition in the portal
 
-In the portal under **Subagents**, click `network-traffic-analyst` to view its configuration. Note the `system_prompt`, `skills`, and `tools` fields. The system prompt is what makes this agent a network expert rather than a generalist.
+In the portal under **Sub Agents**, click `network-traffic-analyst` to view its configuration. Note the `system_prompt` or `instructions`, `skills`, and `tools` fields. The system prompt is what makes this agent a network expert rather than a generalist.
 
 ## Success Criteria
 

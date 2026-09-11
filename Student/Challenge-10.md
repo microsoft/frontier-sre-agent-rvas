@@ -17,27 +17,56 @@ In this challenge you'll trigger a Parking Manager incident and direct the agent
 Confirm the Parking Manager is running and the GitHub connector is authorized:
 
 ```bash
-make validate
+make validate-parking
 ```
 
-In the SRE Agent portal, verify the **GitHub MCP** (`github-mcp`) connector shows as connected (green).
+In the SRE Agent portal, verify both halves of the GitHub integration:
+
+- Under **Code Access**, the `grubify` repository is connected for source context
+- Under **Builder > Connectors**, **GitHub MCP** (`github-mcp`) is connected (green)
+	and authorized for issue operations in `<your-github-username>/frontier-sre-agent-rvas`
+
+Also verify that the configuration from earlier challenges is present:
+
+- The `parking-vm-unhealthy` incident filter is enabled and routes to `parking-vm-incident-reporter` in Autonomous mode
+- The `parking-vm-incident-reporter` subagent and `parking-issues-creator` skill are available
+- The `incident-report-template.md` document is present in the knowledge base
 
 ### Step 1 — Observe an active incident
 
-Navigate to **Incident Response** in the SRE Agent portal. If a Parking Manager alert is active, note its title and severity. If there is no active alert, trigger one:
+Navigate to **Incidents** in the SRE Agent portal. If a Parking Manager alert is active, note its title and severity. If there is no active alert, trigger one:
 
 ```bash
 make trigger-parking-down
 ```
 
-Alternatively, describe a realistic incident from the health report you generated in Challenge 09 — for example, an API with elevated error rate.
+The incident might take 3-5 minutes to appear.
 
-### Step 2 — Create a GitHub issue
+### Step 2 — Observe the automation that creates a GitHub issue
 
-In the agent chat, prompt:
+Open the Parking incident and follow its investigation timeline. Confirm that the
+`parking-vm-unhealthy` filter assigns the incident to `parking-vm-incident-reporter`.
+The autonomous investigation should:
+
+- Retrieve the incident details from the incident platform
+- Query Log Analytics for supporting telemetry
+- Determine whether `vm-health-control` generated the unhealthy event
+- Search for an existing open issue for the affected VM
+- Compose a structured issue using the `incident-report-template.md` from the knowledge base
+- Create an issue through ConnectorV2 GitHub MCP, or comment on an existing matching issue
+- Return the created or reused GitHub issue URL in the investigation result
+
+Allow up to five minutes after the alert appears for the autonomous investigation
+and GitHub operation to complete.
+
+### Step 3 — Create a GitHub issue without automation
+
+If the automatic route is unavailable, describe a realistic incident in the agent
+chat. This prompt activates the `parking-issues-creator` skill without using
+`/agent`, which is reserved for subagents:
 
 ```text
-Create an issue on GitHub to track and resolve this incident. Include: the incident title and severity, a summary of what the monitoring data shows, the affected component, the recommended investigation steps, and any remediation that has already been applied.
+Create an issue on GitHub to track and resolve high latency on the Paris parking API. Include: the incident title and severity, a summary of what the monitoring data shows, the affected component, the recommended investigation steps, and any remediation that has already been applied.
 ```
 
 The agent will:
@@ -45,14 +74,14 @@ The agent will:
 - Retrieve the incident details from the incident platform
 - Query Log Analytics or Application Insights for supporting telemetry
 - Compose a structured issue using the `incident-report-template.md` from the knowledge base
-- Create the issue via the GitHub MCP (`github-mcp` connector)
+- Create the issue through ConnectorV2 GitHub MCP
 
-### Step 3 — Review the created issue
+### Step 4 — Review the created issue
 
 Find the issue in GitHub:
 
 ```bash
-gh issue list --repo microsoft/frontier-sre-agent-rvas --state open --label incident
+gh issue list --repo <your-github-username>/frontier-sre-agent-rvas --state open --search parking
 ```
 
 Review the issue content. Does it contain:
@@ -63,7 +92,7 @@ Review the issue content. Does it contain:
 - Recommended next steps?
 - Links to relevant Log Analytics or Application Insights queries?
 
-### Step 4 — Add a comment
+### Step 5 — Add a comment
 
 Ask the agent to update the issue with additional findings:
 
@@ -71,7 +100,7 @@ Ask the agent to update the issue with additional findings:
 Add a comment to the GitHub issue with the current API error rate and the top 3 error messages from the last hour.
 ```
 
-### Step 5 — Clean up
+### Step 6 — Clean up
 
 Once you have completed all steps above and the GitHub issue is created, restore the Parking Manager to a healthy state:
 
@@ -89,12 +118,13 @@ make restore-parking
 ## Learning Resources
 
 - [Azure SRE Agent — GitHub integration](https://learn.microsoft.com/en-us/azure/sre-agent/github-connector)
-- [GitHub MCP server](https://github.com/github/github-mcp-server)
+- [Set up an MCP connector](https://learn.microsoft.com/en-us/azure/sre-agent/mcp-connector)
+- [Connect source code to Azure SRE Agent](https://learn.microsoft.com/en-us/azure/sre-agent/connect-source-code)
 - [Azure Monitor — alert management](https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-manage-alert-instances)
 - [SRE Book — Incident Management](https://sre.google/sre-book/managing-incidents/)
 
 ## Tips
 
-- The GitHub connector requires the OAuth authorization completed in Challenge 01. If the agent returns a "not authorized" error when creating the issue, re-authorize the connector in the portal.
+- GitHub MCP requires the OAuth authorization completed in Challenge 01. If the agent returns a "not authorized" error when creating the issue, re-authorize `github-mcp` under **Builder > Connectors**.
 - The `incident-report-template.md` knowledge document defines the issue structure. If the agent's output doesn't match the expected format, check that the document is in the knowledge base and ask the agent to "use the incident report template."
 - You can also ask the agent to label the issue (`incident`, `sev2`, component name) if your GitHub repository has those labels defined.
