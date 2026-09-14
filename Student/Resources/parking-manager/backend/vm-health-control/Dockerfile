@@ -1,11 +1,11 @@
-FROM --platform=$BUILDPLATFORM node:20-alpine AS dependencies
+FROM --platform=$BUILDPLATFORM node:26-alpine AS dependencies
 
 WORKDIR /app
 
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-FROM node:20-alpine
+FROM node:26-alpine
 
 WORKDIR /app
 
