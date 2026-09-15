@@ -51,12 +51,12 @@ The response plan `web-tier-nginx` routes the incident to `iaas-vm-incident-hand
 
 > If the alert hasn't fired after 5 minutes, trigger the investigation manually using the prompt below.
 
-> Tool approval required: The platform classifies `az vm run-command invoke` as a write operation because it can execute arbitrary scripts on a VM. The agent therefore routes the command through `RunAzCliWriteCommands`, which requires explicit approval by default. To fully automate this incident response, configure a Tool Access Policy that automatically approves only the required VM Run Command operations. In the portal, go to **Capabilities → Tools -> Advanced permissions**, and add an Allow rule like `RunAzCliWriteCommands(az vm run-command invoke *)`, understanding that this permits any VM Run Command available to the agent.
-
 **Manual fallback prompt:**
 ```text
 The internal load balancer frontend 10.20.2.100 stopped serving. Check the web tier, find the root cause in the guest-OS logs, and restore the service on every affected VM.
 ```
+
+> Tool approval required: The platform classifies `az vm run-command invoke` as a write operation because it can execute arbitrary scripts on a VM. The agent therefore routes the command through `RunAzCliWriteCommands`, which requires explicit approval by default. To fully automate this incident response, configure a Tool Access Policy that automatically approves only the required VM Run Command operations. In the portal, go to **Capabilities → Tools -> Advanced permissions**, and add an Allow rule like `RunAzCliWriteCommands(az vm run-command invoke *)`, understanding that this permits any VM Run Command available to the agent.
 
 ### Step 4 — Restore (if needed)
 
