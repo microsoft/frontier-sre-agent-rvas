@@ -22,7 +22,7 @@ Verify the Grubify app is healthy and the GitHub connector is authorized:
 make validate-food
 ```
 
-In the SRE Agent portal, confirm the **GitHub MCP** (`github-mcp`) connector and the **grubify** repository link are active.
+In the SRE Agent portal, confirm the **GitHub MCP** (`github-mcp` and `github-mcp-v1`) connectors and the **grubify** repository link are active.
 
 ### Step 1 — Inject the OOM fault
 
@@ -45,13 +45,10 @@ The `aca-app-incident-handler` will:
 1. Query Container Apps HTTP logs and Application Insights for the 5xx spike pattern
 2. Identify the `/api/cart/{user}/items` endpoint as the fault path
 3. Correlate the restart events with OOM signals in container console logs
-4. Hand off to the `code-analyzer` subagent with a summary of findings
-
-The `code-analyzer` subagent will:
-
-1. Search the Grubify repository for the cart endpoint implementation (`search_code`)
-2. Retrieve the offending file (`get_file_contents`) and identify the OOM code path
-3. Open a GitHub issue with: the root cause, the offending file and line, the telemetry evidence, and recommended fix
+4. Use the `source-fix-delivery` skill to fix the code in the Grubify repository
+5. Search the Grubify repository for the cart endpoint implementation (`search_code`)
+6. Retrieve the offending file (`get_file_contents`) and identify the OOM code path
+7. Open a GitHub issue with: the root cause, the offending file and line, the telemetry evidence, and recommended fix
 
 ### Step 4 — Trigger interactively (if alert didn't fire)
 
@@ -82,10 +79,10 @@ make food-status
 
 - [ ] The `alert-food-http-5xx` alert fired and the incident appeared in the portal
 - [ ] The agent identified `/api/cart/{user}/items` as the fault path from telemetry
-- [ ] The `code-analyzer` subagent retrieved the cart endpoint source code from the Grubify repository
+- [ ] The subagent retrieved the cart endpoint source code from the Grubify repository
 - [ ] A GitHub issue was created with root cause, code evidence, and remediation steps
-- [ ] The agent demonstrated the handoff between `aca-app-incident-handler` and `code-analyzer`
-- [ ] **Explain to your coach** — what is the governance mechanism that ensures `code-analyzer` can *read* source code and *create issues* but cannot *push commits* or *merge pull requests* without human approval?
+- [ ] The agent demonstrated the agent `aca-app-incident-handler` using skill `source-fix-delivery`
+- [ ] **Explain to your coach** — what is the governance mechanism that ensures `aca-app-incident-handler` can *read* source code and *create issues* but cannot *push commits* or *merge pull requests* without human approval?
 
 ## Learning Resources
 
@@ -96,6 +93,6 @@ make food-status
 
 ## Tips
 
-- The `aca-app-incident-handler → code-analyzer` handoff is the most sophisticated pattern in this lab. The first agent passes a structured summary (symptom, endpoint, evidence) to the second, which then focuses exclusively on the code. This division of expertise is what makes the pattern scalable.
+- The `aca-app-incident-handler → source-fix-delivery` handoff is the most sophisticated pattern in this lab. The agent uses the skill, which then focuses exclusively on the code. This division of expertise is what makes the pattern scalable.
 - The scheduled task `triage-grubify-issues` (cron `0 */12 * * *`) runs independently of this challenge and continuously triages `[Customer Issue]` backlog items. You may see it interleave with your incident during the demo — that's expected behavior.
 - If the GitHub issue is created but missing the code reference, confirm the `grubify` repository link is active in the portal and the OAuth connector has `repo` scope.
