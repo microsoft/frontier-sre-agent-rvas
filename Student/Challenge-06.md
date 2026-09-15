@@ -65,7 +65,7 @@ make incident-filters
 Verify under **Incident Response → Filters** in the portal — you should see 4 filters listed:
 - `sample-food-http-errors` — Sev1, titleContains: food → `aca-app-incident-handler`
 - `web-tier-nginx` — Sev2, titleContains: nginx → `iaas-vm-incident-handler`
-- `network-observability-review` — Sev2, titleContains: network- (excludes nginx) → `network-traffic-analyst`
+- `network-denied-flows-review` — Sev2, titleContains: "Denied VNet flow" (excludes nginx) → `network-traffic-analyst`
 - `parking-vm-unhealthy` — Sev2, titleContains: parking → `iaas-vm-incident-handler`
 
 ### Step 5 — Trigger the same alert again
@@ -87,7 +87,7 @@ In the portal under **Triggers & response plans**, click each of the 4 response 
 - The execution mode: `Autonomous` vs `Review`
 - The maximum number of investigation attempts
 
-> **Preview:** Each filter you've just configured will fire in an upcoming scenario — `web-tier-nginx` in Challenge 11, `network-observability-review` in Challenge 12, `parking-vm-unhealthy` in Challenge 15, and `sample-food-http-errors` in Challenge 14. By the end of those challenges, you'll have seen every filter trigger an autonomous investigation end-to-end.
+> **Preview:** Each filter you've just configured will fire in an upcoming scenario — `web-tier-nginx` in Challenge 11, `network-denied-flows-review` in Challenge 12, `parking-vm-unhealthy` in Challenge 15, and `sample-food-http-errors` in Challenge 14. By the end of those challenges, you'll have seen every filter trigger an autonomous investigation end-to-end.
 
 ### Step 7 — Understand Review vs Autonomous
 

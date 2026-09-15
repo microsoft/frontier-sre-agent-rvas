@@ -15,7 +15,7 @@
 - Establish the prerequisite: `make incident-platforms` connects Azure Monitor before alerts can reach the agent or filters can be applied.
 - Draw the routing stack: Azure Monitor alert → incident filter → handling agent → mode (`Autonomous`/`Review`) → max attempts.
 - Name the four filters exactly: `sample-food-http-errors`, `web-tier-nginx`,
-	`parking-vm-unhealthy`, and `network-observability-review`.
+	`parking-vm-unhealthy`, and `network-denied-flows-review`.
 - Name the six scheduled tasks exactly: `agent-quality-review`, `cost-optimization-review`,
 	`daily-network-observability-health`, `flow-log-ingestion-freshness`,
 	`post-demo-drift-check`, and `triage-grubify-issues`.

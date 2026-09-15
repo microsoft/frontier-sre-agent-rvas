@@ -121,7 +121,7 @@ GitHub and incident-response surfaces:
   ARM PATCH. Run `make incident-platforms` for focused deployment. The full configuration workflow
   also applies it before incident filters; Terraform establishes the same idempotent baseline.
 - `automations/incident-filters/` — three domain-routed response plans: `sample-food-http-errors`,
-  `web-tier-nginx`, and `network-observability-review`, plus the workshop-specific
+  `web-tier-nginx`, and `network-denied-flows-review`, plus the workshop-specific
   `parking-vm-unhealthy` plan. The network specialist runs fully autonomously and applies the
   proven remediation itself; scenario restore scripts remain available to the operator.
 - `automations/scheduled-tasks/triage-grubify-issues.yaml` — triages Grubify customer issues
@@ -145,7 +145,7 @@ GitHub and incident-response surfaces:
 Incident response plans were re-architected from severity-only bands to a **domain-routing rule**: each plan owns one failure domain, keyed by incident title (`titleContains` / `titleNotContains`, case-insensitive) on top of severity, so every alert reaches the specialist scoped to that domain. The plans are disjoint by construction at every severity (see the `automations/incident-filters/` bullet above). This added:
 
 - `subagents/iaas-vm-incident-handler.yaml` — new Autonomous IaaS web-tier handler (Syslog-based diagnosis + autonomous in-guest `az vm run-command` restart) that owns the NGINX-down / VM service-health domain, previously mis-routed to `network-traffic-analyst`.
-- `automations/incident-filters/web-tier-nginx.yaml` — the new Sev2 web-tier domain plan; `network-traffic-analyst` keeps the hub networking domain (NSG/UDR/VNet-flow) via `network-observability-review`.
+- `automations/incident-filters/web-tier-nginx.yaml` — the new Sev2 web-tier domain plan; `network-traffic-analyst` keeps the hub networking domain (NSG/UDR/VNet-flow) via `network-denied-flows-review`.
 
 Network observability now runs fully autonomously: `network-traffic-analyst` diagnoses the fault
 and applies the smallest reversible remediation itself, then verifies that the symptom is gone.
