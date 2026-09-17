@@ -62,7 +62,7 @@ Before you make any changes, would you propose the route correction and wait for
 ```
 
 The agent should explain that it runs autonomously here and will apply and verify the fix itself,
-not merely propose it. Discuss with your coach: unlike the `network-observability-review` incident
+not merely propose it. Discuss with your coach: unlike the `network-denied-flows-review` incident
 filter (also Autonomous), there is no Review-mode alternative wired up anywhere in this lab —
 switching this subagent to Review mode would require re-enabling the block-unsafe-remediation hook
 or gating it behind an incident filter's `agentMode: Review` setting.

@@ -6,8 +6,11 @@ SCENARIOS  ?=scripts
         trigger-nginx-down restore-nginx \
         trigger-nsg-block restore-nsg-block \
         trigger-udr restore-udr \
-        trigger-parking-down restore-parking \
+		trigger-parking-report restore-parking-report \
+		trigger-parking-service-down restore-parking-service \
+		trigger-parking-down restore-parking \
         trigger-parking-chaos restore-parking-chaos \
+		grant-agent-vm-remediation check-cost-access \
         parking-status
 
 # ── Lab scenario targets ────────────────────────────────────────────────────
@@ -68,13 +71,35 @@ trigger-udr:
 restore-udr:
 	$(SCENARIOS)/restore-udr-asymmetry.sh
 
-## trigger-parking-down: mark Parking Manager VM APIs unhealthy (Challenges 10, 15)
-trigger-parking-down:
+## trigger-parking-report: emit synthetic Parking VM health events (Challenge 10)
+trigger-parking-report:
 	$(SCENARIOS)/trigger-parking-api-down.sh
 
-## restore-parking: restore Parking Manager VM API health (Challenges 10, 15)
-restore-parking:
+## restore-parking-report: restore synthetic Parking VM health state (Challenge 10)
+restore-parking-report:
 	$(SCENARIOS)/restore-parking-api.sh
+
+## trigger-parking-service-down: stop the Paris Parking API service (Challenge 15)
+trigger-parking-service-down:
+	$(SCENARIOS)/trigger-parking-service-down.sh
+
+## restore-parking-service: start and validate the Paris Parking API service (Challenge 15)
+restore-parking-service:
+	$(SCENARIOS)/restore-parking-service.sh
+
+## trigger-parking-down: compatibility alias for the Challenge 10 reporting signal
+trigger-parking-down: trigger-parking-report
+
+## restore-parking: compatibility alias for the Challenge 10 reporting signal
+restore-parking: restore-parking-report
+
+## grant-agent-vm-remediation: grant the agent least-privilege VM restart and Run Command access
+grant-agent-vm-remediation:
+	$(SCENARIOS)/grant-agent-vm-remediation.sh
+
+## check-cost-access: verify Cost Management read access with bounded throttling retries
+check-cost-access:
+	$(SCENARIOS)/check-cost-management-access.sh
 
 ## trigger-parking-chaos: inject Lisbon API latency chaos
 trigger-parking-chaos:

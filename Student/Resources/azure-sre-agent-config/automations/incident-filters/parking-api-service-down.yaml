@@ -1,0 +1,16 @@
+# Paris Parking API service-down incident filter for Challenge 15.
+# This remediation workflow restarts the VM and verifies that the API recovered.
+# Deployed via data-plane v2 /api/v2/extendedAgent/incidentFilters/{name}.
+api_version: azuresre.ai/v1
+kind: IncidentFilter
+metadata:
+  name: parking-api-service-down
+spec:
+  incidentPlatform: AzMonitor
+  isEnabled: true
+  priorities:
+    - Sev2
+  titleContains: "Paris Parking API Service Down"
+  handlingAgent: parking-vm-incident-handler
+  agentMode: Autonomous
+  maxAutomatedInvestigationAttempts: 2

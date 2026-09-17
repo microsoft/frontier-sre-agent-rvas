@@ -37,7 +37,7 @@ Coach and facilitator guides for all 20 workshop challenges.
 - Coach guides live beside this index in `Solution-00.md` through `Solution-19.md`.
 - Core config bundle is under `../Student/Resources/azure-sre-agent-config/`.
 - The Berlin MCP connector used in Challenges 07 and 08 is deployed via Terraform and ships in the default config bundle.
-- Some Parking Manager scenarios (especially Challenge 15) depend on the vm-health-control and chaos-control APIs. Use `make trigger-parking-down` / `make restore-parking` — see `Resources/scenarios/scripts/`.
+- Challenge 10 uses `make trigger-parking-report` / `make restore-parking-report` to emit and clear synthetic `VMHealthStatus_CL` evidence. Challenge 15 uses `make trigger-parking-service-down` / `make restore-parking-service` for a real Paris API service outage.
 
 ## Azure Requirements
 
@@ -80,7 +80,7 @@ Coach and facilitator guides for all 20 workshop challenges.
 3. **Enforce the coach discussion questions.** Every challenge has an "Explain to your coach" criterion. Hold teams to it — the conceptual discussion is as important as the working demo.
 4. **Time-box fault scenarios.** Challenges 11–13 depend on alert propagation (2–15 min). Start the fault injection early and move to the next challenge's mini-lecture while waiting.
 5. **The lab is the safety net.** All fault scenarios have a `make restore-*` command. If a team breaks something unexpected, `make restore-*` or `make validate` will return the lab to a known good state.
-6. **Contributor permission is required.** Teams that set Reader permission in Challenge 00 will hit permission errors in Challenges 11–15. Catch this early.
+6. **Separate approval from authorization.** Contributor remains the simplest full-workshop baseline because NSG and UDR challenges require broader writes. If VM Run Command or restart alone is denied, an Owner or Role Based Access Control Administrator can run `make grant-agent-vm-remediation` to add the narrow VM role without replacing existing assignments.
 
 ## Per-Challenge Coach Guide
 
@@ -101,7 +101,7 @@ Coach and facilitator guides for all 20 workshop challenges.
 | 12 | Network Security Investigation | NSG flow logs, Traffic Analytics (10 min lag), NSG rule delete | Flow log aggregation lag (10–15 min); teams trigger manual prompt too early | **20–25 min** | If agent names wrong NSG rule |
 | 13 | Routing Failure Investigation | UDRs, effective routes, next-hop, asymmetric routing | Teams confuse IP forwarding with route pointing; agent finds NVA red herring | **25–30 min** | If agent deletes the wrong route |
 | 14 | Application Root Cause Analysis | OOM crash, App Insights, source code correlation, GitHub issue | Food app not healthy before fault injection; GitHub connector not authorized | **25–30 min** | If agent stops at telemetry without reaching source code |
-| 15 | Autonomous Remediation | Validated remediation, validation loop, retry, escalation | parking-vm-unhealthy filter not applied; permission error on az vm restart | **20–25 min** | If agent remediates without showing validation step |
+| 15 | Autonomous Remediation | Validated remediation, validation loop, retry, escalation | parking-api-service-down filter not applied; permission error on az vm restart | **20–25 min** | If agent remediates without showing validation step |
 | 16 | Daily Network Health Report | Scheduled tasks, proactive ops, Traffic Analytics reporting | < 24 h of flow log data; scheduled task not applied in Ch06 | **20 min** | If report shows no denied flows despite NSG test in Ch12 |
 | 17 | Observability Freshness Verification | Telemetry pipeline health, ingestion lag, coverage gaps | DCR not collecting all facilities; teams mistake stale data for healthy data | **20 min** | If freshness check returns all green with no analysis |
 | 18 | Subscription Cost Optimization Review | FinOps, Azure Advisor, Resource Graph, workload cost profiles | Cost Management access missing; teams skip knowledge-base grounding step | **25–30 min** | If recommendations ignore workload criticality |

@@ -14,7 +14,7 @@
 
 - Reinforce the hybrid prerequisites: Code Access contains the `grubify` repository,
 	ConnectorV2 `github-mcp` is green, the `parking-vm-unhealthy` filter routes to
-	`parking-vm-incident-reporter`, and the Parking reporter, issue skill, and incident
+	`parking-vm-incident-reporter` only for `Parking VM Unhealthy Alert`, and the Parking reporter, issue skill, and incident
 	template are deployed.
 - Name the knowledge template: `sample-food/incident-report-template.md` drives consistent issue structure.
 - Show the expected lifecycle: incident context → telemetry evidence → issue creation → follow-up comment with updated findings.
@@ -26,11 +26,13 @@
 - The issue content reflects the knowledge-base template rather than ad hoc prose.
 - A follow-up comment adds current error-rate or top-error telemetry.
 - Student can review the issue in GitHub or via `gh issue list`.
+- No VM restart occurs; this workflow ends with a durable engineering handoff.
 
 ## Common Issues and Hints
 
 - **Symptom:** Agent says GitHub is not authorized. **Fix:** re-check the `github-mcp` ConnectorV2 OAuth status and issue access under **Builder > Connectors**.
-- **Symptom:** The incident appears but no autonomous investigation starts. **Fix:** confirm the `parking-vm-unhealthy` filter is enabled, matches Sev2 Parking alerts, and routes to `parking-vm-incident-reporter` in Autonomous mode.
+- **Symptom:** The incident appears but no autonomous investigation starts. **Fix:** confirm the `parking-vm-unhealthy` filter is enabled, matches the Sev2 `Parking VM Unhealthy Alert`, and routes to `parking-vm-incident-reporter` in Autonomous mode.
+- **Symptom:** The agent restarts a VM instead of creating an issue. **Fix:** the wrong response plan handled the alert; remove broad `titleContains: parking` matching and confirm this alert reaches only `parking-vm-unhealthy`.
 - **Symptom:** The reporter cannot find a GitHub operation. **Fix:** redeploy the reporter and skill, then confirm `github-mcp` exposes `github-mcp_issue_write`, `github-mcp_search_issues`, and `github-mcp_add_issue_comment`.
 - **Symptom:** Issue is created but structure is inconsistent. **Fix:** ask the student to explicitly tell the agent to use the incident report template.
 - **Symptom:** No active incident is available. **Fix:** allow a health-report-derived incident narrative from Challenge 09.
@@ -45,5 +47,6 @@
 ## Success Criteria Notes
 
 - Be strict on the presence of live telemetry in the issue.
+- Be strict that no VM restart occurs in this challenge; remediation belongs to Challenge 15.
 - Accept either a live incident or a clearly described synthetic incident if the environment is quiet.
 - Do not require label perfection unless the repo already has the labels.

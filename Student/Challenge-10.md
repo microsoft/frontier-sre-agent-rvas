@@ -30,7 +30,7 @@ In the SRE Agent portal, verify both halves of the GitHub integration:
 
 Also verify that the configuration from earlier challenges is present:
 
-- The `parking-vm-unhealthy` incident filter is enabled and routes to `parking-vm-incident-reporter` in Autonomous mode
+- The `parking-vm-unhealthy` incident filter is enabled, matches `Parking VM Unhealthy Alert` and routes to `parking-vm-incident-reporter` in Autonomous mode
 - The `parking-vm-incident-reporter` subagent and `parking-issues-creator` skill are available
 - The `incident-report-template.md` document is present in the knowledge base
 
@@ -39,10 +39,10 @@ Also verify that the configuration from earlier challenges is present:
 Navigate to **Incidents** in the SRE Agent portal. If a Parking Manager alert is active, note its title and severity. If there is no active alert, trigger one:
 
 ```bash
-make trigger-parking-down
+make trigger-parking-report
 ```
 
-The incident might take 3-5 minutes to appear.
+This emits synthetic unhealthy records into `VMHealthStatus_CL`; it does not stop or restart a VM. The `Parking VM Unhealthy Alert` incident might take 3-5 minutes to appear.
 
 ### Step 2 — Observe the automation that creates a GitHub issue
 
@@ -57,6 +57,9 @@ The autonomous investigation should:
 - Compose a structured issue using the `incident-report-template.md` from the knowledge base
 - Create an issue through ConnectorV2 GitHub MCP, or comment on an existing matching issue
 - Return the created or reused GitHub issue URL in the investigation result
+
+This response plan deliberately ends at the engineering handoff. It must not invoke
+`az vm restart`; validated remediation is a separate workflow in Challenge 15.
 
 Allow up to five minutes after the alert appears for the autonomous investigation
 and GitHub operation to complete.
@@ -107,7 +110,7 @@ Add a comment to the GitHub issue with the current API error rate and the top 3 
 Once you have completed all steps above and the GitHub issue is created, restore the Parking Manager to a healthy state:
 
 ```bash
-make restore-parking
+make restore-parking-report
 ```
 
 ## Success Criteria
@@ -115,6 +118,7 @@ make restore-parking
 - [ ] A GitHub issue is created with a clear title, severity, and structured investigation content
 - [ ] The issue references live telemetry (error rate, latency, or log excerpt) from the monitoring stack
 - [ ] The agent adds a follow-up comment with updated telemetry when asked
+- [ ] The reporting workflow completes without restarting a Parking VM
 - [ ] **Explain to your coach** — what is the `incident-report-template.md` knowledge document, and why does having a template in the knowledge base produce more consistent GitHub issues than relying on the model's default formatting?
 
 ## Learning Resources

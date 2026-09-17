@@ -19,11 +19,15 @@ In this challenge you'll run a **subscription-wide cost optimization review**: f
 Ensure you have Cost Management read access on the subscription:
 
 ```bash
-az costmanagement query --scope "/subscriptions/$(az account show --query id -o tsv)" \
-  --type Usage --timeframe MonthToDate \
-  --dataset-aggregation '{"totalCost":{"name":"Cost","function":"Sum"}}' \
-  -o table
+make check-cost-access
 ```
+
+The script uses the Cost Management REST Query API directly. The optional Azure CLI
+`costmanagement` extension does not provide an `az costmanagement query` command.
+An authorization response means your account needs Cost Management Reader access.
+The script retries HTTP `429 Too Many Requests` responses with bounded backoff because
+Cost Management applies several independent request quotas. Persistent throttling is a
+service limit, not evidence of missing RBAC; wait longer before running the challenge.
 
 ### Step 1 — Run the full optimization review
 

@@ -12,7 +12,7 @@ Challenges 11 and 12 showed the agent fix a service — restart nginx, delete an
 
 Validated remediation means the agent doesn't just apply a fix; it verifies the fix worked, retries if the service hasn't recovered, and escalates to a human if all attempts fail. This loop — fix → validate → retry → escalate — is what turns a one-shot script into a production-grade autonomous operator.
 
-In this challenge you'll trigger a Parking Manager backend failure, watch the agent restart the affected VM, and observe how it confirms recovery (or handles the case where the first restart wasn't enough) before closing the incident.
+In this challenge you'll stop the Paris Parking API systemd service, watch the agent restart its VM, and observe how it confirms recovery (or handles the case where the first restart wasn't enough) before closing the incident. Unlike Challenge 10's synthetic health alert, this is a real service outage with a separate alert and response plan.
 
 ## Description
 
@@ -21,34 +21,30 @@ In this challenge you'll trigger a Parking Manager backend failure, watch the ag
 Verify the Parking Manager is running and healthy:
 
 ```bash
-make validate
+make validate-parking
 ```
 
 ### Step 1 — Trigger the incident
 
-Trigger the Parking Manager VM API unhealthy state:
+Stop the Paris Parking API service:
 
 ```bash
-make trigger-parking-down
+make trigger-parking-service-down
 ```
 
-After the challenge, restore the scenario:
+> **Note on automatic routing:** The `parking-api-service-down` filter matches the Sev2 `Paris Parking API Service Down` alert and routes it to `parking-vm-incident-handler` in Autonomous mode. It cannot match Challenge 10's `Parking VM Unhealthy Alert`. If you applied the full filter bundle in Challenge 06, automatic routing should trigger here. If the alert doesn't appear within 5 minutes, proceed to the manual trigger in Step 2b.
 
-```bash
-make restore-parking
-```
-
-> **Note on automatic routing:** The incident filter bundle now includes a `parking-vm-unhealthy` filter (Sev2, `titleContains: parking`) that routes to `iaas-vm-incident-handler` in Autonomous mode. If you applied the full filter bundle in Challenge 06 (via `make incident-filters`), automatic routing should trigger here. Watch **Incident Response** for the incoming alert. If the alert doesn't appear within 5 minutes, proceed to the manual trigger in Step 2b.
+> **If remediation is denied:** Autonomous mode allows the workflow to proceed without approval, but the agent's managed identity still needs Azure RBAC permission for `az vm restart` and Run Command validation. Ask an **Owner** or **Role Based Access Control Administrator** to run `make grant-agent-vm-remediation`, wait several minutes for role propagation, and retry in a new investigation thread. The custom role is limited to VM read, restart, and Run Command actions on the lab's VM resource groups.
 
 ### Step 2a — Observe automatic routing (if a Parking Manager filter is configured)
 
-In the SRE Agent portal under **Incident Response**, watch for the alert to appear and route automatically. The agent should:
+In the SRE Agent portal under **Incidents**, watch for the alert to appear and route automatically. The agent should:
 
 1. Receive the alert and identify the affected VM and API
-2. Query Azure Monitor / Log Analytics to confirm the failure signature
+2. Query Syslog to confirm that `paris-parking-api.service` stopped
 3. Attempt remediation: `az vm restart` on the affected instance
 4. Wait for the VM to return to a running state
-5. Re-query the health endpoint or monitoring data to confirm the API is responding
+5. Confirm the systemd service is active and the localhost API returns success
 6. Close the incident with a remediation summary
 
 ### Step 2b — Trigger manually (no Parking Manager filter configured)
@@ -56,9 +52,9 @@ In the SRE Agent portal under **Incident Response**, watch for the alert to appe
 If no automatic routing occurs within 5 minutes, invoke the VM specialist directly:
 
 ```text
-/agent iaas-vm-incident-handler
+/agent parking-vm-incident-handler
 
-The Parking Manager VM API is reporting unhealthy. Investigate, restart the affected VM, and verify the API is responding before closing.
+The Paris Parking API service is down on vm-parking-paris. Investigate the Syslog evidence, restart the VM, and verify the systemd service and API before closing.
 ```
 
 Watch the agent's tool-call log for the same investigation → remediation → validation sequence.
@@ -73,13 +69,13 @@ After restarting the VM, how did you verify that the remediation worked? What wo
 
 The agent should describe:
 
-- The validation query (health endpoint check, Log Analytics query, or metric poll)
+- The validation checks (`systemctl is-active paris-parking-api.service` and the localhost API response)
 - The retry logic: if validation fails, attempt N (up to the response plan's attempt limit)
 - The escalation path if all attempts fail
 
 ### Step 4 — Review the response plan
 
-In the portal under **Incident Response → Filters**, find and open the `parking-vm-unhealthy` response plan.
+In the portal under **Incident Response → Filters**, find and open the `parking-api-service-down` response plan.
 
 Identify the `maxAutomatedInvestigationAttempts` field and the subagent assigned to this scenario.
 
@@ -91,11 +87,21 @@ Ask the agent:
 How long did the autonomous remediation take from alert fire to validation success? Estimate what a manual remediation would take for the same failure. What is the MTTR improvement?
 ```
 
+### Step 6 — Restore
+
+After the challenge, restore the scenario:
+
+```bash
+make restore-parking-service
+```
+
 ## Success Criteria
 
-- [ ] The `iaas-vm-incident-handler` subagent (or a custom Parking Manager specialist) restarted the VM and verified recovery
+- [ ] The `parking-vm-incident-handler` restarted `vm-parking-paris` and verified recovery
 - [ ] The agent describes its validation logic — what it checks and what it does if validation fails
-- [ ] You can explain the `parking-vm-unhealthy` incident filter — its `titleContains`, `handlingAgent`, and `maxAutomatedInvestigationAttempts` settings
+- [ ] You can explain why `parking-api-service-down` routes to remediation while Challenge 10's `parking-vm-unhealthy` routes to GitHub reporting
+- [ ] You can explain why Autonomous mode does not by itself authorize `az vm restart`
+- [ ] No GitHub issue is created by the remediation workflow
 - [ ] **Explain to your coach** — what is the difference between *remediation* and *validated remediation*? Why is a validation loop essential for autonomous operations, and what is the risk of an agent that remediates without verifying?
 
 ## Learning Resources

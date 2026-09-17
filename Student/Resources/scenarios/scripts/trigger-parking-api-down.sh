@@ -45,6 +45,8 @@ Parking Manager unhealthy state triggered for madrid and paris.
 Expected evidence:
 - New records in Log Analytics table VMHealthStatus_CL in workspace ${workspace_resource_id##*/}
 - Query: VMHealthStatus_CL | where healthState == "Unhealthy" | order by TimeGenerated desc
-- The Sev2 Parking VM Unhealthy alert fires within 3-5 minutes and routes to parking-vm-incident-reporter
-Restore with: make restore-parking
+- The Sev2 "Parking VM Unhealthy Alert" fires within 3-5 minutes.
+- Response plan parking-vm-unhealthy routes only to parking-vm-incident-reporter.
+- The autonomous outcome is a GitHub issue; this scenario does not restart a VM.
+Restore with: make restore-parking-report
 EOF

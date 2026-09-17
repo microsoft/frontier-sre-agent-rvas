@@ -62,11 +62,12 @@ Apply the incident filter YAMLs from `Student/Resources/azure-sre-agent-config/a
 make incident-filters
 ```
 
-Verify under **Incident Response → Filters** in the portal — you should see 4 filters listed:
+Verify under **Incident Response → Filters** in the portal — you should see 5 filters listed:
 - `sample-food-http-errors` — Sev1, titleContains: food → `aca-app-incident-handler`
 - `web-tier-nginx` — Sev2, titleContains: nginx → `iaas-vm-incident-handler`
-- `network-observability-review` — Sev2, titleContains: network- (excludes nginx) → `network-traffic-analyst`
-- `parking-vm-unhealthy` — Sev2, titleContains: parking → `iaas-vm-incident-handler`
+- `network-denied-flows-review` — Sev2, titleContains: "Denied VNet flow" (excludes nginx) → `network-traffic-analyst`
+- `parking-vm-unhealthy` — Sev2, titleContains: "Parking VM Unhealthy Alert" → `parking-vm-incident-reporter`
+- `parking-api-service-down` — Sev2, titleContains: "Paris Parking API Service Down" → `parking-vm-incident-handler`
 
 ### Step 5 — Trigger the same alert again
 
@@ -80,14 +81,14 @@ Watch the agent's tool call log — it will query Application Insights, analyze 
 
 ### Step 6 — Inspect the response plan definitions
 
-In the portal under **Triggers & response plans**, click each of the 4 response plans. For each plan, identify:
+In the portal under **Triggers & response plans**, click each of the 5 response plans. For each plan, identify:
 
 - The severity and title pattern (routing trigger)
 - The assigned subagent
 - The execution mode: `Autonomous` vs `Review`
 - The maximum number of investigation attempts
 
-> **Preview:** Each filter you've just configured will fire in an upcoming scenario — `web-tier-nginx` in Challenge 11, `network-observability-review` in Challenge 12, `parking-vm-unhealthy` in Challenge 15, and `sample-food-http-errors` in Challenge 14. By the end of those challenges, you'll have seen every filter trigger an autonomous investigation end-to-end.
+> **Preview:** Each filter you've just configured will fire in an upcoming scenario — `parking-vm-unhealthy` creates an incident issue in Challenge 10, `web-tier-nginx` remediates nginx in Challenge 11, `network-denied-flows-review` remediates an NSG rule in Challenge 12, `sample-food-http-errors` handles the Grubify incident in Challenge 14, and `parking-api-service-down` performs validated Parking remediation in Challenge 15. Notice that the two Parking alerts are both Sev2 but route differently because their title predicates do not overlap.
 
 ### Step 7 — Understand Review vs Autonomous
 
@@ -129,5 +130,6 @@ Verify under **Automation** in the portal. You should see **6 active scheduled t
 ## Tips
 
 - The `titleContains` matching is case-insensitive. Each filter uses a distinct keyword so alerts route to the right specialist: `food` for Grubify 5xx, `nginx` for web-tier VM failures, `Denied` for VNet denied-flow spikes.
+- Severity alone does not identify the correct workflow. The two Parking plans are both Sev2, so their specific alert titles separate GitHub reporting from VM remediation.
 - `Autonomous` mode is powerful — set it only for remediation procedures that are **idempotent** and have a clear success validation step. For new or untested procedures, start with `Review` mode.
 - **Congratulations:** your agent is now fully configured. Challenges 07–19 are operational scenarios that use everything you've just built.

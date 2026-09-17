@@ -101,6 +101,8 @@ az provider register --namespace "Microsoft.App"
    - `rg-sre-parking-frontend` — public Parking Manager Web App and App Service plan
 5. Associate all workload resource groups with the agent and give it **Contributor** permission.
 
+   > **Least-privilege VM repair:** Contributor is the certified full-workshop baseline because later challenges also modify NSGs and UDRs. If your organization gives the agent narrower access and VM remediation later fails authorization, an **Owner** or **Role Based Access Control Administrator** can run `make grant-agent-vm-remediation`. This adds only VM read, restart, and Run Command permissions on resource groups that contain lab VMs; it is not sufficient for the network-remediation challenges.
+
 ### Step 5 — Configure your .env file
 
 Every `make` target that talks to the agent needs to know where it is. From `Student/`, record it once:
