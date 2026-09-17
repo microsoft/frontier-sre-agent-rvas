@@ -13,25 +13,28 @@
 ## Mini-Lecture (3–5 min before challenge)
 
 - State the pattern explicitly: detect → remediate → validate → retry or escalate.
-- **Important:** The incident filter bundle now includes `parking-vm-unhealthy` (Sev2, `titleContains: parking` → `iaas-vm-incident-handler`, Autonomous). If `make incident-filters` was run in Challenge 06, automatic routing should work here. If students don't see automatic routing, confirm the filter was applied: check **Incident Response → Filters** for `parking-vm-unhealthy`.
-- The trigger script exists: `make trigger-parking-down` → `trigger-parking-api-down.sh`. Use it.
-- Tell students what to watch for: `az vm restart`, health recheck, closeout summary, and max-attempt behavior.
+- **Important:** `parking-api-service-down` matches only the Sev2 `Paris Parking API Service Down` alert and routes to `parking-vm-incident-handler` in Autonomous mode. If students don't see automatic routing, confirm the filter was applied under **Incident Response → Filters**.
+- The trigger is `make trigger-parking-service-down`; it stops the real `paris-parking-api.service` and emits a deterministic systemd Syslog marker.
+- Tell students what to watch for: `az vm restart`, power-state check, systemd and localhost API validation, closeout summary, and max-attempt behavior.
 - Tie back to Challenge 06: response-plan settings, especially attempt limits, govern the loop.
+- Remind students that Autonomous mode governs approval, not Azure authorization; the managed identity still needs VM restart and Run Command RBAC actions.
 
 ## Expected Student Output
 
-- Student runs `make trigger-parking-down` and the incident is automatically routed to `iaas-vm-incident-handler` via the `parking-vm-unhealthy` filter (or manually via `/agent iaas-vm-incident-handler` if automatic routing doesn't fire).
-- The agent restarts the affected VM and verifies health before closure.
+- Student runs `make trigger-parking-service-down` and the incident is automatically routed to `parking-vm-incident-handler` via the `parking-api-service-down` filter (or manually invokes that subagent if automatic routing doesn't fire).
+- The agent restarts `vm-parking-paris` and verifies the systemd service and API before closure.
 - Student can explain what the validation query/check was and what happens on failure.
 - Student understands the difference between basic remediation (Ch11/12) and validated remediation with retry logic (this challenge).
+- No GitHub issue is created; Challenge 10 owns that separate reporting workflow.
 
 ## Common Issues and Hints
 
-- **Symptom:** There is no known trigger script in the student repo. **Fix:** this is incorrect — `make trigger-parking-down` (→ `trigger-parking-api-down.sh`) and `make restore-parking` exist. Use them.
+- **Symptom:** There is no known trigger script in the student repo. **Fix:** use `make trigger-parking-service-down` and the idempotent `make restore-parking-service` cleanup target.
 - **Symptom:** Agent reports remediation complete with no proof. **Fix:** press for the validation step explicitly; this is the whole point of the lab.
-- **Symptom:** Students conflate reboot success with service recovery. **Fix:** require a post-restart health check or telemetry confirmation.
-- **Symptom:** They cannot find the exact response-plan YAML in the default config bundle. **Fix:** the `parking-vm-unhealthy` filter YAML is at `Student/Resources/azure-sre-agent-config/automations/incident-filters/parking-vm-unhealthy.yaml` — it was applied with `make incident-filters` in Challenge 06. Confirm it is listed under **Incident Response → Filters** in the portal.
-- **Symptom:** Agent correctly identifies the failing VM but `az vm restart` is refused with a permission error. **Fix:** student set the agent permission to Reader in Challenge 00. In the SRE Agent portal → **Managed Resources**, change the permission to **Contributor** on the affected parking resource groups.
+- **Symptom:** Students conflate reboot success with service recovery. **Fix:** require both `systemctl is-active paris-parking-api.service` and a successful localhost API response.
+- **Symptom:** They cannot find the exact response-plan YAML. **Fix:** inspect `Student/Resources/azure-sre-agent-config/automations/incident-filters/parking-api-service-down.yaml`, which was applied with `make incident-filters` in Challenge 06.
+- **Symptom:** A GitHub issue is created instead of remediation. **Fix:** the Challenge 10 filter handled the alert; confirm both filters match exact alert titles and `parking-api-service-down` routes to `parking-vm-incident-handler`.
+- **Symptom:** Agent correctly identifies the failing VM but `az vm restart` or Run Command validation is refused with an Azure authorization error. **Fix:** have an Owner or Role Based Access Control Administrator run `make grant-agent-vm-remediation`, verify `Azure SRE Lab VM Remediator` is assigned on `rg-sre-parking-paris`, wait for propagation, and retry in a new thread. The role grants no GitHub, network, disk, resize, or role-management permissions.
 
 ## Debrief Discussion Guide
 
@@ -41,6 +44,6 @@
 
 ## Success Criteria Notes
 
-- Be flexible on the exact Parking Manager specialist name; environments may vary.
+- Require the dedicated `parking-vm-incident-handler`; it is intentionally scoped to this workflow and has no GitHub tools.
 - Be strict that students understand the validation logic and escalation path.
 - If your tenant lacks the scenario, convert this into a guided coach demo rather than letting students stall.

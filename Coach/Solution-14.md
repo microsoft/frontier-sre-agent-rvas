@@ -14,7 +14,7 @@
 
 - Walk the failure sequence: `make break-food` sends ~200 POSTs to `/api/cart/demo-user/items` → OOM/HTTP 500 window → `alert-food-http-5xx` → `aca-app-incident-handler`.
 - Call out the key Sample Food facts from knowledge: valid health routes are `/WeatherForecast` and `/api/FoodItems`; `/health` is not real.
-- Explain the two explicit outcomes: S1 completes the Azure diagnosis/remediation without GitHub; S2 invokes `code-analyzer` for read-only source correlation and GitHub issue creation.
+- Explain the two explicit outcomes: S1 completes the Azure diagnosis/remediation without GitHub; S2 invokes `source-fix-delivery` skill for read-only source correlation and GitHub issue creation.
 - Emphasize that Grubify source is immutable: no branch, pushed file, commit, or pull request is acceptable evidence.
 
 ## Expected Student Output
@@ -28,7 +28,7 @@
 
 - **Symptom:** Agent or student checks `/health`. **Fix:** correct to `/WeatherForecast` or `/api/FoodItems` using the knowledge doc.
 - **Symptom:** Alert is slow. **Fix:** wait up to 10 minutes, then use the manual prompt from the challenge.
-- **Symptom:** GitHub issue creation reports that the user must be logged in. **Fix:** complete the `github-mcp` connector OAuth authorization, confirm `code-analyzer`'s `mcp_tools` list includes the needed `github-mcp_*` write tools.
+- **Symptom:** GitHub issue creation reports that the user must be logged in. **Fix:** complete the `github-mcp` and `github-mcp-v1` connectors OAuth authorization, confirm `aca-app-incident-handler`'s `mcp_tools` list includes the needed `github-mcp-v1_*` write tools.
 
 ## Debrief Discussion Guide
 

@@ -41,4 +41,4 @@
 ## Success Criteria Notes
 
 - Be strict that students name the route `Demo-Break-Return-To-App-Client` and the next hop `None`.
-- Require the Autonomous execution evidence ..
+- Require the Autonomous execution evidence to be clearly shown, including the route correction and verification steps.

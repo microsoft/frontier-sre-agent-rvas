@@ -26,7 +26,9 @@
 
 ## Common Issues and Hints
 
-- **Symptom:** Cost query permissions fail up front. **Fix:** confirm Cost Management read access before starting the challenge.
+- **Symptom:** Azure CLI reports that `costmanagement` is misspelled or unrecognized. **Fix:** use the challenge's `az rest` command; the optional `costmanagement` extension does not expose the Query API command.
+- **Symptom:** Cost query permissions fail up front. **Fix:** confirm Cost Management Reader access before starting the challenge.
+- **Symptom:** Cost Management returns HTTP 429. **Fix:** this is API throttling, not an RBAC failure. `make check-cost-access` retries with 30, 60, and 120-second delays. If it still fails, stop making requests and try later. For deeper diagnosis, inspect the response headers: `x-ms-ratelimit-microsoft.costmanagement-clienttype-retry-after` or `x-ms-ratelimit-microsoft.costmanagement-qpu-retry-after` gives the required backoff in seconds, while the corresponding `remaining` header identifies the exhausted quota.
 - **Symptom:** Output is generic Advisor paraphrase. **Fix:** press for utilization data and knowledge-doc context.
 - **Symptom:** Agent suggests immediate deletes/resizes. **Fix:** remind students the agent is read-only and should recommend only.
 - **Symptom:** Duplicate recommendations appear. **Fix:** ask the student to explain how Advisor and inventory findings should be de-duplicated.

@@ -40,5 +40,5 @@ if [[ "$(jq -r '.data.vms.paris.healthy' <<<"${state_json}")" != "true" ]]; then
   exit 1
 fi
 
-echo "Parking Manager VM health restored."
+echo "Synthetic Parking Manager VM health state restored."
 echo "${state_json}" | jq .

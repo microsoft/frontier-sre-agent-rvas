@@ -270,7 +270,7 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "vm_health_unhealthy" 
   resource_group_name     = azurerm_resource_group.parking_chaos.name
   location                = azurerm_resource_group.parking_chaos.location
   display_name            = "Parking VM Unhealthy Alert"
-  description             = "Fires when a parking VM is reported as unhealthy in the VMHealthStatus_CL custom table."
+  description             = "Synthetic Parking VM health signal for the incident-reporting workflow. Fires when VMHealthStatus_CL reports an unhealthy VM."
   enabled                 = true
   severity                = 2
   scopes                  = [azurerm_log_analytics_workspace.demo.id]
@@ -312,6 +312,48 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "vm_health_unhealthy" 
   }
 
   depends_on = [azapi_resource.vm_health_table]
+}
+
+resource "azurerm_monitor_scheduled_query_rules_alert_v2" "paris_parking_api_down" {
+  name                    = "parking-api-service-down"
+  resource_group_name     = azurerm_resource_group.parking_paris.name
+  location                = azurerm_resource_group.parking_paris.location
+  display_name            = "Paris Parking API Service Down"
+  description             = "Fires when systemd reports that the Paris Parking API service stopped or failed. Routes to the dedicated Parking VM remediation workflow."
+  enabled                 = var.deploy_paris_vm
+  severity                = 2
+  scopes                  = [azurerm_log_analytics_workspace.demo.id]
+  evaluation_frequency    = "PT1M"
+  window_duration         = "PT10M"
+  skip_query_validation   = true
+  auto_mitigation_enabled = true
+  tags                    = local.resource_tags
+
+  criteria {
+    query                   = <<-KQL
+      Syslog
+      | where TimeGenerated > ago(10m)
+      | where ProcessName == "systemd"
+      | where SyslogMessage has "paris-parking-api.service"
+      | where SyslogMessage has_any ("Stopped", "Deactivated", "Failed", "failed")
+    KQL
+    time_aggregation_method = "Count"
+    threshold               = 0
+    operator                = "GreaterThan"
+
+    failing_periods {
+      minimum_failing_periods_to_trigger_alert = 1
+      number_of_evaluation_periods             = 1
+    }
+  }
+
+  action {
+    action_groups = [azurerm_monitor_action_group.vm_health.id]
+  }
+
+  depends_on = [
+    azurerm_monitor_data_collection_rule_association.paris,
+  ]
 }
 
 resource "azurerm_monitor_scheduled_query_rules_alert_v2" "vm_health_recovered" {

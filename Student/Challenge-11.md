@@ -51,12 +51,14 @@ The response plan `web-tier-nginx` routes the incident to `iaas-vm-incident-hand
 
 > If the alert hasn't fired after 5 minutes, trigger the investigation manually using the prompt below.
 
-> Tool approval required: The platform classifies `az vm run-command invoke` as a write operation because it can execute arbitrary scripts on a VM. The agent therefore routes the command through `RunAzCliWriteCommands`, which requires explicit approval by default. To fully automate this incident response, configure a Tool Access Policy that automatically approves only the required VM Run Command operations. In the portal, go to **Capabilities → Tools -> Advanced permissions**, and add an Allow rule like `RunAzCliWriteCommands(az vm run-command invoke *)`, understanding that this permits any VM Run Command available to the agent.
-
 **Manual fallback prompt:**
 ```text
 The internal load balancer frontend 10.20.2.100 stopped serving. Check the web tier, find the root cause in the guest-OS logs, and restore the service on every affected VM.
 ```
+
+> Tool approval required: The platform classifies `az vm run-command invoke` as a write operation because it can execute arbitrary scripts on a VM. The agent therefore routes the command through `RunAzCliWriteCommands`, which requires explicit approval by default. To fully automate this incident response, configure a Tool Access Policy that automatically approves only the required VM Run Command operations. In the portal, go to **Capabilities → Tools -> Advanced permissions**, and add an Allow rule like `RunAzCliWriteCommands(az vm run-command invoke *)`, understanding that this permits any VM Run Command available to the agent.
+
+> **If Azure returns an authorization error:** Autonomous mode removes the human approval gate, and the Tool Access Policy permits the tool call, but neither grants Azure RBAC permissions to the agent's managed identity. Ask an **Owner** or **Role Based Access Control Administrator** to run `make grant-agent-vm-remediation` from `Student/`. The script grants the agent only VM read, restart, and Run Command actions on resource groups that contain lab VMs. Wait several minutes for RBAC propagation, then retry the investigation in a new thread.
 
 ### Step 4 — Restore (if needed)
 
@@ -82,6 +84,7 @@ In the portal, read the agent's full investigation log. Note:
 - [ ] The agent identified **both** VMs as affected (blast radius correctly assessed)
 - [ ] The agent ran `az vm run-command invoke` on each VM to restart nginx
 - [ ] The agent verified nginx was active on every VM after restart
+- [ ] You can distinguish Autonomous mode, Tool Access Policy approval, and Azure RBAC authorization
 - [ ] `validate.sh` returns healthy after the agent's remediation
 - [ ] **Explain to your coach** — what is the difference between a platform-level health probe failure and a guest-OS failure? Why would a VM show "Running" in the portal while the service is down?
 

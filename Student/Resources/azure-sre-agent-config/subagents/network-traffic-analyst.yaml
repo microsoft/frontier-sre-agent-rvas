@@ -9,7 +9,7 @@
 # and the environment is non-production. Re-enable the hook to restore the gate.
 # Domain scope (2026-06-14 re-architecting, hub-firewall plan removed 2026-07-02): the
 # networking/hub domain -- NSG/UDR/VNet-flow/Traffic Analytics (Sev2). Wired to the
-# network-observability-review (Sev2, titleNotContains nginx) response plan and the
+# network-denied-flows-review (Sev2, titleNotContains nginx) response plan and the
 # flow-log-ingestion-freshness scheduled task. Web/api/db VM service-health incidents
 # (NGINX down) are owned by the new iaas-vm-incident-handler and routed away by the
 # web-tier-nginx incident filter.
