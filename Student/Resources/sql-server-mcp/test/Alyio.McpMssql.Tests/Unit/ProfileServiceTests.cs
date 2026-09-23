@@ -1,0 +1,181 @@
+// MIT License
+
+using Alyio.McpMssql.Configuration;
+using Alyio.McpMssql.Services;
+using Microsoft.Extensions.Options;
+
+namespace Alyio.McpMssql.Tests.Unit;
+
+public class ProfileServiceTests
+{
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Resolve_With_Null_Or_Empty_Or_Whitespace_Returns_Default_Profile(string? profileName)
+    {
+        var defaultProfile = new McpMssqlProfileOptions { ConnectionString = "Server=.;Database=DefaultDb;" };
+        var options = new McpMssqlOptions
+        {
+            Profiles = new Dictionary<string, McpMssqlProfileOptions>(StringComparer.OrdinalIgnoreCase)
+            {
+                [McpMssqlOptions.DefaultProfileName] = defaultProfile,
+            },
+        };
+        var profileService = new ProfileService(Options.Create(options));
+
+        var result = profileService.Resolve(profileName);
+
+        Assert.Same(defaultProfile, result);
+    }
+
+    [Fact]
+    public void Resolve_Is_Case_Insensitive()
+    {
+        var otherProfile = new McpMssqlProfileOptions { ConnectionString = "Server=other;" };
+        var options = new McpMssqlOptions
+        {
+            Profiles = new Dictionary<string, McpMssqlProfileOptions>(StringComparer.OrdinalIgnoreCase)
+            {
+                [McpMssqlOptions.DefaultProfileName] = new McpMssqlProfileOptions { ConnectionString = "Server=.;" },
+                ["Other"] = otherProfile,
+            },
+        };
+        var profileService = new ProfileService(Options.Create(options));
+
+        var result = profileService.Resolve("other");
+
+        Assert.Same(otherProfile, result);
+    }
+
+    [Fact]
+    public void Resolve_Throws_When_Default_Profile_Missing_And_Given_Null()
+    {
+        var options = new McpMssqlOptions
+        {
+            Profiles = new Dictionary<string, McpMssqlProfileOptions>(StringComparer.OrdinalIgnoreCase),
+        };
+        var profileService = new ProfileService(Options.Create(options));
+
+        var ex = Assert.Throws<InvalidOperationException>(() => profileService.Resolve(null));
+
+        Assert.Contains("default", ex.Message);
+        Assert.Contains("Available profiles:", ex.Message);
+    }
+
+    [Fact]
+    public void GetProfiles_Returns_Profiles()
+    {
+        var options = new McpMssqlOptions
+        {
+            Profiles = new Dictionary<string, McpMssqlProfileOptions>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["default"] = new McpMssqlProfileOptions { Description = "Default instance" },
+                ["warehouse"] = new McpMssqlProfileOptions { Description = "Warehouse DB" },
+            },
+        };
+        var profileService = new ProfileService(Options.Create(options));
+
+        var profiles = profileService.GetProfiles();
+
+        Assert.NotNull(profiles);
+        Assert.Equal(2, profiles.Count);
+        var names = profiles.Select(p => p.Name).OrderBy(n => n, StringComparer.Ordinal).ToList();
+        Assert.Equal(["default", "warehouse"], names);
+        Assert.Equal("Default instance", profiles.Single(p => p.Name == "default").Description);
+        Assert.Equal("Warehouse DB", profiles.Single(p => p.Name == "warehouse").Description);
+    }
+
+    [Fact]
+    public void GetProfiles_Reports_AllowWrite_Per_Profile()
+    {
+        var options = new McpMssqlOptions
+        {
+            Profiles = new Dictionary<string, McpMssqlProfileOptions>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["default"] = new McpMssqlProfileOptions(),
+                ["writer"] = new McpMssqlProfileOptions { AllowWrite = true },
+            },
+        };
+        var profileService = new ProfileService(Options.Create(options));
+
+        var profiles = profileService.GetProfiles();
+
+        Assert.False(profiles.Single(p => p.Name == "default").AllowWrite);
+        Assert.True(profiles.Single(p => p.Name == "writer").AllowWrite);
+    }
+
+    [Fact]
+    public void GetProfiles_Returns_Null_Description_When_Profile_Description_Is_Null_Or_Whitespace()
+    {
+        var options = new McpMssqlOptions
+        {
+            Profiles = new Dictionary<string, McpMssqlProfileOptions>(StringComparer.OrdinalIgnoreCase)
+            {
+                [McpMssqlOptions.DefaultProfileName] = new McpMssqlProfileOptions { Description = null },
+                ["other"] = new McpMssqlProfileOptions { Description = "   " },
+                ["empty"] = new McpMssqlProfileOptions { Description = "" },
+            },
+        };
+        var profileService = new ProfileService(Options.Create(options));
+
+        var profiles = profileService.GetProfiles();
+
+        Assert.Null(profiles.Single(p => p.Name == McpMssqlOptions.DefaultProfileName).Description);
+        Assert.Null(profiles.Single(p => p.Name == "other").Description);
+        Assert.Null(profiles.Single(p => p.Name == "empty").Description);
+    }
+
+    [Fact]
+    public void GetProfiles_Trims_Profile_Description()
+    {
+        var options = new McpMssqlOptions
+        {
+            Profiles = new Dictionary<string, McpMssqlProfileOptions>(StringComparer.OrdinalIgnoreCase)
+            {
+                [McpMssqlOptions.DefaultProfileName] = new McpMssqlProfileOptions { Description = "  dev server  " },
+            },
+        };
+        var profileService = new ProfileService(Options.Create(options));
+
+        var profiles = profileService.GetProfiles();
+
+        Assert.Equal("dev server", profiles.Single().Description);
+    }
+
+    [Fact]
+    public void GetProfiles_Returns_Empty_When_No_Profiles_Configured()
+    {
+        var options = new McpMssqlOptions
+        {
+            Profiles = new Dictionary<string, McpMssqlProfileOptions>(StringComparer.OrdinalIgnoreCase),
+        };
+        var profileService = new ProfileService(Options.Create(options));
+
+        var profiles = profileService.GetProfiles();
+
+        Assert.NotNull(profiles);
+        Assert.Empty(profiles);
+    }
+
+    [Fact]
+    public void Resolve_Throws_When_Profile_Not_Found_Message_Includes_Available_Profile_Names()
+    {
+        var options = new McpMssqlOptions
+        {
+            Profiles = new Dictionary<string, McpMssqlProfileOptions>(StringComparer.OrdinalIgnoreCase)
+            {
+                [McpMssqlOptions.DefaultProfileName] = new McpMssqlProfileOptions(),
+                ["warehouse"] = new McpMssqlProfileOptions(),
+            },
+        };
+        var profileService = new ProfileService(Options.Create(options));
+
+        var ex = Assert.Throws<InvalidOperationException>(() => profileService.Resolve("missing"));
+
+        Assert.Contains("missing", ex.Message);
+        Assert.Contains("default", ex.Message);
+        Assert.Contains("warehouse", ex.Message);
+        Assert.Contains("Available profiles:", ex.Message);
+    }
+}

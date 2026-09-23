@@ -245,6 +245,108 @@
             font-size: clamp(2rem, 4vw, 3rem);
         }
 
+        /* ─── SQL Server DBA track ──────────────────────────────────────── */
+        #sql-dba-track {
+            position: relative;
+            overflow: hidden;
+            background:
+                linear-gradient(rgba(41, 72, 105, .22) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(41, 72, 105, .22) 1px, transparent 1px),
+                radial-gradient(circle at 82% 12%, rgba(245, 158, 11, .13), transparent 30%),
+                #06182d;
+            background-size: 32px 32px, 32px 32px, auto, auto;
+            border-bottom: 1px solid #24415f;
+        }
+
+        #sql-dba-track .section-label {
+            color: #fbbf24;
+        }
+
+        #sql-dba-track .section-title {
+            color: #f8fafc;
+        }
+
+        #sql-dba-track .section-desc {
+            color: #b9c8d9;
+            max-width: 760px;
+        }
+
+        .dba-track-rail {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .55rem;
+            margin-top: 1.5rem;
+        }
+
+        .dba-track-rail span {
+            font-family: var(--font-mono, monospace);
+            font-size: .65rem;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: #fde68a;
+            border: 1px solid rgba(251, 191, 36, .35);
+            background: rgba(120, 53, 15, .18);
+            padding: .4rem .7rem;
+            border-radius: 3px;
+        }
+
+        .dba-track-grid {
+            background: #24415f;
+            border-color: #24415f;
+            box-shadow: 0 28px 80px rgba(0, 0, 0, .24);
+        }
+
+        .dba-track-grid .challenge-card {
+            --c-color: #f59e0b;
+            background: rgba(9, 31, 55, .97);
+            border-color: #24415f;
+            color: #f8fafc;
+        }
+
+        .dba-track-grid .challenge-card:hover {
+            background: #0d2948;
+            border-color: #f59e0b;
+            box-shadow: inset 0 0 0 1px rgba(245, 158, 11, .18);
+        }
+
+        .dba-track-grid .card-bg-number {
+            color: rgba(251, 191, 36, .07);
+        }
+
+        .dba-track-grid .card-title {
+            color: #f8fafc;
+        }
+
+        .dba-track-grid .card-desc {
+            color: #b9c8d9;
+        }
+
+        .dba-track-grid .card-footer {
+            border-color: #24415f;
+        }
+
+        .dba-track-grid .card-tag {
+            color: #d8e4ef;
+            background: rgba(255, 255, 255, .04);
+            border-color: #315272;
+        }
+
+        .dba-track-grid .card-phase-badge {
+            background: rgba(245, 158, 11, .08);
+        }
+
+        .dba-track-grid .challenge-card.dba-capstone {
+            grid-column: span 2;
+        }
+
+        .dba-coach-heading {
+            margin: 2.5rem 0 1rem;
+            font-family: var(--font-display, "Outfit", sans-serif);
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #032254;
+        }
+
         /* ─── Subagent inventory ────────────────────────────────────────── */
         #agents {
             border-bottom: 1px solid var(--border);
@@ -811,6 +913,10 @@
                 grid-column: span 1;
             }
 
+            .dba-track-grid .challenge-card.dba-capstone {
+                grid-column: span 1;
+            }
+
             .coach-card-grid {
                 grid-template-columns: 1fr;
             }
@@ -834,6 +940,7 @@
             </a>
             <nav class="nav-links" id="navLinks" aria-label="Primary">
                 <a href="#challenges">Challenges</a>
+                <a href="#sql-dba-track">SQL DBA Track</a>
                 <a href="#agents">Subagents</a>
                 <a class="cta" href="#challenges">Start the Lab →</a>
                 <a class="gh" href="https://github.com/microsoft/frontier-sre-agent-rvas" target="_blank"
@@ -884,9 +991,9 @@
                     <span class="eyebrow">RVAS — Azure SRE Agent</span>
                     <h1 id="heroHeading">Autonomous SRE with <span class="accent">Azure SRE Agent</span></h1>
                     <p class="lede">
-                        Ten hands-on challenges: configure SRE Agent building blocks (skills, subagents, connectors,
-                        scheduled tasks), then trigger and observe 6 autonomous incident scenarios. Finish with a
-                        capstone where you build your own production-ready SRE agent.
+                        Two hands-on tracks and 29 challenges: build an Azure operations agent, or connect a
+                        read-only SQL Server specialist that investigates Query Store, waits, blocking, and query
+                        performance without changing the database.
                     </p>
                     <div class="hero-actions">
                         <a class="btn btn-primary" href="#challenges">
@@ -899,7 +1006,7 @@
                         <a class="btn btn-ghost" href="README.md">Read the Briefing</a>
                     </div>
                     <div class="stats stats-4" aria-label="Lab statistics">
-                        <div class="stat"><span class="stat-num" data-count="20">20</span><span
+                        <div class="stat"><span class="stat-num" data-count="29">29</span><span
                                 class="stat-lbl">Challenges</span></div>
                         <div class="stat"><span class="stat-num" data-count="6">6</span><span
                                 class="stat-lbl">Subagents</span></div>
@@ -929,6 +1036,10 @@
                     <a href="#challenges" class="hero-mod-card" style="--mod-color:#0F7B6C">
                         <div class="mod-name">Capstone: Build your own agent</div>
                         <div class="mod-count">CH-19 · Your use case · End-to-end demo</div>
+                    </a>
+                    <a href="#sql-dba-track" class="hero-mod-card" style="--mod-color:#f59e0b">
+                        <div class="mod-name">SQL Server DBA track</div>
+                        <div class="mod-count">DBA-00–08 · Query Store · Blocking · Plan analysis</div>
                     </a>
                 </div>
             </div>
@@ -1418,6 +1529,230 @@
                         </div>
                     </a>
                 </div>
+            </div>
+        </section>
+
+        <!-- SQL Server DBA track -->
+        <section id="sql-dba-track">
+            <div class="wrap">
+                <div class="challenges-header">
+                    <div>
+                        <div class="section-label">SQL Server DBA track</div>
+                        <h2 class="section-title display reveal">Read-only evidence. Production-grade reasoning.</h2>
+                        <p class="section-desc reveal">
+                            Deploy a hardened SQL Server MCP server, then teach Azure SRE Agent to separate database
+                            facts from assumptions. Every investigation is bounded, observable, and deliberately
+                            non-destructive.
+                        </p>
+                        <div class="dba-track-rail" aria-label="SQL Server DBA track safety boundaries">
+                            <span>Managed identity</span>
+                            <span>SELECT only</span>
+                            <span>Estimated plans</span>
+                            <span>No auto-tuning</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="challenges-grid dba-track-grid">
+                    <a class="challenge-card full" data-track="sql-dba"
+                        href="Student/sql-server-dba/Challenge-00.md">
+                        <div class="card-bg-number display">00</div>
+                        <div class="card-inner">
+                            <div>
+                                <div class="card-top">
+                                    <span class="card-phase-badge">Trust boundary</span>
+                                    <span class="card-num mono">DBA — 00</span>
+                                </div>
+                                <h3 class="card-title display">Deploy the Read-Only<br>DBA Path</h3>
+                            </div>
+                            <div style="display:flex;flex-direction:column;justify-content:space-between;">
+                                <p class="card-desc">
+                                    Deploy the supplied .NET MCP container, map its managed identity into the least-privilege
+                                    observer role, secure the Streamable HTTP endpoint, and prove that Azure SRE
+                                    Agent can inspect SQL without receiving a write path.
+                                </p>
+                                <div class="card-footer">
+                                    <div class="card-tags">
+                                        <span class="card-tag">Azure Container Apps</span>
+                                        <span class="card-tag">managed identity</span>
+                                        <span class="card-tag">MCP</span>
+                                    </div>
+                                    <div class="card-arrow mono">Open track →</div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+
+                    <a class="challenge-card" data-track="sql-dba"
+                        href="Student/sql-server-dba/Challenge-01.md">
+                        <div class="card-bg-number display">01</div>
+                        <div class="card-top">
+                            <span class="card-phase-badge">Discover</span>
+                            <span class="card-num mono">DBA — 01</span>
+                        </div>
+                        <h3 class="card-title display">Orient to the<br>Database</h3>
+                        <p class="card-desc">
+                            Turn catalog metadata into a business map while keeping declared relationships separate
+                            from inferred domain meaning.
+                        </p>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="card-tag">schema</span>
+                                <span class="card-tag">relationships</span>
+                            </div>
+                            <div class="card-arrow mono">Open →</div>
+                        </div>
+                    </a>
+
+                    <a class="challenge-card" data-track="sql-dba"
+                        href="Student/sql-server-dba/Challenge-02.md">
+                        <div class="card-bg-number display">02</div>
+                        <div class="card-top">
+                            <span class="card-phase-badge">Baseline</span>
+                            <span class="card-num mono">DBA — 02</span>
+                        </div>
+                        <h3 class="card-title display">Establish a Query<br>Store Baseline</h3>
+                        <p class="card-desc">
+                            Seed repeatable activity and define a trustworthy historical observation window before
+                            diagnosing regressions.
+                        </p>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="card-tag">Query Store</span>
+                                <span class="card-tag">time windows</span>
+                            </div>
+                            <div class="card-arrow mono">Open →</div>
+                        </div>
+                    </a>
+
+                    <a class="challenge-card" data-track="sql-dba"
+                        href="Student/sql-server-dba/Challenge-03.md">
+                        <div class="card-bg-number display">03</div>
+                        <div class="card-top">
+                            <span class="card-phase-badge">Interpret</span>
+                            <span class="card-num mono">DBA — 03</span>
+                        </div>
+                        <h3 class="card-title display">Separate Duration<br>from Pressure</h3>
+                        <p class="card-desc">
+                            Observe a long-running wait and prevent elapsed time from becoming a false performance
+                            diagnosis.
+                        </p>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="card-tag">waits</span>
+                                <span class="card-tag">active requests</span>
+                            </div>
+                            <div class="card-arrow mono">Open →</div>
+                        </div>
+                    </a>
+
+                    <a class="challenge-card" data-track="sql-dba"
+                        href="Student/sql-server-dba/Challenge-04.md">
+                        <div class="card-bg-number display">04</div>
+                        <div class="card-top">
+                            <span class="card-phase-badge">Concurrency</span>
+                            <span class="card-num mono">DBA — 04</span>
+                        </div>
+                        <h3 class="card-title display">Trace a<br>Blocking Chain</h3>
+                        <p class="card-desc">
+                            Identify the head blocker, blocked request, wait resource, and transaction age without
+                            terminating either session.
+                        </p>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="card-tag">locks</span>
+                                <span class="card-tag">transactions</span>
+                            </div>
+                            <div class="card-arrow mono">Open →</div>
+                        </div>
+                    </a>
+
+                    <a class="challenge-card" data-track="sql-dba"
+                        href="Student/sql-server-dba/Challenge-05.md">
+                        <div class="card-bg-number display">05</div>
+                        <div class="card-top">
+                            <span class="card-phase-badge">Tune</span>
+                            <span class="card-num mono">DBA — 05</span>
+                        </div>
+                        <h3 class="card-title display">Build an Evidence-Based<br>Index Case</h3>
+                        <p class="card-desc">
+                            Correlate Query Store, the existing index set, and an estimated plan before recommending
+                            a change.
+                        </p>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="card-tag">indexes</span>
+                                <span class="card-tag">estimated plan</span>
+                            </div>
+                            <div class="card-arrow mono">Open →</div>
+                        </div>
+                    </a>
+
+                    <a class="challenge-card" data-track="sql-dba"
+                        href="Student/sql-server-dba/Challenge-06.md">
+                        <div class="card-bg-number display">06</div>
+                        <div class="card-top">
+                            <span class="card-phase-badge">Query shape</span>
+                            <span class="card-num mono">DBA — 06</span>
+                        </div>
+                        <h3 class="card-title display">Diagnose Query<br>Shape Problems</h3>
+                        <p class="card-desc">
+                            Find non-SARGable predicates and implicit conversions, then explain their access-path
+                            impact without rewriting production code.
+                        </p>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="card-tag">SARGability</span>
+                                <span class="card-tag">conversions</span>
+                            </div>
+                            <div class="card-arrow mono">Open →</div>
+                        </div>
+                    </a>
+
+                    <a class="challenge-card" data-track="sql-dba"
+                        href="Student/sql-server-dba/Challenge-07.md">
+                        <div class="card-bg-number display">07</div>
+                        <div class="card-top">
+                            <span class="card-phase-badge">Plan behavior</span>
+                            <span class="card-num mono">DBA — 07</span>
+                        </div>
+                        <h3 class="card-title display">Investigate Parameter<br>Sensitivity</h3>
+                        <p class="card-desc">
+                            Compare skewed parameter populations, plan history, and runtime distributions before
+                            claiming parameter sensitivity.
+                        </p>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="card-tag">data skew</span>
+                                <span class="card-tag">plan variation</span>
+                            </div>
+                            <div class="card-arrow mono">Open →</div>
+                        </div>
+                    </a>
+
+                    <a class="challenge-card dba-capstone" data-track="sql-dba"
+                        href="Student/sql-server-dba/Challenge-08.md">
+                        <div class="card-bg-number display">08</div>
+                        <div class="card-top">
+                            <span class="card-phase-badge">Incident room</span>
+                            <span class="card-num mono">DBA — 08</span>
+                        </div>
+                        <h3 class="card-title display">Triage a Combined<br>Database Incident</h3>
+                        <p class="card-desc">
+                            Correlate concurrent signals, rank findings by demonstrated impact, preserve alternative
+                            explanations, and deliver a decision-ready read-only handoff.
+                        </p>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="card-tag">evidence ranking</span>
+                                <span class="card-tag">handoff</span>
+                                <span class="card-tag">safety</span>
+                            </div>
+                            <div class="card-arrow mono">Open →</div>
+                        </div>
+                    </a>
+                </div>
+            </div>
         </section>
 
         <!-- Subagents -->
@@ -1506,7 +1841,8 @@
                 <h2 class="section-title display">Solution Guides</h2>
                 <p class="section-desc" style="margin-bottom:2rem;">
                     Mini-lectures, expected agent behavior, common failure modes, and debrief discussion guides.
-                    See the <a href="Coach/README.md">Coach README</a> for the full index.
+                    See the <a href="Coach/README.md">Azure Operations index</a> or the
+                    <a href="Coach/sql-server-dba/README.md">SQL Server DBA index</a>.
                 </p>
                 <div class="coach-card-grid">
                     <a class="coach-card" href="Coach/Solution-00.md">
@@ -1670,6 +2006,81 @@
                         <div class="coach-arrow mono">Open →</div>
                     </a>
                 </div>
+
+                <div class="dba-coach-heading">SQL Server DBA solutions</div>
+                <div class="coach-card-grid">
+                    <a class="coach-card" href="Coach/sql-server-dba/Solution-00.md">
+                        <div class="card-bg-number display">00</div>
+                        <div class="coach-num mono">DBA SOL — 00</div>
+                        <div class="coach-title">Deploy the Read-Only DBA Path</div>
+                        <div class="coach-desc">Identity, observer role, MCP health, connector validation, and refusal
+                            boundary.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/sql-server-dba/Solution-01.md">
+                        <div class="card-bg-number display">01</div>
+                        <div class="coach-num mono">DBA SOL — 01</div>
+                        <div class="coach-title">Orient to the Database</div>
+                        <div class="coach-desc">Business-language schema map, declared relationships, and inference
+                            discipline.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/sql-server-dba/Solution-02.md">
+                        <div class="card-bg-number display">02</div>
+                        <div class="coach-num mono">DBA SOL — 02</div>
+                        <div class="coach-title">Establish a Query Store Baseline</div>
+                        <div class="coach-desc">Repeatable activity, capture-state checks, and defensible observation
+                            windows.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/sql-server-dba/Solution-03.md">
+                        <div class="card-bg-number display">03</div>
+                        <div class="coach-num mono">DBA SOL — 03</div>
+                        <div class="coach-title">Separate Duration from Pressure</div>
+                        <div class="coach-desc">WAITFOR evidence, status interpretation, and false-positive
+                            prevention.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/sql-server-dba/Solution-04.md">
+                        <div class="card-bg-number display">04</div>
+                        <div class="coach-num mono">DBA SOL — 04</div>
+                        <div class="coach-title">Trace a Blocking Chain</div>
+                        <div class="coach-desc">Two-session orchestration, head-blocker evidence, and safe recovery.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/sql-server-dba/Solution-05.md">
+                        <div class="card-bg-number display">05</div>
+                        <div class="coach-num mono">DBA SOL — 05</div>
+                        <div class="coach-title">Build an Evidence-Based Index Case</div>
+                        <div class="coach-desc">Query Store, existing indexes, estimated plans, and recommendation
+                            tradeoffs.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/sql-server-dba/Solution-06.md">
+                        <div class="card-bg-number display">06</div>
+                        <div class="coach-num mono">DBA SOL — 06</div>
+                        <div class="coach-title">Diagnose Query Shape Problems</div>
+                        <div class="coach-desc">SARGability, implicit conversions, access paths, and code-owner
+                            handoff.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/sql-server-dba/Solution-07.md">
+                        <div class="card-bg-number display">07</div>
+                        <div class="coach-num mono">DBA SOL — 07</div>
+                        <div class="coach-title">Investigate Parameter Sensitivity</div>
+                        <div class="coach-desc">Skew, plan history, runtime distributions, and competing
+                            explanations.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/sql-server-dba/Solution-08.md">
+                        <div class="card-bg-number display">08</div>
+                        <div class="coach-num mono">DBA SOL — 08</div>
+                        <div class="coach-title">Triage a Combined Database Incident</div>
+                        <div class="coach-desc">Signal correlation, impact ranking, read-only recommendations, and
+                            executive handoff.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                </div>
             </div>
         </section>
 
@@ -1681,6 +2092,7 @@
             <p>Azure SRE Agent RVAS · Microsoft Real Value Acceleration Program</p>
             <div class="footer-links">
                 <a href="Coach/README.md">Coach Index</a>
+                <a href="Coach/sql-server-dba/README.md">SQL DBA Coach Index</a>
                 <a href="https://github.com/microsoft/frontier-sre-agent-rvas" target="_blank" rel="noopener">GitHub
                     ↗</a>
             </div>
@@ -1797,14 +2209,42 @@
             { label: 'SOL-19', file: 'Coach/Solution-19.md', title: 'Coach · Build Your Own Production-Ready SRE Agent' },
         ];
 
+        const DBA_STUDENT_FILES = [
+            { label: 'DBA-00', file: 'Student/sql-server-dba/Challenge-00.md', title: 'Deploy the Read-Only DBA Path' },
+            { label: 'DBA-01', file: 'Student/sql-server-dba/Challenge-01.md', title: 'Orient to the Database' },
+            { label: 'DBA-02', file: 'Student/sql-server-dba/Challenge-02.md', title: 'Establish a Query Store Baseline' },
+            { label: 'DBA-03', file: 'Student/sql-server-dba/Challenge-03.md', title: 'Separate Duration from Pressure' },
+            { label: 'DBA-04', file: 'Student/sql-server-dba/Challenge-04.md', title: 'Trace a Blocking Chain' },
+            { label: 'DBA-05', file: 'Student/sql-server-dba/Challenge-05.md', title: 'Build an Evidence-Based Index Case' },
+            { label: 'DBA-06', file: 'Student/sql-server-dba/Challenge-06.md', title: 'Diagnose Query Shape Problems' },
+            { label: 'DBA-07', file: 'Student/sql-server-dba/Challenge-07.md', title: 'Investigate Parameter Sensitivity' },
+            { label: 'DBA-08', file: 'Student/sql-server-dba/Challenge-08.md', title: 'Triage a Combined Database Incident' },
+        ];
+
+        const DBA_COACH_FILES = [
+            { label: 'DBA-SOL-00', file: 'Coach/sql-server-dba/Solution-00.md', title: 'Coach · Deploy the Read-Only DBA Path' },
+            { label: 'DBA-SOL-01', file: 'Coach/sql-server-dba/Solution-01.md', title: 'Coach · Orient to the Database' },
+            { label: 'DBA-SOL-02', file: 'Coach/sql-server-dba/Solution-02.md', title: 'Coach · Establish a Query Store Baseline' },
+            { label: 'DBA-SOL-03', file: 'Coach/sql-server-dba/Solution-03.md', title: 'Coach · Separate Duration from Pressure' },
+            { label: 'DBA-SOL-04', file: 'Coach/sql-server-dba/Solution-04.md', title: 'Coach · Trace a Blocking Chain' },
+            { label: 'DBA-SOL-05', file: 'Coach/sql-server-dba/Solution-05.md', title: 'Coach · Build an Evidence-Based Index Case' },
+            { label: 'DBA-SOL-06', file: 'Coach/sql-server-dba/Solution-06.md', title: 'Coach · Diagnose Query Shape Problems' },
+            { label: 'DBA-SOL-07', file: 'Coach/sql-server-dba/Solution-07.md', title: 'Coach · Investigate Parameter Sensitivity' },
+            { label: 'DBA-SOL-08', file: 'Coach/sql-server-dba/Solution-08.md', title: 'Coach · Triage a Combined Database Incident' },
+        ];
+
         let currentIdx = -1;
         let activeFiles = STUDENT_FILES;
 
         function openDrawer(mdFile) {
             const sIdx = STUDENT_FILES.findIndex(f => f.file === mdFile);
             const cIdx = COACH_FILES.findIndex(f => f.file === mdFile);
+            const dbaStudentIdx = DBA_STUDENT_FILES.findIndex(f => f.file === mdFile);
+            const dbaCoachIdx = DBA_COACH_FILES.findIndex(f => f.file === mdFile);
             if (sIdx !== -1) { activeFiles = STUDENT_FILES; currentIdx = sIdx; }
             else if (cIdx !== -1) { activeFiles = COACH_FILES; currentIdx = cIdx; }
+            else if (dbaStudentIdx !== -1) { activeFiles = DBA_STUDENT_FILES; currentIdx = dbaStudentIdx; }
+            else if (dbaCoachIdx !== -1) { activeFiles = DBA_COACH_FILES; currentIdx = dbaCoachIdx; }
             else { return; } // unknown file — do nothing
             loadAndRender(currentIdx);
             drawer.classList.add('open');
@@ -1841,8 +2281,13 @@
                             const resolved = new URL(href, 'http://x/' + base).pathname.replace(/^\//, '');
                             const sMatch = STUDENT_FILES.findIndex(f => f.file === resolved);
                             const cMatch = COACH_FILES.findIndex(f => f.file === resolved);
+                            const dbaStudentMatch = DBA_STUDENT_FILES.findIndex(f => f.file === resolved);
+                            const dbaCoachMatch = DBA_COACH_FILES.findIndex(f => f.file === resolved);
                             if (sMatch !== -1) { activeFiles = STUDENT_FILES; currentIdx = sMatch; loadAndRender(sMatch); }
                             else if (cMatch !== -1) { activeFiles = COACH_FILES; currentIdx = cMatch; loadAndRender(cMatch); }
+                            else if (dbaStudentMatch !== -1) { activeFiles = DBA_STUDENT_FILES; currentIdx = dbaStudentMatch; loadAndRender(dbaStudentMatch); }
+                            else if (dbaCoachMatch !== -1) { activeFiles = DBA_COACH_FILES; currentIdx = dbaCoachMatch; loadAndRender(dbaCoachMatch); }
+                            else { window.location.href = resolved; }
                         });
                     } else if (href && (href.startsWith('http') || href.startsWith('//'))) {
                         a.setAttribute('target', '_blank');

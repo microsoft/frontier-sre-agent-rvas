@@ -1,0 +1,90 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.alyiox/mcp-mssql",
+  "title": "Hardened Microsoft SQL Server",
+  "description": "Read-only SQL Server schema, parameterized SELECT, and estimated execution-plan analysis.",
+  "websiteUrl": "https://github.com/alyiox/mcp-mssql",
+  "repository": {
+    "url": "https://github.com/alyiox/mcp-mssql",
+    "source": "github",
+    "subfolder": "src/Alyio.McpMssql"
+  },
+  "version": "0.1.2",
+  "packages": [
+    {
+      "registryType": "nuget",
+      "registryBaseUrl": "https://api.nuget.org/v3/index.json",
+      "identifier": "Alyio.McpMssql",
+      "version": "1.6.1",
+      "runtimeHint": "dnx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "MCPMSSQL_CONNECTION_STRING",
+          "description": "Default profile SQL Server connection string (often contains secrets). Optional if profiles are only in user appsettings.",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "MCPMSSQL_DESCRIPTION",
+          "description": "Optional human-readable description for the default profile.",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "MCPMSSQL_QUERY_MAX_ROWS",
+          "description": "Max rows per interactive query (default 250; ceiling 1000).",
+          "isRequired": false,
+          "format": "number",
+          "isSecret": false
+        },
+        {
+          "name": "MCPMSSQL_QUERY_COMMAND_TIMEOUT_SECONDS",
+          "description": "Interactive query command timeout in seconds (default 30; ceiling 120).",
+          "isRequired": false,
+          "format": "number",
+          "isSecret": false
+        },
+        {
+          "name": "MCPMSSQL_QUERY_MAX_OUTPUT_BYTES",
+          "description": "Maximum UTF-8 output bytes (default 262144; ceiling 1048576).",
+          "isRequired": false,
+          "format": "number",
+          "isSecret": false
+        },
+        {
+          "name": "MCPMSSQL_ANALYZE_COMMAND_TIMEOUT_SECONDS",
+          "description": "Estimated execution-plan analysis timeout in seconds (default 30; ceiling 120).",
+          "isRequired": false,
+          "format": "number",
+          "isSecret": false
+        },
+        {
+          "name": "MCPMSSQL_REQUIRE_AZURE_MANAGED_IDENTITY",
+          "description": "Require Azure SQL UAMI authentication, an explicit database, TLS validation, and read-only application intent.",
+          "isRequired": false,
+          "format": "boolean",
+          "isSecret": false
+        },
+        {
+          "name": "MCPMSSQL_TRANSPORT",
+          "description": "Transport mode: stdio or http.",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "DOTNET_ENVIRONMENT",
+          "description": "Set to Development to load dotnet user-secrets (local dev).",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}
