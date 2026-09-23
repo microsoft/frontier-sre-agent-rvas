@@ -1,0 +1,10 @@
+**
+!Directory.Build.props
+!Directory.Packages.props
+!global.json
+!src/Alyio.McpMssql/**
+!test/Alyio.McpMssql.Tests/**
+src/Alyio.McpMssql/bin/
+src/Alyio.McpMssql/obj/
+test/Alyio.McpMssql.Tests/bin/
+test/Alyio.McpMssql.Tests/obj/

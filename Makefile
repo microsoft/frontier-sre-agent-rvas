@@ -25,13 +25,23 @@ build-web: clean-web
 	@cp -r web/. _site/
 	@# README linked from the page
 	@cp README.md _site/README.md
-	@# Student challenge markdown files (directly in Student/)
+	@# Student challenge markdown files, preserving nested track directories
 	@mkdir -p _site/Student
-	@find Student -maxdepth 1 -name "Challenge-*.md" -exec cp {} _site/Student/ \; 2>/dev/null || true
-	@# Coach solution markdown files (Coach/ root and Coach/Solutions/)
-	@mkdir -p _site/Coach/Solutions
-	@find Coach -maxdepth 1 -name "Solution-*.md" -exec cp {} _site/Coach/ \; 2>/dev/null || true
-	@find Coach/Solutions -maxdepth 1 -name "Solution-*.md" -exec cp {} _site/Coach/Solutions/ \; 2>/dev/null || true
+	@find Student -type f -name "Challenge-*.md" | while IFS= read -r file; do \
+		dest="_site/$$(dirname "$$file")"; \
+		mkdir -p "$$dest"; \
+		cp "$$file" "$$dest/"; \
+	done
+	@# Resources linked by the SQL Server DBA track
+	@mkdir -p _site/Student/Resources
+	@cp -r Student/Resources/sql-server-mcp _site/Student/Resources/
+	@# Coach indexes and solutions, preserving nested track directories
+	@mkdir -p _site/Coach
+	@find Coach -type f \( -name "Solution-*.md" -o -name "README.md" \) | while IFS= read -r file; do \
+		dest="_site/$$(dirname "$$file")"; \
+		mkdir -p "$$dest"; \
+		cp "$$file" "$$dest/"; \
+	done
 	@echo "Done → _site/"
 
 clean-web:
