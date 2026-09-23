@@ -66,6 +66,20 @@ updates:
         patterns:
           - "*"
 
+  # --- nuget: SQL Server MCP ---
+  - package-ecosystem: "nuget"
+    directory: "/Student/Resources/sql-server-mcp"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "dotnet"
+      - "sql-server-mcp"
+    groups:
+      sql-server-mcp-nuget-dependencies:
+        patterns:
+          - "*"
+
   # --- docker: Grubify ---
   - package-ecosystem: "docker"
     directories:
@@ -79,6 +93,20 @@ updates:
       - "grubify"
     groups:
       grubify-docker-dependencies:
+        patterns:
+          - "*"
+
+  # --- docker: SQL Server MCP ---
+  - package-ecosystem: "docker"
+    directory: "/Student/Resources/sql-server-mcp"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "sql-server-mcp"
+    groups:
+      sql-server-mcp-docker-dependencies:
         patterns:
           - "*"
 

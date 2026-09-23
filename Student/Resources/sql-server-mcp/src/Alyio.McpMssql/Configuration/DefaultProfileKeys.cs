@@ -1,0 +1,67 @@
+// MIT License
+
+namespace Alyio.McpMssql.Configuration;
+
+/// <summary>
+/// Well-known environment variable keys used to override settings
+/// on the default MCP MSSQL profile.
+///
+/// These keys exist primarily for backward compatibility and
+/// operational convenience. They apply only to the default profile
+/// and are evaluated before profile-level configuration.
+/// </summary>
+internal static class DefaultProfileKeys
+{
+    /// <summary>
+    /// Requires Azure SQL managed identity authentication for every profile.
+    /// </summary>
+    public const string RequireAzureManagedIdentity = "MCPMSSQL_REQUIRE_AZURE_MANAGED_IDENTITY";
+
+    /// <summary>
+    /// Overrides the connection string of the default profile.
+    /// </summary>
+    public const string ConnectionString = "MCPMSSQL_CONNECTION_STRING";
+
+    /// <summary>
+    /// Overrides the optional description of the default profile
+    /// (for tooling discovery and AI agents).
+    /// </summary>
+    public const string Description = "MCPMSSQL_DESCRIPTION";
+
+    /// <summary>
+    /// Overrides the maximum number of rows returned by query
+    /// operations on the default profile.
+    /// </summary>
+    public const string QueryMaxRows = "MCPMSSQL_QUERY_MAX_ROWS";
+
+    /// <summary>
+    /// Overrides the SQL command timeout (in seconds) for query
+    /// operations on the default profile.
+    /// </summary>
+    public const string QueryCommandTimeoutSeconds = "MCPMSSQL_QUERY_COMMAND_TIMEOUT_SECONDS";
+
+    /// <summary>
+    /// Overrides the maximum UTF-8 response size for interactive query
+    /// operations on the default profile.
+    /// </summary>
+    public const string QueryMaxOutputBytes = "MCPMSSQL_QUERY_MAX_OUTPUT_BYTES";
+
+    /// <summary>
+    /// Overrides the SQL command timeout (in seconds) for analyze
+    /// operations on the default profile.
+    /// </summary>
+    public const string AnalyzeCommandTimeoutSeconds = "MCPMSSQL_ANALYZE_COMMAND_TIMEOUT_SECONDS";
+
+    /// <summary>
+    /// Enables write commands (DDL/DML) on the default profile.
+    /// Accepts standard boolean values (e.g. <c>true</c>/<c>false</c>).
+    /// </summary>
+    public const string AllowWrite = "MCPMSSQL_ALLOW_WRITE";
+
+    /// <summary>
+    /// Overrides the SQL command timeout (in seconds) for write
+    /// commands on the default profile.
+    /// </summary>
+    public const string WriteCommandTimeoutSeconds = "MCPMSSQL_WRITE_COMMAND_TIMEOUT_SECONDS";
+
+}

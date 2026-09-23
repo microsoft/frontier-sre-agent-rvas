@@ -4,10 +4,22 @@
 
 The Frontier Azure SRE Agent Solution is a comprehensive framework designed to enhance the reliability, scalability, and performance of applications deployed on Microsoft Azure. This solution provides a set of tools, best practices, and automation scripts that enable Site Reliability Engineers (SREs) to effectively monitor, manage, and optimize their cloud infrastructure using Azure SRE agent.
 
-## Challenges
+## Tracks
 
-Twenty hands-on challenges with a progressive learning path: from agent fundamentals through advanced autonomous operations and FinOps.
+Choose a track based on the operational system you want Azure SRE Agent to
+investigate:
+
+| Track | Challenges | Focus |
+|---|---:|---|
+| [Azure Operations](#azure-operations-track) | 20 | Agent fundamentals, Azure observability, autonomous incident response, and FinOps |
+| [SQL Server DBA](#sql-server-dba-track) | 9 | Read-only database discovery, Query Store, waits, blocking, and query-performance diagnostics |
+
 Open `web/index.html` in a browser for the interactive UI (coach mode: **Shift+C**).
+
+### Azure Operations track
+
+Twenty hands-on challenges with a progressive learning path: from agent
+fundamentals through advanced autonomous operations and FinOps.
 
 **Capability progression:** Knowledge → Skills → MCP → Subagents → Response Plans → Telemetry → Investigation → Incidents → GitHub → Code Analysis → Auto-Remediation → Scheduled Tasks → Executive Operations → FinOps
 
@@ -34,7 +46,34 @@ Open `web/index.html` in a browser for the interactive UI (coach mode: **Shift+C
 | [18](Student/Challenge-18.md) | Subscription Cost Optimization Review | FinOps · Azure Advisor · Cost Governance |
 | [19](Student/Challenge-19.md) | Build Your Own Production-Ready SRE Agent | Capstone: design, implement & demo |
 
-**Coaches:** see [Coach/README.md](Coach/README.md) for solution guides, mini-lectures, and debrief discussion guides.
+### SQL Server DBA track
+
+Nine challenges use a dedicated, read-only SQL Server MCP server to turn Azure
+SRE Agent into a database reliability specialist. The track moves from secure
+deployment and schema orientation to deterministic performance incidents.
+
+**Capability progression:** MCP trust boundary → Schema discovery → Query Store → Wait interpretation → Blocking → Index analysis → SARGability → Parameter sensitivity → Incident triage
+
+| # | Challenge | Capability |
+|---|-----------|------------|
+| [00](Student/sql-server-dba/Challenge-00.md) | Deploy the Read-Only DBA Path | Managed identity · Least privilege · SQL Server MCP |
+| [01](Student/sql-server-dba/Challenge-01.md) | Orient to the Database | Business domains · Schema · Relationships |
+| [02](Student/sql-server-dba/Challenge-02.md) | Establish a Query Store Baseline | Historical evidence · Observation windows |
+| [03](Student/sql-server-dba/Challenge-03.md) | Separate Duration from Pressure | Active requests · Wait interpretation |
+| [04](Student/sql-server-dba/Challenge-04.md) | Trace a Blocking Chain | Head blocker · Wait resource · Transaction age |
+| [05](Student/sql-server-dba/Challenge-05.md) | Build an Evidence-Based Index Case | Query Store · Existing indexes · Estimated plans |
+| [06](Student/sql-server-dba/Challenge-06.md) | Diagnose Query Shape Problems | SARGability · Implicit conversion |
+| [07](Student/sql-server-dba/Challenge-07.md) | Investigate Parameter Sensitivity | Data skew · Plan variation · Runtime distribution |
+| [08](Student/sql-server-dba/Challenge-08.md) | Triage a Combined Database Incident | Evidence ranking · Alternative explanations · Handoff |
+
+The MCP server code, SQL setup, workloads, custom-agent assets, and secure
+deployment guide are under
+[`Student/Resources/sql-server-mcp/`](Student/Resources/sql-server-mcp/README.md).
+
+**Coaches:** see [Coach/README.md](Coach/README.md) for the Azure Operations
+guides and
+[Coach/sql-server-dba/README.md](Coach/sql-server-dba/README.md) for the SQL
+Server DBA guides.
 
 ## Contributors
 

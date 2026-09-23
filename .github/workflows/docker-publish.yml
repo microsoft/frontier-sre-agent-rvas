@@ -46,6 +46,9 @@ jobs:
           - name: grubify-frontend
             context: Student/Resources/grubify/grubify-frontend
             dockerfile: Student/Resources/grubify/grubify-frontend/Dockerfile
+          - name: sql-server-mcp
+            context: Student/Resources/sql-server-mcp
+            dockerfile: Student/Resources/sql-server-mcp/Dockerfile
     steps:
       - name: Lower case REPO
         run: |

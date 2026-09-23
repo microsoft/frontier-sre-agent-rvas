@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <PackAsTool>true</PackAsTool>
+    <PackageType>McpServer</PackageType>
+    <ToolCommandName>mcp-mssql</ToolCommandName>
+    <Description>Read-only-by-default Model Context Protocol (MCP) server for Microsoft SQL Server and Azure SQL: schema discovery, parameterized SELECT-only queries, execution-plan analysis, writes opt-in, multi-connection profiles.</Description>
+    <Version>1.6.1</Version>
+    <UserSecretsId>3852cfb6-6088-4198-9394-a7c0cb1f19a0</UserSecretsId>
+    <Authors>Jon X</Authors>
+    <Company>Jon X</Company>
+    <RepositoryUrl>https://github.com/alyiox/mcp-mssql</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/alyiox/mcp-mssql</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>mcp;mcp-server;model-context-protocol;sqlserver;mssql;sql-server;azure-sql;database;sql;execution-plan;query-optimization;dnx;ai;llm</PackageTags>
+    <Copyright>Copyright (c) 2026 Jon X</Copyright>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CsvHelper" />
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+    <PackageReference Include="Microsoft.Data.SqlClient.Extensions.Azure" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" />
+    <PackageReference Include="Microsoft.SqlServer.TransactSql.ScriptDom" />
+    <PackageReference Include="ModelContextProtocol" />
+    <PackageReference Include="ModelContextProtocol.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <!-- Embed the MCP registry manifest so nuget.org and MCP clients can
+         discover the server and prompt for its inputs. Packed from the
+         repo-root manifest so there is a single source of truth. -->
+    <None Include="..\..\server.json" Pack="true" PackagePath=".mcp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Services\Scripts\*.sql" />
+  </ItemGroup>
+
+</Project>
