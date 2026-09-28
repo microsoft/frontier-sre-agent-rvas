@@ -109,3 +109,35 @@ variable "berlin_mcp_auth_token" {
   sensitive   = true
   default     = ""
 }
+
+# ─── SQL Server DBA track ──────────────────────────────────────────────────────
+
+variable "deploy_sre_dba_infra" {
+  description = "Set to true to deploy the SQL MCP Container App and the sample Azure SQL server and database."
+  type        = bool
+  default     = false
+}
+
+variable "rg_sre_dba" {
+  description = "Resource group name for the SQL Server DBA track resources."
+  type        = string
+  default     = "rg-sre-dba"
+}
+
+variable "sre_dba_sql_location" {
+  description = "Region override for the Azure SQL server and database. Uses location when null."
+  type        = string
+  default     = null
+}
+
+variable "sre_dba_sql_client_ip_address" {
+  description = "Public IPv4 address allowed through the Azure SQL firewall for running the setup scripts. No rule is created when null."
+  type        = string
+  default     = null
+}
+
+variable "sre_dba_sql_mcp_image" {
+  description = "Container image for the read-only SQL Server MCP server."
+  type        = string
+  default     = "ghcr.io/microsoft/frontier-sre-agent-rvas/sql-server-mcp:latest"
+}
