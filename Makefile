@@ -32,9 +32,6 @@ build-web: clean-web
 		mkdir -p "$$dest"; \
 		cp "$$file" "$$dest/"; \
 	done
-	@# Resources linked by the SQL Server DBA track
-	@mkdir -p _site/Student/Resources
-	@cp -r Student/Resources/sql-server-mcp _site/Student/Resources/
 	@# Coach indexes and solutions, preserving nested track directories
 	@mkdir -p _site/Coach
 	@find Coach -type f \( -name "Solution-*.md" -o -name "README.md" \) | while IFS= read -r file; do \

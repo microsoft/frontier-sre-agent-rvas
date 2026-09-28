@@ -19,6 +19,7 @@ help students distinguish observation, inference, recommendation, and action.
 | 06 | Diagnose Query Shape Problems | [Solution-06.md](./Solution-06.md) |
 | 07 | Investigate Parameter Sensitivity | [Solution-07.md](./Solution-07.md) |
 | 08 | Triage a Combined Database Incident | [Solution-08.md](./Solution-08.md) |
+| 09 | Build Your Own SQL Server DBA Agent | [Solution-09.md](./Solution-09.md) |
 
 ## Azure Requirements
 
@@ -35,8 +36,8 @@ help students distinguish observation, inference, recommendation, and action.
 
 ## Suggested Agenda
 
-Times include the coach mini-lecture and hands-on work. Total core track:
-approximately 7 hours.
+Times include the coach mini-lecture and hands-on work. The core track takes
+approximately 8 hours; allow 75-90 additional minutes for the capstone.
 
 ### Full-day event
 
@@ -47,11 +48,13 @@ approximately 7 hours.
 | Afternoon 1 | 03-04 | 75 min | Wait interpretation and blocking |
 | Afternoon 2 | 05-07 | 150 min | Index, query shape, and parameter behavior |
 | Close | 08 | 75 min | Combined incident and debrief |
+| Capstone | 09 | 75-90 min | Design, build, validate, and present a focused DBA agent |
 
 ### Focused half-day event
 
 Pre-deploy Challenge 00 and pre-seed the baseline. Run Challenges 01, 03, 04,
-05, and 08 for a four-hour evidence and incident-response path.
+05, and 08 for a four-hour evidence and incident-response path. Add Challenge 09
+as a 75-90 minute capstone extension.
 
 ## Coaching Philosophy
 
@@ -81,6 +84,7 @@ Pre-deploy Challenge 00 and pre-seed the baseline. Run Challenges 01, 03, 04,
 | 06 | Diagnose Query Shape Problems | SARGability, conversion direction, access paths | Query-shape issues mislabeled as missing indexes | **35-50 min** | When the two supplied defects are not analyzed separately |
 | 07 | Investigate Parameter Sensitivity | Skew, distributions, plans, alternatives | One retained plan; skew presented as proof | **40-55 min** | When the report claims parameter sensitivity without plan evidence |
 | 08 | Triage a Combined Database Incident | Time alignment, impact ranking, handoff | Historical and current evidence blended | **60-75 min** | When the summary cannot be traced to timestamped evidence |
+| 09 | Build Your Own SQL Server DBA Agent | Custom agent, investigation design, safe validation | Scope too broad; evidence not repeatable; tool boundary weakened | **75-90 min** | When the scenario lacks a bounded question or a safe end-to-end test |
 
 Detailed commands and expected outputs are in the solution files. Share
 observed output and error messages with students, not the solution sequence.

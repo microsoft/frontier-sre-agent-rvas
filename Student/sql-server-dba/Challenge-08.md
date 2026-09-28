@@ -1,4 +1,4 @@
-[< Previous Challenge](./Challenge-07.md) — **[Home](../../README.md)**
+[< Previous Challenge](./Challenge-07.md) — **[Home](../../README.md)** — [Next Challenge >](./Challenge-09.md)
 
 # Challenge 08 — Triage a Combined Database Incident
 
@@ -10,7 +10,7 @@ Real incidents rarely present one clean signal. A blocked transaction, an
 inefficient query, and an unusual parameter can appear at the same time, but
 only some of them may explain user impact.
 
-This capstone asks you to run an evidence-led incident review that ranks
+This incident exercise asks you to run an evidence-led review that ranks
 findings, preserves uncertainty, and produces a safe handoff without changing
 the database.
 
