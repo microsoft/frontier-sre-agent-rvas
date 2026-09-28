@@ -1,4 +1,4 @@
-[< Previous Solution](./Solution-07.md) | **[Home](../../README.md)**
+[< Previous Solution](./Solution-07.md) | **[Home](../../README.md)** | [Next Solution >](./Solution-09.md)
 
 # Coach Guide — Challenge 08: Triage a Combined Database Incident
 

@@ -12,7 +12,7 @@ investigate:
 | Track | Challenges | Focus |
 |---|---:|---|
 | [Azure Operations](#azure-operations-track) | 20 | Agent fundamentals, Azure observability, autonomous incident response, and FinOps |
-| [SQL Server DBA](#sql-server-dba-track) | 9 | Read-only database discovery, Query Store, waits, blocking, and query-performance diagnostics |
+| [SQL Server DBA](#sql-server-dba-track) | 10 | Read-only database discovery, Query Store, waits, blocking, query-performance diagnostics, and a build-your-own capstone |
 
 Open `web/index.html` in a browser for the interactive UI (coach mode: **Shift+C**).
 
@@ -48,11 +48,12 @@ fundamentals through advanced autonomous operations and FinOps.
 
 ### SQL Server DBA track
 
-Nine challenges use a dedicated, read-only SQL Server MCP server to turn Azure
+Ten challenges use a dedicated, read-only SQL Server MCP server to turn Azure
 SRE Agent into a database reliability specialist. The track moves from secure
-deployment and schema orientation to deterministic performance incidents.
+deployment and schema orientation through deterministic performance incidents
+to a build-your-own DBA agent capstone.
 
-**Capability progression:** MCP trust boundary → Schema discovery → Query Store → Wait interpretation → Blocking → Index analysis → SARGability → Parameter sensitivity → Incident triage
+**Capability progression:** MCP trust boundary → Schema discovery → Query Store → Wait interpretation → Blocking → Index analysis → SARGability → Parameter sensitivity → Incident triage → Custom DBA agent capstone
 
 | # | Challenge | Capability |
 |---|-----------|------------|
@@ -65,6 +66,7 @@ deployment and schema orientation to deterministic performance incidents.
 | [06](Student/sql-server-dba/Challenge-06.md) | Diagnose Query Shape Problems | SARGability · Implicit conversion |
 | [07](Student/sql-server-dba/Challenge-07.md) | Investigate Parameter Sensitivity | Data skew · Plan variation · Runtime distribution |
 | [08](Student/sql-server-dba/Challenge-08.md) | Triage a Combined Database Incident | Evidence ranking · Alternative explanations · Handoff |
+| [09](Student/sql-server-dba/Challenge-09.md) | Build Your Own SQL Server DBA Agent | Custom agent · Investigation design · Read-only validation |
 
 The MCP server code, SQL setup, workloads, custom-agent assets, and secure
 deployment guide are under
