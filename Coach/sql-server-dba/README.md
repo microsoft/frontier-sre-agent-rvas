@@ -87,8 +87,12 @@ observed output and error messages with students, not the solution sequence.
 
 ## Coach Preparation
 
-1. Complete the
+1. Deploy the reference hosting and database with the
+   [SRE DBA Terraform module](../Solutions/infra/modules/workload/sre-dba-infra/README.md)
+   (`deploy_sre_dba_infra=true`), or follow the manual
    [SQL Server MCP deployment guide](../../Student/Resources/sql-server-mcp/README.md).
+   Either way, configure Microsoft Entra authentication on the MCP endpoint
+   manually before connecting the agent.
 2. Verify the refusal prompt in Solution 00.
 3. Run the baseline workload and confirm Query Store capture.
 4. Rehearse the two-session wait and blocking scenarios.

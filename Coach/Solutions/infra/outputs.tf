@@ -248,3 +248,41 @@ output "parking_paris_api_url" {
 output "parking_resource_groups" {
   value = module.workload.parking_resource_groups
 }
+
+# ─── SQL Server DBA track ──────────────────────────────────────────────────────
+
+output "sre_dba_resource_group_name" {
+  value = try(module.sre_dba_infra[0].resource_group_name, null)
+}
+
+output "sre_dba_sql_mcp_url" {
+  value = try(module.sre_dba_infra[0].sql_mcp_url, null)
+}
+
+output "sre_dba_sql_mcp_health_url" {
+  value = try(module.sre_dba_infra[0].sql_mcp_health_url, null)
+}
+
+output "sre_dba_sql_mcp_container_app_name" {
+  value = try(module.sre_dba_infra[0].sql_mcp_container_app_name, null)
+}
+
+output "sre_dba_sql_mcp_identity_name" {
+  value = try(module.sre_dba_infra[0].sql_mcp_identity_name, null)
+}
+
+output "sre_dba_sql_mcp_identity_client_id" {
+  value = try(module.sre_dba_infra[0].sql_mcp_identity_client_id, null)
+}
+
+output "sre_dba_sql_mcp_identity_principal_id" {
+  value = try(module.sre_dba_infra[0].sql_mcp_identity_principal_id, null)
+}
+
+output "sre_dba_sql_server_fqdn" {
+  value = try(module.sre_dba_infra[0].sql_server_fqdn, null)
+}
+
+output "sre_dba_sql_database_name" {
+  value = try(module.sre_dba_infra[0].sql_database_name, null)
+}

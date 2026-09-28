@@ -60,6 +60,8 @@ endif
 #   deploy_madrid_vm            — set to false to skip the Madrid Windows VM (default: true)
 #   deploy_paris_vm             — set to false to skip the Paris Ubuntu VM (default: true)
 #   create_parking_public_ips   — set to true to attach public IPs to parking VMs (default: false)
+#   deploy_sre_dba_infra        — set to true to deploy the SQL MCP Container App and sample Azure SQL DB (default: false)
+#   sre_dba_sql_client_ip_address — public IP allowed through the Azure SQL firewall for setup scripts (default: none)
 TF_VARS ?=
 
 .DEFAULT_GOAL := deploy
