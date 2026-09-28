@@ -14,7 +14,10 @@ investigate:
 | [Azure Operations](#azure-operations-track) | 20 | Agent fundamentals, Azure observability, autonomous incident response, and FinOps |
 | [SQL Server DBA](#sql-server-dba-track) | 10 | Read-only database discovery, Query Store, waits, blocking, query-performance diagnostics, and a build-your-own capstone |
 
-Open `web/index.html` in a browser for the interactive UI (coach mode: **Shift+C**).
+Open `web/index.html` in a browser for the interactive UI (coach mode: **Shift+C**). See also the
+[Scenario Explorer](web/scenarios.html) — a searchable library of 77 real-world Azure SRE Agent
+scenario ideas with ready-to-use sample prompts, sourced from
+[alsanch/azure-sre-agent-scenarios](https://github.com/alsanch/azure-sre-agent-scenarios).
 
 ### Azure Operations track
 

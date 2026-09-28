@@ -1,0 +1,488 @@
+/* =====================================================================
+   SCENARIO EXPLORER — page-specific styles for scenarios.html
+   Builds on shell.css tokens (--c-line, --c-fg, --c-dim, --c-accent, …).
+   ===================================================================== */
+
+.scenario-hero {
+    border-bottom: 1px solid var(--c-line);
+    background: var(--c-700);
+    padding-bottom: 40px;
+}
+
+/* Explorer sits directly under the hero — trim the default .section top
+   padding so the two sections don't stack into one large empty gap. */
+#explorer {
+    padding-top: 40px;
+}
+
+.scenario-hero .lede {
+    max-width: 760px;
+    color: var(--c-dim);
+    margin-top: 14px;
+}
+
+.scenario-stats {
+    max-width: 640px;
+    margin-top: 2rem;
+    background: #fff;
+    border: 1px solid var(--c-line);
+    border-radius: var(--r);
+    box-shadow: var(--shadow-card);
+}
+
+.scenario-stats .stat-num,
+.scenario-stats .stat-lbl {
+    color: var(--c-heading);
+}
+
+.scenario-stats .stat-lbl {
+    color: var(--c-faint);
+}
+
+.scenario-stats .stat + .stat {
+    border-left: 1px solid var(--c-line);
+}
+
+.scenario-attribution {
+    margin-top: 1.5rem;
+    font-size: .8rem;
+    color: var(--c-faint);
+    max-width: 760px;
+    line-height: 1.6;
+}
+
+.scenario-attribution a {
+    color: var(--c-accent);
+    font-weight: 600;
+}
+
+.scenario-attribution a:hover {
+    text-decoration: underline;
+}
+
+/* ─── Toolbar ────────────────────────────────────────────────────── */
+.scenario-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+}
+
+.scenario-search {
+    position: relative;
+    flex: 1 1 320px;
+    min-width: 240px;
+    display: flex;
+    align-items: center;
+}
+
+.scenario-search svg {
+    position: absolute;
+    left: 14px;
+    color: var(--c-faint);
+    pointer-events: none;
+}
+
+.scenario-search input {
+    width: 100%;
+    padding: .65rem .9rem .65rem 2.4rem;
+    border: 1px solid var(--c-line);
+    border-radius: var(--r-sm);
+    font-family: var(--font-body);
+    font-size: .85rem;
+    color: var(--c-fg);
+    background: #fff;
+    transition: border-color .2s, box-shadow .2s;
+}
+
+.scenario-search input:focus {
+    outline: none;
+    border-color: var(--c-accent);
+    box-shadow: 0 0 0 3px var(--c-accent-glow);
+}
+
+.scenario-select-group {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    flex-wrap: wrap;
+}
+
+.scenario-select-group select {
+    padding: .6rem .8rem;
+    border: 1px solid var(--c-line);
+    border-radius: var(--r-sm);
+    background: #fff;
+    font-family: var(--font-body);
+    font-size: .8rem;
+    color: var(--c-fg);
+}
+
+/* ─── Chips ──────────────────────────────────────────────────────── */
+.scenario-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin-bottom: 1.5rem;
+}
+
+.scenario-chip {
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    font-weight: 500;
+    letter-spacing: .03em;
+    color: var(--c-dim);
+    background: #fff;
+    border: 1px solid var(--c-line);
+    padding: .4rem .8rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background .18s, color .18s, border-color .18s;
+    white-space: nowrap;
+}
+
+.scenario-chip:hover {
+    border-color: var(--c-accent);
+    color: var(--c-accent);
+}
+
+.scenario-chip.active {
+    background: var(--c-accent);
+    border-color: var(--c-accent);
+    color: #fff;
+}
+
+.scenario-chip-star.active {
+    background: #b45309;
+    border-color: #b45309;
+    color: #fff;
+}
+
+.scenario-results-meta {
+    margin-bottom: 1rem;
+    font-size: .7rem;
+    color: var(--c-faint);
+    letter-spacing: .04em;
+}
+
+/* ─── Card grid ──────────────────────────────────────────────────── */
+.scenario-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.scenario-card {
+    background: #fff;
+    border: 1px solid var(--c-line);
+    border-left: 3px solid var(--card-color, var(--c-accent));
+    border-radius: var(--r-sm);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    transition: box-shadow .2s, transform .2s, border-color .2s;
+}
+
+.scenario-card:hover,
+.scenario-card:focus-visible {
+    box-shadow: var(--shadow-card);
+    transform: translateY(-2px);
+    outline: none;
+}
+
+.scenario-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: .5rem;
+}
+
+.scenario-card-category {
+    font-family: var(--font-mono);
+    font-size: .6rem;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--card-color, var(--c-accent));
+    font-weight: 600;
+}
+
+.scenario-card-star {
+    color: #b45309;
+    font-size: .8rem;
+    flex-shrink: 0;
+}
+
+.scenario-card-title {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--c-heading);
+    line-height: 1.3;
+}
+
+.scenario-card-desc {
+    font-size: .8rem;
+    color: var(--c-dim);
+    line-height: 1.55;
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.scenario-card-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem;
+    align-items: center;
+}
+
+.scenario-badge {
+    font-family: var(--font-mono);
+    font-size: .58rem;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: .18rem .5rem;
+    border-radius: 3px;
+    background: var(--c-700);
+    color: var(--c-dim);
+    border: 1px solid var(--c-line);
+}
+
+.scenario-badge-mode {
+    background: rgba(26, 119, 227, .08);
+    color: var(--c-accent);
+    border-color: rgba(26, 119, 227, .2);
+}
+
+.scenario-badge-time-high {
+    background: rgba(22, 163, 74, .1);
+    color: #16a34a;
+    border-color: rgba(22, 163, 74, .22);
+}
+
+.scenario-badge-time-medium {
+    background: rgba(202, 138, 4, .1);
+    color: #ca8a04;
+    border-color: rgba(202, 138, 4, .22);
+}
+
+.scenario-badge-time-low {
+    background: rgba(107, 114, 128, .1);
+    color: #6B7280;
+    border-color: rgba(107, 114, 128, .22);
+}
+
+.scenario-empty {
+    text-align: center;
+    color: var(--c-faint);
+    font-size: .9rem;
+    padding: 3rem 0;
+}
+
+/* ─── Detail drawer (centered modal) ────────────────────────────── */
+#scenario-drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(3, 34, 84, .5);
+    backdrop-filter: blur(4px);
+    z-index: var(--z-modal, 400);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s ease;
+}
+
+#scenario-drawer-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+}
+
+#scenario-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(640px, 100vw);
+    background: #fff;
+    border-left: 1px solid var(--c-line);
+    z-index: calc(var(--z-modal, 400) + 1);
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform .35s cubic-bezier(.4, 0, .2, 1);
+    overflow: hidden;
+}
+
+#scenario-drawer.open {
+    transform: translateX(0);
+}
+
+#scenario-drawer .drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--c-line);
+    background: var(--c-700);
+    gap: 1rem;
+    flex-shrink: 0;
+}
+
+#scenario-drawer .drawer-breadcrumb {
+    font-family: var(--font-body);
+    font-size: .65rem;
+    font-weight: 500;
+    color: var(--c-faint);
+    letter-spacing: .1em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#scenario-drawer .drawer-breadcrumb span {
+    color: var(--c-accent);
+}
+
+#scenario-drawer .drawer-close {
+    background: none;
+    border: 1px solid var(--c-line);
+    color: var(--c-dim);
+    font-size: 1.2rem;
+    line-height: 1;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background .2s, color .2s, border-color .2s;
+    flex-shrink: 0;
+}
+
+#scenario-drawer .drawer-close:hover {
+    background: rgba(244, 63, 94, .12);
+    color: #f43f5e;
+    border-color: #f43f5e;
+}
+
+#scenario-drawer .drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-line) transparent;
+}
+
+.scenario-drawer-title {
+    margin-bottom: .75rem;
+}
+
+.scenario-drawer-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    margin-bottom: 1.25rem;
+}
+
+.scenario-drawer-desc {
+    font-size: .9rem;
+    color: var(--c-dim);
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+}
+
+.scenario-prompt-block {
+    background: var(--c-700);
+    border: 1px solid var(--c-line);
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.scenario-prompt-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .6rem .9rem;
+    border-bottom: 1px solid var(--c-line);
+    font-size: .68rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--c-faint);
+}
+
+.scenario-copy-btn {
+    font-family: var(--font-body);
+    font-size: .72rem;
+    font-weight: 600;
+    color: var(--c-accent);
+    background: #fff;
+    border: 1px solid var(--c-line);
+    padding: .3rem .7rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background .2s, border-color .2s;
+}
+
+.scenario-copy-btn:hover {
+    border-color: var(--c-accent);
+    background: var(--c-accent-glow);
+}
+
+.scenario-copy-btn.copied {
+    color: #16a34a;
+    border-color: #16a34a;
+}
+
+.scenario-prompt {
+    margin: 0;
+    padding: 1rem;
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    line-height: 1.6;
+    color: var(--c-fg);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.scenario-meta-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin: 0;
+}
+
+.scenario-meta-list dt {
+    font-family: var(--font-mono);
+    font-size: .62rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--c-faint);
+    margin-bottom: .2rem;
+}
+
+.scenario-meta-list dd {
+    margin: 0;
+    font-size: .85rem;
+    color: var(--c-fg);
+    font-weight: 600;
+}
+
+@media (max-width: 640px) {
+    .scenario-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .scenario-select-group {
+        justify-content: space-between;
+    }
+}
