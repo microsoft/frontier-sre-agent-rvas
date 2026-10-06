@@ -1,11 +1,11 @@
 output "resource_group_name" {
   description = "Resource group name for the SQL Server DBA track resources"
-  value       = azurerm_resource_group.main.name
+  value       = var.resource_group_name
 }
 
 output "resource_group_id" {
   description = "Resource group ID for the SQL Server DBA track resources"
-  value       = azurerm_resource_group.main.id
+  value       = var.resource_group_id
 }
 
 output "managed_resource_ids" {

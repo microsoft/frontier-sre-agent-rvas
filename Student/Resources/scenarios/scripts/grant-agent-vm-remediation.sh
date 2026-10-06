@@ -229,13 +229,8 @@ agent_principal_id="$(resolve_agent_principal_id "${agent_json}")"
 
 declare -a VM_RESOURCE_GROUPS=()
 declare -a VM_NAMES=()
-parking_resource_groups="$(tf_output_json parking_resource_groups)"
 
-add_vm_resource_group "hub" "$(tf_output hub_resource_group_name)" true
-add_vm_resource_group "web/API spoke" "$(tf_output web_api_resource_group_name)" true
-add_vm_resource_group "data spoke" "$(tf_output data_resource_group_name)" true
-add_vm_resource_group "Parking Madrid" "$(jq -r '.madrid // empty' <<<"${parking_resource_groups}")" false
-add_vm_resource_group "Parking Paris" "$(jq -r '.paris // empty' <<<"${parking_resource_groups}")" false
+add_vm_resource_group "workload" "$(tf_output rvas_resource_group_name)" true
 
 role_definition_id="$(reconcile_role_definition)"
 declare -a ASSIGNMENT_STATUSES=()

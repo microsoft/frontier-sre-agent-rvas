@@ -1,44 +1,12 @@
-# ─── Resource Groups ───────────────────────────────────────────────────────────
-
-resource "azurerm_resource_group" "parking_lisbon" {
-  name     = var.rg_parking_lisbon
-  location = var.location
-  tags     = local.resource_tags
-}
-
-resource "azurerm_resource_group" "parking_berlin" {
-  name     = var.rg_parking_berlin
-  location = var.location
-  tags     = local.resource_tags
-}
-
-resource "azurerm_resource_group" "parking_madrid" {
-  name     = var.rg_parking_madrid
-  location = var.location
-  tags     = local.resource_tags
-}
-
-resource "azurerm_resource_group" "parking_paris" {
-  name     = var.rg_parking_paris
-  location = var.location
-  tags     = local.resource_tags
-}
-
-resource "azurerm_resource_group" "parking_chaos" {
-  name     = var.rg_parking_chaos
-  location = var.location
-  tags     = local.resource_tags
-}
-
 # ─── Chaos Control ─────────────────────────────────────────────────────────────
 
 resource "azurerm_container_app" "chaos_control" {
   name                         = "ca-chaos-control"
   container_app_environment_id = azurerm_container_app_environment.sample_food.id
-  resource_group_name          = azurerm_resource_group.parking_chaos.name
+  resource_group_name          = azurerm_resource_group.main.name
   revision_mode                = "Single"
   workload_profile_name        = "Consumption"
-  tags                         = local.resource_tags
+  tags                         = local.origin_tags.parking_chaos
 
 
   identity {
@@ -105,10 +73,10 @@ resource "azurerm_container_app" "chaos_control" {
 resource "azurerm_container_app" "vm_health_control" {
   name                         = "ca-vm-health-control"
   container_app_environment_id = azurerm_container_app_environment.sample_food.id
-  resource_group_name          = azurerm_resource_group.parking_chaos.name
+  resource_group_name          = azurerm_resource_group.main.name
   revision_mode                = "Single"
   workload_profile_name        = "Consumption"
-  tags                         = local.resource_tags
+  tags                         = local.origin_tags.parking_chaos
 
   identity {
     type = "SystemAssigned"
@@ -189,10 +157,10 @@ resource "azurerm_container_app" "vm_health_control" {
 resource "azurerm_container_app" "parking_lisbon" {
   name                         = "ca-parking-lisbon"
   container_app_environment_id = azurerm_container_app_environment.sample_food.id
-  resource_group_name          = azurerm_resource_group.parking_lisbon.name
+  resource_group_name          = azurerm_resource_group.main.name
   revision_mode                = "Single"
   workload_profile_name        = "Consumption"
-  tags                         = local.resource_tags
+  tags                         = local.origin_tags.parking_lisbon
 
   identity {
     type = "SystemAssigned"
@@ -288,10 +256,10 @@ resource "azurerm_container_app" "parking_lisbon" {
 resource "azurerm_container_app" "parking_berlin" {
   name                         = "ca-parking-berlin"
   container_app_environment_id = azurerm_container_app_environment.sample_food.id
-  resource_group_name          = azurerm_resource_group.parking_berlin.name
+  resource_group_name          = azurerm_resource_group.main.name
   revision_mode                = "Single"
   workload_profile_name        = "Consumption"
-  tags                         = local.resource_tags
+  tags                         = local.origin_tags.parking_berlin
 
   identity {
     type = "SystemAssigned"
@@ -370,10 +338,10 @@ resource "azurerm_container_app" "parking_berlin" {
 resource "azurerm_container_app" "berlin_mcp_server" {
   name                         = "ca-berlin-mcp"
   container_app_environment_id = azurerm_container_app_environment.sample_food.id
-  resource_group_name          = azurerm_resource_group.parking_berlin.name
+  resource_group_name          = azurerm_resource_group.main.name
   revision_mode                = "Single"
   workload_profile_name        = "Consumption"
-  tags                         = local.resource_tags
+  tags                         = local.origin_tags.parking_berlin
 
   identity {
     type = "SystemAssigned"

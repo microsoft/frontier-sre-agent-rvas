@@ -4,10 +4,14 @@ variable "location" {
   default     = "swedencentral"
 }
 
-variable "rg_agent" {
-  description = "Resource group name for the Azure SRE Agent."
+variable "resource_group_name" {
+  description = "Name of the shared resource group that holds this module's resources."
   type        = string
-  default     = "rg-sre-agent"
+}
+
+variable "resource_group_id" {
+  description = "ARM resource ID of the shared resource group, used as the agent resource's parent_id."
+  type        = string
 }
 
 variable "managed_resource_ids" {

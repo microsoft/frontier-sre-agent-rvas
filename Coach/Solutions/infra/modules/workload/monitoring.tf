@@ -1,7 +1,7 @@
 resource "azurerm_storage_account" "flow_logs" {
   name                            = substr("${local.demo_suffix}flow", 0, 24)
-  resource_group_name             = azurerm_resource_group.hub.name
-  location                        = azurerm_resource_group.hub.location
+  resource_group_name             = azurerm_resource_group.main.name
+  location                        = azurerm_resource_group.main.location
   account_tier                    = "Standard"
   account_replication_type        = "LRS"
   account_kind                    = "StorageV2"
@@ -10,7 +10,7 @@ resource "azurerm_storage_account" "flow_logs" {
   allow_nested_items_to_be_public = false
   public_network_access_enabled   = false
   shared_access_key_enabled       = false
-  tags                            = local.resource_tags
+  tags                            = local.origin_tags.hub
 
   # Keep the firewall default-deny and retain the trusted-service exception used by
   # Microsoft.Network to write and analyze flow logs when public access is disabled.
@@ -33,11 +33,11 @@ resource "azurerm_storage_account" "flow_logs" {
 
 resource "azurerm_log_analytics_workspace" "demo" {
   name                = "law-${local.demo_suffix}"
-  location            = azurerm_resource_group.hub.location
-  resource_group_name = azurerm_resource_group.hub.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   sku                 = "PerGB2018"
   retention_in_days   = 30
-  tags                = local.resource_tags
+  tags                = local.origin_tags.hub
 }
 
 resource "azurerm_network_watcher_flow_log" "vnet" {
@@ -51,13 +51,13 @@ resource "azurerm_network_watcher_flow_log" "vnet" {
   network_watcher_name = local.demo_network_watcher_name
   resource_group_name  = local.demo_network_watcher_rg
   name                 = "fl-${each.key}"
-  location             = azurerm_resource_group.hub.location
+  location             = azurerm_resource_group.main.location
 
   target_resource_id = each.value
   storage_account_id = azurerm_storage_account.flow_logs.id
   enabled            = true
   version            = 2
-  tags               = local.resource_tags
+  tags               = local.origin_tags.hub
 
   retention_policy {
     enabled = true
@@ -75,11 +75,11 @@ resource "azurerm_network_watcher_flow_log" "vnet" {
 
 resource "azurerm_application_insights_workbook" "traffic_analytics" {
   name                = random_uuid.demo_workbook.result
-  resource_group_name = azurerm_resource_group.hub.name
-  location            = azurerm_resource_group.hub.location
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
   display_name        = "VNet Flow Logs and Traffic Analytics Demo"
   description         = "Curated workbook for the VNet Flow Logs and Traffic Analytics customer demo."
-  tags                = local.resource_tags
+  tags                = local.origin_tags.hub
 
   data_json = jsonencode({
     version = "Notebook/1.0"
@@ -157,8 +157,8 @@ resource "azurerm_application_insights_workbook" "traffic_analytics" {
 
 resource "azurerm_monitor_scheduled_query_rules_alert_v2" "denied_flow_spike" {
   name                = "alert-denied-flow-spike"
-  resource_group_name = azurerm_resource_group.hub.name
-  location            = azurerm_resource_group.hub.location
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
   display_name        = "Denied VNet flow spike"
   description         = "Demo alert that fires when denied flows are observed in Traffic Analytics data."
   enabled             = true
@@ -173,7 +173,7 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "denied_flow_spike" {
   evaluation_frequency  = "PT1M"
   window_duration       = "PT10M"
   skip_query_validation = true
-  tags                  = local.resource_tags
+  tags                  = local.origin_tags.hub
   # Auto-resolve the incident once denied flows stop appearing in the evaluation
   # window, so the demo shows the full detect -> remediate -> resolve lifecycle.
   # (v2 alerts default this to false, so it must be set explicitly to enable it.)

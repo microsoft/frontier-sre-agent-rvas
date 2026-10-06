@@ -19,7 +19,7 @@ This module deploys the Coach reference infrastructure for the
 
 | Resource | Default name | Purpose |
 |---|---|---|
-| Resource group | `rg-sre-dba` | Isolates the DBA track resources |
+| Resource group | shared workload resource group | Deploys into the single shared resource group used by the whole workshop |
 | User-assigned managed identity | `id-sre-dba-sql-mcp` | MCP workload identity for Azure SQL |
 | Container Apps environment | `cae-sre-dba` | Consumption environment without VNet integration |
 | Container App | `ca-sre-dba-sql-mcp` | Hosts the SQL MCP container on port `8080` |
@@ -27,8 +27,9 @@ This module deploys the Coach reference infrastructure for the
 | Azure SQL database | `stockOrders` | Sample workshop database |
 
 Container Apps logs go to the shared demo Log Analytics workspace, which the
-Coach SRE Agent already reads. When the module is enabled, its resource group
-is also added to the agent's read-only managed scopes.
+Coach SRE Agent already reads. The shared resource group this module deploys
+into is already within the agent's managed scope independent of this module,
+so enabling it does not add a new scope.
 
 ## Deploy
 
@@ -42,7 +43,6 @@ Optional root variables:
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `rg_sre_dba` | `rg-sre-dba` | Resource group name |
 | `sre_dba_sql_location` | `null` (uses `location`) | Region override when Azure SQL capacity is restricted |
 | `sre_dba_sql_client_ip_address` | `null` | Firewall rule for running the setup scripts |
 | `sre_dba_sql_mcp_image` | `ghcr.io/microsoft/frontier-sre-agent-rvas/sql-server-mcp:latest` | MCP container image |
@@ -85,8 +85,7 @@ with a login error for the managed identity.
 
 ## Cleanup
 
-Set `deploy_sre_dba_infra=false` and apply, or delete the resource group:
-
-```bash
-az group delete --name rg-sre-dba --yes --no-wait
-```
+Set `deploy_sre_dba_infra=false` and apply. This removes the DBA track resources from the shared
+resource group without affecting the rest of the workshop deployment. Do not delete the resource
+group directly — it is shared with every other workload resource, and deleting it removes the
+entire workshop deployment, not just the DBA track.

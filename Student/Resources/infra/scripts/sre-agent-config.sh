@@ -740,8 +740,16 @@ connector_properties() {
 
 arm_put_connector() {
   local file="$1"
-  local name properties body body_file response request_status
+  local name properties body body_file response request_status stderr_file
   local expected_endpoint stored_endpoint provisioning_state
+  # Each connector PUT briefly flips the parent agent resource's ARM provisioning
+  # state to InProgress; a connector applied immediately after can race that
+  # transition and get HTTP 409 OperationConflict ("agent is in InProgress
+  # state"). Retry a few times with a short wait to absorb the propagation delay,
+  # the same resilience pattern used by data_put_extended for incidentFilters.
+  local max_attempts="${SRE_AGENT_CONNECTOR_MAX_ATTEMPTS:-5}"
+  local retry_sleep="${SRE_AGENT_CONNECTOR_RETRY_SLEEP:-10}"
+  local attempt=1
   validate_manifest "${file}"
   name="$(manifest_name "${file}")"
   properties="$(connector_properties "${file}")"
@@ -755,17 +763,27 @@ arm_put_connector() {
   body_file="$(mktemp)"
   chmod 600 "${body_file}"
   printf '%s' "${body}" > "${body_file}"
-  if response="$(az rest --method PUT \
-    --url "$(arm_agent_base_url)/connectors/${name}?api-version=${ARM_API_VERSION}" \
-    --headers 'Content-Type=application/json' \
-    --body "@${body_file}" \
-    --output json)"; then
-    rm -f "${body_file}"
-  else
+  stderr_file="$(mktemp)"
+  while true; do
+    if response="$(az rest --method PUT \
+      --url "$(arm_agent_base_url)/connectors/${name}?api-version=${ARM_API_VERSION}" \
+      --headers 'Content-Type=application/json' \
+      --body "@${body_file}" \
+      --output json 2>"${stderr_file}")"; then
+      break
+    fi
     request_status="$?"
-    rm -f "${body_file}"
+    if grep -q 'OperationConflict' "${stderr_file}" && [[ "${attempt}" -lt "${max_attempts}" ]]; then
+      log "PUT ARM connector ${name} hit OperationConflict (agent InProgress); retrying in ${retry_sleep}s (attempt ${attempt}/${max_attempts})"
+      sleep "${retry_sleep}"
+      attempt=$((attempt + 1))
+      continue
+    fi
+    cat "${stderr_file}" >&2
+    rm -f "${body_file}" "${stderr_file}"
     return "${request_status}"
-  fi
+  done
+  rm -f "${body_file}" "${stderr_file}"
   expected_endpoint="$(jq -r '.endpoint // empty' <<< "${properties}")"
   stored_endpoint="$(jq -r '.properties.endpoint // empty' <<< "${response}")"
   provisioning_state="$(jq -r '.properties.provisioningState // empty' <<< "${response}")"

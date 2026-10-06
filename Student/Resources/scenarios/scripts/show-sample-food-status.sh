@@ -5,7 +5,7 @@ set -euo pipefail
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 
-resource_group="$(sample_food_resource_group_name)"
+resource_group="$(rvas_resource_group_name)"
 api_app_name="$(tf_output sample_food_api_container_app_name)"
 frontend_app_name="$(tf_output sample_food_frontend_container_app_name)"
 

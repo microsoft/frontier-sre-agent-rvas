@@ -2,6 +2,11 @@ output "subscription_id" {
   value = module.workload.subscription_id
 }
 
+output "rvas_resource_group_name" {
+  description = "Name of the single shared resource group used by the entire RVAS workshop deployment."
+  value       = module.workload.resource_group_name
+}
+
 output "log_analytics_workspace_id" {
   description = "Demo Log Analytics workspace ID — needed when wiring up the SRE Agent connector."
   value       = module.workload.log_analytics_workspace_id
@@ -10,20 +15,6 @@ output "log_analytics_workspace_id" {
 output "managed_resource_ids" {
   description = "Resource IDs to pass into the SRE Agent knowledge graph."
   value       = module.workload.managed_resource_ids
-}
-
-output "hub_resource_group_name" {
-  value = module.workload.hub_resource_group_name
-}
-
-output "web_api_resource_group_name" {
-  description = "Resource group for the Web-API IaaS spoke — used by scenario scripts for VM run-commands."
-  value       = module.workload.web_api_resource_group_name
-}
-
-output "data_resource_group_name" {
-  description = "Resource group for the data spoke — used by scenario scripts."
-  value       = module.workload.data_resource_group_name
 }
 
 output "demo_lab_location" {
@@ -99,10 +90,6 @@ output "sample_food_resource_names" {
   value = module.workload.sample_food_resource_names
 }
 
-output "sample_food_resource_group_name" {
-  value = module.workload.sample_food_resource_group_name
-}
-
 output "sample_food_location" {
   value = module.workload.sample_food_location
 }
@@ -155,10 +142,6 @@ output "parking_frontend_url" {
   value = module.workload.parking_frontend_url
 }
 
-output "parking_frontend_resource_group_name" {
-  value = module.workload.parking_frontend_resource_group_name
-}
-
 output "parking_frontend_service_plan_name" {
   value = module.workload.parking_frontend_service_plan_name
 }
@@ -189,8 +172,4 @@ output "parking_paris_vm_private_ip" {
 
 output "parking_paris_api_url" {
   value = module.workload.parking_paris_api_url
-}
-
-output "parking_resource_groups" {
-  value = module.workload.parking_resource_groups
 }

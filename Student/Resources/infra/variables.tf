@@ -4,28 +4,10 @@ variable "location" {
   default     = "swedencentral"
 }
 
-variable "rg_hub" {
-  description = "Resource group name for the hub connectivity resources."
+variable "resource_group_name" {
+  description = "Name of the single shared resource group used by every workload resource."
   type        = string
-  default     = "rg-sre-hub-connectivity"
-}
-
-variable "rg_spoke_web_api" {
-  description = "Resource group name for the web/API IaaS spoke."
-  type        = string
-  default     = "rg-sre-spoke-web-api-iaas"
-}
-
-variable "rg_spoke_data" {
-  description = "Resource group name for the data IaaS spoke."
-  type        = string
-  default     = "rg-sre-spoke-data-iaas"
-}
-
-variable "rg_sample_food" {
-  description = "Resource group name for the Sample Food Container Apps spoke."
-  type        = string
-  default     = "rg-sre-spoke-foodapp-paas"
+  default     = "rg-sre-agent-rvas"
 }
 
 variable "vm_admin_username" {
@@ -51,42 +33,6 @@ variable "deploy_paris_vm" {
   description = "Set to true to deploy the Paris Ubuntu Server VM and its extensions."
   type        = bool
   default     = true
-}
-
-variable "rg_parking_lisbon" {
-  description = "Resource group name for the Lisbon Parking API."
-  type        = string
-  default     = "rg-sre-parking-lisbon"
-}
-
-variable "rg_parking_berlin" {
-  description = "Resource group name for the Berlin Parking API."
-  type        = string
-  default     = "rg-sre-parking-berlin"
-}
-
-variable "rg_parking_madrid" {
-  description = "Resource group name for the Madrid Parking VM."
-  type        = string
-  default     = "rg-sre-parking-madrid"
-}
-
-variable "rg_parking_paris" {
-  description = "Resource group name for the Paris Parking VM."
-  type        = string
-  default     = "rg-sre-parking-paris"
-}
-
-variable "rg_parking_chaos" {
-  description = "Resource group name for Chaos Control and VM Health Control."
-  type        = string
-  default     = "rg-sre-parking-chaos"
-}
-
-variable "rg_parking_frontend" {
-  description = "Resource group name for the Parking Manager frontend Web App."
-  type        = string
-  default     = "rg-sre-parking-frontend"
 }
 
 variable "create_parking_public_ips" {

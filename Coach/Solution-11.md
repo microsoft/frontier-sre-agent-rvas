@@ -32,7 +32,7 @@
 - **Symptom:** Agent fixes only one VM. **Fix:** coach should push on blast radius and require verification for both `vm-web-1` and `vm-web-2`.
 - **Symptom:** Student relies on VM power state as proof of health. **Fix:** redirect them to Syslog and nginx service state.
 - **Symptom:** Service still down after automation. **Fix:** run `make restore-nginx` and use the failure as a debrief point about verification loops.
-- **Symptom:** Agent correctly diagnoses the failure but `az vm run-command invoke` is refused with an Azure authorization error. **Fix:** have an Owner or Role Based Access Control Administrator run `make grant-agent-vm-remediation`, verify `Azure SRE Lab VM Remediator` is assigned to the agent identity on `rg-sre-spoke-web-api-iaas`, wait for RBAC propagation, and retry in a new thread. The grant is additive and does not replace existing roles.
+- **Symptom:** Agent correctly diagnoses the failure but `az vm run-command invoke` is refused with an Azure authorization error. **Fix:** have an Owner or Role Based Access Control Administrator run `make grant-agent-vm-remediation`, verify `Azure SRE Lab VM Remediator` is assigned to the agent identity on the shared workload resource group, wait for RBAC propagation, and retry in a new thread. The grant is additive and does not replace existing roles.
 - **Symptom:** The Allow rule appears correctly saved in the agent's configuration snapshot and has been present for about 10 minutes, but the command still requests approval. **Fix:** open a new thread and retry the investigation. An existing thread may retain the tool policy state from when it was created.
 
 ## Debrief Discussion Guide

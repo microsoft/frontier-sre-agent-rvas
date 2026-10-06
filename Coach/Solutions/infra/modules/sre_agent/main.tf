@@ -1,22 +1,16 @@
 data "azurerm_client_config" "current" {}
 
-resource "azurerm_resource_group" "agent" {
-  name     = var.rg_agent
-  location = var.location
-  tags     = local.resource_tags
-}
-
 resource "azurerm_user_assigned_identity" "agent" {
   name                = "uai-contoso-sre-agent-dev"
-  location            = azurerm_resource_group.agent.location
-  resource_group_name = azurerm_resource_group.agent.name
+  location            = var.location
+  resource_group_name = var.resource_group_name
   tags                = local.resource_tags
 }
 
 resource "azurerm_log_analytics_workspace" "agent" {
   name                         = "law-contoso-sre-agent-dev"
-  location                     = azurerm_resource_group.agent.location
-  resource_group_name          = azurerm_resource_group.agent.name
+  location                     = var.location
+  resource_group_name          = var.resource_group_name
   sku                          = "PerGB2018"
   retention_in_days            = 30
   local_authentication_enabled = false
@@ -25,8 +19,8 @@ resource "azurerm_log_analytics_workspace" "agent" {
 
 resource "azurerm_application_insights" "agent" {
   name                         = "appi-contoso-sre-agent-dev"
-  location                     = azurerm_resource_group.agent.location
-  resource_group_name          = azurerm_resource_group.agent.name
+  location                     = var.location
+  resource_group_name          = var.resource_group_name
   application_type             = "web"
   workspace_id                 = azurerm_log_analytics_workspace.agent.id
   local_authentication_enabled = false
@@ -36,8 +30,8 @@ resource "azurerm_application_insights" "agent" {
 resource "azapi_resource" "agent" {
   type                      = "Microsoft.App/agents@2026-01-01"
   name                      = "contoso-sre-agent-dev"
-  parent_id                 = azurerm_resource_group.agent.id
-  location                  = azurerm_resource_group.agent.location
+  parent_id                 = var.resource_group_id
+  location                  = var.location
   tags                      = local.resource_tags
   ignore_null_property      = true
   schema_validation_enabled = false

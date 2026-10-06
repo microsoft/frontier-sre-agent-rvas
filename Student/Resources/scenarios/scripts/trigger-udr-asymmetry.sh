@@ -3,7 +3,7 @@ set -euo pipefail
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 
-rg="$(data_resource_group_name)"
+rg="$(rvas_resource_group_name)"
 route_table="$(vm_name data_route_table)"
 firewall_ip="$(vm_ip firewall)"
 db_ip="$(vm_ip db)"

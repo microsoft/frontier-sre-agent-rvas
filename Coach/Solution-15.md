@@ -34,7 +34,7 @@
 - **Symptom:** Students conflate reboot success with service recovery. **Fix:** require both `systemctl is-active paris-parking-api.service` and a successful localhost API response.
 - **Symptom:** They cannot find the exact response-plan YAML. **Fix:** inspect `Student/Resources/azure-sre-agent-config/automations/incident-filters/parking-api-service-down.yaml`, which was applied with `make incident-filters` in Challenge 06.
 - **Symptom:** A GitHub issue is created instead of remediation. **Fix:** the Challenge 10 filter handled the alert; confirm both filters match exact alert titles and `parking-api-service-down` routes to `parking-vm-incident-handler`.
-- **Symptom:** Agent correctly identifies the failing VM but `az vm restart` or Run Command validation is refused with an Azure authorization error. **Fix:** have an Owner or Role Based Access Control Administrator run `make grant-agent-vm-remediation`, verify `Azure SRE Lab VM Remediator` is assigned on `rg-sre-parking-paris`, wait for propagation, and retry in a new thread. The role grants no GitHub, network, disk, resize, or role-management permissions.
+- **Symptom:** Agent correctly identifies the failing VM but `az vm restart` or Run Command validation is refused with an Azure authorization error. **Fix:** have an Owner or Role Based Access Control Administrator run `make grant-agent-vm-remediation`, verify `Azure SRE Lab VM Remediator` is assigned on the shared workload resource group, wait for propagation, and retry in a new thread. The role grants no GitHub, network, disk, resize, or role-management permissions.
 
 ## Debrief Discussion Guide
 

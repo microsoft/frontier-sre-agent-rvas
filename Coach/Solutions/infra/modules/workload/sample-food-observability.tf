@@ -1,10 +1,10 @@
 resource "azurerm_application_insights" "sample_food" {
   name                = local.sample_food_names.app_insights
-  location            = azurerm_resource_group.sample_food.location
-  resource_group_name = azurerm_resource_group.sample_food.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   application_type    = "web"
   workspace_id        = azurerm_log_analytics_workspace.demo.id
-  tags                = local.sample_food_tags
+  tags                = local.origin_tags.sample_food
 }
 
 resource "azurerm_monitor_diagnostic_setting" "sample_food_container_apps_environment" {
@@ -47,14 +47,14 @@ resource "azurerm_monitor_diagnostic_setting" "sample_food_container_apps_enviro
 # aca-app-incident-handler subagent (renamed 2026-06-14 from incident-handler).
 resource "azurerm_monitor_action_group" "sample_food" {
   name                = "ag-food"
-  resource_group_name = azurerm_resource_group.sample_food.name
+  resource_group_name = azurerm_resource_group.main.name
   short_name          = "SREFoodAG"
-  tags                = local.sample_food_tags
+  tags                = local.origin_tags.sample_food
 }
 
 resource "azurerm_monitor_metric_alert" "sample_food_http_5xx" {
   name                = local.sample_food_names.http_5xx_alert
-  resource_group_name = azurerm_resource_group.sample_food.name
+  resource_group_name = azurerm_resource_group.main.name
   scopes              = [azurerm_container_app.sample_food_api.id]
   description         = "Alert when the Sample Food Ordering App API returns HTTP 5xx errors; triggers SRE Agent investigation."
   severity            = 1
@@ -66,7 +66,7 @@ resource "azurerm_monitor_metric_alert" "sample_food_http_5xx" {
   # latency (metrics DB < 1 min, +3 min to the data collection endpoint), which is
   # the practical detection floor regardless of this window.
   window_size = "PT1M"
-  tags        = local.sample_food_tags
+  tags        = local.origin_tags.sample_food
   # Metric alerts auto-resolve by default (auto_mitigate defaults to true); declare it
   # explicitly so the auto-resolve intent is recorded and not left to an implicit default.
   auto_mitigate = true

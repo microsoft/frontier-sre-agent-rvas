@@ -5,6 +5,11 @@ output "subscription_id" {
   value       = module.workload.subscription_id
 }
 
+output "rvas_resource_group_name" {
+  description = "Name of the single shared resource group used by the entire RVAS workshop workload deployment."
+  value       = module.workload.resource_group_name
+}
+
 output "agent_resource_group" {
   description = "Resource group name that contains the Azure SRE Agent."
   value       = module.sre_agent.agent_resource_group
@@ -66,18 +71,6 @@ output "provisioning_state" {
 }
 
 # ─── Workload ──────────────────────────────────────────────────────────────────
-
-output "hub_resource_group_name" {
-  value = module.workload.hub_resource_group_name
-}
-
-output "web_api_resource_group_name" {
-  value = module.workload.web_api_resource_group_name
-}
-
-output "data_resource_group_name" {
-  value = module.workload.data_resource_group_name
-}
 
 output "demo_lab_location" {
   value = module.workload.demo_lab_location
@@ -143,10 +136,6 @@ output "sample_food_resource_names" {
   value = module.workload.sample_food_resource_names
 }
 
-output "sample_food_resource_group_name" {
-  value = module.workload.sample_food_resource_group_name
-}
-
 output "sample_food_location" {
   value = module.workload.sample_food_location
 }
@@ -209,10 +198,6 @@ output "parking_frontend_url" {
   value = module.workload.parking_frontend_url
 }
 
-output "parking_frontend_resource_group_name" {
-  value = module.workload.parking_frontend_resource_group_name
-}
-
 output "parking_frontend_service_plan_name" {
   value = module.workload.parking_frontend_service_plan_name
 }
@@ -245,15 +230,7 @@ output "parking_paris_api_url" {
   value = module.workload.parking_paris_api_url
 }
 
-output "parking_resource_groups" {
-  value = module.workload.parking_resource_groups
-}
-
 # ─── SQL Server DBA track ──────────────────────────────────────────────────────
-
-output "sre_dba_resource_group_name" {
-  value = try(module.sre_dba_infra[0].resource_group_name, null)
-}
 
 output "sre_dba_sql_mcp_url" {
   value = try(module.sre_dba_infra[0].sql_mcp_url, null)

@@ -215,11 +215,14 @@ explicitly when the evidence points at the code.
 ## Remediation
 
 Resolve resource names with Azure CLI, which is the only discovery mechanism this agent holds a
-tool for. Do not expect Terraform outputs or repository scripts to be available at runtime.
+tool for. Do not expect Terraform outputs or repository scripts to be available at runtime. All
+workload resources share one resource group, so discover the Sample Food API container app by its
+`workload=sample-food` tag rather than by any resource-group name.
 
 ```bash
-rg="$(az group list --query "[?starts_with(name,'rg-') && contains(name,'foodapp')].name | [0]" -o tsv)"
-api="$(az containerapp list -g "$rg" --query "[?contains(name,'api')].name | [0]" -o tsv)"
+api_id="$(az containerapp list --query "[?tags.workload=='sample-food' && contains(name,'api')].id | [0]" -o tsv)"
+rg="$(az containerapp show --ids "$api_id" --query resourceGroup -o tsv)"
+api="$(az containerapp show --ids "$api_id" --query name -o tsv)"
 rev="$(az containerapp revision list -g "$rg" -n "$api" --query "[?properties.active].name | [0]" -o tsv)"
 ```
 

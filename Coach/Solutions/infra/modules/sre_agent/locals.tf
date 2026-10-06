@@ -1,6 +1,7 @@
 locals {
   resource_tags = {
-    workload    = "azure-sre-agent"
+    workload    = "sre-agent"
+    program     = "azure-sre-agent"
     managed-by  = "terraform"
     data-plane  = "configuration-api"
     environment = "dev"

@@ -3,10 +3,10 @@
 # Retain the existing Linux endpoint for Paris to avoid replacing deployed infrastructure.
 resource "azurerm_monitor_data_collection_endpoint" "parking_vms" {
   name                = "dce-parking-vm-logs"
-  resource_group_name = azurerm_resource_group.hub.name
-  location            = azurerm_resource_group.hub.location
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
   kind                = "Linux"
-  tags                = local.resource_tags
+  tags                = local.origin_tags.hub
 
   lifecycle {
     create_before_destroy = true
@@ -15,10 +15,10 @@ resource "azurerm_monitor_data_collection_endpoint" "parking_vms" {
 
 resource "azurerm_monitor_data_collection_endpoint" "parking_madrid" {
   name                = "dce-parking-madrid-windows-events"
-  resource_group_name = azurerm_resource_group.hub.name
-  location            = azurerm_resource_group.hub.location
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
   kind                = "Windows"
-  tags                = local.resource_tags
+  tags                = local.origin_tags.hub
 
   lifecycle {
     create_before_destroy = true
@@ -31,10 +31,10 @@ resource "azurerm_monitor_data_collection_rule" "madrid_windows_events" {
   count = var.deploy_madrid_vm ? 1 : 0
 
   name                        = "dcr-madrid-windows-events"
-  resource_group_name         = azurerm_resource_group.hub.name
-  location                    = azurerm_resource_group.hub.location
+  resource_group_name         = azurerm_resource_group.main.name
+  location                    = azurerm_resource_group.main.location
   data_collection_endpoint_id = azurerm_monitor_data_collection_endpoint.parking_madrid.id
-  tags                        = local.resource_tags
+  tags                        = local.origin_tags.hub
 
   data_sources {
     windows_event_log {
@@ -76,10 +76,10 @@ resource "azurerm_monitor_data_collection_rule" "paris_syslog" {
   count = var.deploy_paris_vm ? 1 : 0
 
   name                        = "dcr-paris-syslog"
-  resource_group_name         = azurerm_resource_group.hub.name
-  location                    = azurerm_resource_group.hub.location
+  resource_group_name         = azurerm_resource_group.main.name
+  location                    = azurerm_resource_group.main.location
   data_collection_endpoint_id = azurerm_monitor_data_collection_endpoint.parking_vms.id
-  tags                        = local.resource_tags
+  tags                        = local.origin_tags.hub
 
   data_sources {
     syslog {
@@ -123,9 +123,9 @@ resource "azurerm_monitor_data_collection_rule_association" "paris" {
 
 resource "azurerm_monitor_data_collection_endpoint" "vm_health" {
   name                = "dce-vm-health-status"
-  resource_group_name = azurerm_resource_group.parking_chaos.name
-  location            = azurerm_resource_group.parking_chaos.location
-  tags                = local.resource_tags
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  tags                = local.origin_tags.parking_chaos
 
   lifecycle {
     create_before_destroy = true
@@ -165,10 +165,10 @@ resource "azapi_resource" "vm_health_table" {
 
 resource "azurerm_monitor_data_collection_rule" "vm_health_status" {
   name                        = "dcr-vm-health-status"
-  resource_group_name         = azurerm_resource_group.parking_chaos.name
-  location                    = azurerm_resource_group.parking_chaos.location
+  resource_group_name         = azurerm_resource_group.main.name
+  location                    = azurerm_resource_group.main.location
   data_collection_endpoint_id = azurerm_monitor_data_collection_endpoint.vm_health.id
-  tags                        = local.resource_tags
+  tags                        = local.origin_tags.parking_chaos
 
   depends_on = [azapi_resource.vm_health_table]
 
@@ -260,15 +260,15 @@ resource "azurerm_role_assignment" "vm_health_metrics_publisher" {
 
 resource "azurerm_monitor_action_group" "vm_health" {
   name                = "ag-vm-health"
-  resource_group_name = azurerm_resource_group.parking_chaos.name
+  resource_group_name = azurerm_resource_group.main.name
   short_name          = "VMHealth"
-  tags                = local.resource_tags
+  tags                = local.origin_tags.parking_chaos
 }
 
 resource "azurerm_monitor_scheduled_query_rules_alert_v2" "vm_health_unhealthy" {
   name                    = "vm-health-unhealthy"
-  resource_group_name     = azurerm_resource_group.parking_chaos.name
-  location                = azurerm_resource_group.parking_chaos.location
+  resource_group_name     = azurerm_resource_group.main.name
+  location                = azurerm_resource_group.main.location
   display_name            = "Parking VM Unhealthy Alert"
   description             = "Synthetic Parking VM health signal for the incident-reporting workflow. Fires when VMHealthStatus_CL reports an unhealthy VM."
   enabled                 = true
@@ -277,7 +277,7 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "vm_health_unhealthy" 
   evaluation_frequency    = "PT1M"
   window_duration         = "PT5M"
   auto_mitigation_enabled = true
-  tags                    = local.resource_tags
+  tags                    = local.origin_tags.parking_chaos
 
   criteria {
     query                   = <<-KQL
@@ -316,8 +316,8 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "vm_health_unhealthy" 
 
 resource "azurerm_monitor_scheduled_query_rules_alert_v2" "paris_parking_api_down" {
   name                    = "parking-api-service-down"
-  resource_group_name     = azurerm_resource_group.parking_paris.name
-  location                = azurerm_resource_group.parking_paris.location
+  resource_group_name     = azurerm_resource_group.main.name
+  location                = azurerm_resource_group.main.location
   display_name            = "Paris Parking API Service Down"
   description             = "Fires when systemd reports that the Paris Parking API service stopped or failed. Routes to the dedicated Parking VM remediation workflow."
   enabled                 = var.deploy_paris_vm
@@ -327,7 +327,7 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "paris_parking_api_dow
   window_duration         = "PT10M"
   skip_query_validation   = true
   auto_mitigation_enabled = true
-  tags                    = local.resource_tags
+  tags                    = local.origin_tags.parking_paris
 
   criteria {
     query                   = <<-KQL
@@ -358,8 +358,8 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "paris_parking_api_dow
 
 resource "azurerm_monitor_scheduled_query_rules_alert_v2" "vm_health_recovered" {
   name                    = "vm-health-recovered"
-  resource_group_name     = azurerm_resource_group.parking_chaos.name
-  location                = azurerm_resource_group.parking_chaos.location
+  resource_group_name     = azurerm_resource_group.main.name
+  location                = azurerm_resource_group.main.location
   display_name            = "Parking VM Recovered Alert"
   description             = "Fires when a previously unhealthy parking VM is reported as healthy again."
   enabled                 = true
@@ -368,7 +368,7 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "vm_health_recovered" 
   evaluation_frequency    = "PT5M"
   window_duration         = "PT5M"
   auto_mitigation_enabled = false
-  tags                    = local.resource_tags
+  tags                    = local.origin_tags.parking_chaos
 
   criteria {
     query                   = <<-KQL

@@ -4,32 +4,26 @@
 # subnet has no UDR, and route-all is disabled, so public dependencies do not
 # traverse the hub firewall.
 
-resource "azurerm_resource_group" "parking_frontend" {
-  name     = var.rg_parking_frontend
-  location = var.location
-  tags     = local.resource_tags
-}
-
 resource "azurerm_service_plan" "parking_frontend" {
   name                = "asp-parking-frontend"
-  location            = azurerm_resource_group.parking_frontend.location
-  resource_group_name = azurerm_resource_group.parking_frontend.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   os_type             = "Linux"
   sku_name            = "B1"
-  tags                = local.resource_tags
+  tags                = local.origin_tags.parking_frontend
 }
 
 resource "azurerm_linux_web_app" "parking_frontend" {
   name                                           = "app-parking-frontend-${local.demo_suffix}"
-  location                                       = azurerm_resource_group.parking_frontend.location
-  resource_group_name                            = azurerm_resource_group.parking_frontend.name
+  location                                       = azurerm_resource_group.main.location
+  resource_group_name                            = azurerm_resource_group.main.name
   service_plan_id                                = azurerm_service_plan.parking_frontend.id
   virtual_network_subnet_id                      = azurerm_subnet.parking_frontend.id
   public_network_access_enabled                  = true
   https_only                                     = true
   ftp_publish_basic_authentication_enabled       = false
   webdeploy_publish_basic_authentication_enabled = false
-  tags                                           = local.resource_tags
+  tags                                           = local.origin_tags.parking_frontend
 
   app_settings = {
     NODE_ENV                        = "production"

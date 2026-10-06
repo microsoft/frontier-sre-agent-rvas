@@ -4,9 +4,9 @@
 
 resource "azurerm_monitor_action_group" "lisbon_chaos" {
   name                = "ag-lisbon-chaos"
-  resource_group_name = azurerm_resource_group.parking_lisbon.name
+  resource_group_name = azurerm_resource_group.main.name
   short_name          = "LisbonChaos"
-  tags                = local.resource_tags
+  tags                = local.origin_tags.parking_lisbon
 }
 
 locals {
@@ -74,8 +74,8 @@ locals {
 
 resource "azurerm_monitor_scheduled_query_rules_alert_v2" "lisbon_chaos_generic" {
   name                    = "lisbon-chaos-generic"
-  resource_group_name     = azurerm_resource_group.parking_lisbon.name
-  location                = azurerm_resource_group.parking_lisbon.location
+  resource_group_name     = azurerm_resource_group.main.name
+  location                = azurerm_resource_group.main.location
   display_name            = "Lisbon chaos injection detected"
   description             = "A chaos fault was injected into the Lisbon parking API."
   enabled                 = true
@@ -85,7 +85,7 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "lisbon_chaos_generic"
   window_duration         = "PT5M"
   skip_query_validation   = true
   auto_mitigation_enabled = true
-  tags                    = local.resource_tags
+  tags                    = local.origin_tags.parking_lisbon
 
   criteria {
     query                   = <<-KQL
@@ -112,8 +112,8 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "lisbon_chaos_fault" {
   for_each = local.lisbon_fault_alerts
 
   name                    = "lisbon-chaos-${each.key}"
-  resource_group_name     = azurerm_resource_group.parking_lisbon.name
-  location                = azurerm_resource_group.parking_lisbon.location
+  resource_group_name     = azurerm_resource_group.main.name
+  location                = azurerm_resource_group.main.location
   display_name            = "Lisbon chaos ${each.key} detected"
   description             = "The ${each.value.fault_type} chaos fault was injected into the Lisbon parking API."
   enabled                 = true
@@ -123,7 +123,7 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "lisbon_chaos_fault" {
   window_duration         = "PT5M"
   skip_query_validation   = true
   auto_mitigation_enabled = true
-  tags                    = local.resource_tags
+  tags                    = local.origin_tags.parking_lisbon
 
   criteria {
     query                   = <<-KQL
@@ -151,8 +151,8 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "lisbon_signal" {
   for_each = local.lisbon_signal_alerts
 
   name                    = "lisbon-chaos-${each.key}"
-  resource_group_name     = azurerm_resource_group.parking_lisbon.name
-  location                = azurerm_resource_group.parking_lisbon.location
+  resource_group_name     = azurerm_resource_group.main.name
+  location                = azurerm_resource_group.main.location
   display_name            = "Lisbon chaos ${each.key} detected"
   description             = each.value.description
   enabled                 = true
@@ -162,7 +162,7 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "lisbon_signal" {
   window_duration         = "PT5M"
   skip_query_validation   = true
   auto_mitigation_enabled = true
-  tags                    = local.resource_tags
+  tags                    = local.origin_tags.parking_lisbon
 
   criteria {
     query                   = each.value.query

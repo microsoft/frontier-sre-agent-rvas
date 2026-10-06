@@ -14,9 +14,9 @@
 
 resource "azurerm_monitor_data_collection_rule" "web_syslog" {
   name                = "dcr-web-syslog"
-  resource_group_name = azurerm_resource_group.spoke_web_api.name
-  location            = azurerm_resource_group.spoke_web_api.location
-  tags                = local.resource_tags
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  tags                = local.origin_tags.spoke_web_api
 
   destinations {
     log_analytics {
@@ -50,7 +50,7 @@ resource "azurerm_virtual_machine_extension" "web_ama" {
   type_handler_version       = "1.0"
   auto_upgrade_minor_version = true
   automatic_upgrade_enabled  = true
-  tags                       = local.resource_tags
+  tags                       = local.origin_tags.spoke_web_api
 }
 
 resource "azurerm_monitor_data_collection_rule_association" "web_syslog" {
@@ -65,8 +65,8 @@ resource "azurerm_monitor_data_collection_rule_association" "web_syslog" {
 
 resource "azurerm_monitor_scheduled_query_rules_alert_v2" "nginx_down" {
   name                    = "alert-nginx-down"
-  resource_group_name     = azurerm_resource_group.spoke_web_api.name
-  location                = azurerm_resource_group.spoke_web_api.location
+  resource_group_name     = azurerm_resource_group.main.name
+  location                = azurerm_resource_group.main.location
   display_name            = "NGINX service down on web tier"
   description             = "Fires when the nginx systemd unit is stopped, deactivated, or fails on a web-tier VM, based on Syslog collected by Azure Monitor Agent. Routes (Sev2, web-tier-nginx filter) to the SRE Agent iaas-vm-incident-handler subagent for autonomous in-guest restart."
   enabled                 = true
@@ -75,7 +75,7 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "nginx_down" {
   evaluation_frequency    = "PT1M"
   window_duration         = "PT10M"
   skip_query_validation   = true
-  tags                    = local.resource_tags
+  tags                    = local.origin_tags.spoke_web_api
   auto_mitigation_enabled = true
   criteria {
     query                   = <<-KQL

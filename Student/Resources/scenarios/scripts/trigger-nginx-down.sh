@@ -17,7 +17,7 @@ set -euo pipefail
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 
-rg="$(web_api_resource_group_name)"
+rg="$(rvas_resource_group_name)"
 web1_vm="$(tf_output_json demo_lab_vm_names | jq -r '.web_1')"
 web2_vm="$(tf_output_json demo_lab_vm_names | jq -r '.web_2')"
 web1_ip="$(vm_ip web_1)"

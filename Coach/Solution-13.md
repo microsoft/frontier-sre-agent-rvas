@@ -30,7 +30,7 @@
 - **Symptom:** Student checks only source-side routes. **Fix:** have them inspect the destination/return path explicitly.
 - **Symptom:** They expect a denied-flow row for the blackhole. **Fix:** explain that the UDR can drop traffic before NSG flow evidence; insist on effective route and next-hop evidence.
 - **Symptom:** After remediation, stale asymmetry still appears historically. **Fix:** use a tighter time window for verification.
-- **Symptom:** Agent identifies the bad UDR but remediation is refused with a permission error. **Fix:** verify the Terraform-managed Contributor assignment covers `rg-sre-spoke-data-iaas`.
+- **Symptom:** Agent identifies the bad UDR but remediation is refused with a permission error. **Fix:** verify the Terraform-managed Contributor assignment covers the shared workload resource group.
 
 ## Debrief Discussion Guide
 

@@ -5,7 +5,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 
 require_command curl
 
-resource_group="$(sample_food_resource_group_name)"
+resource_group="$(rvas_resource_group_name)"
 workspace_id="$(tf_output demo_lab_log_analytics_workspace_customer_id)"
 api_app_name="$(tf_output sample_food_api_container_app_name)"
 frontend_app_name="$(tf_output sample_food_frontend_container_app_name)"

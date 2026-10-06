@@ -1,8 +1,32 @@
 locals {
-  resource_tags = {
-    workload        = "azure-sre-agent"
+  # Shared program-wide tag identity, used both as the base for origin_tags and
+  # for the single shared resource group resource's own tags (which carries a
+  # "platform" workload since it is the container for every origin, not one itself).
+  program_identity = {
+    program         = "azure-sre-agent"
     managed-by      = "terraform"
     SecurityControl = "Ignore"
+  }
+
+  # Per-origin tag sets, keyed by each resource's pre-consolidation resource group.
+  # Every resource in this module applies the entry matching its former resource
+  # group so the workload tag preserves that resource's origin after consolidation
+  # into the single shared resource group.
+  origin_tags = {
+    hub           = merge(local.program_identity, { workload = "hub" })
+    spoke_web_api = merge(local.program_identity, { workload = "spoke-web-api" })
+    spoke_data    = merge(local.program_identity, { workload = "spoke-data" })
+    sample_food = merge(local.program_identity, {
+      workload  = "sample-food"
+      component = "sample-food-ordering-app"
+      lab       = "sre-agent-lab"
+    })
+    parking_lisbon   = merge(local.program_identity, { workload = "parking-lisbon" })
+    parking_berlin   = merge(local.program_identity, { workload = "parking-berlin" })
+    parking_madrid   = merge(local.program_identity, { workload = "parking-madrid" })
+    parking_paris    = merge(local.program_identity, { workload = "parking-paris" })
+    parking_chaos    = merge(local.program_identity, { workload = "parking-chaos" })
+    parking_frontend = merge(local.program_identity, { workload = "parking-frontend" })
   }
 
   demo_address_spaces = {
@@ -38,19 +62,10 @@ locals {
   # Sourced from random_string.suffix so every fresh deployment gets its own unique set.
   demo_suffix = random_string.suffix.result
 
-  sample_food_tags = merge(
-    local.resource_tags,
-    {
-      component = "sample-food-ordering-app"
-      lab       = "sre-agent-lab"
-    }
-  )
-
   sample_food_address_spaces = ["10.40.0.0/16"]
   sample_food_location       = lower(replace(var.location, " ", ""))
 
   sample_food_names = {
-    resource_group             = var.rg_sample_food
     vnet                       = "vnet-food"
     container_apps_subnet      = "snet-food-aca-infra"
     probe_subnet               = "snet-food-probe"

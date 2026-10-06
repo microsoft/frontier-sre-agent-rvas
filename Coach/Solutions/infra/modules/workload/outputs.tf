@@ -5,6 +5,18 @@ output "subscription_id" {
   value       = data.azurerm_client_config.current.subscription_id
 }
 
+# ─── Shared resource group ─────────────────────────────────────────────────────
+
+output "resource_group_name" {
+  description = "Name of the single shared resource group that now holds every workload resource."
+  value       = azurerm_resource_group.main.name
+}
+
+output "resource_group_id" {
+  description = "Resource ID of the single shared resource group that now holds every workload resource."
+  value       = azurerm_resource_group.main.id
+}
+
 # ─── SRE Agent inputs ──────────────────────────────────────────────────────────
 # These outputs feed directly into the sre_agent module inputs.
 
@@ -20,92 +32,77 @@ output "log_analytics_workspace_customer_id" {
 
 output "rg_hub_id" {
   description = "Hub connectivity resource group ID (used by sre_agent for RBAC scoping)."
-  value       = azurerm_resource_group.hub.id
+  value       = azurerm_resource_group.main.id
 }
 
 output "rg_spoke_web_api_id" {
   description = "Web/API spoke resource group ID."
-  value       = azurerm_resource_group.spoke_web_api.id
+  value       = azurerm_resource_group.main.id
 }
 
 output "rg_spoke_data_id" {
   description = "Data spoke resource group ID."
-  value       = azurerm_resource_group.spoke_data.id
+  value       = azurerm_resource_group.main.id
 }
 
 output "rg_sample_food_id" {
   description = "Sample Food resource group ID."
-  value       = azurerm_resource_group.sample_food.id
+  value       = azurerm_resource_group.main.id
 }
 
 output "rg_parking_lisbon_id" {
   description = "Lisbon Parking resource group ID."
-  value       = azurerm_resource_group.parking_lisbon.id
+  value       = azurerm_resource_group.main.id
 }
 
 output "rg_parking_berlin_id" {
   description = "Berlin Parking resource group ID."
-  value       = azurerm_resource_group.parking_berlin.id
+  value       = azurerm_resource_group.main.id
 }
 
 output "rg_parking_madrid_id" {
   description = "Madrid Parking resource group ID."
-  value       = azurerm_resource_group.parking_madrid.id
+  value       = azurerm_resource_group.main.id
 }
 
 output "rg_parking_paris_id" {
   description = "Paris Parking resource group ID."
-  value       = azurerm_resource_group.parking_paris.id
+  value       = azurerm_resource_group.main.id
 }
 
 output "rg_parking_chaos_id" {
   description = "Parking control services resource group ID."
-  value       = azurerm_resource_group.parking_chaos.id
+  value       = azurerm_resource_group.main.id
 }
 
 output "rg_parking_frontend_id" {
   description = "Parking Manager frontend resource group ID."
-  value       = azurerm_resource_group.parking_frontend.id
+  value       = azurerm_resource_group.main.id
 }
 
 output "managed_resource_ids" {
   description = "List of resource IDs for the SRE Agent knowledge graph (subscription + workload resource groups + demo Log Analytics workspace)."
   value = distinct([
     "/subscriptions/${data.azurerm_client_config.current.subscription_id}",
-    azurerm_resource_group.hub.id,
-    azurerm_resource_group.spoke_web_api.id,
-    azurerm_resource_group.spoke_data.id,
-    azurerm_resource_group.sample_food.id,
-    azurerm_resource_group.parking_lisbon.id,
-    azurerm_resource_group.parking_berlin.id,
-    azurerm_resource_group.parking_madrid.id,
-    azurerm_resource_group.parking_paris.id,
-    azurerm_resource_group.parking_chaos.id,
-    azurerm_resource_group.parking_frontend.id,
+    azurerm_resource_group.main.id,
+    azurerm_resource_group.main.id,
+    azurerm_resource_group.main.id,
+    azurerm_resource_group.main.id,
+    azurerm_resource_group.main.id,
+    azurerm_resource_group.main.id,
+    azurerm_resource_group.main.id,
+    azurerm_resource_group.main.id,
+    azurerm_resource_group.main.id,
+    azurerm_resource_group.main.id,
     azurerm_log_analytics_workspace.demo.id,
   ])
 }
 
 # ─── Hub / Demo Lab ────────────────────────────────────────────────────────────
 
-output "hub_resource_group_name" {
-  description = "Connectivity resource group for the hub (Azure Firewall, Bastion, shared observability)."
-  value       = azurerm_resource_group.hub.name
-}
-
-output "web_api_resource_group_name" {
-  description = "Resource group for the Web-API IaaS spoke (client + web VMs, internal load balancer)."
-  value       = azurerm_resource_group.spoke_web_api.name
-}
-
-output "data_resource_group_name" {
-  description = "Resource group for the Data IaaS spoke (API + PostgreSQL VMs)."
-  value       = azurerm_resource_group.spoke_data.name
-}
-
 output "demo_lab_location" {
   description = "Azure region used by the hub and IaaS spokes."
-  value       = azurerm_resource_group.hub.location
+  value       = azurerm_resource_group.main.location
 }
 
 output "demo_lab_log_analytics_workspace_id" {
@@ -209,7 +206,7 @@ output "sample_food_app_enabled" {
 output "sample_food_resource_names" {
   description = "Resource names used by Sample Food Ordering App scripts and documentation."
   value = {
-    resource_group             = azurerm_resource_group.sample_food.name
+    resource_group             = azurerm_resource_group.main.name
     vnet                       = azurerm_virtual_network.sample_food.name
     container_apps_environment = azurerm_container_app_environment.sample_food.name
     api_container_app          = azurerm_container_app.sample_food_api.name
@@ -218,14 +215,9 @@ output "sample_food_resource_names" {
   }
 }
 
-output "sample_food_resource_group_name" {
-  description = "Resource group containing the Sample Food Ordering App regional resources."
-  value       = azurerm_resource_group.sample_food.name
-}
-
 output "sample_food_location" {
   description = "Azure region used by Sample Food Ordering App regional resources."
-  value       = azurerm_resource_group.sample_food.location
+  value       = azurerm_resource_group.main.location
 }
 
 output "sample_food_network" {
@@ -307,11 +299,6 @@ output "parking_frontend_url" {
   value       = "https://${azurerm_linux_web_app.parking_frontend.default_hostname}"
 }
 
-output "parking_frontend_resource_group_name" {
-  description = "Resource group containing the Parking Manager frontend Web App."
-  value       = azurerm_resource_group.parking_frontend.name
-}
-
 output "parking_frontend_service_plan_name" {
   description = "Name of the Parking Manager frontend App Service plan."
   value       = azurerm_service_plan.parking_frontend.name
@@ -357,16 +344,4 @@ output "parking_paris_vm_private_ip" {
 output "parking_paris_api_url" {
   description = "Paris Parking API URL (private IP, accessible within the VNet on port 3003)."
   value       = var.deploy_paris_vm ? "http://${azurerm_network_interface.paris[0].private_ip_address}:3003" : ""
-}
-
-output "parking_resource_groups" {
-  description = "Resource group names for each parking app component."
-  value = {
-    lisbon   = azurerm_resource_group.parking_lisbon.name
-    berlin   = azurerm_resource_group.parking_berlin.name
-    madrid   = azurerm_resource_group.parking_madrid.name
-    paris    = azurerm_resource_group.parking_paris.name
-    chaos    = azurerm_resource_group.parking_chaos.name
-    frontend = azurerm_resource_group.parking_frontend.name
-  }
 }

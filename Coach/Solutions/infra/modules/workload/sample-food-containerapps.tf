@@ -1,12 +1,12 @@
 resource "azurerm_container_app_environment" "sample_food" {
   name                       = local.sample_food_names.container_apps_environment
-  location                   = azurerm_resource_group.sample_food.location
-  resource_group_name        = azurerm_resource_group.sample_food.name
+  location                   = azurerm_resource_group.main.location
+  resource_group_name        = azurerm_resource_group.main.name
   logs_destination           = "log-analytics"
   log_analytics_workspace_id = azurerm_log_analytics_workspace.demo.id
   infrastructure_subnet_id   = azurerm_subnet.sample_food_container_apps.id
   public_network_access      = "Enabled"
-  tags                       = local.sample_food_tags
+  tags                       = local.origin_tags.sample_food
 
   workload_profile {
     name                  = "Consumption"
@@ -17,10 +17,10 @@ resource "azurerm_container_app_environment" "sample_food" {
 resource "azurerm_container_app" "sample_food_api" {
   name                         = local.sample_food_names.api_container_app
   container_app_environment_id = azurerm_container_app_environment.sample_food.id
-  resource_group_name          = azurerm_resource_group.sample_food.name
+  resource_group_name          = azurerm_resource_group.main.name
   revision_mode                = "Single"
   workload_profile_name        = "Consumption"
-  tags                         = local.sample_food_tags
+  tags                         = local.origin_tags.sample_food
 
   ingress {
     external_enabled           = true
@@ -70,10 +70,10 @@ resource "azurerm_container_app" "sample_food_api" {
 resource "azurerm_container_app" "sample_food_frontend" {
   name                         = local.sample_food_names.frontend_container_app
   container_app_environment_id = azurerm_container_app_environment.sample_food.id
-  resource_group_name          = azurerm_resource_group.sample_food.name
+  resource_group_name          = azurerm_resource_group.main.name
   revision_mode                = "Single"
   workload_profile_name        = "Consumption"
-  tags                         = local.sample_food_tags
+  tags                         = local.origin_tags.sample_food
 
   ingress {
     external_enabled           = true

@@ -4,11 +4,11 @@ resource "azurerm_public_ip" "madrid" {
   count = var.create_parking_public_ips && var.deploy_madrid_vm ? 1 : 0
 
   name                = "pip-parking-madrid"
-  location            = azurerm_resource_group.parking_madrid.location
-  resource_group_name = azurerm_resource_group.parking_madrid.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   allocation_method   = "Static"
   sku                 = "Standard"
-  tags                = local.resource_tags
+  tags                = local.origin_tags.parking_madrid
 
 }
 
@@ -16,9 +16,9 @@ resource "azurerm_network_interface" "madrid" {
   count = var.deploy_madrid_vm ? 1 : 0
 
   name                = "nic-parking-madrid-vnet"
-  location            = azurerm_resource_group.parking_madrid.location
-  resource_group_name = azurerm_resource_group.parking_madrid.name
-  tags                = local.resource_tags
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  tags                = local.origin_tags.parking_madrid
 
   lifecycle {
     create_before_destroy = true
@@ -37,8 +37,8 @@ resource "azurerm_windows_virtual_machine" "madrid" {
   count = var.deploy_madrid_vm ? 1 : 0
 
   name                = "vm-parking-madrid"
-  location            = azurerm_resource_group.parking_madrid.location
-  resource_group_name = azurerm_resource_group.parking_madrid.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   size                = "Standard_B2s_v2"
   computer_name       = "madrid-api"
   admin_username      = var.vm_admin_username
@@ -46,7 +46,7 @@ resource "azurerm_windows_virtual_machine" "madrid" {
   network_interface_ids = [
     azurerm_network_interface.madrid[0].id
   ]
-  tags = local.resource_tags
+  tags = local.origin_tags.parking_madrid
 
 
   patch_mode = "AutomaticByOS"
@@ -88,7 +88,7 @@ resource "azurerm_virtual_machine_extension" "madrid_ama" {
   type_handler_version       = "1.0"
   auto_upgrade_minor_version = true
   automatic_upgrade_enabled  = true
-  tags                       = local.resource_tags
+  tags                       = local.origin_tags.parking_madrid
 
 }
 
@@ -101,7 +101,7 @@ resource "azurerm_virtual_machine_extension" "madrid_api_setup" {
   type                       = "CustomScriptExtension"
   type_handler_version       = "1.10"
   auto_upgrade_minor_version = true
-  tags                       = local.resource_tags
+  tags                       = local.origin_tags.parking_madrid
 
   settings = jsonencode({
     commandToExecute = "powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${textencodebase64(templatefile("${path.module}/templates/windows-gzip-bootstrap.ps1.tftpl", {
@@ -121,11 +121,11 @@ resource "azurerm_public_ip" "paris" {
   count = var.create_parking_public_ips && var.deploy_paris_vm ? 1 : 0
 
   name                = "pip-parking-paris"
-  location            = azurerm_resource_group.parking_paris.location
-  resource_group_name = azurerm_resource_group.parking_paris.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   allocation_method   = "Static"
   sku                 = "Standard"
-  tags                = local.resource_tags
+  tags                = local.origin_tags.parking_paris
 
 }
 
@@ -133,9 +133,9 @@ resource "azurerm_network_interface" "paris" {
   count = var.deploy_paris_vm ? 1 : 0
 
   name                = "nic-parking-paris-vnet"
-  location            = azurerm_resource_group.parking_paris.location
-  resource_group_name = azurerm_resource_group.parking_paris.name
-  tags                = local.resource_tags
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  tags                = local.origin_tags.parking_paris
 
   lifecycle {
     create_before_destroy = true
@@ -154,8 +154,8 @@ resource "azurerm_linux_virtual_machine" "paris" {
   count = var.deploy_paris_vm ? 1 : 0
 
   name                = "vm-parking-paris"
-  location            = azurerm_resource_group.parking_paris.location
-  resource_group_name = azurerm_resource_group.parking_paris.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   size                = "Standard_B2s_v2"
   admin_username      = var.vm_admin_username
   network_interface_ids = [
@@ -166,7 +166,7 @@ resource "azurerm_linux_virtual_machine" "paris" {
   encryption_at_host_enabled      = false
   secure_boot_enabled             = false
   vtpm_enabled                    = false
-  tags                            = local.resource_tags
+  tags                            = local.origin_tags.parking_paris
 
 
   patch_mode                                             = "AutomaticByPlatform"
@@ -212,7 +212,7 @@ resource "azurerm_virtual_machine_extension" "paris_ama" {
   auto_upgrade_minor_version = true
   automatic_upgrade_enabled  = true
   provision_after_extensions = []
-  tags                       = local.resource_tags
+  tags                       = local.origin_tags.parking_paris
 
 }
 
@@ -227,7 +227,7 @@ resource "azurerm_virtual_machine_extension" "paris_node_setup" {
   auto_upgrade_minor_version = true
   automatic_upgrade_enabled  = false
   provision_after_extensions = []
-  tags                       = local.resource_tags
+  tags                       = local.origin_tags.parking_paris
 
 
   settings = jsonencode({

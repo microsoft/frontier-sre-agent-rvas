@@ -78,28 +78,13 @@ az provider register --namespace "Microsoft.App"
 2. Create an agent in a resource group of your choice, in the same region as the
    workload you just deployed (e.g., the default is **Sweden Central**, but you can choose another region if desired).
 3. Confirm that its provisioning state is `Succeeded` and its power state is `Running`.
-4. Print the resource groups the agent must watch, from the `Student/` directory:
+4. Print the shared resource group the agent must watch, from the `Student/` directory:
 
    ```bash
-   terraform -chdir="Resources/infra" output hub_resource_group_name
-   terraform -chdir="Resources/infra" output web_api_resource_group_name
-   terraform -chdir="Resources/infra" output data_resource_group_name
-   terraform -chdir="Resources/infra" output sample_food_resource_group_name
-   terraform -chdir="Resources/infra" output parking_resource_groups
+   terraform -chdir="Resources/infra" output rvas_resource_group_name
    ```
-
-   The certified profile is scoped to:
-   - `rg-sre-hub-connectivity` — hub network, Azure Firewall, Bastion, and shared observability
-   - `rg-sre-spoke-web-api-iaas` — client and web VMs
-   - `rg-sre-spoke-data-iaas` — API and database VMs
-   - `rg-sre-spoke-foodapp-paas` — Sample Food / Grubify Container Apps
-   - `rg-sre-parking-lisbon` — Lisbon Parking API
-   - `rg-sre-parking-berlin` — Berlin Parking API and MCP server
-   - `rg-sre-parking-madrid` — Madrid Parking VM
-   - `rg-sre-parking-paris` — Paris Parking VM
-   - `rg-sre-parking-chaos` — Chaos Control and VM Health Control
-   - `rg-sre-parking-frontend` — public Parking Manager Web App and App Service plan
-5. Associate all workload resource groups with the agent and give it **Contributor** permission.
+   
+5. Associate the workload resource group with the agent and give it **Contributor** permission.
 
    > **Least-privilege VM repair:** Contributor is the certified full-workshop baseline because later challenges also modify NSGs and UDRs. If your organization gives the agent narrower access and VM remediation later fails authorization, an **Owner** or **Role Based Access Control Administrator** can run `make grant-agent-vm-remediation`. This adds only VM read, restart, and Run Command permissions on resource groups that contain lab VMs; it is not sufficient for the network-remediation challenges.
 
@@ -138,7 +123,7 @@ make validate-parking
 1. You created your own fork
 2. `make deploy` completes successfully and all workload resources are provisioned
 3. You created the SRE Agent yourself and the portal loads it
-4. All lab resource groups are associated with the agent in the portal
+4. The workload resource group is associated with the agent in the portal
 5. The agent permission level is **Contributor**
 6. `Student/.env` is configured with your `SRE_AGENT_RG` and `SRE_AGENT_NAME`
 7. `make validate`, `make validate-food`, and `make validate-parking` return healthy

@@ -1,6 +1,6 @@
 output "agent_resource_group" {
   description = "Resource group name that contains the Azure SRE Agent."
-  value       = azurerm_resource_group.agent.name
+  value       = var.resource_group_name
 }
 
 output "agent_name" {
@@ -15,7 +15,7 @@ output "agent_endpoint" {
 
 output "agent_portal_url" {
   description = "Azure SRE Agent portal URL."
-  value       = "https://sre.azure.com/#/agent/${split("/", azapi_resource.agent.id)[2]}/${azurerm_resource_group.agent.name}/${azapi_resource.agent.name}"
+  value       = "https://sre.azure.com/#/agent/${split("/", azapi_resource.agent.id)[2]}/${var.resource_group_name}/${azapi_resource.agent.name}"
 }
 
 output "agent_resource_id" {

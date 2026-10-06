@@ -3,17 +3,13 @@ set -euo pipefail
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 
-hub_rg="$(hub_resource_group_name)"
-web_api_rg="$(web_api_resource_group_name)"
-data_rg="$(data_resource_group_name)"
+workload_rg="$(rvas_resource_group_name)"
 storage_account="$(tf_output demo_lab_storage_account_name)"
 workspace_id="$(tf_output demo_lab_log_analytics_workspace_id)"
 network_watcher_rg="$(tf_output demo_lab_network_watcher_resource_group_name)"
 bastion_name="$(tf_output demo_lab_bastion_host_name)"
 
-echo "Hub connectivity RG: ${hub_rg}"
-echo "Web-API spoke RG:    ${web_api_rg}"
-echo "Data spoke RG:       ${data_rg}"
+echo "Workload resource group: ${workload_rg}"
 echo "Storage account: ${storage_account}"
 echo "Log Analytics workspace: ${workspace_id}"
 echo "Azure Bastion: ${bastion_name}"
@@ -38,7 +34,7 @@ tf_output_json demo_lab_vm_private_ips | jq .
 
 printf '\nAzure Bastion check:\n'
 az network bastion show \
-  --resource-group "${hub_rg}" \
+  --resource-group "${workload_rg}" \
   --name "${bastion_name}" \
   --query "{name:name, sku:sku.name, provisioningState:provisioningState, dnsName:dnsName}" \
   --output table || true

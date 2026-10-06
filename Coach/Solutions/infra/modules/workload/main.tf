@@ -10,24 +10,14 @@ resource "random_string" "suffix" {
 
 resource "random_uuid" "demo_workbook" {}
 
-# Hub-spoke resource groups. The hub holds connectivity resources (Firewall, Bastion,
-# shared observability) while each spoke gets its own RG for isolation.
-resource "azurerm_resource_group" "hub" {
-  name     = var.rg_hub
+# Single shared resource group for every workload resource. Each resource's
+# pre-consolidation origin (hub, spoke_web_api, spoke_data, sample_food, and the
+# parking resource groups) is preserved via the per-origin workload tag in
+# local.origin_tags rather than via separate resource groups.
+resource "azurerm_resource_group" "main" {
+  name     = var.resource_group_name
   location = var.location
-  tags     = local.resource_tags
-}
-
-resource "azurerm_resource_group" "spoke_web_api" {
-  name     = var.rg_spoke_web_api
-  location = var.location
-  tags     = local.resource_tags
-}
-
-resource "azurerm_resource_group" "spoke_data" {
-  name     = var.rg_spoke_data
-  location = var.location
-  tags     = local.resource_tags
+  tags     = merge(local.program_identity, { workload = "platform" })
 }
 
 # Network Watcher must already be enabled for the deployment region.

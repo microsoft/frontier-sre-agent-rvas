@@ -30,7 +30,7 @@
 - **Symptom:** Student filters on `FlowStatus == "D"`. **Fix:** correct them to `Denied` or denied counters.
 - **Symptom:** Agent finds a deny but not the rule name. **Fix:** push them to correlate `AclRule`/NSG rule output, not stop at the tuple.
 - **Symptom:** Application recovered but denied rows still appear in 24h window. **Fix:** narrow the time window and distinguish historical evidence from current state.
-- **Symptom:** The response plan starts the agent autonomously and it identifies the blocking rule, but `az network nsg rule delete` is refused with an authorization or permission error. **Fix:** explain that Autonomous mode removes the approval gate but does not grant Azure RBAC access; verify the Terraform-managed Contributor assignment covers `rg-sre-spoke-data-iaas`, where `nsg-data` owns the injected rule.
+- **Symptom:** The response plan starts the agent autonomously and it identifies the blocking rule, but `az network nsg rule delete` is refused with an authorization or permission error. **Fix:** explain that Autonomous mode removes the approval gate but does not grant Azure RBAC access; verify the Terraform-managed Contributor assignment covers the shared workload resource group, where `nsg-data` owns the injected rule.
 
 ## Debrief Discussion Guide
 

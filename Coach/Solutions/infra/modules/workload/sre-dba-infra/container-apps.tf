@@ -2,8 +2,8 @@
 # Azure-managed networking and reaches Azure SQL over its public endpoint.
 resource "azurerm_container_app_environment" "main" {
   name                       = local.names.container_apps_environment
-  location                   = azurerm_resource_group.main.location
-  resource_group_name        = azurerm_resource_group.main.name
+  location                   = var.location
+  resource_group_name        = var.resource_group_name
   logs_destination           = "log-analytics"
   log_analytics_workspace_id = var.log_analytics_workspace_id
   public_network_access      = "Enabled"
@@ -21,7 +21,7 @@ resource "azurerm_container_app_environment" "main" {
 resource "azurerm_container_app" "sql_mcp" {
   name                         = local.names.container_app
   container_app_environment_id = azurerm_container_app_environment.main.id
-  resource_group_name          = azurerm_resource_group.main.name
+  resource_group_name          = var.resource_group_name
   revision_mode                = "Single"
   workload_profile_name        = "Consumption"
   tags                         = local.resource_tags

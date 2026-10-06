@@ -5,7 +5,7 @@ A Model Context Protocol (MCP) server that provides monitoring and observability
 ## Purpose
 
 The Berlin API represents a simulated **external/third-party service** that you don't directly control or monitor. This MCP server:
-- Runs in the workshop resource group `rg-sre-parking-berlin`
+- Runs in the shared workshop resource group, tagged `workload=parking-berlin`
 - Provides tools for SRE agents to query the Berlin API
 - Exports its performance logs to Application Insights when a connection string is configured
 - Allows SRE to monitor YOUR integration infrastructure, not the external API
@@ -312,8 +312,9 @@ Configure your MCP client to use the Streamable-HTTP transport:
 
 ## Workshop Deployment Ownership
 
-The MCP server runs as the Terraform-owned Azure Container App `ca-berlin-mcp` in resource group
-`rg-sre-parking-berlin`. It shares the workshop Container Apps environment and uses the public
+The MCP server runs as the Terraform-owned Azure Container App `ca-berlin-mcp` in the shared
+workshop resource group, tagged `workload=parking-berlin`. It shares the workshop Container Apps
+environment and uses the public
 image `ghcr.io/microsoft/frontier-sre-agent-rvas/berlin-mcp-server:latest`.
 
 The Parking image workflow builds and publishes this image only when manually dispatched. It does

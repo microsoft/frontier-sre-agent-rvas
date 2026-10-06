@@ -1,8 +1,8 @@
 resource "azurerm_network_interface" "client" {
   name                = "nic-client"
-  location            = azurerm_resource_group.spoke_web_api.location
-  resource_group_name = azurerm_resource_group.spoke_web_api.name
-  tags                = local.resource_tags
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  tags                = local.origin_tags.spoke_web_api
 
   ip_configuration {
     name                          = "ipconfig1"
@@ -16,9 +16,9 @@ resource "azurerm_network_interface" "web" {
   count = 2
 
   name                = "nic-web-${count.index + 1}"
-  location            = azurerm_resource_group.spoke_web_api.location
-  resource_group_name = azurerm_resource_group.spoke_web_api.name
-  tags                = local.resource_tags
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  tags                = local.origin_tags.spoke_web_api
 
   ip_configuration {
     name                          = "ipconfig1"
@@ -30,9 +30,9 @@ resource "azurerm_network_interface" "web" {
 
 resource "azurerm_network_interface" "api" {
   name                = "nic-api"
-  location            = azurerm_resource_group.spoke_data.location
-  resource_group_name = azurerm_resource_group.spoke_data.name
-  tags                = local.resource_tags
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  tags                = local.origin_tags.spoke_data
 
   ip_configuration {
     name                          = "ipconfig1"
@@ -44,9 +44,9 @@ resource "azurerm_network_interface" "api" {
 
 resource "azurerm_network_interface" "db" {
   name                = "nic-db"
-  location            = azurerm_resource_group.spoke_data.location
-  resource_group_name = azurerm_resource_group.spoke_data.name
-  tags                = local.resource_tags
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  tags                = local.origin_tags.spoke_data
 
   ip_configuration {
     name                          = "ipconfig1"
@@ -58,11 +58,11 @@ resource "azurerm_network_interface" "db" {
 
 resource "azurerm_network_interface" "nva" {
   name                           = "nic-nva"
-  location                       = azurerm_resource_group.hub.location
-  resource_group_name            = azurerm_resource_group.hub.name
+  location                       = azurerm_resource_group.main.location
+  resource_group_name            = azurerm_resource_group.main.name
   accelerated_networking_enabled = false
   ip_forwarding_enabled          = true
-  tags                           = local.resource_tags
+  tags                           = local.origin_tags.hub
 
   ip_configuration {
     name                          = "ipconfig1"
@@ -74,8 +74,8 @@ resource "azurerm_network_interface" "nva" {
 
 resource "azurerm_linux_virtual_machine" "client" {
   name                = "vm-client"
-  location            = azurerm_resource_group.spoke_web_api.location
-  resource_group_name = azurerm_resource_group.spoke_web_api.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   size                = "Standard_B2s_v2"
   admin_username      = "azureuser"
   network_interface_ids = [
@@ -84,7 +84,7 @@ resource "azurerm_linux_virtual_machine" "client" {
   admin_password                  = var.vm_admin_password
   disable_password_authentication = false
   custom_data                     = local.demo_client_cloud_init
-  tags                            = local.resource_tags
+  tags                            = local.origin_tags.spoke_web_api
 
   # Guest patch orchestration is set by the Azure platform after VM creation
   # (patch_mode + patch_assessment_mode = AutomaticByPlatform, bypass = true). Declared
@@ -135,8 +135,8 @@ resource "azurerm_linux_virtual_machine" "web" {
   count = 2
 
   name                = "vm-web-${count.index + 1}"
-  location            = azurerm_resource_group.spoke_web_api.location
-  resource_group_name = azurerm_resource_group.spoke_web_api.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   size                = "Standard_B2s_v2"
   admin_username      = "azureuser"
   network_interface_ids = [
@@ -145,7 +145,7 @@ resource "azurerm_linux_virtual_machine" "web" {
   admin_password                  = var.vm_admin_password
   disable_password_authentication = false
   custom_data                     = local.demo_web_cloud_init
-  tags                            = local.resource_tags
+  tags                            = local.origin_tags.spoke_web_api
 
   # Guest patch orchestration is set by the Azure platform after VM creation
   # (patch_mode + patch_assessment_mode = AutomaticByPlatform, bypass = true). Declared
@@ -200,8 +200,8 @@ resource "azurerm_linux_virtual_machine" "web" {
 
 resource "azurerm_linux_virtual_machine" "api" {
   name                = "vm-api"
-  location            = azurerm_resource_group.spoke_data.location
-  resource_group_name = azurerm_resource_group.spoke_data.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   size                = "Standard_B2s_v2"
   admin_username      = "azureuser"
   network_interface_ids = [
@@ -210,7 +210,7 @@ resource "azurerm_linux_virtual_machine" "api" {
   admin_password                  = var.vm_admin_password
   disable_password_authentication = false
   custom_data                     = local.demo_web_cloud_init
-  tags                            = local.resource_tags
+  tags                            = local.origin_tags.spoke_data
 
   # Guest patch orchestration is set by the Azure platform after VM creation
   # (patch_mode + patch_assessment_mode = AutomaticByPlatform, bypass = true). Declared
@@ -259,8 +259,8 @@ resource "azurerm_linux_virtual_machine" "api" {
 
 resource "azurerm_linux_virtual_machine" "db" {
   name                = "vm-db"
-  location            = azurerm_resource_group.spoke_data.location
-  resource_group_name = azurerm_resource_group.spoke_data.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   size                = "Standard_B2s_v2"
   admin_username      = "azureuser"
   network_interface_ids = [
@@ -269,7 +269,7 @@ resource "azurerm_linux_virtual_machine" "db" {
   admin_password                  = var.vm_admin_password
   disable_password_authentication = false
   custom_data                     = local.demo_web_cloud_init
-  tags                            = local.resource_tags
+  tags                            = local.origin_tags.spoke_data
 
   # Guest patch orchestration is set by the Azure platform after VM creation
   # (patch_mode + patch_assessment_mode = AutomaticByPlatform, bypass = true). Declared
@@ -318,8 +318,8 @@ resource "azurerm_linux_virtual_machine" "db" {
 
 resource "azurerm_linux_virtual_machine" "nva" {
   name                = "vm-nva"
-  location            = azurerm_resource_group.hub.location
-  resource_group_name = azurerm_resource_group.hub.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   size                = "Standard_B2s_v2"
   admin_username      = "azureuser"
   network_interface_ids = [
@@ -328,7 +328,7 @@ resource "azurerm_linux_virtual_machine" "nva" {
   admin_password                  = var.vm_admin_password
   disable_password_authentication = false
   custom_data                     = local.demo_nva_cloud_init
-  tags                            = local.resource_tags
+  tags                            = local.origin_tags.hub
 
   # Guest patch orchestration is set by the Azure platform after VM creation
   # (patch_mode + patch_assessment_mode = AutomaticByPlatform, bypass = true). Declared
@@ -377,10 +377,10 @@ resource "azurerm_linux_virtual_machine" "nva" {
 
 resource "azurerm_lb" "internal_web" {
   name                = "lb-internal-web"
-  location            = azurerm_resource_group.spoke_web_api.location
-  resource_group_name = azurerm_resource_group.spoke_web_api.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   sku                 = "Standard"
-  tags                = local.resource_tags
+  tags                = local.origin_tags.spoke_web_api
 
   frontend_ip_configuration {
     name                          = "web-ilb"

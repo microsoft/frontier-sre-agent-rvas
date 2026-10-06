@@ -6,10 +6,9 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 require_command curl
 
 frontend_name="$(tf_output parking_frontend_name)"
-frontend_rg="$(tf_output parking_frontend_resource_group_name)"
+frontend_rg="$(tf_output rvas_resource_group_name)"
 frontend_url="$(tf_output parking_frontend_url)"
 parking_network="$(tf_output_json parking_network)"
-parking_resource_groups="$(tf_output_json parking_resource_groups)"
 
 if [[ -z "${frontend_name}" || -z "${frontend_rg}" || -z "${frontend_url}" ]]; then
   echo "Could not determine the Parking Manager Web App from Terraform outputs." >&2
@@ -60,8 +59,7 @@ fi
 for city in madrid paris; do
   vm_name="$(tf_output "parking_${city}_vm_name")"
   [[ -n "${vm_name}" ]] || continue
-  vm_rg="$(jq -r --arg city "${city}" '.[$city]' <<<"${parking_resource_groups}")"
-  nic_id="$(az vm show --name "${vm_name}" --resource-group "${vm_rg}" --query 'networkProfile.networkInterfaces[0].id' --output tsv)"
+  nic_id="$(az vm show --name "${vm_name}" --resource-group "${frontend_rg}" --query 'networkProfile.networkInterfaces[0].id' --output tsv)"
   vm_subnet_id="$(az network nic show --ids "${nic_id}" --query 'ipConfigurations[0].subnet.id' --output tsv)"
   if [[ "${vm_subnet_id,,}" != "${expected_vm_subnet_id,,}" ]]; then
     echo "${city^} VM is not attached to the dedicated Parking VM subnet." >&2

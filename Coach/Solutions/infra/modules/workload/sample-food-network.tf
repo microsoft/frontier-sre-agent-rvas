@@ -1,20 +1,14 @@
-resource "azurerm_resource_group" "sample_food" {
-  name     = local.sample_food_names.resource_group
-  location = local.sample_food_location
-  tags     = local.sample_food_tags
-}
-
 resource "azurerm_virtual_network" "sample_food" {
   name                = local.sample_food_names.vnet
-  location            = azurerm_resource_group.sample_food.location
-  resource_group_name = azurerm_resource_group.sample_food.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   address_space       = local.sample_food_address_spaces
-  tags                = local.sample_food_tags
+  tags                = local.origin_tags.sample_food
 }
 
 resource "azurerm_subnet" "sample_food_container_apps" {
   name                 = local.sample_food_names.container_apps_subnet
-  resource_group_name  = azurerm_resource_group.sample_food.name
+  resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.sample_food.name
   address_prefixes     = ["10.40.0.0/21"]
   # Secure-by-default: pin to false to match the live state and prevent Terraform
@@ -35,7 +29,7 @@ resource "azurerm_subnet" "sample_food_container_apps" {
 
 resource "azurerm_subnet" "sample_food_probe" {
   name                            = local.sample_food_names.probe_subnet
-  resource_group_name             = azurerm_resource_group.sample_food.name
+  resource_group_name             = azurerm_resource_group.main.name
   virtual_network_name            = azurerm_virtual_network.sample_food.name
   address_prefixes                = ["10.40.8.0/24"]
   default_outbound_access_enabled = false
@@ -43,7 +37,7 @@ resource "azurerm_subnet" "sample_food_probe" {
 
 resource "azurerm_virtual_network_peering" "hub_to_sample_food" {
   name                      = "peer-hub-to-food"
-  resource_group_name       = azurerm_resource_group.hub.name
+  resource_group_name       = azurerm_resource_group.main.name
   virtual_network_name      = azurerm_virtual_network.hub.name
   remote_virtual_network_id = azurerm_virtual_network.sample_food.id
   allow_forwarded_traffic   = true
@@ -56,7 +50,7 @@ resource "azurerm_virtual_network_peering" "hub_to_sample_food" {
 
 resource "azurerm_virtual_network_peering" "sample_food_to_hub" {
   name                      = "peer-food-to-hub"
-  resource_group_name       = azurerm_resource_group.sample_food.name
+  resource_group_name       = azurerm_resource_group.main.name
   virtual_network_name      = azurerm_virtual_network.sample_food.name
   remote_virtual_network_id = azurerm_virtual_network.hub.id
   allow_forwarded_traffic   = true
@@ -72,14 +66,14 @@ resource "azurerm_virtual_network_peering" "sample_food_to_hub" {
 
 resource "azurerm_route_table" "sample_food_probe_to_firewall" {
   name                = local.sample_food_names.route_table
-  location            = azurerm_resource_group.sample_food.location
-  resource_group_name = azurerm_resource_group.sample_food.name
-  tags                = local.sample_food_tags
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  tags                = local.origin_tags.sample_food
 }
 
 resource "azurerm_route" "sample_food_probe_default_egress_via_firewall" {
   name                   = "Default-Food-Probe-Internet-Via-Firewall"
-  resource_group_name    = azurerm_resource_group.sample_food.name
+  resource_group_name    = azurerm_resource_group.main.name
   route_table_name       = azurerm_route_table.sample_food_probe_to_firewall.name
   address_prefix         = "0.0.0.0/0"
   next_hop_type          = "VirtualAppliance"

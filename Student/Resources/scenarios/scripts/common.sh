@@ -23,20 +23,8 @@ tf_output_json() {
   terraform -chdir="${TERRAFORM_DIR}" output -json | jq -ce --arg output_name "${output_name}" '.[$output_name].value // empty'
 }
 
-hub_resource_group_name() {
-  tf_output hub_resource_group_name
-}
-
-web_api_resource_group_name() {
-  tf_output web_api_resource_group_name
-}
-
-data_resource_group_name() {
-  tf_output data_resource_group_name
-}
-
-sample_food_resource_group_name() {
-  tf_output sample_food_resource_group_name
+rvas_resource_group_name() {
+  tf_output rvas_resource_group_name
 }
 
 parking_vm_health_control_url() {
@@ -51,17 +39,9 @@ parking_chaos_control_url() {
   tf_output parking_chaos_control_url
 }
 
-# Map a demo-lab VM role to the resource group that now owns it after the
-# hub-spoke RG split: client/web VMs -> web-api spoke, api/db -> data spoke,
-# nva -> hub connectivity.
+# All demo-lab VM roles now live in the single shared workload resource group.
 vm_resource_group() {
-  local role="$1"
-  case "${role}" in
-  client | client_vm | web_1 | web_2) web_api_resource_group_name ;;
-  api | db) data_resource_group_name ;;
-  nva) hub_resource_group_name ;;
-  *) hub_resource_group_name ;;
-  esac
+  rvas_resource_group_name
 }
 
 vm_name() {
@@ -77,7 +57,7 @@ vm_ip() {
 run_on_client() {
   local remote_command="$1"
   timeout 660 az vm run-command invoke \
-    --resource-group "$(web_api_resource_group_name)" \
+    --resource-group "$(rvas_resource_group_name)" \
     --name "$(vm_name client_vm)" \
     --command-id RunShellScript \
     --scripts "${remote_command}" \

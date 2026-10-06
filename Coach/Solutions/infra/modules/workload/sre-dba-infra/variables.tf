@@ -12,7 +12,11 @@ variable "sql_location" {
 variable "resource_group_name" {
   description = "Resource group name for the SQL Server DBA track resources"
   type        = string
-  default     = "rg-sre-dba"
+}
+
+variable "resource_group_id" {
+  description = "ARM resource ID of the shared resource group for the SQL Server DBA track resources"
+  type        = string
 }
 
 variable "log_analytics_workspace_id" {

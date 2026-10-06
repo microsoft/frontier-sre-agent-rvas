@@ -4,7 +4,7 @@ set -euo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 
 paris_vm="$(tf_output parking_paris_vm_name)"
-paris_resource_group="$(tf_output_json parking_resource_groups | jq -r '.paris')"
+paris_resource_group="$(tf_output rvas_resource_group_name)"
 
 if [[ -z "${paris_vm}" || -z "${paris_resource_group}" ]]; then
   echo "Could not resolve the Paris Parking VM and resource group from Terraform outputs." >&2

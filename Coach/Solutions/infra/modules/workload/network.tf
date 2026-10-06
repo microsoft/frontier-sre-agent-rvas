@@ -1,38 +1,38 @@
 resource "azurerm_virtual_network" "hub" {
   name                = "vnet-hub"
-  location            = azurerm_resource_group.hub.location
-  resource_group_name = azurerm_resource_group.hub.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   address_space       = local.demo_address_spaces.hub
-  tags                = local.resource_tags
+  tags                = local.origin_tags.hub
 }
 
 resource "azurerm_virtual_network" "spoke_app" {
   name                = "vnet-app"
-  location            = azurerm_resource_group.spoke_web_api.location
-  resource_group_name = azurerm_resource_group.spoke_web_api.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   address_space       = local.demo_address_spaces.spoke_app
-  tags                = local.resource_tags
+  tags                = local.origin_tags.spoke_web_api
 }
 
 resource "azurerm_virtual_network" "spoke_data" {
   name                = "vnet-data"
-  location            = azurerm_resource_group.spoke_data.location
-  resource_group_name = azurerm_resource_group.spoke_data.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   address_space       = local.demo_address_spaces.spoke_data
-  tags                = local.resource_tags
+  tags                = local.origin_tags.spoke_data
 }
 
 resource "azurerm_virtual_network" "parking" {
   name                = "vnet-parking"
-  location            = azurerm_resource_group.parking_frontend.location
-  resource_group_name = azurerm_resource_group.parking_frontend.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   address_space       = local.demo_address_spaces.parking
-  tags                = local.resource_tags
+  tags                = local.origin_tags.parking_frontend
 }
 
 resource "azurerm_subnet" "hub_mgmt" {
   name                            = "snet-mgmt"
-  resource_group_name             = azurerm_resource_group.hub.name
+  resource_group_name             = azurerm_resource_group.main.name
   virtual_network_name            = azurerm_virtual_network.hub.name
   address_prefixes                = [local.demo_subnets.hub_mgmt]
   default_outbound_access_enabled = false
@@ -40,7 +40,7 @@ resource "azurerm_subnet" "hub_mgmt" {
 
 resource "azurerm_subnet" "hub_nva" {
   name                            = "snet-nva"
-  resource_group_name             = azurerm_resource_group.hub.name
+  resource_group_name             = azurerm_resource_group.main.name
   virtual_network_name            = azurerm_virtual_network.hub.name
   address_prefixes                = [local.demo_subnets.hub_nva]
   default_outbound_access_enabled = false
@@ -48,7 +48,7 @@ resource "azurerm_subnet" "hub_nva" {
 
 resource "azurerm_subnet" "hub_firewall" {
   name                            = "AzureFirewallSubnet"
-  resource_group_name             = azurerm_resource_group.hub.name
+  resource_group_name             = azurerm_resource_group.main.name
   virtual_network_name            = azurerm_virtual_network.hub.name
   address_prefixes                = [local.demo_subnets.hub_firewall]
   default_outbound_access_enabled = false
@@ -56,7 +56,7 @@ resource "azurerm_subnet" "hub_firewall" {
 
 resource "azurerm_subnet" "hub_firewall_management" {
   name                            = "AzureFirewallManagementSubnet"
-  resource_group_name             = azurerm_resource_group.hub.name
+  resource_group_name             = azurerm_resource_group.main.name
   virtual_network_name            = azurerm_virtual_network.hub.name
   address_prefixes                = [local.demo_subnets.hub_firewall_mgmt]
   default_outbound_access_enabled = false
@@ -64,7 +64,7 @@ resource "azurerm_subnet" "hub_firewall_management" {
 
 resource "azurerm_subnet" "hub_bastion" {
   name                 = "AzureBastionSubnet"
-  resource_group_name  = azurerm_resource_group.hub.name
+  resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.hub.name
   address_prefixes     = [local.demo_subnets.hub_bastion]
   # Secure-by-default: pin to false to match the live state and prevent Terraform
@@ -76,7 +76,7 @@ resource "azurerm_subnet" "hub_bastion" {
 
 resource "azurerm_subnet" "app_client" {
   name                            = "snet-client"
-  resource_group_name             = azurerm_resource_group.spoke_web_api.name
+  resource_group_name             = azurerm_resource_group.main.name
   virtual_network_name            = azurerm_virtual_network.spoke_app.name
   address_prefixes                = [local.demo_subnets.app_client]
   default_outbound_access_enabled = false
@@ -84,7 +84,7 @@ resource "azurerm_subnet" "app_client" {
 
 resource "azurerm_subnet" "app_web" {
   name                            = "snet-web"
-  resource_group_name             = azurerm_resource_group.spoke_web_api.name
+  resource_group_name             = azurerm_resource_group.main.name
   virtual_network_name            = azurerm_virtual_network.spoke_app.name
   address_prefixes                = [local.demo_subnets.app_web]
   default_outbound_access_enabled = false
@@ -92,7 +92,7 @@ resource "azurerm_subnet" "app_web" {
 
 resource "azurerm_subnet" "data_api" {
   name                            = "snet-api"
-  resource_group_name             = azurerm_resource_group.spoke_data.name
+  resource_group_name             = azurerm_resource_group.main.name
   virtual_network_name            = azurerm_virtual_network.spoke_data.name
   address_prefixes                = [local.demo_subnets.data_api]
   default_outbound_access_enabled = false
@@ -100,7 +100,7 @@ resource "azurerm_subnet" "data_api" {
 
 resource "azurerm_subnet" "data_db" {
   name                            = "snet-db"
-  resource_group_name             = azurerm_resource_group.spoke_data.name
+  resource_group_name             = azurerm_resource_group.main.name
   virtual_network_name            = azurerm_virtual_network.spoke_data.name
   address_prefixes                = [local.demo_subnets.data_db]
   default_outbound_access_enabled = false
@@ -108,7 +108,7 @@ resource "azurerm_subnet" "data_db" {
 
 resource "azurerm_subnet" "data_privatelink" {
   name                              = "snet-privatelink"
-  resource_group_name               = azurerm_resource_group.spoke_data.name
+  resource_group_name               = azurerm_resource_group.main.name
   virtual_network_name              = azurerm_virtual_network.spoke_data.name
   address_prefixes                  = [local.demo_subnets.data_privatelink]
   default_outbound_access_enabled   = false
@@ -120,7 +120,7 @@ resource "azurerm_subnet" "data_privatelink" {
 # registry traffic uses App Service egress rather than the hub firewall.
 resource "azurerm_subnet" "parking_vms" {
   name                            = "snet-parking-vms"
-  resource_group_name             = azurerm_resource_group.parking_frontend.name
+  resource_group_name             = azurerm_resource_group.main.name
   virtual_network_name            = azurerm_virtual_network.parking.name
   address_prefixes                = [local.demo_subnets.parking_vms]
   default_outbound_access_enabled = false
@@ -128,7 +128,7 @@ resource "azurerm_subnet" "parking_vms" {
 
 resource "azurerm_subnet" "parking_frontend" {
   name                            = "snet-parking-frontend-integration"
-  resource_group_name             = azurerm_resource_group.parking_frontend.name
+  resource_group_name             = azurerm_resource_group.main.name
   virtual_network_name            = azurerm_virtual_network.parking.name
   address_prefixes                = [local.demo_subnets.parking_frontend]
   default_outbound_access_enabled = false
@@ -145,7 +145,7 @@ resource "azurerm_subnet" "parking_frontend" {
 
 resource "azurerm_virtual_network_peering" "hub_to_app" {
   name                      = "peer-hub-to-app"
-  resource_group_name       = azurerm_resource_group.hub.name
+  resource_group_name       = azurerm_resource_group.main.name
   virtual_network_name      = azurerm_virtual_network.hub.name
   remote_virtual_network_id = azurerm_virtual_network.spoke_app.id
   allow_forwarded_traffic   = true
@@ -153,7 +153,7 @@ resource "azurerm_virtual_network_peering" "hub_to_app" {
 
 resource "azurerm_virtual_network_peering" "app_to_hub" {
   name                      = "peer-app-to-hub"
-  resource_group_name       = azurerm_resource_group.spoke_web_api.name
+  resource_group_name       = azurerm_resource_group.main.name
   virtual_network_name      = azurerm_virtual_network.spoke_app.name
   remote_virtual_network_id = azurerm_virtual_network.hub.id
   allow_forwarded_traffic   = true
@@ -161,7 +161,7 @@ resource "azurerm_virtual_network_peering" "app_to_hub" {
 
 resource "azurerm_virtual_network_peering" "hub_to_data" {
   name                      = "peer-hub-to-data"
-  resource_group_name       = azurerm_resource_group.hub.name
+  resource_group_name       = azurerm_resource_group.main.name
   virtual_network_name      = azurerm_virtual_network.hub.name
   remote_virtual_network_id = azurerm_virtual_network.spoke_data.id
   allow_forwarded_traffic   = true
@@ -169,7 +169,7 @@ resource "azurerm_virtual_network_peering" "hub_to_data" {
 
 resource "azurerm_virtual_network_peering" "data_to_hub" {
   name                      = "peer-data-to-hub"
-  resource_group_name       = azurerm_resource_group.spoke_data.name
+  resource_group_name       = azurerm_resource_group.main.name
   virtual_network_name      = azurerm_virtual_network.spoke_data.name
   remote_virtual_network_id = azurerm_virtual_network.hub.id
   allow_forwarded_traffic   = true
@@ -177,9 +177,9 @@ resource "azurerm_virtual_network_peering" "data_to_hub" {
 
 resource "azurerm_network_security_group" "app" {
   name                = "nsg-app"
-  location            = azurerm_resource_group.spoke_web_api.location
-  resource_group_name = azurerm_resource_group.spoke_web_api.name
-  tags                = local.resource_tags
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  tags                = local.origin_tags.spoke_web_api
 
   security_rule {
     name                       = "AllowVnetInbound"
@@ -220,9 +220,9 @@ resource "azurerm_network_security_group" "app" {
 
 resource "azurerm_network_security_group" "data" {
   name                = "nsg-data"
-  location            = azurerm_resource_group.spoke_data.location
-  resource_group_name = azurerm_resource_group.spoke_data.name
-  tags                = local.resource_tags
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  tags                = local.origin_tags.spoke_data
 
   security_rule {
     name                       = "AllowAppToDataPorts"
@@ -251,9 +251,9 @@ resource "azurerm_network_security_group" "data" {
 
 resource "azurerm_network_security_group" "parking" {
   name                = "nsg-parking-vms"
-  location            = azurerm_resource_group.parking_frontend.location
-  resource_group_name = azurerm_resource_group.parking_frontend.name
-  tags                = local.resource_tags
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  tags                = local.origin_tags.parking_frontend
 
   security_rule {
     name                       = "AllowParkingFrontendToPrivateApis"
@@ -282,9 +282,9 @@ resource "azurerm_network_security_group" "parking" {
 
 resource "azurerm_network_security_group" "hub" {
   name                = "nsg-hub"
-  location            = azurerm_resource_group.hub.location
-  resource_group_name = azurerm_resource_group.hub.name
-  tags                = local.resource_tags
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  tags                = local.origin_tags.hub
 
   security_rule {
     name                       = "AllowVnetInbound"
@@ -331,11 +331,11 @@ resource "azurerm_subnet_network_security_group_association" "hub_nva" {
 
 resource "azurerm_public_ip" "firewall" {
   name                = "pip-firewall"
-  location            = azurerm_resource_group.hub.location
-  resource_group_name = azurerm_resource_group.hub.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   allocation_method   = "Static"
   sku                 = "Standard"
-  tags                = local.resource_tags
+  tags                = local.origin_tags.hub
 
   lifecycle {
     ignore_changes = [ip_tags, zones]
@@ -344,11 +344,11 @@ resource "azurerm_public_ip" "firewall" {
 
 resource "azurerm_public_ip" "firewall_management" {
   name                = "pip-firewall-mgmt"
-  location            = azurerm_resource_group.hub.location
-  resource_group_name = azurerm_resource_group.hub.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   allocation_method   = "Static"
   sku                 = "Standard"
-  tags                = local.resource_tags
+  tags                = local.origin_tags.hub
 
   lifecycle {
     ignore_changes = [ip_tags, zones]
@@ -357,11 +357,11 @@ resource "azurerm_public_ip" "firewall_management" {
 
 resource "azurerm_public_ip" "bastion" {
   name                = "pip-bastion"
-  location            = azurerm_resource_group.hub.location
-  resource_group_name = azurerm_resource_group.hub.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   allocation_method   = "Static"
   sku                 = "Standard"
-  tags                = local.resource_tags
+  tags                = local.origin_tags.hub
 
   lifecycle {
     ignore_changes = [ip_tags, zones]
@@ -370,10 +370,10 @@ resource "azurerm_public_ip" "bastion" {
 
 resource "azurerm_bastion_host" "hub" {
   name                = "bas-hub"
-  location            = azurerm_resource_group.hub.location
-  resource_group_name = azurerm_resource_group.hub.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   sku                 = "Basic"
-  tags                = local.resource_tags
+  tags                = local.origin_tags.hub
 
   ip_configuration {
     name                 = "configuration"
@@ -384,11 +384,11 @@ resource "azurerm_bastion_host" "hub" {
 
 resource "azurerm_firewall_policy" "hub" {
   name                     = "afwp-hub"
-  location                 = azurerm_resource_group.hub.location
-  resource_group_name      = azurerm_resource_group.hub.name
+  location                 = azurerm_resource_group.main.location
+  resource_group_name      = azurerm_resource_group.main.name
   sku                      = "Basic"
   threat_intelligence_mode = "Alert"
-  tags                     = local.resource_tags
+  tags                     = local.origin_tags.hub
 }
 
 resource "azurerm_firewall_policy_rule_collection_group" "hub_demo" {
@@ -437,12 +437,12 @@ resource "azurerm_firewall_policy_rule_collection_group" "hub_demo" {
 
 resource "azurerm_firewall" "hub" {
   name                = "afw-hub"
-  location            = azurerm_resource_group.hub.location
-  resource_group_name = azurerm_resource_group.hub.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   sku_name            = "AZFW_VNet"
   sku_tier            = "Basic"
   firewall_policy_id  = azurerm_firewall_policy.hub.id
-  tags                = local.resource_tags
+  tags                = local.origin_tags.hub
 
   ip_configuration {
     name                 = "configuration"
@@ -459,25 +459,25 @@ resource "azurerm_firewall" "hub" {
 
 resource "azurerm_route_table" "app_to_nva" {
   name                = "rt-app-to-nva"
-  location            = azurerm_resource_group.spoke_web_api.location
-  resource_group_name = azurerm_resource_group.spoke_web_api.name
-  tags                = local.resource_tags
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  tags                = local.origin_tags.spoke_web_api
 }
 
 resource "azurerm_route_table" "data_to_nva" {
   name                = "rt-data-to-nva"
-  location            = azurerm_resource_group.spoke_data.location
-  resource_group_name = azurerm_resource_group.spoke_data.name
-  tags                = local.resource_tags
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  tags                = local.origin_tags.spoke_data
 }
 
 resource "azurerm_public_ip" "parking_nat" {
   name                = "pip-parking-nat"
-  location            = azurerm_resource_group.parking_frontend.location
-  resource_group_name = azurerm_resource_group.parking_frontend.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   allocation_method   = "Static"
   sku                 = "Standard"
-  tags                = local.resource_tags
+  tags                = local.origin_tags.parking_frontend
 
   lifecycle {
     ignore_changes = [ip_tags, zones]
@@ -486,11 +486,11 @@ resource "azurerm_public_ip" "parking_nat" {
 
 resource "azurerm_nat_gateway" "parking" {
   name                    = "nat-parking"
-  location                = azurerm_resource_group.parking_frontend.location
-  resource_group_name     = azurerm_resource_group.parking_frontend.name
+  location                = azurerm_resource_group.main.location
+  resource_group_name     = azurerm_resource_group.main.name
   sku_name                = "Standard"
   idle_timeout_in_minutes = 10
-  tags                    = local.resource_tags
+  tags                    = local.origin_tags.parking_frontend
 }
 
 resource "azurerm_nat_gateway_public_ip_association" "parking" {
@@ -505,7 +505,7 @@ resource "azurerm_subnet_nat_gateway_association" "parking_vms" {
 
 resource "azurerm_route" "app_to_data_via_firewall" {
   name                   = "Default-App-To-Data-Via-Firewall"
-  resource_group_name    = azurerm_resource_group.spoke_web_api.name
+  resource_group_name    = azurerm_resource_group.main.name
   route_table_name       = azurerm_route_table.app_to_nva.name
   address_prefix         = local.demo_address_spaces.spoke_data[0]
   next_hop_type          = "VirtualAppliance"
@@ -514,7 +514,7 @@ resource "azurerm_route" "app_to_data_via_firewall" {
 
 resource "azurerm_route" "app_default_egress_via_firewall" {
   name                   = "Default-App-Internet-Via-Firewall"
-  resource_group_name    = azurerm_resource_group.spoke_web_api.name
+  resource_group_name    = azurerm_resource_group.main.name
   route_table_name       = azurerm_route_table.app_to_nva.name
   address_prefix         = "0.0.0.0/0"
   next_hop_type          = "VirtualAppliance"
@@ -523,7 +523,7 @@ resource "azurerm_route" "app_default_egress_via_firewall" {
 
 resource "azurerm_route" "data_to_app_via_firewall" {
   name                   = "Default-Data-To-App-Via-Firewall"
-  resource_group_name    = azurerm_resource_group.spoke_data.name
+  resource_group_name    = azurerm_resource_group.main.name
   route_table_name       = azurerm_route_table.data_to_nva.name
   address_prefix         = local.demo_address_spaces.spoke_app[0]
   next_hop_type          = "VirtualAppliance"
@@ -532,7 +532,7 @@ resource "azurerm_route" "data_to_app_via_firewall" {
 
 resource "azurerm_route" "data_default_egress_via_firewall" {
   name                   = "Default-Data-Internet-Via-Firewall"
-  resource_group_name    = azurerm_resource_group.spoke_data.name
+  resource_group_name    = azurerm_resource_group.main.name
   route_table_name       = azurerm_route_table.data_to_nva.name
   address_prefix         = "0.0.0.0/0"
   next_hop_type          = "VirtualAppliance"
