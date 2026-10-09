@@ -65,14 +65,25 @@ SCENARIOS  := Resources/scenarios/scripts
 # Scenarios Makefile (includes Parking Manager fault controls)
 include Resources/scenarios/Makefile
 
-.PHONY: deploy infra destroy drift check-env \
+.PHONY: deploy infra preflight preflight-infra destroy drift check-env \
 	connectors connectors-learn repos knowledge-files skills subagents incident-platforms incident-filters scheduled-tasks config-sre-agent
 		
 ## deploy: provision lab infrastructure (Challenge 00)
 deploy: infra
 
-## infra: run terraform init + apply in Resources/infra
-infra:
+PREFLIGHT_TRACK ?= operations
+PREFLIGHT_ARGS ?=
+export PREFLIGHT_TF_DIR := $(abspath $(INFRA_DIR))
+
+## preflight: read-only prerequisite checks; use PREFLIGHT_ARGS=--local before Azure login
+preflight:
+	bash "$(INFRA_DIR)/scripts/preflight.sh" --track "$(PREFLIGHT_TRACK)" $(PREFLIGHT_ARGS)
+
+preflight-infra:
+	bash "$(INFRA_DIR)/scripts/preflight.sh" --track operations
+
+## infra: check prerequisites, then run terraform init + apply in Resources/infra
+infra: preflight-infra
 	terraform -chdir="$(INFRA_DIR)" init
 	terraform -chdir="$(INFRA_DIR)" apply $(TF_VARS)
 

@@ -891,6 +891,7 @@
                 <img src="assets/img/logo-full.png" alt="RVAP" class="rvap-nav-logo" height="32">
             </a>
             <nav class="nav-links" id="navLinks" aria-label="Primary">
+                <a href="#requirements">Before you start</a>
                 <a href="#challenges">Azure Operations Track</a>
                 <a href="#sql-dba-track">SQL DBA Track</a>
                 <a href="#agents">Subagents</a>
@@ -947,6 +948,7 @@
                         read-only SQL Server specialist that investigates Query Store, waits, blocking, and query
                         performance without changing the database.
                     </p>
+                    <p><a href="#requirements">Before you start: check requirements and choose your Linux environment →</a></p>
                     <div class="stats stats-4" aria-label="Lab statistics">
                         <div class="stat"><span class="stat-num" data-count="30">30</span><span class="stat-lbl">Azure
                                 Operations Track</span></div>
@@ -984,6 +986,27 @@
                         <div class="mod-count">DBA-00–09 · Query Store · Blocking · Custom-agent capstone</div>
                     </a>
                 </div>
+            </div>
+        </section>
+
+        <section id="requirements" class="section" aria-labelledby="requirementsHeading">
+            <div class="wrap">
+                <h2 id="requirementsHeading" class="section-title display">Before you start / Requirements</h2>
+                <p class="section-desc">
+                    Run workshop commands in <strong>Linux Bash</strong>, not PowerShell, CMD, or Git Bash.
+                    We recommend the supplied Dev Container in <strong>GitHub Codespaces on your own fork</strong>.
+                    WSL2 with Ubuntu, a local Linux Dev Container, or native Ubuntu are alternatives.
+                    Confirm Azure access, regional quota, and separate Azure/Codespaces costs before deploying.
+                </p>
+                <p>
+                    <a href="README.md#requirements">Read requirements and environment setup →</a>
+                </p>
+                <p>
+                    Then run pre-flight checks in your Linux terminal and resolve failures with your coach:
+                    <a href="Student/Challenge-00.md">Azure Operations prerequisites</a>
+                    or <a href="Student/sql-server-dba/Challenge-00.md">SQL Server DBA prerequisites</a>.
+                    Container setup installs tools; it does not log in to Azure or deploy the lab.
+                </p>
             </div>
         </section>
 
@@ -2080,6 +2103,7 @@
         </div>
     </div>
 
+    <div id="coach-toast"></div>
     <script>
         // ── Challenge card staggered entrance ──────────────────────────────
         const cardObserver = new IntersectionObserver(entries => {
@@ -2125,6 +2149,10 @@
         const drawerPrev = document.getElementById('drawer-prev');
         const drawerNext = document.getElementById('drawer-next');
         const drawerClose = document.getElementById('drawer-close');
+
+        const REQUIREMENTS_FILES = [
+            { label: 'SETUP', file: 'README.md', title: 'Requirements & Environment Setup' },
+        ];
 
         const STUDENT_FILES = [
             { label: 'CH-00', file: 'Student/Challenge-00.md', title: 'Prerequisites & Lab Setup' },
@@ -2200,30 +2228,40 @@
 
         let currentIdx = -1;
         let activeFiles = STUDENT_FILES;
+        let drawerTrigger = null;
 
         function openDrawer(mdFile) {
+            const [file, anchor = ''] = mdFile.split('#');
+            mdFile = file;
             const sIdx = STUDENT_FILES.findIndex(f => f.file === mdFile);
             const cIdx = COACH_FILES.findIndex(f => f.file === mdFile);
             const dbaStudentIdx = DBA_STUDENT_FILES.findIndex(f => f.file === mdFile);
             const dbaCoachIdx = DBA_COACH_FILES.findIndex(f => f.file === mdFile);
+            const requirementsIdx = REQUIREMENTS_FILES.findIndex(f => f.file === mdFile);
             if (sIdx !== -1) { activeFiles = STUDENT_FILES; currentIdx = sIdx; }
             else if (cIdx !== -1) { activeFiles = COACH_FILES; currentIdx = cIdx; }
             else if (dbaStudentIdx !== -1) { activeFiles = DBA_STUDENT_FILES; currentIdx = dbaStudentIdx; }
             else if (dbaCoachIdx !== -1) { activeFiles = DBA_COACH_FILES; currentIdx = dbaCoachIdx; }
-            else { return; } // unknown file — do nothing
-            loadAndRender(currentIdx);
+            else if (requirementsIdx !== -1) { activeFiles = REQUIREMENTS_FILES; currentIdx = requirementsIdx; }
+            else { return false; }
+            if (!drawer.classList.contains('open')) drawerTrigger = document.activeElement;
+            loadAndRender(currentIdx, anchor);
             drawer.classList.add('open');
             drawerOverlay.classList.add('open');
             document.body.style.overflow = 'hidden';
+            drawerClose.focus();
+            return true;
         }
 
         function closeDrawer() {
+            const wasOpen = drawer.classList.contains('open');
             drawer.classList.remove('open');
             drawerOverlay.classList.remove('open');
             document.body.style.overflow = '';
+            if (wasOpen && drawerTrigger) drawerTrigger.focus();
         }
 
-        async function loadAndRender(idx) {
+        async function loadAndRender(idx, anchor = '') {
             const entry = activeFiles[idx];
             drawerTitle.textContent = entry.title;
             drawerPrev.disabled = idx <= 0;
@@ -2236,23 +2274,34 @@
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const text = await res.text();
                 drawerContent.innerHTML = marked.parse(text);
+                const headingIds = new Set();
+                drawerContent.querySelectorAll('h1,h2,h3,h4').forEach(heading => {
+                    const baseId = heading.textContent.toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
+                    let id = baseId;
+                    let suffix = 1;
+                    while (headingIds.has(id)) id = `${baseId}-${suffix++}`;
+                    headingIds.add(id);
+                    heading.id = `md-${id}`;
+                });
+                if (anchor) {
+                    const heading = Array.from(drawerContent.querySelectorAll('[id]')).find(el => el.id === `md-${decodeURIComponent(anchor)}`);
+                    if (heading) heading.scrollIntoView();
+                }
                 drawerContent.querySelectorAll('a[href]').forEach(a => {
                     const href = a.getAttribute('href');
-                    if (href && href.endsWith('.md')) {
+                    if (href && href.startsWith('#')) {
+                        a.addEventListener('click', e => {
+                            const heading = Array.from(drawerContent.querySelectorAll('[id]')).find(el => el.id === `md-${decodeURIComponent(href.slice(1))}`);
+                            if (heading) { e.preventDefault(); heading.scrollIntoView(); }
+                        });
+                    } else if (href && /\.md(?:#.*)?$/.test(href) && !href.startsWith('http') && !href.startsWith('//')) {
                         a.addEventListener('click', e => {
                             e.preventDefault();
                             e.stopPropagation();
                             const base = entry.file.replace(/\/[^\/]+$/, '/');
-                            const resolved = new URL(href, 'http://x/' + base).pathname.replace(/^\//, '');
-                            const sMatch = STUDENT_FILES.findIndex(f => f.file === resolved);
-                            const cMatch = COACH_FILES.findIndex(f => f.file === resolved);
-                            const dbaStudentMatch = DBA_STUDENT_FILES.findIndex(f => f.file === resolved);
-                            const dbaCoachMatch = DBA_COACH_FILES.findIndex(f => f.file === resolved);
-                            if (sMatch !== -1) { activeFiles = STUDENT_FILES; currentIdx = sMatch; loadAndRender(sMatch); }
-                            else if (cMatch !== -1) { activeFiles = COACH_FILES; currentIdx = cMatch; loadAndRender(cMatch); }
-                            else if (dbaStudentMatch !== -1) { activeFiles = DBA_STUDENT_FILES; currentIdx = dbaStudentMatch; loadAndRender(dbaStudentMatch); }
-                            else if (dbaCoachMatch !== -1) { activeFiles = DBA_COACH_FILES; currentIdx = dbaCoachMatch; loadAndRender(dbaCoachMatch); }
-                            else { window.location.href = resolved; }
+                            const resolved = new URL(href, 'http://x/' + base);
+                            const destination = resolved.pathname.replace(/^\//, '') + resolved.hash;
+                            if (!openDrawer(destination)) window.location.href = destination;
                         });
                     } else if (href && (href.startsWith('http') || href.startsWith('//'))) {
                         a.setAttribute('target', '_blank');
@@ -2293,6 +2342,13 @@
                 return;
             }
             if (!drawer.classList.contains('open')) return;
+            if (e.key === 'Tab') {
+                const focusable = Array.from(drawer.querySelectorAll('a[href],button:not(:disabled)'));
+                const first = focusable[0];
+                const last = focusable[focusable.length - 1];
+                if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+                else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+            }
             if (e.key === 'ArrowLeft' && currentIdx > 0) { currentIdx--; loadAndRender(currentIdx); }
             if (e.key === 'ArrowRight' && currentIdx < activeFiles.length - 1) { currentIdx++; loadAndRender(currentIdx); }
         });
@@ -2304,13 +2360,11 @@
             if (!link) return;
             if (link.closest('#drawer')) return;
             const href = link.getAttribute('href');
-            if (!href || !href.endsWith('.md')) return;
-            e.preventDefault();
-            openDrawer(href);
+            if (!href || !/\.md(?:#.*)?$/.test(href)) return;
+            if (openDrawer(href)) e.preventDefault();
         });
     </script>
     <script src="assets/js/shell.js"></script>
-    <div id="coach-toast"></div>
 
 </body>
 

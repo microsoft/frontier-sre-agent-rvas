@@ -6,9 +6,15 @@
 
 ## Purpose
 
-- Establish the baseline: a student-owned repository fork, Azure authentication, authoritative Coach Terraform deployment, a reachable Azure SRE Agent, and working validation.
+- Establish the baseline: a student-owned repository fork, Linux pre-flight readiness, Azure authentication, Student workload Terraform deployment, a reachable Azure SRE Agent, and working validation.
 - Students manually create the control-plane agent in the portal (Terraform intentionally does not create it for Student's root); `make deploy` in this challenge only provisions the workload every later data-plane capability depends on, and Challenges 01 through 06 build the data plane.
 - Expected time: 30–45 minutes.
+
+Use the shared [Requirements](../README.md#requirements) and
+[Coach readiness checklist](./README.md#before-the-event-environment-readiness)
+before teaching. Confirm Linux Bash and review `make preflight` output before
+any infrastructure deployment. The Student uses the Student Terraform root,
+not the Coach reference deployment.
 
 ## Mini-Lecture (5–7 min before challenge)
 
@@ -26,6 +32,7 @@
 - The student created and cloned their own fork. `origin` points to that fork and `upstream` points to `microsoft/frontier-sre-agent-rvas`.
 - GitHub Issues are enabled on the student's fork.
 - `make deploy` completes from `Student/` and provisions the workload only.
+- The student resolved all prerequisite failures and reviewed warnings with a coach.
 - The student created the SRE Agent themselves in the portal, associated the workload resource group, and granted it Contributor.
 - `Student/.env` is filled in with `SRE_AGENT_RG` and `SRE_AGENT_NAME` so later `make` targets can reach the agent.
 - Baseline traffic completes via the Student scenario targets.
@@ -33,6 +40,13 @@
 
 ## Common Issues and Hints
 
+- **Symptom:** `make: command not found`, `terraform: command not found`, or `Required command not found: jq`. **Fix:** confirm the terminal is inside Linux/WSL/the container; rebuild the Dev Container or install the shared Requirements inside Ubuntu, not only on Windows.
+- **Symptom:** `Required YAML parser not found` or `yq` rejects `-o=json`. **Fix:** install `python3-yaml` or the Mike Farah yq implementation; arbitrary packages named yq are not compatible.
+- **Symptom:** `envsubst: command not found` or `timeout: command not found`. **Fix:** install `gettext-base` and GNU `coreutils` inside the active Linux environment.
+- **Symptom:** `/usr/bin/env: 'bash\r': No such file or directory` or shell errors containing `$'\r'`. **Fix:** check out scripts with LF endings (repository attributes enforce this on fresh checkouts); do not run CRLF shell scripts. Use WSL2, not a Windows Bash shim, and verify Linux tool paths with `command -v`.
+- **Symptom:** Codespaces creation is denied or quota is exhausted. **Fix:** confirm organization policy and billing entitlement; use the documented WSL2/local Dev Container fallback.
+- **Symptom:** Terraform uses a different subscription/tenant from the CLI. **Fix:** align `az account show` with `ARM_SUBSCRIPTION_ID`/`ARM_TENANT_ID` and reauthenticate in the Linux terminal. Do not share tokens to fix access.
+- **Symptom:** pre-flight reports insufficient vCPU quota or an unverifiable permission/provider check. **Fix:** have the subscription owner verify the exact regional profile, available Standard_B2s_v2-family and regional quota, provider registration, and role-assignment rights; do not treat WARN as PASS.
 - **Symptom:** Later Code Access or pull-request workflows target the Microsoft repository or cannot push a branch. **Fix:** run `git remote -v`; confirm `origin` points to the student's fork and `upstream` points to `https://github.com/microsoft/frontier-sre-agent-rvas.git`.
 - **Symptom:** A later incident workflow cannot create a GitHub issue, or the fork has no **Issues** tab. **Fix:** open the fork's **Settings** → **General** → **Features** and enable **Issues**.
 - **Symptom:** `make deploy` fails early with Azure authentication or subscription errors. **Fix:** verify `az account show`, select the intended subscription, and rerun the Terraform plan before applying.

@@ -22,6 +22,7 @@
 
 ## Expected Student Output
 
+* Linux environment selected, local/DBA pre-flight failures resolved, and warnings reviewed.
 * `sql/06_validate.sql` returns `InstallationValidation = PASS`.
 * `/healthz` responds successfully and `/mcp` rejects anonymous requests.
 * `sqlserver-mcp` exposes four read-only tools.
@@ -30,6 +31,9 @@
 
 ## Common Issues and Hints
 
+* **Symptom:** `sqlcmd: command not found` or an Entra login option is unsupported. **Fix:** rebuild the supplied Dev Container or install the approved Microsoft SQL client inside Linux; verify its authentication options against the approved database path. A tool-presence check does not prove SQL login.
+* **Symptom:** `containerapp` extension is missing. **Fix:** install it explicitly with `az extension add --name containerapp`; pre-flight only reports the missing extension.
+* **Symptom:** Codespaces is authenticated to GitHub but `az account show` fails. **Fix:** authenticate Azure inside the Linux terminal, using device-code login when browser login is unavailable, then select the approved subscription.
 * **Symptom:** `CREATE USER ... FROM EXTERNAL PROVIDER` cannot resolve the identity. **Fix:** verify the Azure SQL logical server's Microsoft Entra identity and directory-read permissions, then use the managed identity Object ID for duplicate-name disambiguation.
 * **Symptom:** The connector receives `401` or `403`. **Fix:** verify the approved audience and the Azure SRE Agent caller's `Mcp.Invoke` application-role assignment.
 * **Symptom:** SQL authentication fails for the token identity. **Fix:** run `sql/07_add_ca_mcp_managed_identity.sql` in the user database and confirm the external user belongs to `sre_dba_observer`.
@@ -86,4 +90,3 @@ If that is not permitted, state the exact boundary and do not use another tool.
 
 The agent must refuse both operations, avoid a fallback connection, and confirm
 that it changed nothing.
-

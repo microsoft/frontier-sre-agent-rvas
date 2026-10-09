@@ -39,15 +39,58 @@ Coach and facilitator guides for all 20 workshop challenges.
 - The Berlin MCP connector used in Challenges 07 and 08 is deployed via Terraform and ships in the default config bundle.
 - Challenge 10 uses `make trigger-parking-report` / `make restore-parking-report` to emit and clear synthetic `VMHealthStatus_CL` evidence. Challenge 15 uses `make trigger-parking-service-down` / `make restore-parking-service` for a real Paris API service outage.
 
+## Before the Event: Environment Readiness
+
+Use the shared [Requirements](../README.md#requirements) as the source of truth
+for tools and supported environments. Recommend **Codespaces on each student's
+fork**; confirm policy, entitlement/billing, and a WSL2/Ubuntu fallback before
+the event. Run all Make commands in Linux Bash, including Coach commands.
+
+- Confirm participants own their forks, enabled Issues, and can authorize the
+  GitHub connector. GitHub login is separate from Azure login.
+- Prepare provider registrations, regional Network Watcher, role-assignment
+  permissions and available family/regional quota with the subscription owner.
+- Isolate team and Coach deployments by subscription or intentionally distinct
+  resource names. Separate Terraform state does not prevent default-name collisions.
+- Rebuild and verify the Dev Container before using it for the event.
+- Require zero pre-flight failures and explicit review of warnings before
+  students deploy; effective RBAC/Policy and live service capacity are not certified.
+- Preserve private Terraform state and `.env` through the workshop and cleanup.
+  Never advise deletion of a Codespace while it is the only copy of active state.
+
+From the repository root in Linux Bash:
+
+```bash
+cd Coach
+make preflight PREFLIGHT_ARGS=--local
+# Authenticate here and select the intended Coach subscription.
+az account show --query "{name:name,id:id,state:state}" -o table
+make preflight
+make infra
+# Apply reference-agent capabilities only when ready:
+make config-sre-agent
+```
+
+`make deploy` in Coach combines infrastructure and agent configuration;
+`make deploy` in Student provisions workloads **only**. Do not use the Coach
+reference path to bypass the student's manual agent-creation exercise.
+Both `infra` targets stop before Terraform init/apply on confirmed pre-flight
+blockers. Use the same `TF_VARS` for pre-flight/deployment overrides.
+
+Maintainers can run the focused read-only test suite from the repository root:
+`bash Student/Resources/infra/scripts/tests/preflight.test.sh`.
+It uses fake Azure/Terraform responses; it does not deploy the lab.
+
 ## Azure Requirements
 
 | Resource | Requirement |
 |---|---|
-| Azure subscription | Contributor access; resource providers: Microsoft.App, Microsoft.Network, Microsoft.Compute, Microsoft.OperationalInsights |
+| Azure subscription | Resource creation plus role-assignment rights: Owner, or Contributor with appropriate RBAC administration rights. See shared Requirements for all providers. |
 | Region | Any region that supports Azure Container Apps and Azure SRE Agent (Sweden Central recommended) |
-| Quota | At least 8 vCPUs available in the target region (Standard_D2s_v3 or equivalent) |
+| Quota | Default: 8 Standard_B2s_v2 VMs / 16 additional vCPUs, in both the applicable family and regional quotas; Madrid/Paris opt-outs remove 2 vCPUs each |
+| Network Watcher | Existing NetworkWatcher_&lt;region&gt; in NetworkWatcherRG, for the actual Terraform region |
 | Terraform | v1.5+ with AzAPI provider |
-| GitHub | Organization or personal account with OAuth app creation rights |
+| GitHub | Student-owned fork, Issues enabled, and permission to authorize the workshop GitHub connector |
 
 ## Suggested Agenda
 
@@ -86,7 +129,7 @@ Coach and facilitator guides for all 20 workshop challenges.
 
 | Ch | Title | Key Concepts | Known Blockers | Est. Time | When to Intervene |
 |---|---|---|---|---|---|
-| 00 | Prerequisites | Terraform deploy, SRE Agent creation, resource group association | Slow Container Apps provisioning (~20 min); missing resource provider registration | **30–45 min** | If `make deploy` fails after 25 min |
+| 00 | Prerequisites | Linux environment, pre-flight, Terraform deploy, SRE Agent creation, resource group association | Missing tools; wrong shell/subscription; Network Watcher/provider/quota blockers | **30–45 min** | Before deployment if pre-flight fails or warnings have not been reviewed |
 | 01 | Connect Your Codebase | GitHub OAuth connector, repository link, governance boundary | OAuth authorization step missed in portal; connector applied but not authorized | **15 min** | If agent still can't read code after OAuth |
 | 02 | Explore the Knowledge Base | RAG retrieval, knowledge grounding, hallucination baseline | Knowledge ingestion delay (~30 s); vague docs produce vague answers | **15–20 min** | If agent gives identical answer before/after knowledge upload |
 | 03 | Discover Operational Skills | Skill YAMLs, tool grants, safety policies, boundary testing | `make skills` succeeds but skills not showing in portal (propagation delay) | **20 min** | If boundary test (delete rule) succeeds unexpectedly |

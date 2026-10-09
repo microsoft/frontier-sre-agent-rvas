@@ -1,0 +1,45 @@
+name: Workshop pre-flight checks
+
+on:
+  pull_request:
+    paths:
+      - '.devcontainer/**'
+      - 'Student/Makefile'
+      - 'Coach/Makefile'
+      - 'Student/Resources/infra/scripts/preflight.sh'
+      - 'Student/Resources/infra/scripts/tests/**'
+      - '.github/workflows/preflight-checks.yml'
+  push:
+    branches: [main]
+    paths:
+      - '.devcontainer/**'
+      - 'Student/Makefile'
+      - 'Coach/Makefile'
+      - 'Student/Resources/infra/scripts/preflight.sh'
+      - 'Student/Resources/infra/scripts/tests/**'
+      - '.github/workflows/preflight-checks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check shell syntax
+        run: bash -n Student/Resources/infra/scripts/preflight.sh .devcontainer/setup.sh Student/Resources/infra/scripts/tests/preflight.test.sh
+      - name: Exercise read-only checks and deployment gates
+        run: bash Student/Resources/infra/scripts/tests/preflight.test.sh
+
+  devcontainer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build and start the workshop container
+        run: npx --yes @devcontainers/cli@0.89.0 up --workspace-folder .
+      - name: Verify both local toolchains without Azure credentials
+        run: |
+          npx --yes @devcontainers/cli@0.89.0 exec --workspace-folder . bash Student/Resources/infra/scripts/preflight.sh --local
+          npx --yes @devcontainers/cli@0.89.0 exec --workspace-folder . bash Student/Resources/infra/scripts/preflight.sh --local --track sql-dba

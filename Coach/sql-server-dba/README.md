@@ -32,7 +32,7 @@ help students distinguish observation, inference, recommendation, and action.
 | Database | Dedicated `stockOrders` workshop database on Azure SQL, Managed Instance, or a supported SQL Server target |
 | Identity | User-assigned managed identity mapped only to `sre_dba_observer` |
 | Network | DNS and TLS connectivity from the MCP host to the SQL endpoint |
-| Local tools | Azure CLI, approved SQL client, .NET 10 SDK, and optional Docker |
+| Local tools | Linux Bash and shared Requirements; Azure CLI 2.62+, Container Apps extension, and approved SQL client (`sqlcmd` for command-line pre-flight). .NET 10 SDK only for local source builds/tests; Docker/registry build access for image builds |
 
 ## Suggested Agenda
 
@@ -91,6 +91,20 @@ observed output and error messages with students, not the solution sequence.
 
 ## Coach Preparation
 
+Start with [shared Requirements](../../README.md#requirements).
+Confirm Codespaces entitlement/policy or a working WSL2/Linux container fallback.
+Run `make preflight PREFLIGHT_TRACK=sql-dba` from `Coach/` after authenticating
+Azure there; use `PREFLIGHT_ARGS=--local` before login. Resolve failures and
+review warnings, then separately verify SQL administrator access, Entra identity
+resolution, managed-identity database role membership, MCP caller authorization,
+and DNS/TLS connectivity. Do not widen the read-only role to bypass blockers.
+
+The Coach reference Terraform root also deploys Operations workloads, so its
+`make infra` gate retains **Operations** checks even when you run a separate DBA
+readiness check. Keep both pre-flight results when preparing the reference lab.
+Use isolated subscriptions/names and preserve private Terraform state through
+cleanup; deleting a Codespace does not delete its Azure resources.
+
 1. Deploy the reference hosting and database with the
    [SRE DBA Terraform module](../Solutions/infra/modules/workload/sre-dba-infra/README.md)
    (`deploy_sre_dba_infra=true`), or follow the manual
@@ -112,4 +126,3 @@ az group delete --name "<resource-group>" --yes --no-wait
 
 If the database is hosted separately, run
 `Student/Resources/sql-server-mcp/sql/99_teardown.sql` in the workshop database.
-

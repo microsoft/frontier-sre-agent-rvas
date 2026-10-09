@@ -52,6 +52,24 @@ under the included [MIT license](./LICENSE).
 
 ## Prerequisites
 
+Start with the repository's [shared Requirements](../../../README.md#requirements)
+and select a Linux environment. The supplied Codespaces/Dev Container includes
+the common tools, Container Apps extension, and Microsoft ODBC `sqlcmd`.
+Authenticate Azure in that terminal; GitHub authentication does not grant Azure
+or SQL access. From the repository root, run:
+
+```bash
+bash Student/Resources/infra/scripts/preflight.sh --local --track sql-dba
+# After Azure login and subscription selection:
+bash Student/Resources/infra/scripts/preflight.sh --track sql-dba
+```
+
+These checks never install tools, modify Azure resources, or log in to SQL.
+Resolve failures and review warnings with your coach. SQL connectivity and
+permissions still require the validation below. A .NET 10 SDK is needed only
+for local source builds/tests; the supplied Dockerfile provides its own SDK.
+Docker or an approved registry build path is needed when building the image.
+
 Install or obtain:
 
 * Azure CLI 2.62 or later with the Container Apps extension

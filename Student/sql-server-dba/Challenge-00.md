@@ -21,6 +21,11 @@ Use the
 [SQL Server MCP deployment guide](../Resources/sql-server-mcp/README.md) to
 achieve these outcomes:
 
+First select a Linux environment using the shared
+[Requirements](../../README.md#requirements). Codespaces on your own fork
+supplies the common tooling and command-line SQL client. It does not
+authenticate Azure or grant database access.
+
 * Install and validate the `stockOrders` sample database in an approved lab
   environment
 * Map the MCP workload identity to the `sre_dba_observer` database role
@@ -35,10 +40,15 @@ achieve these outcomes:
 
 ## Pre-flight Validation Checklist
 
-Run these commands before deploying. Every check must pass:
+Run these commands in Linux Bash from the repository root before deploying.
+Resolve all failures and review warnings with your coach:
 
 ```bash
-# Azure CLI and active subscription
+# Local-only checks do not require an Azure login.
+bash Student/Resources/infra/scripts/preflight.sh --local --track sql-dba
+
+# Authenticate separately inside this Linux environment.
+# Use az login --use-device-code when browser login is unavailable.
 az version
 az account show --query "{subscription:name,id:id,state:state}" --output table
 
@@ -47,9 +57,19 @@ curl --version
 sqlcmd -?
 
 # Container Apps extension
-az extension add --name containerapp --upgrade
 az extension show --name containerapp --query "{name:name,version:version}" --output table
+
+# Read-only Azure/DBA prerequisites; no database login or role changes.
+cd Student
+make preflight PREFLIGHT_TRACK=sql-dba
 ```
+
+If the extension is missing, install it explicitly using the shared setup guide;
+pre-flight never installs/upgrades tools. Have your coach confirm the approved
+SQL administrator, managed-identity mapping, MCP caller authorization, and
+network/TLS path. A local tool check cannot prove database connectivity.
+Keep the supplied observer role unchanged. Preserve private configuration/state
+and clean up your dedicated lab before deleting its Codespace.
 
 ## Success Criteria
 

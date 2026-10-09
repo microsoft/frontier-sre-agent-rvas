@@ -66,15 +66,27 @@ TF_VARS ?=
 
 .DEFAULT_GOAL := deploy
 
-.PHONY: deploy infra destroy config-sre-agent
+.PHONY: deploy infra preflight preflight-infra destroy config-sre-agent
 
 include ../Student/Resources/scenarios/Makefile
 
 ## deploy: provision infrastructure and configure the Azure SRE Agent
-deploy: infra config-sre-agent
+deploy: infra
+	$(MAKE) config-sre-agent
 
-## infra: run terraform init + apply in Solutions/infra
-infra:
+PREFLIGHT_TRACK ?= operations
+PREFLIGHT_ARGS ?=
+export PREFLIGHT_TF_DIR := $(abspath $(INFRA_DIR))
+
+## preflight: read-only checks shared with Students; select sql-dba for DBA prerequisites
+preflight:
+	bash "../Student/Resources/infra/scripts/preflight.sh" --track "$(PREFLIGHT_TRACK)" $(PREFLIGHT_ARGS)
+
+preflight-infra:
+	bash "../Student/Resources/infra/scripts/preflight.sh" --track operations
+
+## infra: check prerequisites, then run terraform init + apply in Solutions/infra
+infra: preflight-infra
 	terraform -chdir="$(INFRA_DIR)" init
 	terraform -chdir="$(INFRA_DIR)" apply $(TF_VARS)
 
