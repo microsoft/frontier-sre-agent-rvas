@@ -98,7 +98,13 @@ check() {
 }
 check 'local ready' 0 '0 failure(s)' --local
 if grep -q 'az account' "$MOCK_LOG"; then echo 'Local checks accessed Azure' >&2; exit 1; fi
-check 'new lab ready before state' 0 'cores: 32' 
+check 'new lab ready before state' 0 'Checking vCPU availability in region swedencentral'
+grep -q 'cores: 32' "$temp/output"
+grep -q '1 warning(s)' "$temp/output"
+if grep -q 'Regional service capacity' "$temp/output"; then
+  echo 'FAILED new lab ready before state: obsolete manual confirmation warning was emitted' >&2
+  exit 1
+fi
 MOCK_CASE=stringquota check 'string quota values' 0 'cores: 32'
 MOCK_CASE=windows check 'Windows shell' 1 'Run inside Linux' --local
 MOCK_CASE=wsl1 check 'WSL1 unsupported' 1 'Convert your Ubuntu distribution to WSL2' --local
