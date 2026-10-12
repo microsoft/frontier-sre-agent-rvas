@@ -150,6 +150,7 @@ PY
     if [[ -n "${PREFLIGHT_TF_DIR:-}" ]] && available terraform; then
       if state="$(terraform -chdir="$PREFLIGHT_TF_DIR" state list 2>/dev/null)" && [[ -n "$state" ]]; then existing=true; fi
     fi
+    printf 'Checking vCPU availability in region %s...\n' "$location"
     if skus="$(az vm list-skus --location "$location" --resource-type virtualMachines --size Standard_B2s_v2 --all --output json 2>/dev/null)" &&
        family="$(jq -er '[.[] | select(.name=="Standard_B2s_v2")][0].family' <<< "$skus")" &&
        usage="$(az vm list-usage --location "$location" --output json 2>/dev/null)"; then
@@ -157,7 +158,7 @@ PY
         warn 'Standard_B2s_v2 has a regional restriction; coach must confirm deployability for this subscription.'
       fi
       for quota in cores "$family"; do
-        if remaining="$(jq -er --arg quota "$quota" '[.[] | select((.name.value | ascii_downcase)==($quota | ascii_downcase))][0] | .limit - .currentValue' <<< "$usage")" && [[ "$remaining" =~ ^-?[0-9]+$ ]]; then
+        if remaining="$(jq -er --arg quota "$quota" '[.[] | select((.name.value | ascii_downcase)==($quota | ascii_downcase))][0] | (.limit | tonumber) - (.currentValue | tonumber)' <<< "$usage")" && [[ "$remaining" =~ ^-?[0-9]+$ ]]; then
           if ((remaining >= required)); then pass "$quota: $remaining vCPUs available"
           elif "$existing"; then warn "$quota: $remaining vCPUs free; existing state detected. Coach must verify capacity for only the planned additions."
           else fail "$quota: $remaining vCPUs free; a new lab needs $required. Request quota or choose an approved region."; fi
@@ -168,5 +169,4 @@ PY
 else
   warn 'SQL administrator, Entra user mapping, MCP caller role, DNS/TLS and database connectivity require the DBA track validation; no database login is attempted.'
 fi
-warn 'Regional service capacity, GitHub fork ownership/Issues, and Codespaces policy/billing require manual confirmation. See README Requirements.'
 summary

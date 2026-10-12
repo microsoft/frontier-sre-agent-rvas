@@ -61,7 +61,11 @@ case "$name" in
       "vm list-usage "*)
         limit="${MOCK_LIMIT:-32}"
         [[ "${MOCK_CASE:-}" != quota && "${MOCK_CASE:-}" != existing ]] || limit=8
-        printf '[{"name":{"value":"cores"},"limit":%s,"currentValue":0},{"name":{"value":"standardBSv2Family"},"limit":%s,"currentValue":0}]\n' "$limit" "$limit" ;;
+        if [[ "${MOCK_CASE:-}" == stringquota ]]; then
+          printf '[{"name":{"value":"cores"},"limit":"%s","currentValue":"0"},{"name":{"value":"standardBSv2Family"},"limit":"%s","currentValue":"0"}]\n' "$limit" "$limit"
+        else
+          printf '[{"name":{"value":"cores"},"limit":%s,"currentValue":0},{"name":{"value":"standardBSv2Family"},"limit":%s,"currentValue":0}]\n' "$limit" "$limit"
+        fi ;;
       *) echo "Unexpected or mutating Azure command: $*" >&2; exit 99 ;;
     esac ;;
 esac
@@ -95,6 +99,7 @@ check() {
 check 'local ready' 0 '0 failure(s)' --local
 if grep -q 'az account' "$MOCK_LOG"; then echo 'Local checks accessed Azure' >&2; exit 1; fi
 check 'new lab ready before state' 0 'cores: 32' 
+MOCK_CASE=stringquota check 'string quota values' 0 'cores: 32'
 MOCK_CASE=windows check 'Windows shell' 1 'Run inside Linux' --local
 MOCK_CASE=wsl1 check 'WSL1 unsupported' 1 'Convert your Ubuntu distribution to WSL2' --local
 MOCK_CASE=oldterraform check 'Terraform minimum' 1 'Terraform 1.5+' --local
