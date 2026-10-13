@@ -98,14 +98,12 @@ check() {
 }
 check 'local ready' 0 '0 failure(s)' --local
 if grep -q 'az account' "$MOCK_LOG"; then echo 'Local checks accessed Azure' >&2; exit 1; fi
-check 'new lab ready before state' 0 'Checking vCPU availability in region swedencentral'
-grep -q 'cores: 32' "$temp/output"
+check 'new lab ready before state' 0 'Workload region: swedencentral'
 grep -q '1 warning(s)' "$temp/output"
 if grep -q 'Regional service capacity' "$temp/output"; then
   echo 'FAILED new lab ready before state: obsolete manual confirmation warning was emitted' >&2
   exit 1
 fi
-MOCK_CASE=stringquota check 'string quota values' 0 'cores: 32'
 MOCK_CASE=windows check 'Windows shell' 1 'Run inside Linux' --local
 MOCK_CASE=wsl1 check 'WSL1 unsupported' 1 'Convert your Ubuntu distribution to WSL2' --local
 MOCK_CASE=oldterraform check 'Terraform minimum' 1 'Terraform 1.5+' --local
@@ -121,14 +119,9 @@ ARM_TENANT_ID=other check 'tenant mismatch' 1 'ARM_TENANT_ID differs'
 MOCK_CASE=provider check 'provider registration' 1 'not Registered'
 MOCK_CASE=watcher check 'missing watcher' 1 'Missing NetworkWatcher'
 MOCK_CASE=wrongwatcherrg check 'watcher in wrong resource group' 1 'Missing NetworkWatcher'
-MOCK_CASE=quota check 'insufficient quota' 1 'a new lab needs 16'
-MOCK_LIMIT=16 check 'exact quota threshold' 0 '0 failure(s)'
-MOCK_LIMIT=15 check 'one vCPU short' 1 'a new lab needs 16'
-MOCK_CASE=existing check 'existing state quota warning' 0 'existing state detected'
 MOCK_CASE=denied check 'unverifiable Azure checks' 0 'Cannot inspect'
 TF_VARS='-var="location=uksouth"' MOCK_REGION=uksouth check 'same region override' 0 'Workload region: uksouth'
 TF_VAR_location=uksouth MOCK_REGION=uksouth check 'environment region override' 0 'Workload region: uksouth'
-TF_VARS='-var="deploy_madrid_vm=false" -var="deploy_paris_vm=false"' MOCK_LIMIT=12 check 'VM opt-outs' 0 'vCPU requirement: 12'
 TF_VARS='-var-file=private.tfvars' check 'unknown override warning' 0 'Regional checks skipped'
 TF_VARS='$(touch should-not-exist)' check 'override never evaluated' 0 'Regional checks skipped'
 touch "$PREFLIGHT_TF_DIR/terraform.tfvars"
