@@ -299,6 +299,49 @@
             color: #032254;
         }
 
+        /* ─── Fabric SRE Agent track ───────────────────────────────────── */
+        #fabric-sre-track {
+            border-bottom: 1px solid var(--border);
+            background: #f5f8fe;
+        }
+
+        .fabric-track-rail {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .55rem;
+            margin-top: 1.5rem;
+        }
+
+        .fabric-track-rail span {
+            font-family: var(--font-mono, monospace);
+            font-size: .65rem;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: #075e55;
+            border: 1px solid #9bd0c7;
+            background: #effaf8;
+            padding: .4rem .7rem;
+            border-radius: 3px;
+        }
+
+        .fabric-track-grid .challenge-card {
+            --c-color: #0f7b6c;
+        }
+
+        .fabric-track-grid {
+            background: #fff;
+        }
+
+        .fabric-track-grid .challenge-card:hover {
+            background: #effaf8;
+            border-color: #0f7b6c;
+            box-shadow: 0 4px 16px rgba(15, 123, 108, .12);
+        }
+
+        .fabric-track-grid .card-phase-badge {
+            background: rgba(15, 123, 108, .08);
+        }
+
         /* ─── Subagent inventory ────────────────────────────────────────── */
         #agents {
             border-bottom: 1px solid var(--border);
@@ -894,6 +937,7 @@
                 <a href="#requirements">Before you start</a>
                 <a href="#challenges">Azure Operations Track</a>
                 <a href="#sql-dba-track">SQL DBA Track</a>
+                <a href="#fabric-sre-track">Fabric SRE Track</a>
                 <a href="#agents">Subagents</a>
                 <a href="scenarios.html">Scenario Explorer</a>
                 <a class="gh" href="https://github.com/microsoft/frontier-sre-agent-rvas" target="_blank"
@@ -944,14 +988,14 @@
                     <span class="eyebrow">RVAS — Azure SRE Agent</span>
                     <h1 id="heroHeading">Autonomous SRE with <span class="accent">Azure SRE Agent</span></h1>
                     <p class="lede">
-                        Two hands-on tracks and 30 challenges: build an Azure operations agent, or connect a
-                        read-only SQL Server specialist that investigates Query Store, waits, blocking, and query
-                        performance without changing the database.
+                        Three hands-on tracks and 40 challenges: build an Azure operations agent, investigate SQL
+                        Server performance without changing the database, or analyze Microsoft Fabric FinOps and
+                        reliability with a read-only specialist.
                     </p>
                     <p><a href="#requirements">Before you start: check requirements and choose your Linux environment →</a></p>
                     <div class="stats stats-4" aria-label="Lab statistics">
-                        <div class="stat"><span class="stat-num" data-count="30">30</span><span class="stat-lbl">Azure
-                                Operations Track</span></div>
+                        <div class="stat"><span class="stat-num" data-count="20">20</span><span class="stat-lbl">Azure
+                                Operations Challenges</span></div>
                         <div class="stat"><span class="stat-num" data-count="6">6</span><span
                                 class="stat-lbl">Subagents</span></div>
                         <div class="stat"><span class="stat-num" data-count="8">8</span><span
@@ -985,6 +1029,10 @@
                         <div class="mod-name">SQL Server DBA track</div>
                         <div class="mod-count">DBA-00–09 · Query Store · Blocking · Custom-agent capstone</div>
                     </a>
+                    <a href="#fabric-sre-track" class="hero-mod-card" style="--mod-color:#0F7B6C">
+                        <div class="mod-name">Fabric FinOps &amp; RCA track</div>
+                        <div class="mod-count">FAB-00–09 · Capacity cost · Workload RCA · Spark optimization</div>
+                    </a>
                 </div>
             </div>
         </section>
@@ -1003,8 +1051,9 @@
                 </p>
                 <p>
                     Then run pre-flight checks in your Linux terminal and resolve failures with your coach:
-                    <a href="Student/Challenge-00.md">Azure Operations prerequisites</a>
-                    or <a href="Student/sql-server-dba/Challenge-00.md">SQL Server DBA prerequisites</a>.
+                    <a href="Student/Challenge-00.md">Azure Operations prerequisites</a>,
+                    <a href="Student/sql-server-dba/Challenge-00.md">SQL Server DBA prerequisites</a>, or
+                    <a href="Student/fabric-sre-agent/Challenge-00.md">Fabric SRE Agent prerequisites</a>.
                     Container setup installs tools; it does not log in to Azure or deploy the lab.
                 </p>
             </div>
@@ -1733,6 +1782,122 @@
             </div>
         </section>
 
+        <!-- Fabric SRE Agent track -->
+        <section id="fabric-sre-track" class="section">
+            <div class="wrap">
+                <div class="challenges-header">
+                    <div>
+                        <h2 class="section-title display reveal">Fabric SRE Agent — FinOps &amp; RCA</h2>
+                        <p class="section-desc reveal">
+                            Build a read-only specialist for Microsoft Fabric. Choose FUAM for scheduled, daily
+                            consumption evidence or Capacity Events for per-operation CU, then ground costs and
+                            incident analysis in the selected source's actual precision and limits.
+                        </p>
+                        <div class="fabric-track-rail" aria-label="Fabric SRE Agent track boundaries">
+                            <span>Read-only analysis</span>
+                            <span>Visible cost math</span>
+                            <span>Evidence-led RCA</span>
+                            <span>FUAM or Capacity Events</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="challenges-grid fabric-track-grid">
+                    <a class="challenge-card full" data-track="fabric-sre"
+                        href="Student/fabric-sre-agent/Challenge-00.md">
+                        <div class="card-bg-number display">00</div>
+                        <div class="card-inner">
+                            <div>
+                                <div class="card-top">
+                                    <span class="card-phase-badge">Readiness</span>
+                                    <span class="card-num mono">FAB — 00</span>
+                                </div>
+                                <h3 class="card-title display">Prepare the Fabric<br>SRE Agent Lab</h3>
+                            </div>
+                            <div style="display:flex;flex-direction:column;justify-content:space-between;">
+                                <p class="card-desc">
+                                    Establish the identity, tenant, capacity, workspace, and administration
+                                    boundaries needed for a safe FinOps and reliability investigation.
+                                </p>
+                                <div class="card-footer">
+                                    <div class="card-tags">
+                                        <span class="card-tag">Fabric access</span>
+                                        <span class="card-tag">managed identity</span>
+                                        <span class="card-tag">read-only</span>
+                                    </div>
+                                    <div class="card-arrow mono">Open track →</div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+
+                    <a class="challenge-card" data-track="fabric-sre" href="Student/fabric-sre-agent/Challenge-01.md">
+                        <div class="card-bg-number display">01</div>
+                        <div class="card-top"><span class="card-phase-badge">Telemetry</span><span class="card-num mono">FAB — 01</span></div>
+                        <h3 class="card-title display">Choose a Consumption<br>Backend</h3>
+                        <p class="card-desc">Compare FUAM's daily grain with streamed per-operation Capacity Events.</p>
+                        <div class="card-footer"><div class="card-tags"><span class="card-tag">FUAM</span><span class="card-tag">Eventhouse</span></div><div class="card-arrow mono">Open →</div></div>
+                    </a>
+                    <a class="challenge-card" data-track="fabric-sre" href="Student/fabric-sre-agent/Challenge-02.md">
+                        <div class="card-bg-number display">02</div>
+                        <div class="card-top"><span class="card-phase-badge">Connect</span><span class="card-num mono">FAB — 02</span></div>
+                        <h3 class="card-title display">Connect and Ground<br>the Agent</h3>
+                        <p class="card-desc">Configure managed identity, read-only connectors, pricing, and live skills.</p>
+                        <div class="card-footer"><div class="card-tags"><span class="card-tag">MCP</span><span class="card-tag">Fabric skills</span></div><div class="card-arrow mono">Open →</div></div>
+                    </a>
+                    <a class="challenge-card" data-track="fabric-sre" href="Student/fabric-sre-agent/Challenge-03.md">
+                        <div class="card-bg-number display">03</div>
+                        <div class="card-top"><span class="card-phase-badge">FinOps</span><span class="card-num mono">FAB — 03</span></div>
+                        <h3 class="card-title display">Prove Cost Math<br>and Precision</h3>
+                        <p class="card-desc">Recompute CU-to-cost conversions and label the estimate's evidence limits.</p>
+                        <div class="card-footer"><div class="card-tags"><span class="card-tag">CU units</span><span class="card-tag">retail rates</span></div><div class="card-arrow mono">Open →</div></div>
+                    </a>
+                    <a class="challenge-card" data-track="fabric-sre" href="Student/fabric-sre-agent/Challenge-04.md">
+                        <div class="card-bg-number display">04</div>
+                        <div class="card-top"><span class="card-phase-badge">Analyze</span><span class="card-num mono">FAB — 04</span></div>
+                        <h3 class="card-title display">Explain Workspace<br>and Item Spend</h3>
+                        <p class="card-desc">Compare periods, rank contributors, resolve names, and disclose freshness.</p>
+                        <div class="card-footer"><div class="card-tags"><span class="card-tag">workspaces</span><span class="card-tag">trends</span></div><div class="card-arrow mono">Open →</div></div>
+                    </a>
+                    <a class="challenge-card" data-track="fabric-sre" href="Student/fabric-sre-agent/Challenge-05.md">
+                        <div class="card-bg-number display">05</div>
+                        <div class="card-top"><span class="card-phase-badge">Attribute</span><span class="card-num mono">FAB — 05</span></div>
+                        <h3 class="card-title display">Attribute Runs<br>and Pipelines</h3>
+                        <p class="card-desc">Separate item consumption, pipeline children, and ambiguous shared work.</p>
+                        <div class="card-footer"><div class="card-tags"><span class="card-tag">run windows</span><span class="card-tag">precision</span></div><div class="card-arrow mono">Open →</div></div>
+                    </a>
+                    <a class="challenge-card" data-track="fabric-sre" href="Student/fabric-sre-agent/Challenge-06.md">
+                        <div class="card-bg-number display">06</div>
+                        <div class="card-top"><span class="card-phase-badge">Investigate</span><span class="card-num mono">FAB — 06</span></div>
+                        <h3 class="card-title display">Investigate Failure<br>and Throttling</h3>
+                        <p class="card-desc">Correlate runs, capacity evidence, and Spark diagnostics without guessing cause.</p>
+                        <div class="card-footer"><div class="card-tags"><span class="card-tag">RCA</span><span class="card-tag">Spark</span></div><div class="card-arrow mono">Open →</div></div>
+                    </a>
+                    <a class="challenge-card" data-track="fabric-sre" href="Student/fabric-sre-agent/Challenge-07.md">
+                        <div class="card-bg-number display">07</div>
+                        <div class="card-top"><span class="card-phase-badge">Optimize</span><span class="card-num mono">FAB — 07</span></div>
+                        <h3 class="card-title display">Optimize a Measured<br>Spark Workload</h3>
+                        <p class="card-desc">Tie recommendations and estimated impact to code and measured execution evidence.</p>
+                        <div class="card-footer"><div class="card-tags"><span class="card-tag">stages</span><span class="card-tag">shuffle / skew</span></div><div class="card-arrow mono">Open →</div></div>
+                    </a>
+                    <a class="challenge-card" data-track="fabric-sre" href="Student/fabric-sre-agent/Challenge-08.md">
+                        <div class="card-bg-number display">08</div>
+                        <div class="card-top"><span class="card-phase-badge">Govern</span><span class="card-num mono">FAB — 08</span></div>
+                        <h3 class="card-title display">Assess Monitoring<br>Coverage</h3>
+                        <p class="card-desc">Evaluate freshness, retention, event quality, and the backend's own CU cost.</p>
+                        <div class="card-footer"><div class="card-tags"><span class="card-tag">data quality</span><span class="card-tag">capacity context</span></div><div class="card-arrow mono">Open →</div></div>
+                    </a>
+                    <a class="challenge-card" data-track="fabric-sre" href="Student/fabric-sre-agent/Challenge-09.md">
+                        <div class="card-bg-number display">09</div>
+                        <div class="card-top"><span class="card-phase-badge">Capstone</span><span class="card-num mono">FAB — 09</span></div>
+                        <h3 class="card-title display">Build Your Own<br>Fabric SRE Agent</h3>
+                        <p class="card-desc">Design and validate a bounded, production-ready FinOps or RCA workflow.</p>
+                        <div class="card-footer"><div class="card-tags"><span class="card-tag">custom agent</span><span class="card-tag">governance</span></div><div class="card-arrow mono">Open →</div></div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
         <!-- Subagents -->
         <section id="agents" class="section">
             <div class="wrap">
@@ -2069,6 +2234,80 @@
                         <div class="coach-arrow mono">Open →</div>
                     </a>
                 </div>
+
+                <div class="dba-coach-heading">Fabric SRE Agent solutions</div>
+                <div class="coach-card-grid">
+                    <a class="coach-card" href="Coach/fabric-sre-agent/Solution-00.md">
+                        <div class="card-bg-number display">00</div>
+                        <div class="coach-num mono">FAB SOL — 00</div>
+                        <div class="coach-title">Prepare the Fabric SRE Agent Lab</div>
+                        <div class="coach-desc">Identity, tenant, capacity, and workspace readiness.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/fabric-sre-agent/Solution-01.md">
+                        <div class="card-bg-number display">01</div>
+                        <div class="coach-num mono">FAB SOL — 01</div>
+                        <div class="coach-title">Select a Consumption Backend</div>
+                        <div class="coach-desc">FUAM grain, event precision, history, and operating cost.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/fabric-sre-agent/Solution-02.md">
+                        <div class="card-bg-number display">02</div>
+                        <div class="coach-num mono">FAB SOL — 02</div>
+                        <div class="coach-title">Connect and Ground the Agent</div>
+                        <div class="coach-desc">Managed identity, read-only connectors, price tool, and live skills.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/fabric-sre-agent/Solution-03.md">
+                        <div class="card-bg-number display">03</div>
+                        <div class="coach-num mono">FAB SOL — 03</div>
+                        <div class="coach-title">Prove Cost Math and Precision</div>
+                        <div class="coach-desc">Unit conversion, retail price, and standalone-equivalent limits.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/fabric-sre-agent/Solution-04.md">
+                        <div class="card-bg-number display">04</div>
+                        <div class="coach-num mono">FAB SOL — 04</div>
+                        <div class="coach-title">Explain Workspace and Item Spend</div>
+                        <div class="coach-desc">Totals, freshness, name resolution, and preview-operation caveats.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/fabric-sre-agent/Solution-05.md">
+                        <div class="card-bg-number display">05</div>
+                        <div class="coach-num mono">FAB SOL — 05</div>
+                        <div class="coach-title">Attribute Runs and Pipelines</div>
+                        <div class="coach-desc">Run windows, child items, shared attribution, and precision.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/fabric-sre-agent/Solution-06.md">
+                        <div class="card-bg-number display">06</div>
+                        <div class="coach-num mono">FAB SOL — 06</div>
+                        <div class="coach-title">Investigate Failure and Throttling</div>
+                        <div class="coach-desc">Capacity evidence, Spark telemetry, and causal discipline.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/fabric-sre-agent/Solution-07.md">
+                        <div class="card-bg-number display">07</div>
+                        <div class="coach-num mono">FAB SOL — 07</div>
+                        <div class="coach-title">Optimize a Measured Spark Workload</div>
+                        <div class="coach-desc">Code-linked recommendations and measured execution symptoms.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/fabric-sre-agent/Solution-08.md">
+                        <div class="card-bg-number display">08</div>
+                        <div class="coach-num mono">FAB SOL — 08</div>
+                        <div class="coach-title">Assess Monitoring Coverage</div>
+                        <div class="coach-desc">Freshness, retention, data quality, and monitoring CU.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                    <a class="coach-card" href="Coach/fabric-sre-agent/Solution-09.md">
+                        <div class="card-bg-number display">09</div>
+                        <div class="coach-num mono">FAB SOL — 09</div>
+                        <div class="coach-title">Build Your Own Fabric SRE Agent</div>
+                        <div class="coach-desc">Bounded scenario, safe tools, validation, and production readiness.</div>
+                        <div class="coach-arrow mono">Open →</div>
+                    </a>
+                </div>
             </div>
         </section>
 
@@ -2226,6 +2465,32 @@
             { label: 'DBA-SOL-09', file: 'Coach/sql-server-dba/Solution-09.md', title: 'Coach · Build Your Own SQL Server DBA Agent' },
         ];
 
+        const FABRIC_STUDENT_FILES = [
+            { label: 'FAB-00', file: 'Student/fabric-sre-agent/Challenge-00.md', title: 'Prepare the Fabric SRE Agent Lab' },
+            { label: 'FAB-01', file: 'Student/fabric-sre-agent/Challenge-01.md', title: 'Select and Establish a Consumption Backend' },
+            { label: 'FAB-02', file: 'Student/fabric-sre-agent/Challenge-02.md', title: 'Connect and Ground the Fabric SRE Agent' },
+            { label: 'FAB-03', file: 'Student/fabric-sre-agent/Challenge-03.md', title: 'Prove the Cost Calculation and Precision' },
+            { label: 'FAB-04', file: 'Student/fabric-sre-agent/Challenge-04.md', title: 'Explain Spend by Workspace and Item' },
+            { label: 'FAB-05', file: 'Student/fabric-sre-agent/Challenge-05.md', title: 'Attribute Execution and Pipeline Consumption' },
+            { label: 'FAB-06', file: 'Student/fabric-sre-agent/Challenge-06.md', title: 'Investigate Failures, Slowness, and Throttling' },
+            { label: 'FAB-07', file: 'Student/fabric-sre-agent/Challenge-07.md', title: 'Optimize a Measured Spark Workload' },
+            { label: 'FAB-08', file: 'Student/fabric-sre-agent/Challenge-08.md', title: 'Assess Coverage and Capacity Context' },
+            { label: 'FAB-09', file: 'Student/fabric-sre-agent/Challenge-09.md', title: 'Build Your Own Production-Ready Fabric SRE Agent' },
+        ];
+
+        const FABRIC_COACH_FILES = [
+            { label: 'FAB-SOL-00', file: 'Coach/fabric-sre-agent/Solution-00.md', title: 'Coach · Prepare the Fabric SRE Agent Lab' },
+            { label: 'FAB-SOL-01', file: 'Coach/fabric-sre-agent/Solution-01.md', title: 'Coach · Select and Establish a Consumption Backend' },
+            { label: 'FAB-SOL-02', file: 'Coach/fabric-sre-agent/Solution-02.md', title: 'Coach · Connect and Ground the Fabric SRE Agent' },
+            { label: 'FAB-SOL-03', file: 'Coach/fabric-sre-agent/Solution-03.md', title: 'Coach · Prove the Cost Calculation and Precision' },
+            { label: 'FAB-SOL-04', file: 'Coach/fabric-sre-agent/Solution-04.md', title: 'Coach · Explain Spend by Workspace and Item' },
+            { label: 'FAB-SOL-05', file: 'Coach/fabric-sre-agent/Solution-05.md', title: 'Coach · Attribute Execution and Pipeline Consumption' },
+            { label: 'FAB-SOL-06', file: 'Coach/fabric-sre-agent/Solution-06.md', title: 'Coach · Investigate Failures, Slowness, and Throttling' },
+            { label: 'FAB-SOL-07', file: 'Coach/fabric-sre-agent/Solution-07.md', title: 'Coach · Optimize a Measured Spark Workload' },
+            { label: 'FAB-SOL-08', file: 'Coach/fabric-sre-agent/Solution-08.md', title: 'Coach · Assess Coverage and Capacity Context' },
+            { label: 'FAB-SOL-09', file: 'Coach/fabric-sre-agent/Solution-09.md', title: 'Coach · Build Your Own Production-Ready Fabric SRE Agent' },
+        ];
+
         let currentIdx = -1;
         let activeFiles = STUDENT_FILES;
         let drawerTrigger = null;
@@ -2237,11 +2502,15 @@
             const cIdx = COACH_FILES.findIndex(f => f.file === mdFile);
             const dbaStudentIdx = DBA_STUDENT_FILES.findIndex(f => f.file === mdFile);
             const dbaCoachIdx = DBA_COACH_FILES.findIndex(f => f.file === mdFile);
+            const fabricStudentIdx = FABRIC_STUDENT_FILES.findIndex(f => f.file === mdFile);
+            const fabricCoachIdx = FABRIC_COACH_FILES.findIndex(f => f.file === mdFile);
             const requirementsIdx = REQUIREMENTS_FILES.findIndex(f => f.file === mdFile);
             if (sIdx !== -1) { activeFiles = STUDENT_FILES; currentIdx = sIdx; }
             else if (cIdx !== -1) { activeFiles = COACH_FILES; currentIdx = cIdx; }
             else if (dbaStudentIdx !== -1) { activeFiles = DBA_STUDENT_FILES; currentIdx = dbaStudentIdx; }
             else if (dbaCoachIdx !== -1) { activeFiles = DBA_COACH_FILES; currentIdx = dbaCoachIdx; }
+            else if (fabricStudentIdx !== -1) { activeFiles = FABRIC_STUDENT_FILES; currentIdx = fabricStudentIdx; }
+            else if (fabricCoachIdx !== -1) { activeFiles = FABRIC_COACH_FILES; currentIdx = fabricCoachIdx; }
             else if (requirementsIdx !== -1) { activeFiles = REQUIREMENTS_FILES; currentIdx = requirementsIdx; }
             else { return false; }
             if (!drawer.classList.contains('open')) drawerTrigger = document.activeElement;

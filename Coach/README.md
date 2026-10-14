@@ -4,7 +4,14 @@
 
 # Coach Index — Azure SRE Agent Workshop
 
-Coach and facilitator guides for all 20 workshop challenges.
+Coach and facilitator guides for the Azure Operations, SQL Server DBA, and
+Fabric SRE Agent tracks.
+
+## Track Guides
+
+- [Azure Operations: 20 challenges](./README.md)
+- [SQL Server DBA: 10 challenges](./sql-server-dba/README.md)
+- [Fabric SRE Agent FinOps and RCA: 10 challenges](./fabric-sre-agent/README.md)
 
 ## Solution Index
 
