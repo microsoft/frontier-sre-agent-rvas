@@ -46,6 +46,15 @@ Map your use case to the SRE Agent building blocks:
 
 Sketch your design on paper or a whiteboard before building. Have your coach review it before you start coding YAML.
 
+> **Optional:** use the `rvas-sre-agent-jumpstart` skill to design and author Step 3 for you. It interviews you about your use case, researches the Azure SRE Agent documentation for the right building blocks, and generates the skill YAML, knowledge doc, and (where applicable) IaC artifacts after you approve its plan. Install it and its two dependency skills with:
+>
+> ```bash
+> copilot plugin marketplace add microsoft/frontier-sre-agent-rvas
+> copilot plugin install rvas-sre-agent-jumpstart@rvas-sre-agent-jumpstart
+> gh skill install mattpocock/skills skills/productivity/grilling --agent github-copilot
+> gh skill install MicrosoftDocs/Agent-Skills skills/azure-sre-agent --agent github-copilot
+> ```
+
 ### Step 3 — Implement
 
 Write and apply the configuration.

@@ -1,7 +1,21 @@
 lockfile_version: '1'
-generated_at: '2026-07-30T08:48:49.593997+00:00'
+generated_at: '2026-10-13T17:20:44.861853+00:00'
 apm_version: 0.24.0
 dependencies:
+- repo_url: MicrosoftDocs/Agent-Skills
+  name: azure-sre-agent
+  host: github.com
+  resolved_commit: ba74e8fcc5cf4864798beaf95e53d7c4840bac5e
+  version: 1.0.0
+  virtual_path: skills/azure-sre-agent
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/azure-sre-agent
+  - .agents/skills/azure-sre-agent/SKILL.md
+  deployed_file_hashes:
+    .agents/skills/azure-sre-agent/SKILL.md: sha256:3582ee30abc3a396fc24db5460f567576b1dd6929eb84c6ddc311cef7b5b8687
+  content_hash: sha256:cc25791d3aeae27e071799474980e88cd15933246424c5f17a26126f5942ae9c
 - repo_url: anthropics/skills
   name: skills
   host: github.com
@@ -20,11 +34,11 @@ dependencies:
     .agents/skills/frontend-design/SKILL.md: sha256:b81e2ff87ed8fa4d6c377ccb127a7254c9e6a77e3ae94f21e6b514f7bb2945a0
   content_hash: sha256:063a0e6448123cd359ad0044cc46b0e490cc7964d45ef4bb9fd842bd2ffbca67
 - repo_url: anthropics/skills
-  name: skill-creator
+  name: skills
   host: github.com
   resolved_commit: b29e7cf65e5cb78a5ac33d582270551bc74a14eb
   resolved_ref: b29e7cf6
-  version: 1.0.0
+  version: unknown
   virtual_path: skills/skill-creator
   is_virtual: true
   package_type: claude_skill
@@ -68,10 +82,46 @@ dependencies:
     .agents/skills/skill-creator/scripts/run_loop.py: sha256:7bd6f674203168520517eec94c55f493c0d154339b061b4d7c0f0dad187d0f21
     .agents/skills/skill-creator/scripts/utils.py: sha256:3af8ae62c40c73ab712207436a0d9a981e845f25c5a7040229eb189cc8e45bb1
   content_hash: sha256:b2bfe91d69ca99994c0566baede889e7d2b9bb8791c6b6106c5d387392f717f6
+- repo_url: mattpocock/skills
+  name: skills
+  host: github.com
+  resolved_commit: 49dd158d1076134a641b33efb035946536778336
+  resolved_ref: 49dd158d
+  version: unknown
+  virtual_path: skills/productivity/grilling
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/grilling
+  - .agents/skills/grilling/SKILL.md
+  - .agents/skills/grilling/agents/openai.yaml
+  deployed_file_hashes:
+    .agents/skills/grilling/SKILL.md: sha256:befdff1e27a1dfe2a294d5871169ac1afe16d983911daa4f32627514a48c1e15
+    .agents/skills/grilling/agents/openai.yaml: sha256:1411d7df7d99b7e621a1ff8283c8133cc2464be63d064e52d8ce169c6800ee9b
+  content_hash: sha256:90b54c72a48114f62072de27e1bef0c61d55f0959044725c593ed9fc72197755
+- repo_url: mattpocock/skills
+  name: skills
+  host: github.com
+  resolved_commit: 49dd158d1076134a641b33efb035946536778336
+  resolved_ref: 49dd158d
+  version: unknown
+  virtual_path: skills/productivity/writing-for-agents
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/writing-for-agents
+  - .agents/skills/writing-for-agents/SKILL-MECHANICS.md
+  - .agents/skills/writing-for-agents/SKILL.md
+  - .agents/skills/writing-for-agents/agents/openai.yaml
+  deployed_file_hashes:
+    .agents/skills/writing-for-agents/SKILL-MECHANICS.md: sha256:c768e6307c7c10728c401c213f2c4ba71c542127eeb7ad2956aabd15a0fa0059
+    .agents/skills/writing-for-agents/SKILL.md: sha256:551adca942227b44192edba88acd4e8db911f0121ce58ad16944ccf6a896a74a
+    .agents/skills/writing-for-agents/agents/openai.yaml: sha256:eacb24b2a618cfb81dacb0416f4fdd75ddf3a8060f8ddb99aae1b1e301907e4b
+  content_hash: sha256:8365ebe1d0c343d3d46970526f30fcf7c5e0c5e49fd39a3c882977024626ff3c
 - repo_url: microsoft/frontier-agentic-devops-rvas
   name: frontier-agentic-devops-rvas
   host: github.com
-  resolved_commit: ab8cbdb6bd3a797fbf32a1042fe04af1188bffa6
+  resolved_commit: d86eb2b23cbce99818a24dee90995d2a3401e711
   version: unknown
   virtual_path: .agents/skills/rvap-brand
   is_virtual: true

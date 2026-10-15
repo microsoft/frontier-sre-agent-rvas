@@ -1,0 +1,47 @@
+{
+  "skill_name": "rvas-sre-agent-jumpstart",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "network-asymmetry-existing-template",
+      "prompt": "We have an existing SRE agent set up in this repo already running in Autonomous mode. Our ops team keeps seeing weird latency where traffic from one AZ takes a different path back out than it came in -- sounds like asymmetric routing. Can you get the agent set up to catch this automatically?",
+      "expected_output": "Begins Round 1 of the grilling-style interview (which IaC surface, target agent identity, run mode, connectors) rather than jumping straight to artifacts; recognizes the use case matches a network/routing-asymmetry diagnostic shape and checks whether an equivalent skill already exists in the target repository's own manifest directory before planning fresh research; does not generate any manifest/CLI artifact before an explicit plan-approval gate.",
+      "files": [],
+      "expectations": [
+        "Response opens with interview questions rather than jumping straight to a plan or artifacts",
+        "Response does not generate or paste any YAML/CLI artifact in turn 1",
+        "Response identifies/asks about which of the two IaC surfaces applies (agent-resource provisioning vs. capability authoring), not just assumes one",
+        "Response recognizes or sets up to recognize that a matching skill may already exist in the target repository's own manifest directory, and sets up to check for one, rather than assuming fresh research is required",
+        "Response asks about run mode (autonomous vs. approval-gated) for the new capability"
+      ]
+    },
+    {
+      "id": 1,
+      "eval_name": "kafka-lag-no-template",
+      "prompt": "We don't have an SRE agent yet at all. We want one specifically to catch Kafka consumer lag building up on our clusters before it becomes an outage. What do we need to do?",
+      "expected_output": "Begins the interview, recognizes this requires agent-resource provisioning (Surface 1, no agent exists yet) plus a new capability for a use case with no in-repo template; signals a just-in-time Learn research step for Kafka lag rather than fabricating diagnostic content; does not generate artifacts before an approval gate.",
+      "files": [],
+      "expectations": [
+        "Response opens with interview questions rather than jumping straight to a plan or artifacts",
+        "Response does not generate or paste any YAML/CLI artifact in turn 1",
+        "Response identifies that agent-resource provisioning (Surface 1) is needed since no agent exists yet",
+        "Response signals that Kafka consumer lag has no ready-made in-repo template and will need a research step, rather than fabricating a diagnostic procedure on the spot",
+        "Response does not name or assume a specific IaC backend in this turn, since the backend choice is only asked once the research step has fetched the real options"
+      ]
+    },
+    {
+      "id": 2,
+      "eval_name": "sql-timeout-near-cap",
+      "prompt": "Our SRE agent already has skills for cost review, AKS health, and a couple other things -- I think it's at 4 or 5 skills now. We now want it to also diagnose slow SQL queries with high DTU. How do we add that?",
+      "expected_output": "Begins the interview and treats checking the target agent's actual current active-skill count as a required step rather than trusting the user's approximate '4 or 5'; if at or near the 5-skill cap, surfaces a named consolidation warning before proceeding; recognizes this is capability authoring (Surface 2) on an existing agent.",
+      "files": [],
+      "expectations": [
+        "Response opens with interview questions rather than jumping straight to a plan or artifacts",
+        "Response does not generate or paste any YAML/CLI artifact in turn 1",
+        "Response explicitly plans to check the agent's actual current active-skill count rather than trusting the user's '4 or 5' estimate at face value",
+        "Response surfaces (or sets up to surface) the 5-skill cap and a consolidation warning if the cap would be hit, rather than silently proceeding",
+        "Response identifies this as capability authoring (Surface 2) on an existing agent, not agent-resource provisioning"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "name": "rvas-sre-agent-jumpstart",
+  "owner": {
+    "name": "Microsoft"
+  },
+  "metadata": {
+    "description": "Set up or extend an Azure SRE Agent capability or resource from an operational need.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "rvas-sre-agent-jumpstart",
+      "description": "Sets up or extends an Azure SRE Agent capability or resource from an operational need.",
+      "version": "0.1.0",
+      "source": "./plugins/rvas-sre-agent-jumpstart"
+    }
+  ]
+}

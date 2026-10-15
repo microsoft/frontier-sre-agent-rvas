@@ -31,6 +31,7 @@
 * **Symptom:** The report presents one signal as proven root cause. **Fix:** ask for a second corroborating signal, an alternative explanation, and explicit uncertainty.
 * **Symptom:** The demo only shows the expected happy path. **Fix:** test a request outside scope or a case where the required evidence is unavailable.
 * **Symptom:** Recommendations imply that the agent applied a fix. **Fix:** separate recommendation from execution and name the owner and validation needed before approval.
+* **Symptom:** Student wants to package their design as a reusable skill or subagent rather than a one-off configuration. **Fix:** point them to the `rvas-sre-agent-jumpstart` skill as an optional accelerator; it drafts the capability but does not loosen the read-only `sqlserver-mcp` trust boundary this track enforces.
 
 ## Debrief Discussion Guide
 

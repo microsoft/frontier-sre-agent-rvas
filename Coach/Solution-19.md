@@ -30,6 +30,7 @@
 - **Symptom:** Student jumps into YAML without clear operational procedure. **Fix:** make them write the human runbook first.
 - **Symptom:** They add write permissions casually. **Fix:** ask what rollback, validation, and ownership model would justify that.
 - **Symptom:** Demo is purely conceptual. **Fix:** require at least one concrete test prompt, alert simulation, or captured agent log.
+- **Symptom:** Student is stuck mapping their use case to the building-blocks table. **Fix:** suggest the `rvas-sre-agent-jumpstart` skill — it interviews the student and drafts the skill YAML, knowledge doc, and subagent configuration for them to review and refine, rather than leaving them staring at a blank table.
 
 ## Debrief Discussion Guide
 

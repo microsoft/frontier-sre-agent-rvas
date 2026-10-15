@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Install the SRE Agent Jumpstart Skill — RVAS</title>
+    <meta name="description"
+        content="Install the rvas-sre-agent-jumpstart plugin and its dependency skills to design and author Azure SRE Agent capabilities for Challenge 19 and the SQL Server DBA capstone.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/brand.css" />
+    <link rel="stylesheet" href="assets/css/shell.css" />
+    <link rel="stylesheet" href="assets/css/scenarios.css" />
+</head>
+
+<body>
+
+    <!-- ── Nav ───────────────────────────────────────────────────────── -->
+    <header class="nav" role="banner">
+        <div class="nav-inner">
+            <a class="brand" href="index.html" aria-label="RVAS — Azure SRE Agent">
+                <img src="assets/img/logo-full.png" alt="RVAP" class="rvap-nav-logo" height="32">
+            </a>
+            <nav class="nav-links" id="navLinks" aria-label="Primary">
+                <a href="index.html#challenges">Azure Operations Track</a>
+                <a href="index.html#sql-dba-track">SQL DBA Track</a>
+                <a href="index.html#agents">Subagents</a>
+                <a href="scenarios.html">Scenario Explorer</a>
+                <a href="jumpstart.html" class="active" aria-current="page">SRE Agent Jumpstart</a>
+                <a class="gh" href="https://github.com/microsoft/frontier-sre-agent-rvas" target="_blank"
+                    rel="noopener">GitHub ↗</a>
+            </nav>
+            <div class="nav-actions">
+                <button class="icon-btn nav-toggle" type="button" aria-label="Open navigation menu"
+                    aria-expanded="false" aria-controls="navLinks">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round">
+                        <path d="M3 6h18M3 12h18M3 18h18" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Page hero -->
+        <section class="section-tight scenario-hero" style="padding-bottom: 32px;">
+            <div class="wrap">
+                <span class="eyebrow">RVAS — Azure SRE Agent</span>
+                <h1 class="reveal">SRE Agent Jumpstart Skill</h1>
+                <p class="lede reveal">
+                    An installable Copilot CLI plugin that interviews you about an operational need, researches
+                    the right Azure SRE Agent building blocks, and generates a reviewable plan — then, once you
+                    approve it, authors the skill YAML, knowledge docs, subagent configuration, or capability
+                    manifests for you. Useful as an optional accelerator for Challenge 19 and the SQL Server DBA
+                    capstone.
+                </p>
+            </div>
+        </section>
+
+        <!-- Install steps + when to use it -->
+        <section id="install" class="section-tight" style="padding-top: 24px;">
+            <div class="wrap">
+                <h2>Install the plugin</h2>
+                <p class="lede">
+                    Add this repository as a plugin marketplace, then install the plugin. This also registers
+                    the <code>microsoft-learn</code> MCP server, which the <code>azure-sre-agent</code> skill
+                    uses to fetch current Azure SRE Agent documentation — no separate MCP setup needed.
+                </p>
+                <div class="scenario-prompt-block">
+                    <div class="scenario-prompt-header">
+                        <span class="mono">Terminal</span>
+                    </div>
+                    <pre class="scenario-prompt">copilot plugin marketplace add microsoft/frontier-sre-agent-rvas
+copilot plugin install rvas-sre-agent-jumpstart@rvas-sre-agent-jumpstart</pre>
+                </div>
+
+                <h2>Install the dependency skills</h2>
+                <p class="lede">
+                    The jumpstart skill activates two companion skills by name during its interview and research
+                    steps: <code>grilling</code> (structured interview protocol) and <code>azure-sre-agent</code>
+                    (the Azure SRE Agent documentation pointer skill). Install both with the
+                    <code>gh skill install</code> command.
+                </p>
+                <div class="scenario-prompt-block">
+                    <div class="scenario-prompt-header">
+                        <span class="mono">Terminal</span>
+                    </div>
+                    <pre class="scenario-prompt">gh skill install mattpocock/skills skills/productivity/grilling --agent github-copilot
+gh skill install MicrosoftDocs/Agent-Skills skills/azure-sre-agent --agent github-copilot</pre>
+                </div>
+                <p class="lede">
+                    <code>gh skill install</code> is a preview GitHub CLI command and may change; re-run
+                    <code>gh skill install --help</code> if either command stops working as documented.
+                </p>
+
+                <h2>When to use it</h2>
+                <p class="lede">
+                    Both capstones ask you to design a production-ready SRE Agent capability from scratch. The
+                    jumpstart skill is an optional accelerator in each — it does not replace or widen either
+                    track's existing trust boundaries or Success Criteria.
+                </p>
+                <ul>
+                    <li>
+                        <a href="Student/Challenge-19.md">Challenge 19 — Build Your Own Production-Ready SRE
+                            Agent</a>: use it after you've sketched your design (Step 2) to draft the skill
+                        YAML, knowledge doc, and subagent configuration for Step 3.
+                    </li>
+                    <li>
+                        <a href="Student/sql-server-dba/Challenge-09.md">SQL Server DBA Challenge 09 — Build Your
+                            Own SQL Server DBA Agent</a>: use it if your scenario would benefit from packaging as
+                        a reusable skill or subagent alongside the supplied read-only <code>sqlserver-mcp</code>
+                        connector.
+                    </li>
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <p>Azure SRE Agent RVAS · Microsoft Real Value Acceleration Program</p>
+            <div class="footer-links">
+                <a href="https://github.com/microsoft/frontier-sre-agent-rvas" target="_blank" rel="noopener">GitHub
+                    ↗</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="assets/js/shell.js"></script>
+</body>
+
+</html>

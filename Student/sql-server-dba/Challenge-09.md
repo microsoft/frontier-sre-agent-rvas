@@ -34,6 +34,15 @@ The scenario must extend the techniques from this track rather than repeat the
 combined incident exercise in Challenge 08. Keep the database trust boundary
 and the supplied MCP tool contract intact.
 
+> **Optional accelerator:** if your scenario would benefit from packaging as a reusable Azure SRE Agent skill or subagent — rather than only a `sqlserver-mcp`-based agent configuration — the `rvas-sre-agent-jumpstart` skill can interview you about the use case and draft the capability for your review. It does not change or widen the read-only `sqlserver-mcp` trust boundary above. Install it and its two dependency skills with:
+>
+> ```bash
+> copilot plugin marketplace add microsoft/frontier-sre-agent-rvas
+> copilot plugin install rvas-sre-agent-jumpstart@rvas-sre-agent-jumpstart
+> gh skill install mattpocock/skills skills/productivity/grilling --agent github-copilot
+> gh skill install MicrosoftDocs/Agent-Skills skills/azure-sre-agent --agent github-copilot
+> ```
+
 ## Success Criteria
 
 - [ ] A coach-approved scenario brief states the operational question, impact, audience, and observation window
