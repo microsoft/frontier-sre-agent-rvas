@@ -8,24 +8,28 @@
 
 Reliable analysis starts with knowing which identities, workspaces, capacities,
 and data sources the agent can reach. Before building a Fabric SRE Agent, verify
-that you have an approved Fabric environment and can choose either of the two
-supported consumption-data backends.
+that you can access your infrastructure-provisioned team agent and both
+coach-provisioned, shared consumption-data backends.
 
 ## Description
 
-Establish a safe, isolated lab and confirm the required administrative
-boundaries with your coach:
+Validate the coach's lab handoff and confirm the required administrative
+boundaries:
 
-- Identify a running Azure SRE Agent and confirm you can configure its
-  capabilities and user-assigned managed identity.
+- Identify your running, infrastructure-provisioned Azure SRE Agent and verify
+  you have **SRE Agent Administrator** on that agent to configure its capabilities.
+  Record its user-assigned managed identity.
 - Identify the Fabric tenant, monitored capacities and workspaces, and the
   permissions needed to read item, job, Spark, SQL endpoint, or Eventhouse data.
-- Confirm an approved workspace and capacity are available for FUAM or for the
-  Eventstream/Eventhouse monitoring path.
+- Confirm access to the shared FUAM Lakehouse/SQL endpoint and Capacity Events
+  Eventhouse/KQL database, their monitored workspaces, and the
+  infrastructure-provisioned Fabric capacity.
 - Review the Linux tooling, expected Fabric consumption, and data-retention
   implications for both backends before choosing one in Challenge 01.
-- Keep access read-only; tenant administration and capacity administration
-  should be performed only by their approved owners.
+- Do not provision another agent, capacity, or telemetry stack. The coach sets
+  up FUAM and Capacity Events once and shares the relevant items with the audience.
+- Keep Fabric data access read-only; tenant/capacity administration and shared
+  backend changes belong to the coach and approved administrators.
 
 ## Pre-flight Validation Checklist
 
@@ -41,14 +45,15 @@ curl --version
 ```
 
 Resolve local failures and ask your coach to verify the Azure SRE Agent role,
-Fabric tenant settings, capacity/workspace access, approved data source, and
+Fabric tenant settings, shared item access, both prepared data sources, and
 network egress before proceeding.
 
 ## Success Criteria
 
 - [ ] Local pre-flight commands run successfully in Linux Bash and the intended Azure subscription is identified.
-- [ ] The SRE Agent, Fabric tenant, monitored capacities/workspaces, and responsible administrators are recorded.
-- [ ] The coach confirms the least-privilege access path and the source-data backend can be provisioned.
+- [ ] The infrastructure-provisioned agent is Running, and SRE Agent Administrator is verified on that agent using the portal or role-assignment evidence.
+- [ ] The Fabric capacity, shared telemetry items, monitored workspaces, agent identity, and responsible administrators are recorded.
+- [ ] The coach confirms read access to both prepared backends for the audience and the team agent identity.
 - [ ] The operating and retention cost trade-offs of FUAM and Capacity Events are understood.
 - [ ] **Explain to your coach** — which access checks are tenant-level, which are workspace- or capacity-level, and why Azure RBAC alone does not establish Fabric data access?
 

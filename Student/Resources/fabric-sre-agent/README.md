@@ -12,6 +12,16 @@ An **Azure SRE Agent** for Microsoft Fabric FinOps and root-cause analysis. Ask 
 - *"Why did notebook C fail yesterday?"*
 - *"How can I reduce notebook C's capacity-unit consumption?"*
 Costs are **standalone-equivalent**: CUs consumed × the regional €/CU-hour from the Azure Retail Prices API. They answer "what did this work cost if billed per CU", not "how is the capacity invoice split".
+
+## Workshop ownership
+
+The coach sets up **both FUAM and Capacity Events once** and shares the relevant
+items with audience users/groups and team agent identities using read access.
+Students use the handed-over identifiers and the agent-configuration sections
+of the guides; they do not deploy or modify shared telemetry infrastructure.
+The infrastructure deliverable provisions the Fabric capacity and team SRE
+Agents. Every participant configuring an agent requires **SRE Agent
+Administrator** on that agent; the agent UAMI's Fabric permissions stay read-only.
  
 ---
  

@@ -81,6 +81,11 @@ make config-sre-agent
 `make deploy` in Coach combines infrastructure and agent configuration;
 `make deploy` in Student provisions workloads **only**. Do not use the Coach
 reference path to bypass the student's manual agent-creation exercise.
+This applies to the Azure Operations track. For Fabric, use the separate
+[Fabric infrastructure deliverable](./Solutions/infra/fabric-sre/README.md):
+it provisions the shared capacity, team agents, and participant SRE Agent
+Administrator roles. Coaches prepare and share both telemetry backends once;
+Fabric students do not use the Azure Operations workload-only deployment.
 Both `infra` targets stop before Terraform init/apply on confirmed pre-flight
 blockers. Use the same `TF_VARS` for pre-flight/deployment overrides.
 

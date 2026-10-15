@@ -15,6 +15,8 @@
 - Capacity Events KQL uses the documented authenticated REST path; it does not imply KQL management rights.
 - The router should load a current official skill from Code Access for the relevant operation.
 - Backend instructions must match exactly one configured source.
+- Participants need SRE Agent Administrator on their team agent. The coach
+  owns tenant settings and shared backend grants; runtime access remains read-only.
 
 ## Expected Student Output
 
@@ -26,7 +28,7 @@
 ## Common Issues and Hints
 
 - **Symptom:** Fabric MCP returns `401` or `403`. **Fix:** verify the Fabric public API tenant setting and that the agent UAMI has access to the relevant workspace, then test one harmless read operation.
-- **Symptom:** SQL endpoint `execute_query` returns permission denied. **Fix:** grant the UAMI Viewer access to the telemetry workspace and confirm the correct SQL endpoint server/database are configured.
+- **Symptom:** SQL endpoint `execute_query` returns permission denied. **Fix:** the coach verifies the UAMI's telemetry workspace/SQL read grants; the team confirms the correct SQL endpoint server/database are configured.
 - **Symptom:** Eventhouse KQL returns `403`. **Fix:** check workspace access and database-level viewer permissions for the UAMI; do not use a human token as a runtime fallback.
 - **Symptom:** Price tool fails to reach `prices.azure.com`. **Fix:** add the documented allowed host and verify the tool's code and input region.
 - **Symptom:** Agent gives stale instructions without reading Code Access. **Fix:** confirm repository sync and require it to name the live skill file it read.

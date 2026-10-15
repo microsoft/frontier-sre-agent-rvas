@@ -1,6 +1,14 @@
 # Setup guide — FUAM version
  
 [← Back to overview](../README.md)
+
+> **Workshop ownership:** The coach deploys FUAM once, schedules refresh, and
+> shares its Lakehouse/SQL endpoint and approved monitored items with the
+> audience and each team agent UAMI. Backend deployment, tenant settings, and
+> access grants below are **coach preparation**, not student tasks. Students use
+> their infrastructure-provisioned agent and shared connection identifiers for
+> agent configuration; every author needs **SRE Agent Administrator** on that
+> agent. Students do not need Fabric Administrator or capacity-admin rights.
  
 An Azure SRE Agent that answers cost, consumption, RCA and optimization questions about Microsoft Fabric workloads, for example:
  
@@ -31,7 +39,7 @@ CU consumption comes from **FUAM** (day grain). Prices come from the **Azure Ret
 ## Prerequisites
  
 - An Azure SRE Agent in **Running** state, and the **SRE Agent Administrator** role on it.
-- Fabric Administrator and capacity admin rights in the tenant.
+- **Coach only:** Fabric Administrator and capacity admin rights for setup.
 - The **Microsoft Fabric Capacity Metrics app** installed. FUAM reads CU data from it.
 - Files from this repository:
   - [`fuam/agent-instructions.md`](agent-instructions.md): agent instructions

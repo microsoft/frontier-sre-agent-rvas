@@ -1,6 +1,14 @@
 # Setup guide — capacity events version
  
 [← Back to overview](../README.md)
+
+> **Workshop ownership:** The coach deploys the Eventstream/Eventhouse and event
+> subscription once before the session and shares the relevant read-access
+> items with the audience and each team agent UAMI. Subscription ownership,
+> retention, tenant settings, and access grants below are **coach preparation**.
+> Students configure their infrastructure-provisioned agent using shared
+> identifiers; every author needs **SRE Agent Administrator** on that agent.
+> Students do not need capacity-admin rights or create another event pipeline.
  
 An Azure SRE Agent that answers cost, consumption, RCA and optimization questions about Microsoft Fabric workloads, at **per-operation** granularity. Every execution of every item, pipelines included, has its own exact CU figure.
  
@@ -29,7 +37,7 @@ CU consumption comes from **Fabric capacity operation events**, streamed into an
 ## Prerequisites
  
 - An Azure SRE Agent in **Running** state, and the **SRE Agent Administrator** role on it.
-- **Capacity admin** on every capacity you want to monitor. Subscribing to its operation events requires it.
+- **Coach only:** Capacity admin on every monitored capacity, retained by the event-subscription owner.
 - A Fabric workspace to host the Eventstream and Eventhouse (see Step 1 for sizing).
 - Files from this repository:
   - [`capacity-events/agent-instructions.md`](agent-instructions.md): agent instructions

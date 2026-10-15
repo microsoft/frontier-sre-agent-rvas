@@ -13,11 +13,14 @@ repeated.
 
 ## Description
 
-Configure the Azure SRE Agent for the backend chosen in Challenge 01, using the
-matching instructions and setup guide:
+Using **SRE Agent Administrator** on your infrastructure-provisioned team agent,
+configure it for the shared backend chosen in Challenge 01, using the matching
+instructions and the agent-configuration sections of the setup guide:
 
-- Grant the agent's user-assigned managed identity only the tenant, workspace,
-  capacity, SQL endpoint, or KQL read permissions required by that backend.
+- Validate the coach-granted read access for the agent's user-assigned managed
+  identity to the tenant APIs, workspaces, SQL endpoint, or KQL database required
+  by that backend. Ask the coach to resolve missing grants; do not grant yourself
+  tenant or capacity administration.
 - Connect the supported Fabric MCP and SQL endpoint MCP. For Capacity Events,
   configure Eventhouse query access through the documented KQL path.
 - Add the retail-price lookup tool and allow only the required outbound price
@@ -47,3 +50,4 @@ matching instructions and setup guide:
 
 - A connected MCP tool is not proof that the agent's managed identity has the correct Fabric data-plane permissions.
 - Never configure both backend-specific instruction files as global custom instructions on the same agent.
+- SRE Agent Administrator governs agent configuration, not Fabric data access. Your agent's runtime identity remains read-only.

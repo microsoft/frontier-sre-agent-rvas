@@ -25,6 +25,25 @@ variable "managed_scopes" {
 }
 
 variable "log_analytics_workspace_id" {
-  description = "Resource ID of the demo Log Analytics workspace. Used by the Log Analytics connector."
+  description = "Resource ID of the demo Log Analytics workspace. Required when enable_monitoring_connectors is true."
   type        = string
+  default     = null
+}
+
+variable "agent_name" {
+  description = "Name of the agent; also used to name its identity and logging resources."
+  type        = string
+  default     = "contoso-sre-agent-dev"
+}
+
+variable "read_only" {
+  description = "Use ReadOnly mode and omit subscription Contributor and Monitoring Contributor grants."
+  type        = bool
+  default     = false
+}
+
+variable "enable_monitoring_connectors" {
+  description = "Create the Azure Operations Log Analytics and Application Insights connectors."
+  type        = bool
+  default     = true
 }

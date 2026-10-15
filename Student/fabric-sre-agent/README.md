@@ -16,6 +16,14 @@ not interchangeable; custom instructions apply to the whole agent. The
 challenges compare their precision, freshness, history, and operating-cost
 trade-offs while keeping the analysis workflow consistent.
 
+The coach deploys **both backends once**, shares the relevant items with the
+audience, and grants read access to each team agent's managed identity.
+The infrastructure deliverable provisions the shared Fabric capacity and a
+separate SRE Agent per team. Every participant configuring an agent needs
+**SRE Agent Administrator** on that agent. Students validate shared telemetry
+and configure agent capabilities; they do not provision telemetry stacks or
+change the shared infrastructure.
+
 The agent uses Fabric read APIs, the SQL endpoint or Eventhouse, Spark
 monitoring APIs, the live `microsoft/skills-for-fabric` repository, and a
 pricing tool backed by the Azure Retail Prices API. Cost values are
@@ -27,7 +35,7 @@ capacity invoice. The agent remains read-only.
 | Challenge | Focus |
 |---|---|
 | [00](./Challenge-00.md) | Prerequisites and access readiness |
-| [01](./Challenge-01.md) | Select and establish a consumption backend |
+| [01](./Challenge-01.md) | Select and validate a shared consumption backend |
 | [02](./Challenge-02.md) | Connect and ground the agent |
 | [03](./Challenge-03.md) | Validate the cost calculation and precision |
 | [04](./Challenge-04.md) | Explain spend by workspace and item |

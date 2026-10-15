@@ -1,12 +1,12 @@
 [< Previous Solution](./Solution-00.md) | **[Home](../../README.md)** | [Next Solution >](./Solution-02.md)
 
-# Coach Guide — Challenge 01: Select and Establish a Consumption Backend
+# Coach Guide — Challenge 01: Select and Validate a Shared Consumption Backend
 
 ## Purpose
 
 - Help students match backend data grain and operational cost to the analysis use case.
 - Confirm the chosen source contains recent, interpretable consumption evidence.
-- Expected time: 60–120 minutes; provisioning may extend beyond the workshop.
+- Expected time: 30–45 minutes; both backends are provisioned by the coach before the workshop.
 
 ## Mini-Lecture (10 min before challenge)
 
@@ -15,6 +15,8 @@
 - FUAM notebook run CU may be derived using Spark allocation; other repeated daily operations are not separable.
 - Event operation `capacityUnitMs` is not the same unit as FUAM `TotalCUs`.
 - Monitoring itself consumes CU; choosing higher precision has a recurring cost.
+- Both sources are shared coach-owned items. Students choose and validate a
+  source, not deploy collectors or change shared retention/refresh settings.
 
 ## Expected Student Output
 
@@ -25,7 +27,7 @@
 
 ## Common Issues and Hints
 
-- **Symptom:** FUAM table query returns no rows. **Fix:** inspect FUAM pipeline history, service-principal API configuration, app refresh time, and workspace identifiers; allow the documented ingestion and semantic-model refresh delay.
+- **Symptom:** FUAM table query returns no rows. **Fix:** the coach inspects FUAM pipeline history, service-principal API configuration, app refresh time, and workspace identifiers; students do not change shared pipelines.
 - **Symptom:** `OperationsTable` exists but contains no new rows. **Fix:** verify the event subscription is active, its owner remains capacity admin, the monitored capacity is running, and an operation occurred after subscription creation.
 - **Symptom:** Capacity Events values are empty after parsing `Data`. **Fix:** inspect `getschema` and one sample row; dynamic property casing depends on mapping.
 - **Symptom:** The team expects months of event history immediately. **Fix:** explain that history begins at subscription time and cannot be reconstructed retroactively from that stream.
@@ -38,16 +40,19 @@
 
 ## Success Criteria Notes
 
-- Be strict that one backend is working and has a sample row.
+- Be strict that both backends have been prepared and shared by the coach;
+  each team validates one selected source with a sample row.
 - Accept either backend if its known limits are explicitly documented.
 - Ensure the chosen backend guide and corresponding instruction file are the active source of truth.
 
 ## Solution
 
-Follow either
-[FUAM setup](../../Student/Resources/fabric-sre-agent/fuam/README.md) or
+Before the event, the coach completes both
+[FUAM setup](../../Student/Resources/fabric-sre-agent/fuam/README.md) and
 [Capacity Events setup](../../Student/Resources/fabric-sre-agent/capacity-events/README.md).
-For FUAM, a successful bounded check is:
+Share the relevant items with audience users/groups and grant each team UAMI
+the documented read permissions. Give students the connection identifiers and
+known data-coverage limits. For FUAM, a successful bounded check is:
 
 ```sql
 SELECT TOP 5 Date, WorkspaceId, ItemId, OperationName, TotalCUs, OperationCount

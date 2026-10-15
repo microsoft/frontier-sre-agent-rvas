@@ -1,20 +1,20 @@
 [< Previous Challenge](./Challenge-00.md) — **[Home](../../README.md)** — [Next Challenge >](./Challenge-02.md)
 
-# Challenge 01 — Select and Establish a Consumption Backend
+# Challenge 01 — Select and Validate a Shared Consumption Backend
 
 > **Capabilities added in this challenge**: FUAM or Capacity Events · Consumption Evidence
 
 ## Introduction
 
 An agent can only explain consumption that its telemetry source actually
-records. This challenge compares two supported approaches, then establishes one
-backend as the source of truth for the agent you will build.
+records. This challenge compares two coach-provisioned, shared sources, then
+validates one as the source of truth for your team's agent.
 
 ## Description
 
-Use the two deployment guides in
+Use the coach's handoff and the two backend reference guides in
 [`Student/Resources/fabric-sre-agent/`](../Resources/fabric-sre-agent/README.md)
-to select and provision **one** backend:
+to select and validate **one shared** backend:
 
 - **FUAM** uses the Capacity Metrics app and a Lakehouse. It provides daily
   consumption by item and operation, with per-execution notebook CU derived
@@ -22,10 +22,15 @@ to select and provision **one** backend:
 - **Capacity Events** streams capacity operation events to an Eventhouse. It
   can provide exact CU per operation, but has finite history and continuously
   consumes capacity while running.
-- Verify that the source contains usable data and record its workspace, item,
+- Verify your read access and that the source contains usable data; record its workspace, item,
   endpoint, capacity, region, freshness, and history-retention details.
 - Document why your team chose the backend and what precision it cannot
   provide.
+
+The coach deploys both backends once and shares their relevant items with the
+audience. Do not deploy another FUAM instance, Eventstream, Eventhouse, or
+subscription, or change shared refresh and retention settings. Escalate missing
+access or data to the coach.
 
 Do not paste connection strings, tokens, client secrets, or tenant identifiers
 into public notes or source control. A single agent uses one backend-specific
@@ -33,7 +38,7 @@ instruction set at a time.
 
 ## Success Criteria
 
-- [ ] One selected backend is running and returns recent consumption evidence for a known workload.
+- [ ] The selected coach-provisioned backend returns recent consumption evidence for a known workload using the shared read-access path.
 - [ ] The selected source, data grain, start of retained history, latest available data, and operating-cost implications are recorded.
 - [ ] The team documents the alternative backend and the use case that would justify choosing it instead.
 - [ ] The agent has not been given write access to Fabric items or KQL management operations.
@@ -49,4 +54,4 @@ instruction set at a time.
 ## Tips
 
 - Capacity Events retains no history from before its subscription started.
-- The backend guides contain detailed tenant-setting, identity, and access prerequisites; resolve those with the appropriate administrators rather than broadening permissions.
+- Backend deployment and administrative grants are coach-owned; validate shared access rather than broadening permissions.
