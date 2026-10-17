@@ -1,10 +1,10 @@
-**[Home](./README.md)** — [Start Mission 00 >](./Challenge-00.md)
+**[Home](./README.md)** — [Choose Deployment >](./Deployment/README.md)
 
 # Lab Details — Understand Grubify
 
-Read this orientation before Mission 00. It explains what Grubify does, how its components fit together, where operational evidence appears, and what normal should look like.
+Read this orientation before Deployment stage 00. It explains what Grubify does, how its components fit together, where operational evidence appears, and what normal should look like.
 
-Architecture describes the intended system. A baseline records what the deployed system proves at a specific time. Learn the architecture now, then return to the baseline checklist after Missions 00–02 and before starting Mission 03.
+Architecture describes the intended system. A baseline records what the deployed system proves at a specific time. Learn the architecture now, then return to the baseline checklist after Deployment stages 00–02 and before starting Mission 01.
 
 ## Application Overview
 
@@ -28,7 +28,7 @@ The two applications are independently deployed and independently observable. A 
 
 ## Important Application URLs
 
-These URLs point to the shared Grubify lab deployment. Mission 00 also writes the environment-specific base addresses to `FRONTEND_URL` and `API_BASE_URL`; use those azd values if you deploy a different environment.
+These URLs point to the shared Grubify lab deployment. Deployment stage 00 also writes the environment-specific base addresses to `FRONTEND_URL` and `API_BASE_URL`; use those azd values if you deploy a different environment.
 
 | Experience or check | URL | Why it matters |
 |---|---|---|
@@ -92,7 +92,7 @@ flowchart TB
 
 ## How Many Infrastructure Components Are Deployed?
 
-After Missions 00–02, the lab deploys **14 core Azure resources** across two resource groups. This count includes the services, identities, and agent connectors that participants inspect. It excludes the two resource groups themselves, RBAC role-assignment records, Container App revisions, deployment records, subagent configuration, and the response plan.
+After Deployment stages 00–02, the lab deploys **14 core Azure resources** across two resource groups. This count includes the services, identities, and agent connectors that participants inspect. It excludes the two resource groups themselves, RBAC role-assignment records, Container App revisions, deployment records, subagent configuration, and the response plan.
 
 | Deployment area | Count | Components | Why they are separate |
 |---|---:|---|---|
@@ -144,7 +144,7 @@ The SRE Agent is on the **evidence and control path**, not the **customer reques
 
 ## Normal Baseline
 
-Before Mission 00, use this table to understand the expected end state. After Missions 00–02, record a timestamp and the exact subscription, workload resource group, agent resource group, frontend URL, API URL, and active revision names, then evaluate every row.
+Before Deployment stage 00, use this table to understand the expected end state. After Deployment stages 00–02, record a timestamp and the exact subscription, workload resource group, agent resource group, frontend URL, API URL, and active revision names, then evaluate every row.
 
 | Baseline dimension | Normal expectation | Operational meaning |
 |---|---|---|
@@ -167,15 +167,15 @@ Use three labels in the baseline record:
 - **FAIL** — current evidence contradicts the normal expectation; stop and treat this as a pre-existing issue.
 - **UNKNOWN** — evidence is unavailable, stale, or not yet ingested; state the next check instead of assuming health.
 
-Do not begin Mission 03 until the frontend, API liveness, domain reads, active revisions, and evidence access are either **PASS** or explicitly documented as controlled exercise limitations. Preserve this baseline so later incident results can be compared with the same routes, time window, and resources.
+Do not begin Mission 01 until the frontend, API liveness, domain reads, active revisions, and evidence access are either **PASS** or explicitly documented as controlled exercise limitations. Preserve this baseline so later incident results can be compared with the same routes, time window, and resources.
 
 ## Lab Sequence
 
 | Stage | Purpose |
 |---|---|
-| Before Mission 00 | Understand Grubify, its Azure architecture, its evidence paths, and the expected normal state |
-| Missions 00–02 | Deploy the workload and agent, then connect their evidence sources |
-| Before Mission 03 | Return here and record the observed baseline using PASS, FAIL, or UNKNOWN |
-| Missions 03–13 | Investigate operational signals against the preserved baseline |
+| Before Deployment stage 00 | Understand Grubify, its Azure architecture, its evidence paths, and the expected normal state |
+| Deployment stages 00–02 | Deploy the workload and agent, then connect their evidence sources |
+| Before Mission 01 | Return here and record the observed baseline using PASS, FAIL, or UNKNOWN |
+| Missions 01–11 | Investigate operational signals against the preserved baseline |
 
-[Start Mission 00 >](./Challenge-00.md)
+[Choose Deployment >](./Deployment/README.md)

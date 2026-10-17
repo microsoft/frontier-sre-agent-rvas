@@ -1,0 +1,22 @@
+# Five-minute orchestration cadence. The approval Function independently enforces
+# incident age, exact action, authenticated decision, and one-time execution.
+api_version: azuresre.ai/v1
+kind: ScheduledTask
+metadata:
+  name: grubify-backup-approval-check
+spec:
+  description: Check active vm-parking-madrid backup incidents for durable Teams approval and validate any gate-authorized backup retry.
+  schedule: "*/5 * * * *"
+  time_zone: UTC
+  enabled: true
+  agent: grubify-backup-specialist
+  mode: Review
+  prompt: >-
+    Find active Azure Monitor incidents for failed vm-parking-madrid Azure Backup jobs. For each incident,
+    preserve its immutable incident ID and original createdAt timestamp. Read the durable decision
+    with get_backup_approval. If no request exists, create exactly one with
+    create_backup_approval. If pending or denied, report status and stop. If approved, call
+    execute_approved_backup_retry; the gate must independently accept the five-minute age and
+    one-time claim. Then use read-only Azure tools to wait for the resulting job, prove a newer
+    recovery point exists. Never use a generic Azure write tool; never start, restart, or restore
+    the VM.

@@ -132,6 +132,7 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = {
           env: [
             { name: 'ASPNETCORE_ENVIRONMENT', value: 'Production' }
             { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsights.properties.ConnectionString }
+            { name: 'AllowedOrigins__0', value: 'https://ca-${token}-food-frontend.${environment.properties.defaultDomain}' }
           ]
           resources: {
             cpu: json('0.5')
@@ -200,6 +201,7 @@ resource frontend 'Microsoft.App/containerApps@2024-03-01' = {
 output containerRegistryEndpoint string = registry.properties.loginServer
 output containerRegistryName string = registry.name
 output applicationInsightsName string = appInsights.name
+output applicationInsightsConnectionString string = appInsights.properties.ConnectionString
 output logAnalyticsWorkspaceId string = logAnalytics.id
 output apiUrl string = 'https://${api.properties.configuration.ingress.fqdn}'
 output frontendUrl string = 'https://${frontend.properties.configuration.ingress.fqdn}'

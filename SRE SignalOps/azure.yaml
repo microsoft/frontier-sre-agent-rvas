@@ -27,6 +27,9 @@ hooks:
       Write-Host "SignalOps infrastructure reconciled for $env:AZURE_ENV_NAME"
       Write-Host "Workload resource group: $env:AZURE_RESOURCE_GROUP"
       if ($env:SRE_AGENT_NAME) { Write-Host "SRE Agent: $env:SRE_AGENT_NAME" }
+      if ($env:DEPLOY_CONNECTORS -eq 'true') {
+        & '.\Scripts\Register-SignalOpsAgent.ps1' -AgentId $env:SRE_AGENT_ID
+      }
   postdeploy:
     shell: pwsh
     run: |

@@ -1,22 +1,24 @@
+const deploymentStages = [
+    ['00', 'Deploy', 'Deploy the Workload with azd', 'Create the isolated food application and workspace-backed observability from Bicep.', '30–40 min', ['azd', 'Bicep', 'Container Apps']],
+    ['01', 'Deploy', 'Deploy the Agent Core with azd', 'Add the SRE Agent, managed identity, governed RBAC, and managed resource scope.', '20–30 min', ['azd provision', 'RBAC', 'Agent']],
+    ['02', 'Deploy', 'Deploy Evidence and Incident Routing with azd', 'Add Azure telemetry connectors, register three specialists, and verify the Review response plan.', '25–30 min', ['Connectors', 'Routing', 'Telemetry']]
+];
 const missions = [
-    ['00', 'Bootstrap', 'Deploy the Workload with azd', 'Create the isolated food application and workspace-backed observability from Bicep.', '30–40 min', ['azd', 'Bicep', 'Container Apps']],
-    ['01', 'Bootstrap', 'Deploy the Agent Core with azd', 'Add the SRE Agent, managed identity, governed RBAC, and managed resource scope.', '20–30 min', ['azd provision', 'RBAC', 'Agent']],
-    ['02', 'Bootstrap', 'Deploy Evidence Connectors with azd', 'Add Azure telemetry connectors and prove the resulting evidence-plane ground truth.', '20–25 min', ['Connectors', 'Knowledge', 'Telemetry']],
-    ['03', 'Bootstrap', 'Investigate and Recover a Grubify Memory Incident', 'Trigger a real Grubify memory incident, follow Azure Monitor and SRE Agent evidence, then recover and verify.', '30–40 min', ['Alerts', 'Memory', 'RCA']],
-    ['04', 'Bootstrap', 'Build Grubify Knowledge and Incident Memory', 'Upload approved Grubify knowledge, verify indexing, and inspect memory-first specialist instructions.', '20–30 min', ['Agent Memory', 'Knowledge', 'Indexing']],
-    ['05', 'Wire', 'Investigate an Evidence Blind Spot', 'Validate each telemetry source, classify a failed or stale read, and choose a safe fallback or escalation.', '20–25 min', ['Evidence', 'Freshness', 'Escalation']],
-    ['06', 'Wire', 'Route a Cross-Domain Incident', 'Compare live specialists with desired state, then route application and network evidence without losing ownership.', '20–25 min', ['Routing', 'Handoffs', 'Ownership']],
-    ['07', 'Operate', 'Heartbeat Triage and Deep RCA', 'Separate symptom from cause and defend an evidence-backed RCA.', '20–25 min', ['Heartbeat', 'Triage', 'RCA']],
-    ['08', 'Operate', 'Improve the Next Heartbeat Response', 'Replay the incident with verified context while keeping current evidence authoritative.', '20–25 min', ['Context', 'Learning', 'Evidence']],
-    ['09', 'Operate', 'Resolve a Backup Assurance Incident', 'Triage recoverability risk, communicate impact, and validate service after recovery.', '20–25 min', ['Azure Backup', 'Communication', 'Recovery']],
-    ['10', 'Wire', 'Exercise a Guarded HTTP-Error Response', 'Verify HTTP-error routing, gather current evidence, and exercise proposal-only stop and recovery criteria.', '25–30 min', ['HTTP errors', 'Routing', 'Recovery']],
-    ['11', 'Trace', 'Scope Impact with Dependency Evidence', 'Bound the affected Grubify user journey and identify the next discriminating check.', '20–25 min', ['Dependencies', 'Blast radius', 'Telemetry']],
-    ['12', 'Trace', 'Investigate a Network Security Failure', 'Find the NSG decision that blocks an application dependency.', '25–30 min', ['NSG', 'Flow Logs', 'Blast radius']],
-    ['13', 'Trace', 'Investigate a Routing Black Hole', 'Use effective routes and next-hop evidence to expose asymmetric routing.', '25–30 min', ['UDR', 'Next hop', 'Routing']],
-    ['14', 'Operate', 'Resolve a Critical Assurance Risk', 'Find a critical preventive issue and define owned remediation, rollback, and validation.', '20–25 min', ['Assurance', 'Prevention', 'Governance']]
+    ['01', 'Foundation', 'Investigate and Recover a Grubify Memory Incident', 'Trigger a real Grubify memory incident, follow Azure Monitor and SRE Agent evidence, then recover and verify.', '30–40 min', ['Alerts', 'Memory', 'RCA']],
+    ['02', 'Foundation', 'Build Grubify Knowledge and Incident Memory', 'Upload approved Grubify knowledge, verify indexing, and inspect memory-first specialist instructions.', '20–30 min', ['Agent Memory', 'Knowledge', 'Indexing']],
+    ['03', 'Connections & Routing', 'Investigate an Evidence Blind Spot', 'Validate each telemetry source, classify a failed or stale read, and choose a safe fallback or escalation.', '20–25 min', ['Evidence', 'Freshness', 'Escalation']],
+    ['04', 'Connections & Routing', 'Route a Cross-Domain Incident', 'Compare live specialists with desired state, then route application and network evidence without losing ownership.', '20–25 min', ['Routing', 'Handoffs', 'Ownership']],
+    ['05', 'Incident Response', 'Heartbeat Triage and Deep RCA', 'Separate symptom from cause and defend an evidence-backed RCA.', '20–25 min', ['Heartbeat', 'Triage', 'RCA']],
+    ['06', 'Incident Response', 'Improve the Next Heartbeat Response', 'Replay the incident with verified context while keeping current evidence authoritative.', '20–25 min', ['Context', 'Learning', 'Evidence']],
+    ['07', 'Incident Response', 'Respond to a VM Backup Failure with External Approval', 'Validate one protected VM, an external Teams approval gate, and an incident-bound backup retry.', '75–90 min', ['Azure Backup', 'Communication', 'Recovery']],
+    ['08', 'Connections & Routing', 'Exercise a Guarded HTTP-Error Response', 'Verify HTTP-error routing, gather current evidence, and exercise proposal-only stop and recovery criteria.', '25–30 min', ['HTTP errors', 'Routing', 'Recovery']],
+    ['09', 'Dependencies & Networking', 'Scope Impact with Dependency Evidence', 'Bound the affected Grubify user journey and identify the next discriminating check.', '20–25 min', ['Dependencies', 'Blast radius', 'Telemetry']],
+    ['10', 'Dependencies & Networking', 'Investigate a Network Security Failure', 'Find the NSG decision that blocks an approved VM-to-VM sandbox dependency.', '25–30 min', ['NSG', 'Flow Logs', 'Blast radius']],
+    ['11', 'Dependencies & Networking', 'Investigate a Routing Black Hole', 'Use effective routes and next-hop evidence to expose asymmetric routing.', '25–30 min', ['UDR', 'Next hop', 'Routing']],
+    ['12', 'Incident Response', 'Plan a Response to an Assurance Risk', 'Find a supported preventive issue and define owned remediation, rollback, and validation.', '20–25 min', ['Assurance', 'Prevention', 'Governance']]
 ];
 
-const contentVersion = '15';
+const contentVersion = '22';
 
 const labDetails = {
     number: 'LAB',
@@ -29,45 +31,63 @@ const labDetails = {
 
 const studentFiles = [
     { file: '../sre-signalops/Lab-Details.md', title: labDetails.title, label: 'Lab details' },
-    ...missions.map(mission => ({ file: `../sre-signalops/Challenge-${mission[0]}.md`, title: mission[2], label: `Mission ${mission[0]}` }))
+    ...missions.map(mission => ({
+        file: `../sre-signalops/Missions/Challenge-${mission[0]}.md`,
+        title: mission[2],
+        label: `Mission ${mission[0]}`
+    }))
+];
+const bicepFiles = [
+    { file: '../sre-signalops/Deployment/Bicep/README.md', title: 'Deploy with Bicep', label: 'Deployment' },
+    ...deploymentStages.map(stage => ({
+        file: `../sre-signalops/Deployment/Bicep/Challenge-${stage[0]}.md`,
+        title: stage[2],
+        label: `Deployment stage ${stage[0]}`
+    }))
+];
+const terraformFiles = [
+    { file: '../sre-signalops/Deployment/Terraform/README.md', title: 'Deploy with Terraform', label: 'Deployment' }
+];
+const deploymentFiles = [
+    { file: '../sre-signalops/Deployment/README.md', title: 'Deployment paths', label: 'Deployment' }
+];
+const missionFiles = [
+    { file: '../sre-signalops/Missions/README.md', title: 'Operational Missions', label: 'Missions' },
+    ...studentFiles.slice(1)
 ];
 const coachFiles = [
     { file: '../sre-signalops/Coach/Lab-Details.md', title: labDetails.title, label: 'Lab details' },
-    ...missions.map(mission => ({ file: `../sre-signalops/Coach/Solution-${mission[0]}.md`, title: mission[2], label: `Solution ${mission[0]}` }))
+    ...deploymentStages.map(stage => ({ file: `../sre-signalops/Coach/Deployment/Solution-${stage[0]}.md`, title: stage[2], label: `Deployment stage ${stage[0]}` })),
+    ...missions.map(mission => ({ file: `../sre-signalops/Coach/Missions/Solution-${mission[0]}.md`, title: mission[2], label: `Mission ${mission[0]}` }))
 ];
 
 const challengeGrid = document.getElementById('challenge-grid');
-const archiveGrid = document.getElementById('archive-grid');
-const archiveCount = document.getElementById('archive-count');
 const coachList = document.getElementById('coach-list');
-const archivedMissionNumbers = new Set(['10', '11', '13', '14', '15']);
 
-function createChallengeCard(number, phase, title, summary, duration, tags, index, buttonLabel, target = challengeGrid) {
+function createChallengeCard(number, category, title, summary, duration, tags, index, buttonLabel, target = challengeGrid) {
     const article = document.createElement('article');
-    article.className = `challenge-card phase-${phase.toLowerCase()}`;
+    article.className = `challenge-card phase-${category.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
     article.innerHTML = `<div class="card-meta"><span class="number">${number}</span><span class="duration">${duration}</span></div>
-        <p class="card-label">${phase}</p><h3>${title}</h3><p>${summary}</p>
+        <p class="card-label">${category}</p><h3>${title}</h3><p>${summary}</p>
         <ul class="tags" aria-label="Topics">${tags.map(tag => `<li>${tag}</li>`).join('')}</ul>
         <button class="open-reader" data-kind="student" data-index="${index}">${buttonLabel} <span aria-hidden="true">→</span></button>`;
     target.appendChild(article);
 }
 
-createChallengeCard(labDetails.number, labDetails.phase, labDetails.title, labDetails.summary, labDetails.duration, labDetails.tags, 0, 'Open lab details');
+createChallengeCard(labDetails.number, labDetails.phase, labDetails.title, labDetails.summary, labDetails.duration, labDetails.tags, 0, 'Open lab details', document.getElementById('orientation-grid'));
 
 missions.forEach((mission, index) => {
     const [number, phase, title, summary, duration, tags] = mission;
-    const target = archivedMissionNumbers.has(number) ? archiveGrid : challengeGrid;
-    createChallengeCard(number, phase, title, summary, duration, tags, index + 1, 'Open mission', target);
-
+    createChallengeCard(number, phase, title, summary, duration, tags, index + 1, 'Open mission');
+});
+coachFiles.slice(1).forEach((entry, index) => {
     const coachButton = document.createElement('button');
     coachButton.className = 'coach-row open-reader';
     coachButton.dataset.kind = 'coach';
     coachButton.dataset.index = index + 1;
-    coachButton.innerHTML = `<span>Solution ${number}</span><strong>${title}</strong><span aria-hidden="true">→</span>`;
+    coachButton.innerHTML = `<span>${entry.label}</span><strong>${entry.title}</strong><span aria-hidden="true">→</span>`;
     coachList.appendChild(coachButton);
 });
-
-archiveCount.textContent = `${archiveGrid.childElementCount} missions`;
 
 const labCoachButton = document.createElement('button');
 labCoachButton.className = 'coach-row open-reader';
@@ -97,12 +117,10 @@ function normalizedPath(file) {
 }
 
 function findEntry(path) {
-    const studentIndex = studentFiles.findIndex(entry => normalizedPath(entry.file) === path);
-    if (studentIndex >= 0) return { files: studentFiles, index: studentIndex };
-
-    const coachIndex = coachFiles.findIndex(entry => normalizedPath(entry.file) === path);
-    if (coachIndex >= 0) return { files: coachFiles, index: coachIndex };
-
+    for (const files of [bicepFiles, terraformFiles, deploymentFiles, missionFiles, studentFiles, coachFiles]) {
+        const index = files.findIndex(entry => normalizedPath(entry.file) === path);
+        if (index >= 0) return { files, index };
+    }
     return null;
 }
 
@@ -198,8 +216,14 @@ async function renderEntry() {
 }
 
 function openReader(kind, index, trigger) {
-    activeFiles = kind === 'coach' ? coachFiles : studentFiles;
-    activeIndex = index;
+    if (kind === 'student' && index > 0) {
+        const match = findEntry(normalizedPath(studentFiles[index].file));
+        activeFiles = match.files;
+        activeIndex = match.index;
+    } else {
+        activeFiles = kind === 'coach' ? coachFiles : kind === 'bicep' ? bicepFiles : kind === 'terraform' ? terraformFiles : kind === 'deployment' ? deploymentFiles : studentFiles;
+        activeIndex = index;
+    }
     returnFocus = trigger;
     reader.classList.add('open');
     overlay.classList.add('open');

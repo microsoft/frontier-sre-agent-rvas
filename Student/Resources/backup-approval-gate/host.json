@@ -1,0 +1,14 @@
+{
+  "version": "2.0",
+  "extensions": {
+    "mcp": {
+      "instructions": "Creates and checks VM backup approvals and executes only an approved, incident-bound backup retry after five minutes.",
+      "serverName": "mission09-vm-backup-approval",
+      "serverVersion": "1.0.0",
+      "encryptClientState": true,
+      "system": {
+        "webhookAuthorizationLevel": "System"
+      }
+    }
+  }
+}

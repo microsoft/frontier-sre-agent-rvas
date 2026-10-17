@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js" integrity="sha384-JEyTNhjM6R1ElGoJns4U2Ln4ofPcqzSsynQkmEc/KGy6336qAZl70tDLufbkla+3" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.2/dist/mermaid.min.js"></script>
     <link rel="stylesheet" href="../assets/css/brand.css">
-    <link rel="stylesheet" href="./signalops.css?v=15">
+    <link rel="stylesheet" href="    ./signalops.css?v=18">
 </head>
 
 <body>
@@ -22,7 +22,8 @@
         </a>
         <nav aria-label="Primary navigation">
             <a href="./capabilities.html">Capabilities</a>
-            <a href="#challenges">Challenges</a>
+            <a href="#deployment">Deployment</a>
+            <a href="#missions">Missions</a>
             <label class="coach-toggle">
                 <span>Coach mode</span>
                 <input id="coach-toggle" type="checkbox" role="switch" aria-controls="coach-guides">
@@ -41,23 +42,22 @@
                     <a class="primary-action" href="#challenges">Start with Lab Details <span aria-hidden="true">→</span></a>
                 </div>
                 <div class="hero-status" aria-label="Track summary">
-                    <div><strong>15</strong><span>Missions</span></div>
-                    <div><strong>4</strong><span>Phases</span></div>
+                    <div><strong>12</strong><span>Missions</span></div>
+                    <div><strong>4</strong><span>Mission categories</span></div>
                     <div><strong>1</strong><span>Signal chain</span></div>
                 </div>
             </div>
         </section>
 
-        <section class="journey" aria-label="Learning journey">
+        <section class="journey" aria-label="Mission categories">
             <div class="section-inner">
-                <p class="section-kicker">Operational sequence</p>
-                <ol class="journey-steps">
-                    <li><span>PRE</span><strong>Understand</strong><small>Application + architecture</small></li>
-                    <li><span>00–04</span><strong>Bootstrap</strong><small>Workload + agent + memory</small></li>
-                    <li><span>05–06</span><strong>Wire</strong><small>Systems + specialists</small></li>
-                    <li><span>07–10</span><strong>Operate</strong><small>RCA + learning + response</small></li>
-                    <li><span>11–14</span><strong>Trace</strong><small>Dependencies + network + assurance</small></li>
-                </ol>
+                <p class="section-kicker">Mission categories · Follow mission numbers, not category order</p>
+                <ul class="journey-steps">
+                    <li><span>01–02</span><strong>Foundation</strong><small>First investigation + incident memory</small></li>
+                    <li><span>03–04, 08</span><strong>Connections &amp; Routing</strong><small>Evidence access + specialist routing</small></li>
+                    <li><span>05–07, 12</span><strong>Incident Response</strong><small>Triage + recovery + reliability</small></li>
+                    <li><span>09–11</span><strong>Dependencies &amp; Networking</strong><small>Impact + network security + routes</small></li>
+                </ul>
             </div>
         </section>
 
@@ -65,20 +65,60 @@
             <div class="section-inner">
                 <div class="section-heading">
                     <div>
-                        <p class="section-kicker">Mission board</p>
-                        <h2 id="challenges-title">Follow the signal</h2>
+                        <p class="section-kicker">Start here</p>
+                        <h2 id="challenges-title">Understand the lab</h2>
                     </div>
-                    <p>Start with the Grubify lab model, then follow the signal through evidence, decisions, and controlled action.</p>
+                    <p>Understand Grubify, choose a deployment path, then follow the signal through operational missions.</p>
                 </div>
 
-                <div class="challenge-grid" id="challenge-grid"></div>
-                <details class="mission-archive">
-                    <summary>
-                        <span>Archive</span>
-                        <small id="archive-count">Archived missions</small>
-                    </summary>
-                    <div class="challenge-grid archive-grid" id="archive-grid"></div>
-                </details>
+                <div class="challenge-grid" id="orientation-grid"></div>
+
+                <section class="board-group" id="deployment" aria-labelledby="deployment-title">
+                    <div class="section-heading">
+                        <div>
+                            <p class="section-kicker">01 / Environment setup</p>
+                            <h2 id="deployment-title">Deployment</h2>
+                        </div>
+                        <p>Choose one path. Both follow Prepare, Deploy, Verify; resource coverage and ownership remain different.</p>
+                    </div>
+                    <div class="deployment-grid">
+                        <article class="challenge-card phase-deploy deployment-card">
+                            <p class="card-label">Terraform</p>
+                            <h3>Deploy the full lab</h3>
+                            <p>Grubify and Parking Manager, plus hub-spoke networking, Firewall, Bastion, and VM tiers.</p>
+                            <ol class="deployment-steps">
+                                <li><strong>Prepare</strong><span>Check access, quota, and an existing registry.</span></li>
+                                <li><strong>Deploy</strong><span>Build images, review the plan, and apply.</span></li>
+                                <li><strong>Verify</strong><span>Complete VM setup, agent routing, and baseline checks.</span></li>
+                            </ol>
+                            <ul class="tags" aria-label="Coverage"><li>Full lab</li><li>Existing ACR</li><li>Terraform</li></ul>
+                            <button class="open-reader" data-kind="terraform" data-index="0">Open Terraform deployment <span aria-hidden="true">→</span></button>
+                        </article>
+                        <article class="challenge-card phase-deploy deployment-card">
+                            <p class="card-label">Bicep</p>
+                            <h3>Deploy the SignalOps core</h3>
+                            <p>Grubify, its registry and observability, SRE Agent, telemetry connectors, and incident routing.</p>
+                            <ol class="deployment-steps">
+                                <li><strong>Prepare</strong><span>Check access, tools, and an isolated azd environment.</span></li>
+                                <li><strong>Deploy</strong><span>Review and run workload, agent, and connector stages.</span></li>
+                                <li><strong>Verify</strong><span>Confirm agent routing, telemetry, and baseline health.</span></li>
+                            </ol>
+                            <ul class="tags" aria-label="Coverage"><li>Core lab</li><li>Managed ACR</li><li>azd + Bicep</li></ul>
+                            <button class="open-reader" data-kind="bicep" data-index="0">Open Bicep deployment <span aria-hidden="true">→</span></button>
+                        </article>
+                    </div>
+                </section>
+
+                <section class="board-group" id="missions" aria-labelledby="missions-title">
+                    <div class="section-heading">
+                        <div>
+                            <p class="section-kicker">02 / Investigate, decide, recover</p>
+                            <h2 id="missions-title">Missions 01–12</h2>
+                        </div>
+                        <p>Complete either deployment and record the baseline first. Follow all twelve missions in order; live-only scenarios state their prerequisites.</p>
+                    </div>
+                    <div class="challenge-grid" id="challenge-grid"></div>
+                </section>
             </div>
         </section>
 
@@ -99,7 +139,7 @@
     <footer>
         <span class="solution-logo footer-logo" aria-label="RVAS">RVA<span>S</span></span>
         <p>Build. Innovate. Scale real value.</p>
-        <a href="https://github.com/microsoft/frontier-sre-agent-rvas" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+        <a href="#deployment">Deployment <span aria-hidden="true">↑</span></a>
     </footer>
 
     <div class="reader-overlay" id="reader-overlay"></div>
@@ -120,7 +160,7 @@
         </div>
     </aside>
 
-    <script src="./signalops.js?v=15"></script>
+    <script src="    ./signalops.js?v=22"></script>
 </body>
 
 </html>

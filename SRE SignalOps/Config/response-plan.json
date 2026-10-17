@@ -1,0 +1,14 @@
+{
+  "name": "sample-food-http-errors",
+  "type": "IncidentFilter",
+  "tags": [],
+  "properties": {
+    "incidentPlatform": "AzMonitor",
+    "isEnabled": true,
+    "priorities": ["Sev0", "Sev1", "Sev2", "Sev3", "Sev4"],
+    "titleContains": "grubify",
+    "handlingAgent": "aca-app-incident-handler",
+    "agentMode": "Review",
+    "maxAutomatedInvestigationAttempts": 1
+  }
+}

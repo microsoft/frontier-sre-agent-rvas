@@ -1,0 +1,21 @@
+# The deployment operator resolves the Function MCP endpoint and system key after
+# provisioning and injects them through local/CI environment variables. Never commit either value.
+api_version: azuresre.ai/v1
+kind: AgentConnector
+metadata:
+  name: backup-approval-gate
+spec:
+  properties:
+    dataConnectorType: Mcp
+    dataSource: backup-approval-gate
+    extendedProperties:
+      type: http
+      endpoint: ${BACKUP_APPROVAL_MCP_URL}
+      authType: CustomHeaders
+      customHeaders:
+        x-functions-key: ${BACKUP_APPROVAL_MCP_KEY}
+      toolsVisibleToMetaAgent:
+        - backup-approval-gate_create_backup_approval
+        - backup-approval-gate_get_backup_approval
+        - backup-approval-gate_execute_approved_backup_retry
+    identity: system

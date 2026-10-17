@@ -1,0 +1,18 @@
+# Review-mode routing for native Azure Backup failed-job incidents.
+api_version: azuresre.ai/v1
+kind: IncidentFilter
+metadata:
+  name: grubify-backup-failures
+spec:
+  incidentPlatform: AzMonitor
+  isEnabled: true
+  priorities:
+    - Sev0
+    - Sev1
+    - Sev2
+    - Sev3
+    - Sev4
+  titleContains: vm-parking-madrid backup
+  handlingAgent: grubify-backup-specialist
+  agentMode: Review
+  maxAutomatedInvestigationAttempts: 1

@@ -36,16 +36,30 @@ build-web: clean-web
 	@find Coach -maxdepth 1 -name "Solution-*.md" -exec cp {} _site/Coach/ \; 2>/dev/null || true
 	@find Coach/Solutions -maxdepth 1 -name "Solution-*.md" -exec cp {} _site/Coach/Solutions/ \; 2>/dev/null || true
 	@# Standalone SRE SignalOps challenge track
-	@mkdir -p _site/sre-signalops/Coach
+	@mkdir -p _site/sre-signalops/Coach/Deployment _site/sre-signalops/Coach/Missions
 	@cp "SRE SignalOps/README.md" _site/sre-signalops/README.md
 	@cp "SRE SignalOps/Lab-Details.md" _site/sre-signalops/Lab-Details.md
-	@find "SRE SignalOps" -maxdepth 1 -name "Challenge-*.md" -exec cp {} _site/sre-signalops/ \; 2>/dev/null || true
+	@# Publish only deployment documentation and source; never local state or inputs.
+	@mkdir -p _site/sre-signalops/Deployment/Bicep _site/sre-signalops/Deployment/Terraform/infra/modules/workload/templates
+	@cp "SRE SignalOps/Deployment/README.md" _site/sre-signalops/Deployment/
+	@cp "SRE SignalOps/Deployment/Bicep/"*.md _site/sre-signalops/Deployment/Bicep/
+	@cp "SRE SignalOps/Deployment/Terraform/"*.md _site/sre-signalops/Deployment/Terraform/
+	@node scripts/package-signalops-terraform.cjs
+	@tar -czf _site/sre-signalops/Deployment/Terraform/signalops-terraform.tar.gz -C _site/sre-signalops/Deployment/Terraform infra
+	@cp -r "SRE SignalOps/Missions" _site/sre-signalops/Missions
+	@cp "SRE SignalOps/azure.yaml" _site/sre-signalops/azure.yaml
+	@cp -r "SRE SignalOps/Config" _site/sre-signalops/Config
+	@mkdir -p _site/sre-signalops/infra/modules
+	@cp "SRE SignalOps/infra/"*.bicep _site/sre-signalops/infra/
+	@cp "SRE SignalOps/infra/modules/"*.bicep _site/sre-signalops/infra/modules/
 	@mkdir -p _site/sre-signalops/Scripts
 	@cp "SRE SignalOps/Scripts/README.md" _site/sre-signalops/Scripts/README.md
 	@find "SRE SignalOps/Scripts" -maxdepth 1 -name "*.ps1" -exec cp {} _site/sre-signalops/Scripts/ \; 2>/dev/null || true
 	@cp "SRE SignalOps/Coach/README.md" _site/sre-signalops/Coach/README.md
 	@cp "SRE SignalOps/Coach/Lab-Details.md" _site/sre-signalops/Coach/Lab-Details.md
-	@find "SRE SignalOps/Coach" -maxdepth 1 -name "Solution-*.md" -exec cp {} _site/sre-signalops/Coach/ \; 2>/dev/null || true
+	@cp "SRE SignalOps/Coach/Customer-Demo-00-02.md" "SRE SignalOps/Coach/Capability-Briefing-Notes.md" "SRE SignalOps/Coach/Grubify-Lab-Briefing-Notes.md" _site/sre-signalops/Coach/
+	@cp "SRE SignalOps/Coach/Deployment/"*.md _site/sre-signalops/Coach/Deployment/
+	@cp "SRE SignalOps/Coach/Missions/"*.md _site/sre-signalops/Coach/Missions/
 	@echo "Done → _site/"
 
 clean-web:

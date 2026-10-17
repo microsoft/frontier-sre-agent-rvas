@@ -1,8 +1,8 @@
-**[Coach Home](./README.md)** — [Mission 00 Coach Guide >](./Solution-00.md)
+**[Coach Home](./README.md)** — [Deployment stage 00 Coach Guide >](./Deployment/Solution-00.md)
 
 # Coach Orientation — Understand Grubify
 
-Use this guide for a 10–15 minute orientation before Mission 00. Participants should understand the intended system now, then return after Missions 00–02 to record its observed baseline before Mission 03.
+Use this guide for a 10–15 minute orientation before Deployment stage 00. Participants should understand the intended system now, then return after Deployment stages 00–02 to record its observed baseline before Mission 01.
 
 ## Teaching Goal
 
@@ -14,7 +14,7 @@ Use this guide for a 10–15 minute orientation before Mission 00. Participants 
 
 ## Presenter Talk Track
 
-> Grubify has two independently deployed application components. The frontend serves the React experience; the customer's browser then calls the API directly for business data. The API stores demonstration state in memory, so there is no database to blame or investigate in this core architecture. Azure Container Apps runs the revisions, Application Insights records API behavior, and Log Analytics stores workspace and platform evidence. The SRE Agent sits outside the customer transaction. It receives an incident signal, reads evidence, correlates the likely failure domain, and can act only within its identity, tool, policy, and approval boundaries. We will learn the intended system before deploying it, then prove what normal looks like after Missions 00–02 so every later incident claim has a comparison point.
+> Grubify has two independently deployed application components. The frontend serves the React experience; the customer's browser then calls the API directly for business data. The API stores demonstration state in memory, so there is no database to blame or investigate in this core architecture. Azure Container Apps runs the revisions, Application Insights records API behavior, and Log Analytics stores workspace and platform evidence. The SRE Agent sits outside the customer transaction. It receives an incident signal, reads evidence, correlates the likely failure domain, and can act only within its identity, tool, policy, and approval boundaries. We will learn the intended system before deploying it, then prove what normal looks like after Deployment stages 00–02 so every later incident claim has a comparison point.
 
 Ask these questions while showing the diagrams:
 
@@ -24,7 +24,7 @@ Ask these questions while showing the diagrams:
 4. Which permissions let the SRE Agent inspect or change resources, and which control decides whether a proposed write should proceed?
 5. What exact evidence would justify saying only the API is affected rather than all of Grubify?
 
-## Baseline Verification After Mission 02
+## Baseline Verification After Deployment stage 02
 
 1. **Identity and scope:** confirm the signed-in tenant and subscription, then verify the two expected resource groups.
 2. **Platform state:** capture both Container Apps, active ready revisions, traffic weights, replica limits, and ingress FQDNs.
@@ -39,14 +39,14 @@ Do not average these checks into one overall green status. Record each as PASS, 
 
 ## Common Issues
 
-- **Symptom:** The azd environment has deployment flags but no `FRONTEND_URL`, `API_BASE_URL`, or resource-group outputs. **Fix:** treat the environment as not provisioned or incomplete; recover outputs from a successful deployment before starting Mission 03.
-- **Symptom:** No `signalops-core` resources exist in the selected subscription. **Fix:** complete Missions 00–02 in the intended subscription; a configuration plan is not a workload baseline.
+- **Symptom:** The azd environment has deployment flags but no `FRONTEND_URL`, `API_BASE_URL`, or resource-group outputs. **Fix:** treat the environment as not provisioned or incomplete; recover outputs from a successful deployment before starting Mission 01.
+- **Symptom:** No `signalops-core` resources exist in the selected subscription. **Fix:** complete Deployment stages 00–02 in the intended subscription; a configuration plan is not a workload baseline.
 - **Symptom:** `/health` returns `404`. **Fix:** record the deployed image/revision mismatch and use `/WeatherForecast` plus `/api/FoodItems` as compatibility checks.
 - **Symptom:** `/api/menu` returns `404`. **Fix:** this is the expected negative control, not proof of an outage.
 - **Symptom:** The frontend returns `200` but the page has no restaurants. **Fix:** inspect the browser's API request, configured API base URL, API response, and CORS result.
 - **Symptom:** Resources exist but Application Insights is empty. **Fix:** generate known API traffic, allow for ingestion, verify the connection string and SDK, and label evidence UNKNOWN until a recent request is found.
 - **Symptom:** A restart restores HTTP responses but cart contents disappear. **Fix:** explain that availability recovery is not data durability because cart and order state is in memory.
 
-## Ready to Start Mission 03
+## Ready to Start Mission 01
 
 Proceed only when participants can narrate the customer and evidence paths and when frontend delivery, API liveness, domain reads, active revisions, and evidence access are PASS or explicitly documented controlled limitations.

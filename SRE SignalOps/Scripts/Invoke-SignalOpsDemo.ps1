@@ -1,10 +1,12 @@
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [Parameter(Mandatory)]
-    [ValidateSet('00','01','02','11','12','13','14')]
+    [ValidateSet('00','01','02','09','10','11','12')]
     [string]$Challenge,
     [switch]$Execute,
     [string]$EnvironmentName = 'signalops-core',
+    [string]$TerraformPath,
+    [string]$SubscriptionId,
     [string]$Location = 'swedencentral',
     [string]$ResourceGroup,
     [string]$NicName,
@@ -33,8 +35,16 @@ function Get-AzdValue([string]$Name) {
     try {
         $value = azd env get-value $Name 2>$null
         if ($LASTEXITCODE -eq 0) { return ($value | Out-String).Trim() }
-        return $null
+        throw "Could not read azd output $Name from the selected environment."
     } finally { Pop-Location }
+}
+
+function Assert-AzdSubscription {
+    $active = (Invoke-Native { az account show --query id -o tsv } | Out-String).Trim()
+    $target = (Invoke-Native { azd env get-value AZURE_SUBSCRIPTION_ID } | Out-String).Trim()
+    if (-not $target -or $target -ne $active) {
+        throw 'The selected azd environment and active Azure subscription do not match. Select the approved subscription before provisioning.'
+    }
 }
 
 function Get-BashToolPath {
@@ -60,16 +70,26 @@ if ($LASTEXITCODE -ne 0) {
     throw 'Azure CLI is not authenticated. Run az login first.'
 }
 
+if ($Challenge -in @('09', '12')) {
+    $contextArguments = if ($TerraformPath) { @{ TerraformPath = $TerraformPath } } else { @{ EnvironmentName = $EnvironmentName } }
+    $Lab = & (Join-Path $PSScriptRoot 'Get-SignalOpsContext.ps1') @contextArguments
+    $active = (Invoke-Native { az account show --query id -o tsv } | Out-String).Trim()
+    if ($active -ne $Lab.AZURE_SUBSCRIPTION_ID) { throw 'Select the deployment subscription before running this mission.' }
+}
+if ($Challenge -in @('10', '11')) {
+    $active = (Invoke-Native { az account show --query id -o tsv } | Out-String).Trim()
+    if (-not $SubscriptionId -or $SubscriptionId -ne $active) {
+        throw 'Pass -SubscriptionId for the approved network sandbox and select that Azure subscription.'
+    }
+}
+
 switch ($Challenge) {
     '00' {
         Assert-Command azd
-        $account = az account show | ConvertFrom-Json
-        if ($account.name -ne 'MCAPS-Hybrid-REQ-150072-2026-rakau') {
-            throw "Active subscription is '$($account.name)'; select MCAPS-Hybrid-REQ-150072-2026-rakau before continuing."
-        }
         Push-Location (Join-Path $RepoRoot 'SRE SignalOps')
         try {
             Invoke-Native { azd env select $EnvironmentName }
+            Assert-AzdSubscription
             Invoke-Native { azd env set DEPLOY_AGENT false }
             Invoke-Native { azd env set DEPLOY_CONNECTORS false }
             if ($Execute) {
@@ -87,8 +107,8 @@ switch ($Challenge) {
         az resource list --resource-group $workloadResourceGroup --query '[].{name:name,type:type,location:location}' -o table
         $apps = az containerapp list --resource-group $workloadResourceGroup | ConvertFrom-Json
         $apps | Select-Object name,@{n='State';e={$_.properties.runningStatus}},@{n='FQDN';e={$_.properties.configuration.ingress.fqdn}} | Format-Table -AutoSize
-        $frontend = $apps | Where-Object name -eq 'ca-food-frontend'
-        $frontendUrl = "https://$($frontend.properties.configuration.ingress.fqdn)"
+        $frontendUrl = Get-AzdValue 'FRONTEND_URL'
+        if (-not $frontendUrl) { throw 'The selected environment has no FRONTEND_URL output. Complete workload deployment first.' }
         Invoke-WebRequest -Uri $frontendUrl -UseBasicParsing | Select-Object StatusCode
         $appInsightsName = Get-AzdValue 'APPLICATIONINSIGHTS_NAME'
         az monitor app-insights component show --resource-group $workloadResourceGroup --app $appInsightsName --query '{name:name,workspace:properties.WorkspaceResourceId}' -o table
@@ -99,6 +119,7 @@ switch ($Challenge) {
         Push-Location (Join-Path $RepoRoot 'SRE SignalOps')
         try {
             Invoke-Native { azd env select $EnvironmentName }
+            Assert-AzdSubscription
             Invoke-Native { azd env set DEPLOY_AGENT true }
             Invoke-Native { azd env set DEPLOY_CONNECTORS false }
             if ($Execute) {
@@ -125,6 +146,7 @@ switch ($Challenge) {
         Push-Location (Join-Path $RepoRoot 'SRE SignalOps')
         try {
             Invoke-Native { azd env select $EnvironmentName }
+            Assert-AzdSubscription
             Invoke-Native { azd env set DEPLOY_AGENT true }
             Invoke-Native { azd env set DEPLOY_CONNECTORS true }
             if ($Execute) {
@@ -165,41 +187,43 @@ switch ($Challenge) {
         Write-Expected 'The two azd-managed Azure telemetry connectors are visible; repository and knowledge state is reported independently.'
         Write-Prompt 'List the currently proven evidence planes. Distinguish deployed connector infrastructure from populated source and knowledge evidence.'
     }
-    '11' {
-        $workloadResourceGroup = Get-AzdValue 'AZURE_RESOURCE_GROUP'
-        $apiUrl = Get-AzdValue 'API_BASE_URL'
+    '09' {
+        $workloadResourceGroup = $Lab.AZURE_RESOURCE_GROUP
+        $apiUrl = $Lab.API_BASE_URL
+        if (-not $apiUrl) { throw 'Deployment context is missing API_BASE_URL.' }
         1..10 | ForEach-Object { Invoke-RestMethod -Uri "$apiUrl/api/restaurants" | Out-Null }
-        $appName = (az resource list --resource-group $workloadResourceGroup --resource-type Microsoft.Insights/components --query '[0].name' -o tsv).Trim()
-        if (-not $appName) { throw "No Application Insights component found in $workloadResourceGroup" }
-        az monitor app-insights query --resource-group $workloadResourceGroup --app $appName --analytics-query 'requests | where timestamp > ago(30m) | summarize requests=count(), failures=countif(success == false), p95=percentile(duration, 95) by cloud_RoleName' -o table
-        az monitor app-insights query --resource-group $workloadResourceGroup --app $appName --analytics-query 'dependencies | where timestamp > ago(30m) | summarize calls=count(), failures=countif(success == false), p95=percentile(duration, 95) by target, type' -o table
+        $appId = (Invoke-Native { az resource list --resource-group $workloadResourceGroup --resource-type Microsoft.Insights/components --query '[0].id' -o tsv } | Out-String).Trim()
+        if (-not $appId) { throw "No Application Insights component found in $workloadResourceGroup" }
+        Invoke-Native { az monitor app-insights query --app $appId --analytics-query 'requests | where timestamp > ago(30m) | summarize requests=count(), failures=countif(success == false), p95=percentile(duration, 95), firstSeen=min(timestamp), lastSeen=max(timestamp) by cloud_RoleName, name, url | extend failureRate=1.0*failures/requests' -o table }
+        Invoke-Native { az monitor app-insights query --app $appId --analytics-query 'dependencies | where timestamp > ago(30m) | summarize calls=count(), failures=countif(success == false), p95=percentile(duration, 95), firstSeen=min(timestamp), lastSeen=max(timestamp) by cloud_RoleName, target, type, name, data | extend failureRate=1.0*failures/calls' -o table }
         Write-Expected 'API requests appear; absent browser or downstream edges remain explicitly unobserved.'
         Write-Prompt 'Create an evidence-backed dependency map. For each edge include direction, protocol, timestamp, volume, latency, failure rate, and evidence source; label unobserved edges.'
     }
-    '12' {
-        if (-not $ResourceGroup -or -not $NicName) { throw 'Challenge 12 requires -ResourceGroup and -NicName for the coach-provided sandbox.' }
-        az network nic list-effective-nsg --resource-group $ResourceGroup --name $NicName -o jsonc
+    '10' {
+        if (-not $ResourceGroup -or -not $NicName) { throw 'Challenge 10 requires -ResourceGroup and -NicName for the coach-provided sandbox.' }
+        Invoke-Native { az network nic list-effective-nsg --subscription $SubscriptionId --resource-group $ResourceGroup --name $NicName -o jsonc }
         Write-Expected 'The effective NSG output identifies the actual NIC/subnet associations and rule priorities.'
         Write-Prompt 'Identify the exact effective deny, affected and unaffected paths, and the narrowest reversible remediation. Do not delete a broad deny rule.'
     }
-    '13' {
-        if (-not $ResourceGroup -or -not $NicName) { throw 'Challenge 13 requires -ResourceGroup and -NicName.' }
-        az network nic show-effective-route-table --resource-group $ResourceGroup --name $NicName -o table
+    '11' {
+        if (-not $ResourceGroup -or -not $NicName) { throw 'Challenge 11 requires -ResourceGroup and -NicName.' }
+        Invoke-Native { az network nic show-effective-route-table --subscription $SubscriptionId --resource-group $ResourceGroup --name $NicName -o table }
         if ($VmName -and $SourceIp -and $DestinationIp) {
-            az network watcher show-next-hop --resource-group $ResourceGroup --vm $VmName --source-ip $SourceIp --dest-ip $DestinationIp -o jsonc
+            Invoke-Native { az network watcher show-next-hop --subscription $SubscriptionId --resource-group $ResourceGroup --vm $VmName --source-ip $SourceIp --dest-ip $DestinationIp -o jsonc }
         } else {
             Write-Host 'Add -VmName, -SourceIp, and -DestinationIp to run the next-hop check.' -ForegroundColor Yellow
         }
-        Write-Expected 'Forward and return route evidence identifies the effective next hop or missing path.'
+        Write-Expected 'This is one source-side observation. Repeat for the destination NIC/VM to prove the return path; no fault or recovery is performed.'
         Write-Prompt 'Prove forward and return paths separately, then distinguish routing from DNS, NSG, and application failure.'
     }
-    '14' {
-        $subscriptionId = (az account show --query id -o tsv).Trim()
-        $resources = az resource list --subscription $subscriptionId -o json | ConvertFrom-Json
+    '12' {
+        $subscriptionId = $Lab.AZURE_SUBSCRIPTION_ID
+        $resources = Invoke-Native { az resource list --subscription $subscriptionId -o json } | ConvertFrom-Json
         $resources | Group-Object type | Sort-Object Count -Descending | Select-Object Count, Name | Format-Table -AutoSize
-        az advisor recommendation list --subscription $subscriptionId --query '[].{category:category,impact:impact,resource:resourceMetadata.resourceId,problem:shortDescription.problem}' -o table
-        az monitor log-analytics workspace list --subscription $subscriptionId --query '[].{name:name,resourceGroup:resourceGroup,retention:retentionInDays}' -o table
+        Invoke-Native { az advisor recommendation list --subscription $subscriptionId --query '[].{category:category,impact:impact,resource:resourceMetadata.resourceId,problem:shortDescription.problem}' -o table }
+        Invoke-Native { az monitor log-analytics workspace list --subscription $subscriptionId --query '[].{name:name,resourceGroup:resourceGroup,retention:retentionInDays}' -o table }
+        Write-Warning 'This wrapper does not query Cost Management, utilization, backup coverage, fired alerts or stale telemetry. Those evidence planes remain unassessed until separately queried.'
         Write-Expected 'Inventory, Advisor, and observability evidence are visible; unavailable cost or utilization access is reported as a gap.'
-        Write-Prompt 'Produce three prioritized read-only recommendations across cost, reliability, observability, resilience, or governance. Include evidence, value, confidence, effort, trade-off, owner, and approval need.'
+        Write-Prompt 'Produce only evidence-supported read-only recommendations across the approved subscription. Include evidence, value, confidence, effort, trade-off, owner, and approval need. Report zero findings or fewer than three when that is all the evidence supports; distinguish unassessed sources from actual issues.'
     }
 }

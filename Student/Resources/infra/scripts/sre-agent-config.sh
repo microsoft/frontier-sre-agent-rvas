@@ -772,8 +772,8 @@ data_put_extended() {
     http_code="$(curl -sS -o /dev/null -w '%{http_code}' -X PUT \
       -H "Authorization: Bearer ${token}" \
       -H 'Content-Type: application/json' \
-      --data "${body}" \
-      "${url}" || true)"
+      --data-binary @- \
+      "${url}" <<< "${body}" || true)"
     if [[ "${http_code}" == 2* ]]; then
       log "Applied data-plane /api/v2/extendedAgent/${endpoint_kind}/${name}"
       return 0

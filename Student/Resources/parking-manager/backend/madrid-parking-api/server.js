@@ -14,9 +14,12 @@ const PORT = process.env.PORT || 3002;
 let server;
 const certPath = process.env.CERT_PATH || path.join(__dirname, 'madrid.crt');
 const keyPath = process.env.KEY_PATH || path.join(__dirname, 'madrid.key');
+const pfxPath = process.env.PFX_PATH || path.join(__dirname, 'madrid.pfx');
+const pfxPassphrase = process.env.PFX_PASSPHRASE || '';
+const hasPfx = fs.existsSync(pfxPath);
 
 // Check if HTTPS certificates exist
-const useHttps = fs.existsSync(certPath) && fs.existsSync(keyPath);
+const useHttps = hasPfx || (fs.existsSync(certPath) && fs.existsSync(keyPath));
 
 // Middleware
 app.use(cors());
@@ -65,14 +68,11 @@ app.use((req, res, next) => {
       statusCode: res.statusCode,
       responseTimeMs,
       city: parkingState.city
-      const pfxPath = process.env.PFX_PATH || path.join(__dirname, 'madrid.pfx');
-      const pfxPassphrase = process.env.PFX_PASSPHRASE || '';
     });
   });
-      const hasPfx = fs.existsSync(pfxPath);
 
   next();
-      const useHttps = hasPfx || (fs.existsSync(certPath) && fs.existsSync(keyPath));
+});
 
 app.use(createChaosMiddleware('madrid', {
   onChaosInject: (details) => {
@@ -288,7 +288,10 @@ app.use((err, req, res, next) => {
 
 // Start server
 if (useHttps) {
-  const options = {
+  const options = hasPfx ? {
+    pfx: fs.readFileSync(pfxPath),
+    passphrase: pfxPassphrase || undefined
+  } : {
     key: fs.readFileSync(keyPath),
     cert: fs.readFileSync(certPath)
   };
@@ -296,7 +299,7 @@ if (useHttps) {
   server.listen(PORT, () => {
     console.log(`🚗 ${parkingState.city} Parking API running on HTTPS port ${PORT}`);
     console.log(`📍 Location: ${parkingState.location}`);
-    console.log(`🔒 Using HTTPS with self-signed certificate`);
+    console.log(`🔒 Using HTTPS with ${hasPfx ? 'PFX certificate bundle' : 'self-signed certificate'}`);
     console.log(`🪟 Platform: ${process.platform}`);
     console.log(`📝 Windows Event Viewer: ${logger.isAvailable() ? 'Enabled' : 'Not available (using console logging)'}`);
     console.log(`🎲 Parking activity simulation: Enabled (updates every 5 seconds)`);
@@ -342,19 +345,11 @@ process.on('SIGTERM', async () => {
       process.exit(0);
     });
   } else {
-          ? {
-              pfx: fs.readFileSync(pfxPath),
-              passphrase: pfxPassphrase || undefined
-            }
-          : {
-              key: fs.readFileSync(keyPath),
-              cert: fs.readFileSync(certPath)
-            };
     process.exit(0);
   }
 });
 
-          console.log(`🔒 Using HTTPS with ${hasPfx ? 'PFX certificate bundle' : 'self-signed certificate'}`);
+process.on('SIGINT', () => {
   console.log('SIGINT signal received: closing server');
   logger.logOperation('SERVER_SHUTDOWN', parkingState.id, { 
     city: parkingState.city,

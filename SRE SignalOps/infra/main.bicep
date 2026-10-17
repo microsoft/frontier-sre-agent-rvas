@@ -23,7 +23,7 @@ var tags = {
   'managed-by': 'azd'
   environment: environmentName
   owner: 'sre-platform'
-  repository: 'frontier-sre-agent-rvas'
+  solution: 'sre-signalops'
 }
 
 resource workloadResourceGroup 'Microsoft.Resources/resourceGroups@2024-03-01' = {

@@ -1,0 +1,8 @@
+#cloud-config
+package_update: true
+packages:
+  - curl
+  - netcat-openbsd
+  - iperf3
+runcmd:
+  - echo "client ready" >/var/log/vflta-client-ready.log
