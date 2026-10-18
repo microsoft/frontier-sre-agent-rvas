@@ -170,7 +170,21 @@ this skill's own mechanism and does not depend on anything discovered. Use this 
 # SRE Agent Jumpstart Plan: <use case or agent name>
 
 ## Interview Summary
-<settled answers from the interview phase: new/existing agent, use case, run mode, connectors>
+<settled answers from the interview phase: new/existing agent, use case, run mode, connectors,
+trigger, scope/environment, permissions, notification target, owner. Mark quick-mode defaults
+as "assumed" and unanswered items as "open">
+
+## Definition of Done
+<the past incident or symptom (Q9) as the acceptance test, the observable result that means
+the capability works, and the rollback step (apply script re-run with the prior manifest, or
+deleting the named resources). Documentation only>
+
+## Required Permissions
+<exact RBAC roles the agent identity needs at the Q6 scope, who must assign them, and which
+write roles (if any) are covered by the Q3 approval gate>
+
+## Backlog
+<only when multiple use cases were named — ranked follow-ups not in this slice>
 
 ## Agent Resource Provisioning
 <only when Surface 1 applies — named backend/recipe and the exact CLI command sequence,
@@ -215,7 +229,7 @@ common cause of a multi-skill plan rendering its first skill correctly and losin
 for every skill after it. Count the longest fence run inside each embedded block before choosing
 the outer fence length; do not default to three backticks unconditionally.
 
-Write this exact Markdown to a file at `.rvas-sre-agent-jumpstart/plans/{{YYYY-MM-DD}}/{{slug}}.md`
+Write this exact Markdown to a file at `.copilot-tracking/sre-agent-jumpstart/plans/{{YYYY-MM-DD}}/{{slug}}.md`
 before presenting it in chat, where `{{YYYY-MM-DD}}` is today's date and `{{slug}}` is a
 lower-kebab-case name derived from the settled use case, or the target agent name when no use
 case name applies. Perform this write

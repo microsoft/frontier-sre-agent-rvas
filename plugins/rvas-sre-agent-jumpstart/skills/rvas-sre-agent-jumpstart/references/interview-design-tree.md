@@ -80,7 +80,91 @@ default to "research will tell us": leave this open if the user doesn't already 
 research step (`references/iac-surfaces.md`) resolves it from the settled use case.
 ```
 
+## Round 1b: Operational Context (Same Round as Round 1)
+
+Q5-Q10 do not depend on Q1-Q4, so they share Round 1 rather than a later round. Which of them
+are asked and which are stated as defaults depends on the mode in "Quick vs. Thorough Mode"
+below. Apply the repo scan from Round 2 first so defaults cite real findings. Each question
+carries a recommended default and may be answered "unknown" — record an unknown as an open
+item in the plan.
+
+```
+❓ **Q5** - **Trigger**: What should start the capability — an alert/incident, a schedule, or
+an on-demand request from a person?
+
+➡️ Recommend "alert/incident" when the use case names a symptom, and "on-demand" otherwise.
+Drives whether the plan includes `IncidentFilter` or `ScheduledTask` manifests.
+
+---
+
+❓ **Q6** - **Scope**: Which subscriptions, resource groups, or resources is the capability
+allowed to inspect? Is this production, non-production, or both?
+
+➡️ Recommend the narrowest scope that covers the named use case. Scope sets the RBAC the plan
+lists and the target environment the plan names.
+
+---
+
+❓ **Q7** - **Permissions**: Should the agent's identity be read-only, or may it hold write
+roles for remediation? Who is able to grant the role assignments?
+
+➡️ Recommend read-only (Reader plus the specific data-reader roles research names). Any write
+role must be tied to an action that Q3's approval gate covers. The plan lists the exact roles
+and who must assign them, since role assignment is the most common blocker after apply.
+
+---
+
+❓ **Q8** - **Notification and escalation**: Where should results go (Teams, email, ITSM,
+PagerDuty), and who is the human escalation point?
+
+➡️ No universal default. Fall back to "report in the agent chat only" and flag it as an open
+item.
+
+---
+
+❓ **Q9** - **Existing runbooks and a real incident**: Do you have runbooks, wiki pages, or
+KQL queries the agent should follow, and one past incident this capability should have caught?
+
+➡️ Strongly encourage a past incident: it becomes the plan's acceptance test and grounds the
+skill body in real symptoms. Runbooks become knowledge sources (extends Q4).
+
+---
+
+❓ **Q10** - **Constraints**: Any compliance, private-networking, or approved-region
+constraints, and who owns this capability after it ships?
+
+➡️ Default to "none known"; the owner feeds the manifests' provenance comment.
+```
+
+### Quick vs. Thorough Mode
+
+Quick is the default, because ten questions in one reply stalls most users. In the first reply:
+
+- **Ask** only Q1-Q4 (as unlocked), Q7 (permissions), and Q9 (past incident or runbooks) — the
+  answers that most change the plan and its acceptance test.
+- **State** Q5, Q6, Q8, and Q10 as a single short list of assumed defaults (each citing the
+  repo-scan finding behind it when there is one), and tell the user to override any of them.
+- **Offer** thorough mode (every question asked) in one line, recommended for production use.
+
+In either mode the plan lists every defaulted answer under `## Interview Summary` so the user
+can override it at the approval gate. Switch to thorough as soon as the user asks for it or
+overrides more than one default.
+
+### Multiple Use Cases
+
+When the user names or the diagram suggests more than one use case, rank them and plan only
+the highest-value first slice. Fold closely related use cases into one skill up front (the
+five-skill cap makes one skill per symptom wasteful), and list the rest as a follow-up backlog
+in the plan rather than silently dropping them.
+
 ## Round 2: Fact-Finding (Agent-Owned, Never Asked)
+
+Run first, before presenting Round 1: dispatch a read-only scan of the user's own checkout
+(never a live endpoint) for anything that can pre-fill an answer: an existing
+`azure-sre-agent-config/` directory and its manifests (use-case match, existing skill names),
+IaC files, alert rules, KQL files, and runbook-like Markdown. Present each finding as the
+recommended default for the matching question, citing the file it came from, so the user
+confirms or overrides rather than types.
 
 Whenever Q1 settles on "existing agent," "existing agent" is now just that settled Q1 answer
 (new vs. existing) — nothing else needs resolving during the interview. Confirming the named
@@ -149,6 +233,6 @@ waits for the user to ask about it:
    `--force` (`apply.sh`) only once you've made the explicit choice to accept the risk.
 
 The session is done when this frontier is empty: Q1, Q2 (and its unlocked Q2a or Q2b), Q3, Q4,
-every unlocked child branch, and (for an existing agent) the skill-cap branch have all been
+Q5-Q10 (asked or defaulted per mode), every unlocked child branch, and (for an existing agent) the skill-cap branch have all been
 visited and nothing is left silently assumed.
 Do not move to the research-and-plan phase until the user has confirmed a shared understanding.

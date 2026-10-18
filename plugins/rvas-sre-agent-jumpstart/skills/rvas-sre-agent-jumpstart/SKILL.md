@@ -19,7 +19,7 @@ approves the plan.
 
 ## How This Skill Works
 
-This skill has four phases, always in this order:
+This skill has five phases, always in this order:
 
 1. **Interview** — grill the user through an SRE-agent-specific design tree (reusing the
    `grilling` skill's round/frontier protocol) to settle whether the target is a
@@ -51,6 +51,11 @@ This skill has four phases, always in this order:
    user applies it via their own existing IaC procedure; this skill never executes it and never
    generates a script for it (see [references/iac-surfaces.md](references/iac-surfaces.md)) —
    never merging the two outputs.
+
+5. **Verification handoff** — after authoring, write `azure-sre-agent-config/VERIFY.md` so the
+   user can prove the capability works. It is done when every Definition of Done item from the
+   plan has at least one sample prompt or trigger with its expected behaviour, and the plan's
+   rollback steps are included. The user runs it; this skill only writes it.
 
 ## Two IaC Surfaces, Never Conflated
 

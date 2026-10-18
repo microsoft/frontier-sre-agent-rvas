@@ -42,6 +42,75 @@
         "Response surfaces (or sets up to surface) the 5-skill cap and a consolidation warning if the cap would be hit, rather than silently proceeding",
         "Response identifies this as capability authoring (Surface 2) on an existing agent, not agent-resource provisioning"
       ]
+    },
+    {
+      "id": 3,
+      "eval_name": "operational-context-questions",
+      "prompt": "We want an SRE agent skill for AKS SNAT port exhaustion on our existing agent. Let's go.",
+      "expected_output": "Opens the interview in quick mode: asks only the high-impact questions (diagram, run mode, connectors, permissions read-only vs write, past incident/runbooks), states defaults for trigger, scope, notification and constraints as overridable assumptions, and offers thorough mode in one line.",
+      "files": [],
+      "expectations": [
+        "Response asks whether the agent identity should be read-only or hold write roles",
+        "Response asks about a past incident or existing runbooks",
+        "Response states a default for what triggers the capability (alert, schedule, or on-demand) and invites an override",
+        "Response states a default for scope or environment (resource groups, prod vs non-prod) and invites an override",
+        "Response offers thorough mode as an opt-in rather than asking every operational question up front",
+        "Response asks no more than 6 numbered or bulleted questions",
+        "Response does not generate or paste any YAML/CLI artifact in turn 1"
+      ]
+    },
+    {
+      "id": 4,
+      "eval_name": "plan-gate-after-answers",
+      "prompt": "Answers to your questions: existing agent, no diagram, use case is Azure SQL DTU saturation, approval gate for writes, trigger is a Log Analytics alert, scope is rg-prod-sql, read-only, notify Teams, past incident INC-4821, no constraints, quick mode. Go ahead.",
+      "expected_output": "Moves to research and plan, writes the plan file, shows a plan with Interview Summary, Definition of Done based on INC-4821, Required Permissions, Skill-Cap Check, and Validation, then stops at the approval gate without writing manifests.",
+      "files": [],
+      "expectations": [
+        "Response produces a single plan containing Definition of Done and Required Permissions sections",
+        "Definition of Done references the named past incident INC-4821",
+        "Plan lists defaulted answers as assumptions the user can override",
+        "Response stops and asks for explicit approval before generating any manifest or script file"
+      ]
+    },
+    {
+      "id": 5,
+      "eval_name": "ambiguous-approval",
+      "prompt": "Conversation so far:\n[User] Our existing agent needs an Azure SQL DTU saturation capability.\n[Assistant] (interview completed with defaults; quick mode) Here is the plan: one skill azure-sql-dtu-saturation, read-only identity on rg-prod-sql, Log Analytics alert trigger, Teams notification, Definition of Done based on incident INC-4821. Plan saved to .rvas-sre-agent-jumpstart/plans/2026-10-18/sql-dtu.md. Please reply with explicit approval or requested changes.\n[User] Looks interesting, maybe? Can you just go ahead and tweak the plan a bit and then do whatever's needed.",
+      "expected_output": "Treats the reply as not an explicit approval, asks which tweaks are wanted, revises only the plan, re-presents it, and asks for explicit confirmation before authoring.",
+      "files": [],
+      "expectations": [
+        "Response does not treat the reply as approval",
+        "Response does not write manifest or script files",
+        "Response asks for explicit confirmation of the plan"
+      ]
+    },
+    {
+      "id": 6,
+      "eval_name": "multiple-use-cases-fold",
+      "prompt": "Our existing agent should handle slow SQL queries, SQL deadlocks, and SQL connection timeouts. It already has 4 skills.",
+      "expected_output": "Recognizes the three related use cases, proposes folding them into a single skill as the first slice (given the five-skill cap), lists any remainder as a backlog, and asks the user to confirm.",
+      "files": [],
+      "expectations": [
+        "Response proposes consolidating the related SQL use cases into one skill rather than three",
+        "Response mentions the five-skill cap as the reason",
+        "Response does not generate artifacts in turn 1"
+      ]
+    },
+    {
+      "id": 7,
+      "eval_name": "thorough-mode-opt-in",
+      "prompt": "We want an SRE agent skill for AKS SNAT port exhaustion on our existing production agent. This is going to production so please be thorough and ask me everything you need.",
+      "expected_output": "Switches to thorough mode and asks the full operational question set (trigger, scope, permissions, notification, past incident or runbooks, constraints and owner) with recommended defaults.",
+      "files": [],
+      "expectations": [
+        "Response asks what triggers the capability",
+        "Response asks about scope and environment",
+        "Response asks whether the identity should be read-only or hold write roles",
+        "Response asks about notification or escalation target",
+        "Response asks about a past incident or runbooks",
+        "Response asks about constraints or the owner",
+        "Response does not generate or paste any YAML/CLI artifact in turn 1"
+      ]
     }
   ]
 }

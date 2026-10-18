@@ -40,6 +40,8 @@ azure-sre-agent-config/
 │   │   └── <task-name>.yaml
 │   └── incident-filters/
 │       └── <filter-name>.yaml
+├── VERIFY.md             # always — Definition of Done, sample prompts, expected behaviour,
+│                          # rollback; documentation for the user, never executed by this skill
 ├── connectors/           # only touch if the settled plan adds/changes a connector
 ├── knowledge/files/      # only touch if the settled plan uploads new knowledge documents
 ├── scripts/              # Surface 2 only — copied, pre-built apply.ps1/apply.sh pair, see

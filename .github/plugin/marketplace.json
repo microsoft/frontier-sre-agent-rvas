@@ -5,13 +5,13 @@
   },
   "metadata": {
     "description": "Set up or extend an Azure SRE Agent capability or resource from an operational need.",
-    "version": "0.1.0"
+    "version": "0.1.1"
   },
   "plugins": [
     {
       "name": "rvas-sre-agent-jumpstart",
       "description": "Sets up or extends an Azure SRE Agent capability or resource from an operational need.",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "source": "./plugins/rvas-sre-agent-jumpstart"
     }
   ]

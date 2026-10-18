@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "rvas-sre-agent-jumpstart",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Set up or extend an Azure SRE Agent capability or resource from an operational need.",
   "author": {
     "name": "Microsoft"
