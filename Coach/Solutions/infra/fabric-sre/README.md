@@ -13,6 +13,15 @@ module's read roles on the capacity, and do not receive its subscription-level
 Contributor or Monitoring Contributor grants. Fabric data access is a separate
 coach-managed permission boundary.
 
+The Fabric root omits the shared module's legacy explicit Anthropic model
+override and lets SRE Agent choose its regional provider default. **Before
+any data access**, the coach verifies **Settings > Basics > Model provider**:
+for EU residency use Azure OpenAI with an EU/EFTA agent deployment. Anthropic
+can process globally and is outside Microsoft's EU Data Boundary even on a
+European agent; never treat the resource region as approval for Anthropic.
+See the [provider/privacy reference](../../../../Student/Resources/fabric-sre-agent/README.md#azure-openai-versus-anthropic-in-sre-agent).
+Existing Azure Operations deployments keep their explicit model default.
+
 ## Deploy before the event
 
 Prerequisites: Terraform 1.5+, Azure CLI authentication to the intended
@@ -70,6 +79,13 @@ steps once for the event, not once per participant:
    Eventhouse query URI/database/table, capacity UUID/SKU/region, freshness,
    retained-history bounds, approved workload/run IDs, and known limitations.
    Test with a participant account and the actual agent identity before handoff.
+
+Before that handoff, validate the
+[MCP, workspace host, Code Access, router, and instruction setup](../../../../Student/Resources/fabric-sre-agent/README.md#agent-connection-and-configuration-reference).
+In particular, do not assume remote Core OAuth is a managed-identity session.
+Confirm the supported UAMI path in the actual event environment and save
+`prices.azure.com`, `*.database.fabric.microsoft.com`, and the Capacity Events
+`*.kusto.fabric.microsoft.com` entries in SRE Agent workspace settings.
 
 Students select one shared backend per agent and configure connectors, skills,
 tools, and matching custom instructions in Challenge 02. They must not create

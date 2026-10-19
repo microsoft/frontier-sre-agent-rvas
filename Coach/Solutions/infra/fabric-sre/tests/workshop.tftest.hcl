@@ -136,6 +136,10 @@ run "legacy_agent_defaults_preserved" {
     condition     = length(azapi_resource.log_analytics_connector) == 1 && length(azapi_resource.application_insights_connector) == 1
     error_message = "Existing Azure Operations deployments must retain their monitoring connectors."
   }
+  assert {
+    condition     = azapi_resource.agent.body.properties.defaultModel.provider == "Anthropic" && azapi_resource.agent.body.properties.defaultModel.name == "claude-opus-4-6"
+    error_message = "The existing Azure Operations explicit model default must remain unchanged."
+  }
 }
 
 run "fabric_agent_read_only" {
@@ -147,6 +151,7 @@ run "fabric_agent_read_only" {
     agent_name                   = "fabric-team01"
     read_only                    = true
     enable_monitoring_connectors = false
+    default_model                = null
     resource_group_name          = "rg-agent-test"
     resource_group_id            = "/subscriptions/00000000-0000-0000-0000-000000000002/resourceGroups/rg-agent-test"
     managed_resource_ids         = []
@@ -169,5 +174,9 @@ run "fabric_agent_read_only" {
   assert {
     condition     = length(azapi_resource.log_analytics_connector) == 0 && length(azapi_resource.application_insights_connector) == 0
     error_message = "Fabric deployments must not create unconfigured Azure Operations connectors."
+  }
+  assert {
+    condition     = azapi_resource.agent.body.properties.defaultModel == null && azapi_resource.agent.ignore_null_property
+    error_message = "Fabric must omit the legacy model override so regional defaults apply; the coach verifies the active provider before data access."
   }
 }

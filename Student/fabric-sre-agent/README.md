@@ -39,8 +39,8 @@ capacity invoice. The agent remains read-only.
 | [02](./Challenge-02.md) | Connect and ground the agent |
 | [03](./Challenge-03.md) | Validate the cost calculation and precision |
 | [04](./Challenge-04.md) | Explain spend by workspace and item |
-| [05](./Challenge-05.md) | Attribute execution and pipeline consumption |
-| [06](./Challenge-06.md) | Investigate failures, slowness, and throttling |
+| [05](./Challenge-05.md) | Validate model choice and EU data residency |
+| [06](./Challenge-06.md) | Validate live skills and backend agent instructions |
 | [07](./Challenge-07.md) | Optimize a measured Spark workload |
 | [08](./Challenge-08.md) | Assess monitoring coverage and capacity context |
 | [09](./Challenge-09.md) | Build and present a production-ready Fabric SRE agent |
@@ -52,3 +52,6 @@ capacity invoice. The agent remains read-only.
 The backend deployment guides, agent instructions, sample notebook, pricing
 tool, and shared skills router are under
 [`Student/Resources/fabric-sre-agent/`](../Resources/fabric-sre-agent/README.md).
+Its [configuration reference](../Resources/fabric-sre-agent/README.md#agent-connection-and-configuration-reference)
+covers exact MCP settings, SRE Agent outbound hosts, synchronized Code Access,
+router installation, backend instructions, and Azure OpenAI/Anthropic residency.

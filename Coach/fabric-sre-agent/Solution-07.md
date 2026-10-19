@@ -15,12 +15,17 @@
 - Stages, task distributions, shuffle, spill, and allocated executors help explain cost and duration.
 - Use comparable runs and state assumptions before estimating savings.
 - Agent read-only does not mean a human may run demo code without workspace approval.
+- Include the RCA check here: run status/logs, bounded timestamps, concurrency,
+  and actual capacity/throttle evidence must support the hypothesis. CU,
+  duration, and smoothed utilization are not interchangeable.
 
 ## Expected Student Output
 
 - Demo run found in the selected backend and correlated to Spark monitoring evidence.
 - At least two code-linked findings supported by measured stage/executor data.
 - A savings estimate with assumptions and a validation plan.
+- A slow/failed-run diagnosis separating observations, likely cause, capacity
+  evidence, and uncertainty; event operation rows alone are not utilization.
 - Cleanup plan for demo tables and confirmation no agent writes occurred.
 
 ## Common Issues and Hints

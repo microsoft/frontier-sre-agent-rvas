@@ -1,48 +1,64 @@
 [< Previous Challenge](./Challenge-05.md) — **[Home](../../README.md)** — [Next Challenge >](./Challenge-07.md)
 
-# Challenge 06 — Investigate Failures, Slowness, and Throttling
+# Challenge 06 — Validate Live Skills and Agent Instructions
 
-> **Capabilities added in this challenge**: Fabric RCA · Capacity Correlation · Evidence Ranking
+> **Capabilities added in this challenge**: Code Access Freshness · Mandatory Skill Reads · Instruction Regression Tests
 
 ## Introduction
 
-High CU consumption, long duration, and throttling are related but distinct
-signals. A strong root-cause analysis aligns workload executions with capacity
-pressure, Fabric job status, and—when relevant—Spark evidence before making a
-claim.
+A connected skills repository and a saved instruction file do not prove that
+the agent uses either correctly. This challenge deepens the initial setup from
+Challenge 02 by testing freshness, file-read evidence, backend grounding, and
+failure behavior before the Spark investigation.
 
 ## Description
 
-Investigate a failed, slow, or throttled Fabric workload over a bounded
-incident window:
+First ask which skill and source the agent would use for a bounded Fabric
+question, and inspect whether it actually reads the required files.
+Use the [Code Access/router procedure](../Resources/fabric-sre-agent/README.md#connect-the-latest-fabric-skills-and-install-the-router)
+and [instruction procedure](../Resources/fabric-sre-agent/README.md#apply-the-backend-specific-agent-instructions)
+to audit and correct the existing configuration.
 
-- Establish which execution was affected, its status, duration, failure
-  details, and measured consumption.
-- Correlate the run with concurrent capacity consumers and available
-  utilization, delay, rejection, or throttling evidence.
-- For notebooks or notebook-backed pipeline failures, inspect the relevant
-  Spark jobs, stages, executors, and driver/executor logs.
-- Distinguish observed facts from likely cause and state what additional
-  evidence would confirm or disprove the hypothesis.
-- Compare the backend's native limitations: FUAM timepoints and daily
-  aggregates versus Capacity Events operation and throttle data.
+- Confirm `https://github.com/microsoft/skills-for-fabric` is connected on `main`,
+  refresh/sync it, and record the sync time and revision where available.
+- Validate the installed `fabric-skills-router` against the supplied router,
+  including its required trigger and full `plugins/fabric-skills/skills/` paths.
+- Use a notebook diagnostic question and a backend-specific query question to
+  prove the agent reads the full selected `SKILL.md`, follows every Mandatory
+  reference under `plugins/fabric-skills/common/` or the skill folder, and names
+  the files before executing the supported read-only tools.
+- Audit the complete active FUAM **or** Capacity Events custom instructions,
+  including section 3.0 identifiers, pricing source, CU units, explicit failure
+  reporting, and read-only boundaries. Correct missing or truncated sections;
+  never combine both global instruction sets.
+- Test a nonexistent item and a harmless change request. Verify explicit
+  uncertainty/refusal, no invented endpoint, no write call, and no fallback
+  to another identity, consumption source, web copy, or remembered skill.
+- Demonstrate the missing-file failure path through a coach-approved test
+  fixture or reviewed trace; do not disconnect shared sources or corrupt
+  the upstream repository to manufacture an error.
 
 ## Success Criteria
 
-- [ ] The report identifies a specific execution and uses a bounded, explicit time window.
-- [ ] Findings cite job status, capacity evidence, and Spark diagnostics where applicable.
-- [ ] The most likely cause is separated from supporting observations and remaining uncertainty.
-- [ ] The report does not infer smoothed capacity utilization from operation events alone.
-- [ ] **Explain to your coach** — which measurements establish workload duration, and which establish capacity pressure or throttling?
+- [ ] Code Access points to `main`, has a recorded successful refresh, and exposes the full skills and common-reference directories.
+- [ ] Tool traces show the required router and full skill/Mandatory-file reads before Fabric execution; naming a file without reading it does not pass.
+- [ ] Notebook and backend queries select appropriate skills (`spark-cli`, `sqldw-cli`, or `eventhouse-cli`) and use only supported read-only execution paths.
+- [ ] Exactly one complete backend instruction set is active with the coach's real identifiers and no unresolved section 3.0 placeholders.
+- [ ] The instruction audit covers model/data approval, shared-source scope, TOTAL reconciliation, correct period-share denominator or unavailable label, and explicit query/price failure reporting.
+- [ ] Missing-file, nonexistent-item, and write-request checks fail explicitly and safely without web/memory or identity fallback.
+- [ ] **Explain to your coach** — why does Code Access synchronization plus verified file reads provide fresher guidance than installing static skill copies or trusting model memory?
 
 ## Learning Resources
 
-- [FUAM RCA procedure](../Resources/fabric-sre-agent/fuam/agent-instructions.md)
-- [Capacity Events RCA procedure](../Resources/fabric-sre-agent/capacity-events/agent-instructions.md)
-- [Spark monitoring API overview](https://learn.microsoft.com/fabric/data-engineering/spark-monitoring-api-overview)
-- [Fabric operations and throttling](https://learn.microsoft.com/fabric/enterprise/fabric-operations)
+- [Fabric skills repository](https://github.com/microsoft/skills-for-fabric)
+- [Workshop router SKILL.md](../Resources/fabric-sre-agent/skills/fabric-skills-router/SKILL.md)
+- [Shared skills and instruction setup](../Resources/fabric-sre-agent/README.md#connect-the-latest-fabric-skills-and-install-the-router)
+- [FUAM agent instructions](../Resources/fabric-sre-agent/fuam/agent-instructions.md)
+- [Capacity Events agent instructions](../Resources/fabric-sre-agent/capacity-events/agent-instructions.md)
+- [SRE Agent skills](https://learn.microsoft.com/azure/sre-agent/skills)
 
 ## Tips
 
-- A long-running operation is not automatically a capacity incident; examine waits, queueing, workload shape, and concurrency.
-- Capacity operation events do not contain the smoothed utilization percentage; explain this limit when relevant.
+- A recent Connection badge is not a sync timestamp; latest means the latest successfully synchronized `main`.
+- Resolve `../../common/COMMON-CLI.md` from the selected skill folder, not the repository root.
+- An upstream authoring skill cannot override the workshop's read-only contract.

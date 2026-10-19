@@ -49,10 +49,7 @@ resource "azapi_resource" "agent" {
         mode        = var.read_only ? "ReadOnly" : "Autonomous"
       }
 
-      defaultModel = {
-        name     = "claude-opus-4-6"
-        provider = "Anthropic"
-      }
+      defaultModel = var.default_model
 
       incidentManagementConfiguration = {
         type           = "AzMonitor"

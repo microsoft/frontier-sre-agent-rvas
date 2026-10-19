@@ -88,17 +88,22 @@ Points the guide doesn't make explicit:
  
 ---
  
-## Step 3 — Allow the pricing domain
+## Step 3 — Allow the outbound domains
  
 Agent portal → **Settings → Workspace configuration → Additional hosts** → add:
  
 ```
 prices.azure.com
+*.database.fabric.microsoft.com
 ```
  
-The `get_fabric_cu_price` tool calls `https://prices.azure.com/api/retail/prices`. If the host isn't allowed, every cost answer fails at the rate lookup.
+The `get_fabric_cu_price` tool calls `https://prices.azure.com/api/retail/prices`.
+The database pattern enables the workshop Fabric database endpoint path.
+If the actual FUAM server uses `.datawarehouse.fabric.microsoft.com`, allow
+that actual host too; the database wildcard does not match it.
+See the [shared host and identity reference](../README.md#workspace-outbound-hosts).
  
-✅ The host is listed under Additional hosts.
+✅ Both entries and any actual SQL server hostname are saved; pricing and SQL reads succeed independently.
  
 ---
  
@@ -109,9 +114,16 @@ Agent portal → **Builder → Code Access → GitHub → Add repository**:
 | Field | Value |
 |---|---|
 | Repository | `https://github.com/microsoft/skills-for-fabric` |
+| Branch | `main` |
 | Connection | OAuth (GitHub sign-in) |
  
-This repository is the **live source** for the `fabric-skills-router` skill (Step 7). The agent reads the skills from here on every Fabric request, so updates published upstream are picked up without reinstalling anything.
+This repository is the source for the `fabric-skills-router` skill (Step 7).
+Refresh/sync it before testing: reads use the latest **synchronized** `main`,
+not necessarily an upstream push that has not yet synced. Skills live at
+`plugins/fabric-skills/skills/`; mandatory shared files are under
+`plugins/fabric-skills/common/`. Follow the
+[complete Code Access and router procedure](../README.md#connect-the-latest-fabric-skills-and-install-the-router),
+including the new **Context > Code access** navigation.
  
 **Optional:** to let the agent review notebook code during optimization, add the repository your Fabric workspaces are Git-synced to (GitHub, or Azure DevOps with managed identity). Without it, the agent reads notebook code through the Fabric item-definition API.
  
@@ -137,10 +149,13 @@ Agent portal → **Builder → Connectors → Add connector → MCP server**. Tw
 | URL | `https://api.fabric.microsoft.com/v1/mcp/dataPlane/sqlEndpoint` |
 | Tools | `execute_query` |
  
-**`fabric-mcp`:** the Fabric MCP server for control-plane and item operations. Configure it with the transport and authentication that reach **Connected** in your agent:
-- Remote: `https://api.fabric.microsoft.com/v1/mcp/core`
-- Local (stdio, managed identity): `npx -y @microsoft/fabric-mcp@latest server start --mode all`
-Not used: **FabricIQ MCP**. It supports delegated user sign-in only, so it can't run under the UAMI.
+Follow the [full connector setup](../README.md#establish-the-fabric-mcp-connectors)
+for URLs, transport, authentication, tool selection, and acceptance checks.
+The remote Core endpoint is `https://api.fabric.microsoft.com/v1/mcp/core`
+(Streamable HTTP); its documented OAuth sign-in is delegated, not proof of a
+UAMI runtime. The reference explains the coach-validated local stdio option,
+its prerequisites, and the stop condition if managed identity is unsupported.
+Do not substitute FabricIQ or a human token for the required agent identity.
  
 ✅ Both connectors show **Connected**. Ask the agent *"List the Fabric workspaces you can see"*, then *"Run `SELECT TOP 5 * FROM dbo.capacity_metrics_by_item_by_operation_by_day` on the FUAM_Lakehouse SQL endpoint"*. Both return results.
  
@@ -168,11 +183,13 @@ Agent portal → **Builder → Skill builder → Create skill**.
 | Field | Value |
 |---|---|
 | Name | `fabric-skills-router` |
-| Tools | None. The skill reads from the Code Access repository (Step 4) |
+| Tools | Code Access code-read/file-read tools must be available |
 | Additional files | None |
 | SKILL.md | Paste the contents of [`skills/fabric-skills-router/SKILL.md`](../skills/fabric-skills-router/SKILL.md) |
  
-The router reads the official skills **live** from the repository, so upstream updates are picked up without changing the skill. Checked against the repository at commit `bc42aaf`: every folder in its list exists. Folders not in the list (`azmon-mirroredcatalogs-operations-cli`, `eventschemaset-cli`, `project-osmos`, `search-consumption-cli`) are reached through the "Not listed" fallback.
+The router reads the full selected skill and every **Mandatory** dependency
+from synchronized Code Access, never a web copy or memory. Refresh `main` for
+upstream updates; use its directory-list fallback for new or renamed folders.
  
 ✅ Ask *"Which skill would you use to analyse a slow Spark notebook?"* The agent loads `fabric-skills-router`, reads `spark-cli/SKILL.md` from the repo, and names the files it read.
  
@@ -180,10 +197,18 @@ The router reads the official skills **live** from the repository, so upstream u
  
 ## Step 8 — Agent instructions
  
-1. Open [`agent-instructions.md`](agent-instructions.md) and fill in **§3.0** with the Step 0 values: workspace name and ID, Lakehouse ID, SQL endpoint server.
-2. Agent portal → **Capabilities → Custom Instructions**.
+1. Open the complete [`agent-instructions.md`](agent-instructions.md). Fill in
+   **§3.0** with the coach's telemetry workspace/Lakehouse/SQL details, approved
+   monitored capacity/workspace IDs, team UAMI client ID, and model/data
+   approval reference. Leave Spark allocation **Not validated** unless the
+   coach has recorded the environment-specific validation evidence.
+2. Agent portal → **Extensions → Custom instructions** (older UI: **Capabilities → Custom Instructions**).
 3. Paste the **entire contents** of the file, then save.
-Custom Instructions apply to the default agent in every thread, so questions work without `/agent`. If the field truncates the text, keep §1–§6 and §8–§10 in Custom Instructions and move the §7 query templates into a skill as supporting files.
+Custom Instructions apply to the default agent in every thread, so questions
+work without `/agent`. Do not silently accept truncated instructions: move
+bulky query templates into readable skill supporting files, preserving the
+router, safety, pricing, precision, and error-reporting requirements.
+Follow the [instruction acceptance checks](../README.md#apply-the-backend-specific-agent-instructions).
  
 ✅ Ask *"What can you help me with?"* The answer describes Fabric cost, RCA and notebook optimization.
  
@@ -202,8 +227,8 @@ Run each in a new thread.
 | 9.5 | "How can I reduce notebook <C>'s CU consumption?" | 14-day trend, code reviewed, the most expensive execution drilled into (stages, skew, spill, executor allocation), recommendations tied to evidence with € impact |
 | 9.6 | "Why was <item> slow on <date>?" | Item counts, job runs and capacity timepoints correlated. For notebooks, the execution compared with a normal one |
 | 9.7 | "How much did workspace <nonexistent> cost?" | Nothing found, with likely reasons. No invented numbers |
-| 9.8 | **Validation.** "Derive the CU of notebook <X>'s execution on <day>" (a day where FUAM shows `OperationCount = 1`, not an HC run) | Derived CU-seconds within ~10% of FUAM's `TotalCUs`. If it passes, remove the "not yet validated" wording from §6.4 step 4 of the instructions. If it fails, limit §6.4 to performance analysis |
-| 9.9 | "How many CUs did notebook <C>'s 14:00 run use?" (several runs that day) | Derived per-execution CU with its label and the vCore-seconds lines in the calculation block, cross-checked against FUAM's daily total |
+| 9.8 | **Coach-approved validation only.** Compare a completed single non-HC notebook run's allocation-derived CU against its matching FUAM row (`OperationCount = 1`) | Inspect accounting/timelines; derived value within ~10% of `TotalCUs` with the comparison recorded by the coach in §3.0. This does not make derivation exact. If unvalidated/failed, operational requests get performance evidence only |
+| 9.9 | "How many CUs did notebook <C>'s 14:00 run use?" (several runs that day) | Only after recorded validation: derived estimate, explicit allocation operands, and daily cross-check; otherwise explicit unsupported per-run CU, daily/average evidence, and performance diagnostics |
 | 9.10 | "Why did pipeline <B> fail on <date>?" (a child notebook failed) | Failing child notebook identified, driver and executor logs read, error reported |
  
 Every answer about Fabric should state which skill file(s) it read (Step 7).
@@ -260,7 +285,7 @@ for name, url, t in [("PBI", "https://api.powerbi.com/v1.0/myorg/admin/groups?$t
  
 ## Known limits
  
-- **Day grain.** FUAM has no per-execution CU. Per-execution CU is **derived** for notebooks from Spark executor allocation (§6.4 of the instructions). Pipelines and other items have exact per-execution CU only when they ran once that day.
+- **Day grain.** FUAM has no execution-level CU meter. Notebook allocation-derived CU is an estimate only after coach validation (§6.4 of the instructions); otherwise provide performance diagnostics and daily totals/averages. A single daily operation supports a qualified recorded-operation figure only with confirmed run linkage and coverage, not an unconditional complete-run cost.
 - **List prices.** Rates are Azure retail prices. Negotiated EA or MCA discounts aren't reflected.
 - **Standalone-equivalent cost.** Figures are CU × €/CU-hour, not an allocation of the capacity invoice.
 - **Non-billable operations.** FUAM has no billable flag per item, so preview operations may be included.

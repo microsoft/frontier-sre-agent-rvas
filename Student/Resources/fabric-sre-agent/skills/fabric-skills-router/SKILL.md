@@ -1,34 +1,60 @@
 ---
 name: fabric-skills-router
-description: Selects and reads the current Microsoft Fabric operational skill before the agent investigates or recommends work on a Fabric item.
+description: REQUIRED for every Microsoft Fabric request (lakehouse, warehouse, Spark, KQL, Eventstream, semantic model, OneLake, Fabric workspace or item). Load before answering or calling any Fabric tool.
 ---
 
-# Fabric skills router
+## Source of truth
 
-Before acting on any Microsoft Fabric question, read the relevant `SKILL.md`
-from the `microsoft/skills-for-fabric` repository connected under Code Access.
-Use the live repository content; do not rely on remembered instructions or
-summaries. State the skill file or files consulted in the response.
+The official Fabric skills are in the repository connected under
+**Builder > Code Access**:
 
-## Route by task
+- Repo: `https://github.com/microsoft/skills-for-fabric`
+- Branch: `main`
+- Skills root: `plugins/fabric-skills/skills/`
+- Shared files: `plugins/fabric-skills/common/`
 
-| Task | Skill to read |
-|---|---|
-| Fabric Lakehouse, Spark, notebook runs, Spark monitoring, or notebook optimization | `spark-cli/SKILL.md` |
-| Eventhouse, KQL databases, or KQL queries over capacity operation events | `eventhouse-cli/SKILL.md` |
-| Warehouse or SQL analytics endpoint queries, Query Insights, or SQL endpoint health | `sqldw-cli/SKILL.md` |
-| Finding an item when its workspace is unknown | `search-consumption-cli/SKILL.md` |
-| Capacity sizing or comparing Fabric billing options | `e2e-fabric-cost-estimation/SKILL.md` |
-| Fabric item, workspace, or job-instance discovery not covered above | `fabric-mcp/SKILL.md` |
+Always read these files from the Code Access repository with the
+code-read / file-read tools. Do NOT answer from memory, and do NOT
+fetch them from the web.
 
-If a named skill is not present in the repository, search its current catalog
-and choose the closest supported skill. Read its shared CLI/core references
-when it directs you to do so. Do not invent a command or API shape to fill a
-gap.
+## Steps
 
-## Safety boundary
+1. Choose the skill folder under `plugins/fabric-skills/skills/`:
+   - Spark / notebooks → `spark-cli`
+   - Warehouse / SQL endpoint → `sqldw-cli`
+   - SQL database → `sqldb-cli`
+   - Eventhouse / KQL → `eventhouse-cli`
+   - Eventstream → `eventstream-cli`
+   - Activator → `activator-cli`
+   - Dataflows → `dataflows-cli`
+   - Semantic models → `semantic-model-authoring`
+   - Deployment pipelines → `deployment-pipelines-authoring-cli`
+   - Git integration → `git-integration-operations-cli`
+   - Variable libraries → `variable-library-cli`
+   - OneLake catalog / governance → `onelake-catalog-govern-cli`
+   - Fabric IQ / ontology → `fabriciq`, `fabriciq-ontology-cli`
+   - Migrations → `databricks-migration`, `synapse-migration`,
+     `hdinsight-migration`, `pipeline-migration`
+   - Architecture / cost → `e2e-medallion-architecture`,
+     `e2e-fabric-cost-estimation`
+   - Not listed → list `plugins/fabric-skills/skills/` in the repo and pick one
+2. Read `plugins/fabric-skills/skills/<folder>/SKILL.md` from the repo, in full.
+3. Read every file it marks **Mandatory**. Resolve relative links from the
+   skill folder, e.g. `../../common/COMMON-CLI.md` →
+   `plugins/fabric-skills/common/COMMON-CLI.md`.
+4. State which skill file(s) you read, then follow them exactly.
+5. Execute using the Fabric MCP connector tools. Never invent endpoints.
 
-This agent is for read-only investigation and recommendations. Do not create,
-update, run, or delete Fabric items; do not run KQL management commands; and do
-not make a change merely because a skill describes how. Report the evidence,
-limitations, and an approval-ready recommendation instead.
+## Workshop safety and execution boundary
+
+This agent is read-only. Skills describing authoring do not authorize creating,
+updating, running, or deleting Fabric items or KQL management commands.
+If a required file cannot be read, report the Code Access/sync error and stop;
+do not substitute a web copy or remembered instructions.
+
+Use MCP tools for operations they actually expose. Where no connector tool
+exists, only the explicitly configured, read-only REST/CLI paths in the active
+backend instructions are allowed (for example Eventhouse KQL queries using the
+agent UAMI). Read the selected skill and mandatory references first; never
+invent a tool or endpoint, silently use a human identity, or bypass a missing
+permission. The retail-price tool remains the sole source of rates.

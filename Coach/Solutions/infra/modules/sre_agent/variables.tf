@@ -47,3 +47,15 @@ variable "enable_monitoring_connectors" {
   type        = bool
   default     = true
 }
+
+variable "default_model" {
+  description = "Legacy explicit model configuration; null lets SRE Agent use its regional provider default. Verify the approved provider in the portal before sending data."
+  type = object({
+    name     = string
+    provider = string
+  })
+  default = {
+    name     = "claude-opus-4-6"
+    provider = "Anthropic"
+  }
+}

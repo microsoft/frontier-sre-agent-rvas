@@ -1,48 +1,60 @@
 [< Previous Challenge](./Challenge-04.md) — **[Home](../../README.md)** — [Next Challenge >](./Challenge-06.md)
 
-# Challenge 05 — Attribute Execution and Pipeline Consumption
+# Challenge 05 — Validate Model Choice and Data Residency
 
-> **Capabilities added in this challenge**: Run-Level Consumption · Pipeline Attribution · Precision
+> **Capabilities added in this challenge**: Azure OpenAI vs Anthropic · EU Data Boundary · Model Evaluation
 
 ## Introduction
 
-Pipeline cost is not always stored on the pipeline itself. Activities can be
-charged to child items, and scheduled or manual runs can overlap. This
-challenge tests whether the agent distinguishes measured execution cost from
-averages and uncertain attribution.
+The SRE Agent's model provider affects reasoning, tool behavior, agent-unit
+cost, and where inference can take place. An EU Fabric capacity or an EU agent
+storage region does not, by itself, make every model provider EU-local.
 
 ## Description
 
-Investigate a named notebook execution and a pipeline run that invokes
-compute-bearing children:
+Review the active provider and the coach-approved data policy before continuing.
+First ask the agent to explain its provider and processing boundary, then
+verify its claim against the portal and current Microsoft documentation.
+Use the [provider comparison reference](../Resources/fabric-sre-agent/README.md#azure-openai-versus-anthropic-in-sre-agent)
+to evaluate the existing agent, not create another challenge or deployment.
 
-- Locate the relevant executions using the backend's timestamps and the
-  Fabric job-instance or Spark monitoring evidence.
-- Separate the pipeline's own consumption from consumption recorded against
-  child items.
-- Assess whether child operations can be attributed to this pipeline run or
-  could also belong to a schedule, another pipeline, or a manual invocation.
-- For FUAM, distinguish daily totals and averages from derived notebook
-  execution CU; for Capacity Events, identify individual operations and
-  preserve ambiguity when concurrent triggers overlap.
-- Report the measurement basis and precision for every subtotal and the total.
+- Record the agent region, active provider, documented inference boundary, and
+  the difference between inference and conversation storage.
+- Compare Azure OpenAI's structured/tool-oriented strengths with Anthropic's
+  long-context/code reasoning and built-in web search; do not assume either
+  provider always gives the best operational answer.
+- Explain that **Anthropic EU-local inference is not guaranteed for SRE Agent**:
+  it can process globally and is excluded from Microsoft's EU Data Boundary.
+  Select Azure OpenAI with an EU/EFTA agent deployment when EU residency is required.
+- With coach approval, evaluate the same sanitized, non-sensitive prompt and
+  frozen sample evidence under each permitted provider in separate fresh threads.
+  Compare tool selection, instruction compliance, calculation correctness,
+  latency, and available AAU usage. Do not send restricted telemetry to an
+  unapproved provider just to complete a comparison.
+- If Anthropic is not approved or available, compare its documented behavior
+  only, mark runtime results as not tested, and keep the approved provider.
+
+Changing models does not change Fabric item permissions, MCP identity, skills,
+or the requirement to read skills from Code Access rather than web search.
 
 ## Success Criteria
 
-- [ ] The notebook execution is correlated to the correct run using item identity and time/status evidence.
-- [ ] The pipeline report separates pipeline-owned CU from each included child item.
-- [ ] Exact, average, derived, shared, or ambiguous labels match the evidence and backend's data grain.
-- [ ] Shared work is not silently attributed to a single pipeline; excluded runs and rationale are visible.
-- [ ] **Explain to your coach** — why does a pipeline definition show possible dependencies but not prove which child ran during a particular execution?
+- [ ] The portal's active provider and agent region are recorded with the coach's approval.
+- [ ] The comparison distinguishes inference residency, stored conversation data, model capabilities, and AAU charges from Fabric CU costs.
+- [ ] The EU recommendation states that Azure OpenAI inference for EU/EFTA agent deployments stays within the EU Data Boundary, while Anthropic processing may be global.
+- [ ] Any runtime comparison uses identical sanitized inputs and fresh threads; prohibited or unavailable provider tests are explicitly marked not run.
+- [ ] The approved provider is restored/confirmed before real-data exercises, with no broadened permissions or web-based skill substitutes.
+- [ ] **Explain to your coach** — why does placing Fabric and the agent in Europe not establish EU-only processing when Anthropic is selected?
 
 ## Learning Resources
 
-- [FUAM precision rules](../Resources/fabric-sre-agent/fuam/agent-instructions.md)
-- [Capacity Events precision rules](../Resources/fabric-sre-agent/capacity-events/agent-instructions.md)
-- [Fabric job scheduler APIs](https://learn.microsoft.com/rest/api/fabric/core/job-scheduler)
-- [Spark monitoring APIs](https://learn.microsoft.com/fabric/data-engineering/spark-monitoring-api-overview)
+- [SRE Agent model provider selection](https://learn.microsoft.com/azure/sre-agent/model-provider-selection)
+- [SRE Agent data residency and privacy](https://learn.microsoft.com/azure/sre-agent/data-privacy)
+- [SRE Agent pricing and AAU billing](https://learn.microsoft.com/azure/sre-agent/pricing-billing)
+- [Workshop provider comparison reference](../Resources/fabric-sre-agent/README.md#azure-openai-versus-anthropic-in-sre-agent)
 
 ## Tips
 
-- FUAM cannot separate multiple same-day non-Spark executions; do not present an average as a specific run.
-- Capacity Events provides per-operation CU, but temporal overlap may still leave child-run attribution ambiguous.
+- Trust the portal and documented service guarantees, not an agent's self-reported identity or an assumed data-center location.
+- Anthropic's built-in web search does not waive the router's Code Access-only rule.
+- Never switch to a globally processed provider using a thread containing sensitive historical tool outputs.

@@ -30,6 +30,10 @@ boundaries:
   up FUAM and Capacity Events once and shares the relevant items with the audience.
 - Keep Fabric data access read-only; tenant/capacity administration and shared
   backend changes belong to the coach and approved administrators.
+- Verify the active model provider before any data query. For EU residency,
+  use Azure OpenAI on an EU/EFTA agent deployment; Anthropic inference can run
+  globally and is outside Microsoft's EU Data Boundary. Obtain approval before
+  any Anthropic opt-in; a European agent region does not make Claude EU-local.
 
 ## Pre-flight Validation Checklist
 
@@ -55,6 +59,7 @@ network egress before proceeding.
 - [ ] The Fabric capacity, shared telemetry items, monitored workspaces, agent identity, and responsible administrators are recorded.
 - [ ] The coach confirms read access to both prepared backends for the audience and the team agent identity.
 - [ ] The operating and retention cost trade-offs of FUAM and Capacity Events are understood.
+- [ ] The coach approves the model provider/data-residency choice before real telemetry, logs, or code enter a conversation.
 - [ ] **Explain to your coach** — which access checks are tenant-level, which are workspace- or capacity-level, and why Azure RBAC alone does not establish Fabric data access?
 
 ## Learning Resources
@@ -63,6 +68,7 @@ network egress before proceeding.
 - [Fabric tenant settings](https://learn.microsoft.com/fabric/admin/tenant-settings-index)
 - [Microsoft Fabric Capacity Metrics app](https://learn.microsoft.com/fabric/enterprise/metrics-app)
 - [Fabric capacity operation events](https://learn.microsoft.com/fabric/real-time-hub/explore-fabric-capacity-operation-events)
+- [SRE Agent data residency and privacy](https://learn.microsoft.com/azure/sre-agent/data-privacy)
 
 ## Tips
 

@@ -18,6 +18,10 @@
 - Backend data collection creates ongoing CU cost and retention responsibility.
 - SRE Agent Administrator is required for every participant configuring an
   agent; it does not grant Fabric data access to the human or runtime identity.
+- Verify model provider approval before exposing real data: Azure OpenAI on
+  EU/EFTA agent deployments supports EUDB inference; Anthropic can process
+  globally and is excluded from EUDB. Do not infer an EU Anthropic deployment
+  from an EU agent or capacity location.
 
 ## Expected Student Output
 
@@ -28,6 +32,7 @@
 - Both shared backends are prepared by the coach; audience and agent identity
   read access is tested, and connection identifiers are handed over.
 - Students understand that pre-flight does not grant or certify Fabric access.
+- Active provider and agent region are approved before any real-data queries.
 
 ## Common Issues and Hints
 

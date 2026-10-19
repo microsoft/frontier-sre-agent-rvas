@@ -114,21 +114,28 @@ If KQL queries return 401 or 403 despite 2.2, grant database-level access explic
  
 ## Step 3 — Allow the outbound domains
  
-Agent portal → **Settings → Workspace configuration → Additional hosts** → add both:
+Agent portal → **Settings → Workspace configuration → Additional hosts** → add all three:
  
 ```
 prices.azure.com
 *.kusto.fabric.microsoft.com
+*.database.fabric.microsoft.com
 ```
  
 | Host | Needed for |
 |---|---|
 | `prices.azure.com` | The `get_fabric_cu_price` tool (Azure Retail Prices API) |
 | `*.kusto.fabric.microsoft.com` | KQL queries against the Eventhouse query URI |
+| `*.database.fabric.microsoft.com` | Workshop Fabric database endpoint access |
  
 Without the second host, every consumption question fails at the first KQL query.
  
-✅ Both hosts are listed under Additional hosts.
+These are **SRE Agent** workspace settings, not Fabric workspace settings.
+If a SQL server uses `.datawarehouse.fabric.microsoft.com`, allow that actual
+host as well: the database wildcard does not cover it. See the
+[shared host reference](../README.md#workspace-outbound-hosts).
+
+✅ All three entries are saved; pricing, SQL, and Eventhouse queries are tested separately.
  
 ---
  
@@ -139,9 +146,15 @@ Agent portal → **Builder → Code Access → GitHub → Add repository**:
 | Field | Value |
 |---|---|
 | Repository | `https://github.com/microsoft/skills-for-fabric` |
+| Branch | `main` |
 | Connection | OAuth (GitHub sign-in) |
  
-This repository is the **live source** for the `fabric-skills-router` skill (Step 7).
+Refresh/sync this repository before using the router (Step 7). The latest
+upstream skills are available only after synchronization. Skills live at
+`plugins/fabric-skills/skills/`, shared references at
+`plugins/fabric-skills/common/`. Follow the
+[full Code Access and router procedure](../README.md#connect-the-latest-fabric-skills-and-install-the-router),
+including the new **Context > Code access** navigation.
  
 **Optional:** to let the agent review notebook code during optimization, add the repository your Fabric workspaces are Git-synced to. Without it, the agent reads notebook code through the Fabric item-definition API.
  
@@ -168,7 +181,12 @@ Agent portal → **Builder → Connectors → Add connector → MCP server**:
 | URL | `https://api.fabric.microsoft.com/v1/mcp/dataPlane/sqlEndpoint` |
 | Tools | `execute_query` |
  
-**`fabric-mcp`:** configure it with the transport and authentication that reach **Connected** in your agent, the same as in the [FUAM version](../fuam/README.md#step-5--mcp-connectors).
+Follow the [full connector setup](../README.md#establish-the-fabric-mcp-connectors):
+Core uses `https://api.fabric.microsoft.com/v1/mcp/core` over Streamable HTTP.
+Its documented OAuth sign-in is delegated, not automatically the agent UAMI.
+The reference covers the coach-validated local stdio option, supported identity
+checks, read-only tool selection, and explicit blockers. Verify both connector
+identities; do not use a human token as an unattended runtime fallback.
  
 KQL doesn't need a connector. The agent calls the Eventhouse query URI with `az rest` and a Kusto token (Step 3 allows the host).
  
@@ -200,13 +218,15 @@ Agent portal → **Builder → Skill builder → Create skill**.
 | Field | Value |
 |---|---|
 | Name | `fabric-skills-router` |
-| Tools | None. The skill reads from the Code Access repository (Step 4) |
+| Tools | Code Access code-read/file-read tools must be available |
 | Additional files | None |
 | SKILL.md | Paste the contents of [`skills/fabric-skills-router/SKILL.md`](../skills/fabric-skills-router/SKILL.md) |
  
 If you already deployed the FUAM version on the same agent, the skill exists. Skip this step.
  
 This version relies mostly on `eventhouse-cli` (KQL), `spark-cli` (Spark diagnostics) and `sqldw-cli` (Query Insights), all reached through the router.
+Read the full selected skill and every **Mandatory** file from synchronized
+Code Access before execution. No web fetch or remembered copy is a substitute.
  
 ✅ Ask *"Which skill would you use to query an Eventhouse?"* The agent loads `fabric-skills-router`, reads `eventhouse-cli/SKILL.md` from the repo, and names the files it read.
  
@@ -214,10 +234,15 @@ This version relies mostly on `eventhouse-cli` (KQL), `spark-cli` (Spark diagnos
  
 ## Step 8 — Agent instructions
  
-1. Open [`agent-instructions.md`](agent-instructions.md) and fill in **§3.0** with the Step 0 values: monitoring workspace name and ID, Eventhouse, KQL database, query URI.
-2. Agent portal → **Capabilities → Custom Instructions**.
+1. Open the complete [`agent-instructions.md`](agent-instructions.md). Fill in
+   **§3.0** with the coach's monitoring workspace/Eventhouse/KQL details,
+   approved monitored capacity/workspace IDs, team UAMI client ID, model/data
+   approval reference, and subscription-start/retention evidence.
+2. Agent portal → **Extensions → Custom instructions** (older UI: **Capabilities → Custom Instructions**).
 3. Paste the **entire contents** of the file, then save.
 One agent runs **one version**. Custom Instructions apply to the whole agent, so don't paste both versions' instructions into the same agent. To run both side by side, use two agents, or put one version in a custom agent (Agent Canvas → Create → Custom Agent).
+Use the [instruction acceptance checks](../README.md#apply-the-backend-specific-agent-instructions)
+and verify the complete text was saved without truncation.
  
 ✅ Ask *"What can you help me with?"* The answer describes Fabric cost, per-execution consumption, RCA and optimization.
  
@@ -231,7 +256,7 @@ Run each in a new thread.
 |---|---|---|
 | 9.1 | "Show me the schema of the capacity operations table." | Runs `getschema` and `take 1`, and maps the fields it found to the documented properties (`capacityUnitMs`, `operationStartTime`, `itemName`, …) with their actual names and casing |
 | 9.2 | "How much did workspace <A> cost this week vs last week?" | Opening statement (SKU, capacity, region, available CU-hours, rate). Table with TOTAL row. Periods in UTC on `operationStartTime`. Preview operations excluded. Ends with the **CALCULATION** block |
-| 9.3 | "How many CUs did notebook <C>'s latest run use?" | One operation, labelled **exact**, with its `operationStartTime`, status and duration |
+| 9.3 | "How many CUs did notebook <C>'s latest run use?" | Schema-verified, safely deduplicated operation(s), verified run linkage, status/duration, and **exact for recorded operations** with explicit missing/late-event and logical-run attribution limits |
 | 9.4 | "How much did the last run of pipeline <B> cost, including its notebooks?" | Run window from job instances. Pipeline's own CU plus child operations inside the window, each labelled exact or ambiguous |
 | 9.5 | "How can I reduce notebook <C>'s CU consumption?" | 14-day trend, the most expensive execution drilled into (stages, skew, spill, executor allocation), recommendations tied to evidence with € impact |
 | 9.6 | "Why was <item> slow / throttled at <time>?" | The execution, concurrent heavy operations on the capacity, throttled operations, and for notebooks the Spark execution compared with a normal one |

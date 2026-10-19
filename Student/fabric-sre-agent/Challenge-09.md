@@ -7,7 +7,8 @@
 ## Introduction
 
 You have configured a Fabric SRE Agent, evaluated its consumption source, and
-tested cost analysis, execution attribution, RCA, and optimization. Now design
+tested cost analysis, model residency, live skills, instructions, and Spark
+investigation/optimization. Now design
 a bounded agent workflow for a real Fabric reliability or FinOps question from
 your own environment.
 
@@ -25,6 +26,8 @@ outcome. Design and demonstrate a safe agent experience that:
   recommendation or escalation path.
 - Includes a repeatable test and an explicit boundary preventing the agent from
   changing or running Fabric items.
+- Records the approved model provider/processing boundary, required workspace
+  hosts, and proof that current Code Access skill/Mandatory files are read.
 
 Review the design with your coach before applying new permissions or
 configuring any write-capable tooling.

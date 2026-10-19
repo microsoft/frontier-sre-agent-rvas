@@ -25,8 +25,8 @@ provisioning exercises.
 | 02 | Connect and Ground the Fabric SRE Agent | [Solution-02.md](./Solution-02.md) |
 | 03 | Prove the Cost Calculation and Precision | [Solution-03.md](./Solution-03.md) |
 | 04 | Explain Spend by Workspace and Item | [Solution-04.md](./Solution-04.md) |
-| 05 | Attribute Execution and Pipeline Consumption | [Solution-05.md](./Solution-05.md) |
-| 06 | Investigate Failures, Slowness, and Throttling | [Solution-06.md](./Solution-06.md) |
+| 05 | Validate Model Choice and Data Residency | [Solution-05.md](./Solution-05.md) |
+| 06 | Validate Live Skills and Agent Instructions | [Solution-06.md](./Solution-06.md) |
 | 07 | Optimize a Measured Spark Workload | [Solution-07.md](./Solution-07.md) |
 | 08 | Assess Coverage and Capacity Context | [Solution-08.md](./Solution-08.md) |
 | 09 | Build Your Own Production-Ready Fabric SRE Agent | [Solution-09.md](./Solution-09.md) |
@@ -44,6 +44,9 @@ provisioning exercises.
 | Capacity Events backend | Coach deploys once: monitoring workspace on the capacity, Eventstream, Eventhouse/KQL database, operation-event subscription, and recent rows |
 | Tools | Linux Bash, Azure CLI for documented `az rest` checks, Python 3, and outbound access to approved Fabric and pricing endpoints |
 | Billing | Permission to see capacity SKU/region and permission to run or import the optional demo workload |
+| Model provider | Coach-approved provider before any real-data query; Azure OpenAI on EU/EFTA agent deployments for EUDB inference; Anthropic requires approval for global processing |
+| Agent outbound hosts | `prices.azure.com`, `*.database.fabric.microsoft.com`, and `*.kusto.fabric.microsoft.com` for Capacity Events, plus actual SQL endpoint hosts where different |
+| Fabric skills | Code Access to `https://github.com/microsoft/skills-for-fabric`, `main`, refreshed before the event; full skills and Mandatory-file reads verified |
 
 The monitoring infrastructure has real CU consumption. Capacity Events uses
 always-on Eventstream/Eventhouse resources; FUAM incurs scheduled pipeline
@@ -62,8 +65,8 @@ audience/agent access verification must be completed before the event.
 |---|---|---:|---|
 | Readiness and shared source validation | 00–01 | 75 min | Agent Administrator access, backend choice, consumption evidence |
 | Agent integration | 02–03 | 100 min | Identity, connectors, skills, cost math |
-| FinOps and attribution | 04–05 | 90 min | Workspace trends, execution precision |
-| Incident and optimization | 06–08 | 150 min | RCA, Spark diagnostics, data quality |
+| FinOps and model governance | 04–05 | 80 min | Workspace trends, model capabilities, EU residency |
+| Grounding and investigation quality | 06–08 | 135 min | Live skills, instructions, Spark RCA/optimization, coverage |
 | Capstone | 09 | 75–90 min | Design, validate, present |
 
 ### Focused half-day
@@ -96,8 +99,8 @@ separate capstone extension.
 | 02 | Connect and Ground the Fabric SRE Agent | UAMI, MCP boundaries, live skills, backend instructions | 401/403; wrong instruction set; price domain blocked; missing Code Access sync | **45–60 min** | If students broaden identity permissions instead of isolating the failing boundary |
 | 03 | Prove the Cost Calculation and Precision | CU-s to CU-h, CU-ms conversion, list price, precision labels | Dividing ms by 3,600; guessing rates; confusing invoice and standalone cost | **30–40 min** | When calculation operands cannot be independently reproduced |
 | 04 | Explain Spend by Workspace and Item | Name resolution, partial periods, preview events, data freshness | Deleted items are NULL; GUID casing; background event ingestion lag | **35–45 min** | If the workspace total fails to reconcile with its breakdown |
-| 05 | Attribute Execution and Pipeline Consumption | Job instances, child items, run windows, shared attribution | Pipeline definition mistaken for proof of execution; manual/scheduled overlap | **40–55 min** | When a shared child is attributed to one run without evidence |
-| 06 | Investigate Failures, Slowness, and Throttling | Run status, capacity pressure, Spark telemetry, hypothesis testing | Operation events lack smoothed utilization; Spark app is high-concurrency | **45–60 min** | If students call long duration proof of capacity saturation |
+| 05 | Validate Model Choice and Data Residency | Azure OpenAI/GPT vs Anthropic/Claude, EUDB, inference vs storage, AAUs | Unapproved provider; EU agent mistaken for EU Claude inference | **35–45 min** | Before any disallowed provider receives data |
+| 06 | Validate Live Skills and Agent Instructions | Synced `main`, full SKILL.md and Mandatory reads, one backend prompt | Stale sync; wrong paths; web fallback; truncated instructions | **40–55 min** | When tools execute without required reads or instructions use the wrong source |
 | 07 | Optimize a Measured Spark Workload | Stages, skew, shuffle, spill, executor allocation | Capacity Metrics refresh lag; wrong workspace/capacity; demo table reuse | **45–60 min** | If recommendations are generic and unsupported by execution evidence |
 | 08 | Assess Coverage and Capacity Context | Freshness, retention, duplicates, monitoring cost | Event delays; paused capacity; preview operations; FUAM refresh schedule | **35–45 min** | If a report says “healthy” without coverage or freshness evidence |
 | 09 | Build Your Own Production-Ready Fabric SRE Agent | Bounded use case, least privilege, validation, governance | Broad use case; no measurable test; asks for autonomous write permissions | **75–90 min** | When the scenario has no evidence contract or safe end-to-end test |
@@ -120,6 +123,14 @@ separate capstone extension.
   refresh. For Capacity Events, confirm the subscription is active and recent
   rows arrive in `OperationsTable`.
 - Configure and test the price tool and outbound allowlist before the session.
+- Use the [shared connection/configuration reference](../../Student/Resources/fabric-sre-agent/README.md#agent-connection-and-configuration-reference)
+  to validate MCP transport/effective identity, saved outbound hosts, Code
+  Access synchronization, router reads, and complete backend instructions.
+- Approve and verify the model provider **before Challenge 00 data queries**.
+  Anthropic inference may be global and is outside EUDB; do not promise an
+  Anthropic EU data center for SRE Agent. Use the documented service boundary,
+  not an unsupported claim about all physical Anthropic facilities. Challenge
+  05 uses only approved sanitized comparison data or a documentation-only test.
 - Give each team its agent URL and identity IDs, both backends' workspace/item
   IDs and SQL/KQL connection identifiers, the Fabric capacity UUID/SKU/region,
   sample workload/run IDs, freshness, history bounds, and known limits.

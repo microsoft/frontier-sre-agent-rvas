@@ -39,6 +39,7 @@ module "sre_agent" {
   resource_group_id            = azurerm_resource_group.workshop.id
   read_only                    = true
   enable_monitoring_connectors = false
+  default_model                = null
 
   managed_resource_ids = [azapi_resource.capacity.id]
   managed_scopes = {

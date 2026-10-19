@@ -20,6 +20,10 @@ workspace and ask the agent to investigate its consumption and performance:
   notebook execution.
 - Examine the notebook code and relevant Spark jobs, stages, tasks, executor
   allocation, shuffle, skew, spill, and failure evidence.
+- For a failed or slow execution, correlate status, logs, concurrency, and
+  available capacity/throttle evidence within an explicit incident window.
+  Separate observed symptoms from the likely cause; operation events alone
+  do not establish smoothed capacity utilization.
 - Relate each recommendation to a specific measured symptom and code pattern.
 - Estimate potential CU or cost impact with clearly stated assumptions; do
   not claim measured savings before rerunning and comparing.
@@ -30,6 +34,7 @@ workspace and ask the agent to investigate its consumption and performance:
 
 - [ ] The baseline run appears in the selected consumption source and is linked to its Spark execution.
 - [ ] At least two optimization recommendations cite evidence from code and run diagnostics.
+- [ ] The slow/failed-run diagnosis separates workload evidence, capacity evidence, likely cause, and remaining uncertainty rather than equating long duration with throttling.
 - [ ] Estimated savings are labeled as estimates and show the assumptions behind them.
 - [ ] No Fabric object is modified or executed by the agent; the participant owns any demo run and cleanup.
 - [ ] **Explain to your coach** — what experiment would demonstrate that a recommendation actually reduced CU without shifting cost elsewhere?

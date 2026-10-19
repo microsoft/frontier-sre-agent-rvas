@@ -89,7 +89,7 @@ Eventhouse. The track emphasizes backend-specific data precision, auditable
 CU-to-cost calculations, workload attribution, RCA, monitoring quality, and
 Spark optimization.
 
-**Capability progression:** Backend selection → Agent identity and connectors → Cost math and precision → Workspace/item spend → Execution attribution → RCA → Spark optimization → Coverage and capacity context → Custom Fabric SRE Agent
+**Capability progression:** Backend selection → MCP, workspace hosts, skills and instructions → Cost math and precision → Workspace/item spend → Model choice and EU residency → Live-skill/instruction validation → Spark RCA and optimization → Coverage and capacity context → Custom Fabric SRE Agent
 
 | # | Challenge | Capability |
 |---|-----------|------------|
@@ -98,8 +98,8 @@ Spark optimization.
 | [02](Student/fabric-sre-agent/Challenge-02.md) | Connect and Ground the Fabric SRE Agent | Managed identity · MCP · Live Fabric skills |
 | [03](Student/fabric-sre-agent/Challenge-03.md) | Prove the Cost Calculation and Precision | CU conversion · Retail rates · Evidence labels |
 | [04](Student/fabric-sre-agent/Challenge-04.md) | Explain Spend by Workspace and Item | Cost trends · Inventory resolution · Freshness |
-| [05](Student/fabric-sre-agent/Challenge-05.md) | Attribute Execution and Pipeline Consumption | Run-level precision · Child attribution |
-| [06](Student/fabric-sre-agent/Challenge-06.md) | Investigate Failures, Slowness, and Throttling | Fabric RCA · Capacity correlation · Spark telemetry |
+| [05](Student/fabric-sre-agent/Challenge-05.md) | Validate Model Choice and Data Residency | Azure OpenAI vs Anthropic · EU Data Boundary · Safe comparison |
+| [06](Student/fabric-sre-agent/Challenge-06.md) | Validate Live Skills and Agent Instructions | Code Access `main` · Mandatory reads · Backend grounding |
 | [07](Student/fabric-sre-agent/Challenge-07.md) | Optimize a Measured Spark Workload | Spark diagnostics · Evidence-based optimization |
 | [08](Student/fabric-sre-agent/Challenge-08.md) | Assess Coverage and Capacity Context | Freshness · Retention · Monitoring cost |
 | [09](Student/fabric-sre-agent/Challenge-09.md) | Build Your Own Production-Ready Fabric SRE Agent | Capstone · Governance · End-to-end validation |
@@ -110,6 +110,9 @@ router, pricing helper, and optional Spark demo notebook are under
 Coaches deploy the [Fabric infrastructure](Coach/Solutions/infra/fabric-sre/README.md)
 and prepare both data sources before the event; students validate the shared
 sources and configure their agent capabilities.
+The [configuration reference](Student/Resources/fabric-sre-agent/README.md#agent-connection-and-configuration-reference)
+includes MCP connection/authentication, required workspace hosts, live skill
+reads, agent instructions, and model-residency guidance.
 
 **Coaches:** see [Coach/README.md](Coach/README.md) for the Azure Operations
 guides and
