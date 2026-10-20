@@ -1,0 +1,14 @@
+resource_group_name = "rg-fabric-sre-workshop"
+agent_location      = "swedencentral"
+capacity_location   = "westeurope"
+capacity_name       = "replacewithuniqueworkshopname"
+capacity_sku        = "F4"
+
+capacity_admin_members = ["coach@yourtenant.example"]
+
+teams = {
+  team01 = {
+    agent_name                  = "fabric-sre-team01"
+    administrator_principal_ids = ["00000000-0000-0000-0000-000000000001"]
+  }
+}

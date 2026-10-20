@@ -13,6 +13,7 @@ investigate:
 |---|---:|---|
 | [Azure Operations](#azure-operations-track) | 20 | Agent fundamentals, Azure observability, autonomous incident response, and FinOps |
 | [SQL Server DBA](#sql-server-dba-track) | 10 | Read-only database discovery, Query Store, waits, blocking, query-performance diagnostics, and a build-your-own capstone |
+| [Fabric SRE Agent](#fabric-sre-agent-track) | 10 | Fabric FinOps, CU-based cost analysis, workload RCA, Spark optimization, and a build-your-own capstone |
 
 Open `web/index.html` in a browser for the interactive UI (coach mode: **Shift+C**). See also the
 [Scenario Explorer](web/scenarios.html) — a searchable library of 77 real-world Azure SRE Agent
@@ -75,10 +76,50 @@ The MCP server code, SQL setup, workloads, custom-agent assets, and secure
 deployment guide are under
 [`Student/Resources/sql-server-mcp/`](Student/Resources/sql-server-mcp/README.md).
 
+### Fabric SRE Agent track
+
+Ten challenges build a read-only Azure SRE Agent for Microsoft Fabric FinOps
+and root-cause analysis. The infrastructure deliverable provisions the shared
+Fabric capacity and team SRE Agents, including agent-scoped **SRE Agent
+Administrator** assignments for participants. The coach deploys **both backends
+once** and shares the relevant items with the audience and read-only agent
+identities. Students choose one shared consumption backend:
+FUAM's daily Lakehouse data or per-operation Capacity Events streamed to
+Eventhouse. The track emphasizes backend-specific data precision, auditable
+CU-to-cost calculations, workload attribution, RCA, monitoring quality, and
+Spark optimization.
+
+**Capability progression:** Backend selection → MCP, workspace hosts, skills and instructions → Cost math and precision → Workspace/item spend → Model choice and EU residency → Live-skill/instruction validation → Spark RCA and optimization → Coverage and capacity context → Custom Fabric SRE Agent
+
+| # | Challenge | Capability |
+|---|-----------|------------|
+| [00](Student/fabric-sre-agent/Challenge-00.md) | Prepare the Fabric SRE Agent Lab | Prerequisites · Fabric access · Backend readiness |
+| [01](Student/fabric-sre-agent/Challenge-01.md) | Select and Validate a Shared Consumption Backend | FUAM · Capacity Events · Data grain |
+| [02](Student/fabric-sre-agent/Challenge-02.md) | Connect and Ground the Fabric SRE Agent | Managed identity · MCP · Live Fabric skills |
+| [03](Student/fabric-sre-agent/Challenge-03.md) | Prove the Cost Calculation and Precision | CU conversion · Retail rates · Evidence labels |
+| [04](Student/fabric-sre-agent/Challenge-04.md) | Explain Spend by Workspace and Item | Cost trends · Inventory resolution · Freshness |
+| [05](Student/fabric-sre-agent/Challenge-05.md) | Validate Model Choice and Data Residency | Azure OpenAI vs Anthropic · EU Data Boundary · Safe comparison |
+| [06](Student/fabric-sre-agent/Challenge-06.md) | Validate Live Skills and Agent Instructions | Code Access `main` · Mandatory reads · Backend grounding |
+| [07](Student/fabric-sre-agent/Challenge-07.md) | Optimize a Measured Spark Workload | Spark diagnostics · Evidence-based optimization |
+| [08](Student/fabric-sre-agent/Challenge-08.md) | Assess Coverage and Capacity Context | Freshness · Retention · Monitoring cost |
+| [09](Student/fabric-sre-agent/Challenge-09.md) | Build Your Own Production-Ready Fabric SRE Agent | Capstone · Governance · End-to-end validation |
+
+The setup guides, backend-specific instructions, read-only Fabric skills
+router, pricing helper, and optional Spark demo notebook are under
+[`Student/Resources/fabric-sre-agent/`](Student/Resources/fabric-sre-agent/README.md).
+Coaches deploy the [Fabric infrastructure](Coach/Solutions/infra/fabric-sre/README.md)
+and prepare both data sources before the event; students validate the shared
+sources and configure their agent capabilities.
+The [configuration reference](Student/Resources/fabric-sre-agent/README.md#agent-connection-and-configuration-reference)
+includes MCP connection/authentication, required workspace hosts, live skill
+reads, agent instructions, and model-residency guidance.
+
 **Coaches:** see [Coach/README.md](Coach/README.md) for the Azure Operations
 guides and
 [Coach/sql-server-dba/README.md](Coach/sql-server-dba/README.md) for the SQL
-Server DBA guides.
+Server DBA guides and
+[Coach/fabric-sre-agent/README.md](Coach/fabric-sre-agent/README.md) for the
+Fabric SRE Agent guides.
 
 ## Requirements
 
@@ -106,15 +147,15 @@ container configuration changes, use **Codespaces: Rebuild Container** or
 
 ### Tools and accounts
 
-| Requirement | Common / Azure Operations | SQL Server DBA additions |
-|---|---|---|
-| Linux tooling | Bash 4+, GNU Make, Git, GNU coreutils/findutils, `curl`, `jq`, `envsubst` (gettext), Python 3 | Microsoft ODBC `sqlcmd` with the approved Entra authentication method |
-| YAML parsing | Python 3 with PyYAML (recommended), or **Mike Farah yq** supporting `yq -o=json`; other tools named `yq` are not interchangeable | Same |
-| Terraform | **1.5+** for Make-based lab deployment | Needed when using the Coach reference Terraform deployment |
-| Azure CLI | Working Linux installation and Azure login | **2.62+** and the `containerapp` extension |
-| GitHub | Your own fork, `origin` pointing to it, Issues enabled; permission to authorize the workshop GitHub connector | Your own fork for workshop assets |
-| Azure access | Enabled subscription; permission to create lab resources and role assignments (Owner, or Contributor plus an appropriate RBAC administration role) | Registry/image-pull and MCP caller-role assignments, approved SQL administrator, and Entra/database permissions |
-| Agent access | Permission to create/use Azure SRE Agent; associate every deployed workload resource group and grant the agent Contributor for the full Operations track | Existing agent with custom MCP connector, skill, and custom-agent authoring access |
+| Requirement | Common / Azure Operations | SQL Server DBA additions | Fabric SRE Agent additions |
+|---|---|---|---|
+| Linux tooling | Bash 4+, GNU Make, Git, GNU coreutils/findutils, `curl`, `jq`, `envsubst` (gettext), Python 3 | Microsoft ODBC `sqlcmd` with the approved Entra authentication method | No extra local toolchain; Azure CLI is used for documented Capacity Events checks |
+| YAML parsing | Python 3 with PyYAML (recommended), or **Mike Farah yq** supporting `yq -o=json`; other tools named `yq` are not interchangeable | Same | Not required |
+| Terraform | **1.5+** for Make-based lab deployment | Needed when using the Coach reference Terraform deployment | Coach requires 1.5+ for the Fabric capacity and team agent deployment; students do not run Terraform |
+| Azure CLI | Working Linux installation and Azure login | **2.62+** and the `containerapp` extension | Working Azure CLI for documented checks; no Container Apps extension required |
+| GitHub | Your own fork, `origin` pointing to it, Issues enabled; permission to authorize the workshop GitHub connector | Your own fork for workshop assets | GitHub OAuth to connect `microsoft/skills-for-fabric` under Code Access |
+| Azure access | Enabled subscription; permission to create lab resources and role assignments (Owner, or Contributor plus an appropriate RBAC administration role) | Registry/image-pull and MCP caller-role assignments, approved SQL administrator, and Entra/database permissions | Coach provisions capacity/agents and role assignments; audience gets shared Fabric item read access, not tenant/capacity administration |
+| Agent access | Permission to create/use Azure SRE Agent; associate every deployed workload resource group and grant the agent Contributor for the full Operations track | Existing agent with custom MCP connector, skill, and custom-agent authoring access | Every participant needs SRE Agent Administrator on the assigned team agent; its UAMI uses read-only Fabric permissions |
 
 For Ubuntu/WSL, common utility packages are `make git jq curl gettext-base
 coreutils findutils python3 python3-yaml`. Install [Azure CLI for Linux](https://learn.microsoft.com/cli/azure/install-azure-cli-linux)
@@ -130,6 +171,10 @@ sudo apt-get install -y make git jq curl gettext-base coreutils findutils python
 The Dev Container supplies these tools and the DBA
 SQL client. Install the Container Apps extension explicitly when using your own
 environment: `az extension add --name containerapp`. Validation never installs it.
+The Fabric SRE Agent track has a separate coach-run
+[Terraform deployment](Coach/Solutions/infra/fabric-sre/README.md) for the
+shared Fabric capacity and team agents. FUAM, Capacity Events, and Fabric
+permissions are configured once by the coach outside Terraform.
 
 Docker and language SDKs are **not required for the Azure Operations deployment
 using published images**. Docker/registry build access is needed if you follow

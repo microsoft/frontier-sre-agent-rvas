@@ -32,6 +32,11 @@ build-web: clean-web
 		mkdir -p "$$dest"; \
 		cp "$$file" "$$dest/"; \
 	done
+	@# Fabric SRE Agent track index and source assets
+	@mkdir -p _site/Student/fabric-sre-agent
+	@cp Student/fabric-sre-agent/README.md _site/Student/fabric-sre-agent/README.md
+	@mkdir -p _site/Student/Resources
+	@cp -r Student/Resources/fabric-sre-agent _site/Student/Resources/
 	@# Coach indexes and solutions, preserving nested track directories
 	@mkdir -p _site/Coach
 	@find Coach -type f \( -name "Solution-*.md" -o -name "README.md" \) | while IFS= read -r file; do \

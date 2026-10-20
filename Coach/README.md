@@ -4,7 +4,14 @@
 
 # Coach Index — Azure SRE Agent Workshop
 
-Coach and facilitator guides for all 20 workshop challenges.
+Coach and facilitator guides for the Azure Operations, SQL Server DBA, and
+Fabric SRE Agent tracks.
+
+## Track Guides
+
+- [Azure Operations: 20 challenges](./README.md)
+- [SQL Server DBA: 10 challenges](./sql-server-dba/README.md)
+- [Fabric SRE Agent FinOps and RCA: 10 challenges](./fabric-sre-agent/README.md)
 
 ## Solution Index
 
@@ -74,6 +81,11 @@ make config-sre-agent
 `make deploy` in Coach combines infrastructure and agent configuration;
 `make deploy` in Student provisions workloads **only**. Do not use the Coach
 reference path to bypass the student's manual agent-creation exercise.
+This applies to the Azure Operations track. For Fabric, use the separate
+[Fabric infrastructure deliverable](./Solutions/infra/fabric-sre/README.md):
+it provisions the shared capacity, team agents, and participant SRE Agent
+Administrator roles. Coaches prepare and share both telemetry backends once;
+Fabric students do not use the Azure Operations workload-only deployment.
 Both `infra` targets stop before Terraform init/apply on confirmed pre-flight
 blockers. Use the same `TF_VARS` for pre-flight/deployment overrides.
 
