@@ -1,0 +1,10 @@
+{
+  "slug": "backup-policy-compliance-gap-detection",
+  "title": "Backup policy compliance & gap detection",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "Scheduled",
+  "frequency": "Daily",
+  "description": "Verifies that all critical resources have backup configured and that backup jobs are completing successfully.",
+  "example_prompt": "\"Audit backup coverage: (1) VMs without Azure Backup enabled, (2) SQL databases without backup (PITR or long-term), (3) Cosmos DB accounts without continuous backup, (4) File shares without backup. Also check: failed backup jobs in last 7 days, backup items not backed up in > 24h. Show resource, backup status, last successful backup, and RPO gap.\""
+}

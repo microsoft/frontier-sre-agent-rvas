@@ -1,0 +1,10 @@
+{
+  "slug": "fired-alerts-summary-last-24h",
+  "title": "Fired alerts summary (last 24h)",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "Scheduled",
+  "frequency": "Daily morning",
+  "description": "Provides a daily operational summary of all alerts that fired, grouped by severity and resolution status.",
+  "example_prompt": "\"List all alerts that fired in the last 24 hours across all subscriptions. Group by severity (Sev0-Sev4), show count per severity, average time to resolution, and list unresolved alerts with resource name, alert rule, and time fired.\""
+}

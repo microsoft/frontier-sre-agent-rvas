@@ -1,0 +1,10 @@
+{
+  "slug": "executive-operational-report-generation-pdf",
+  "title": "Executive operational report generation (PDF)",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "Scheduled",
+  "frequency": "Monthly",
+  "description": "Generates a comprehensive, executive-ready operational report consolidating key metrics across cost, security, compliance, and availability into a single formatted document (PDF or HTML). Combines data from multiple sources \u2014 Cost Management, Defender for Cloud, Resource Health, alert history, and policy compliance \u2014 into a structured narrative with charts, tables, and recommendations that can be shared with leadership without further editing.",
+  "example_prompt": "\"Generate a monthly executive operational report for management group 'Production' covering the last 30 days. Include sections for: (1) Cost summary \u2014 total spend, MoM change, top 5 cost drivers, anomalies detected, (2) Security posture \u2014 Defender secure score trend, new high-severity findings, (3) Availability \u2014 resource health summary, SLA breaches, top 5 incidents by duration, (4) Compliance \u2014 policy compliance %, top non-compliant policies, (5) Operational hygiene \u2014 orphaned resources count and cost, stale RBAC assignments found, alert noise ratio. Format as a structured PDF-ready report with an executive summary, key metrics dashboard table, and per-section details with recommendations.\""
+}

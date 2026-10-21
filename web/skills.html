@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skills | Azure SRE Agent RVAS</title>
+    <meta name="description" content="Explore 110 Azure SRE Agent skills by category. View instructions, copy them, download complete bundles and find installation guidance.">
+    <link rel="stylesheet" href="assets/css/brand.css">
+    <link rel="stylesheet" href="assets/css/shell.css">
+    <link rel="stylesheet" href="assets/css/site-nav.css">
+    <link rel="stylesheet" href="assets/css/scenarios.css">
+</head>
+<body>
+    <header class="nav" role="banner">
+        <div class="nav-inner">
+            <a class="brand" href="index.html" aria-label="RVAS Azure SRE Agent home">
+                <img src="assets/img/logo-full.png" alt="RVAP" class="rvap-nav-logo" height="32">
+            </a>
+            <nav class="nav-links" id="navLinks" aria-label="Primary">
+                <a href="index.html#challenges">Azure Operations Track</a>
+                <a href="index.html#sql-dba-track">SQL DBA Track</a>
+                <a href="index.html#agents">Subagents</a>
+                <a href="scenarios.html">Scenario Explorer</a>
+                <a href="skills.html" class="active" aria-current="page">Skills</a>
+                <a href="jumpstart.html">SRE Agent Jumpstart</a>
+                <a class="gh" href="https://github.com/microsoft/frontier-sre-agent-rvas"
+                    target="_blank" rel="noopener">GitHub</a>
+            </nav>
+            <div class="nav-actions">
+                <button class="icon-btn nav-toggle" type="button" aria-label="Open navigation menu"
+                    aria-expanded="false" aria-controls="navLinks">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                        <path d="M3 6h18M3 12h18M3 18h18" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+    <main>
+        <section class="section-tight scenario-hero">
+            <div class="wrap">
+                <span class="eyebrow">Azure SRE Agent library</span>
+                <h1>Skills</h1>
+                <p class="lede">Explore reusable operational skills independently of the scenario catalog.
+                    Find a skill by category or search, inspect its instructions, and download the complete
+                    bundle for your own agent.</p>
+                <div class="stats stats-2 scenario-stats" aria-label="Skill library stats">
+                    <div class="stat"><span class="stat-num" id="skills-total">110</span>
+                        <span class="stat-lbl">Skills</span></div>
+                    <div class="stat"><span class="stat-num" id="skills-category-total">8</span>
+                        <span class="stat-lbl">Categories</span></div>
+                </div>
+                <p class="scenario-attribution">
+                    Skill contributions are adapted from
+                    <a href="https://github.com/onsenturk/SreAgentExtensions" target="_blank" rel="noopener">
+                        onsenturk/SreAgentExtensions</a>
+                     and
+                    <a href="https://github.com/smragav/azure-sre-agent-skills" target="_blank" rel="noopener">
+                        smragav/azure-sre-agent-skills</a>.
+                </p>
+                <div class="skills-guidance">
+                    <p>Local skill and bundle tests are not live Azure validation. Confirm permissions,
+                        evidence and approved scope before running any workflow.</p>
+                    <p><a href="skill-installation.html">How to use a downloaded skill</a>.
+                        Downloads include skill instructions, supporting references and tools, the
+                        repository installation manifest and license notices. Copying instructions alone
+                        is not a complete installation.</p>
+                </div>
+            </div>
+        </section>
+        <section id="explorer" class="section">
+            <div class="wrap">
+                <div class="scenario-toolbar">
+                    <div class="scenario-search">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                            <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
+                        </svg>
+                        <input type="search" id="skills-search-input" placeholder="Search skills, services, or procedures..."
+                            aria-label="Search skills">
+                    </div>
+                </div>
+                <div class="scenario-chips" id="skills-category-chips" role="group" aria-label="Filter skills by category">
+                    <button type="button" class="scenario-chip active" data-category="" aria-pressed="true">All categories</button>
+                </div>
+                <div class="scenario-results-meta">
+                    <span id="skills-results-count" class="mono" role="status" aria-live="polite"></span>
+                </div>
+                <div id="skills-grid" class="skills-grid"></div>
+                <p id="skills-empty" class="scenario-empty" hidden>No skills match your filters.
+                    Try clearing the search or choosing another category.</p>
+                <noscript><p>Enable JavaScript to search the Skills catalog, or browse the
+                    <a href="Student/Resources/scenario-skills/README.md">skill library source and setup guide</a>.</p></noscript>
+            </div>
+        </section>
+    </main>
+    <footer class="footer">
+        <div class="footer-inner">
+            <p>Azure SRE Agent RVAS &middot; Microsoft Real Value Acceleration Program</p>
+            <div class="footer-links"><a href="skill-installation.html">Installation guidance</a></div>
+        </div>
+    </footer>
+    <script src="assets/js/shell.js"></script>
+    <script src="assets/js/scenario-skills-data.js"></script>
+    <script src="assets/js/skill-library.js"></script>
+    <script src="assets/js/skills-explorer.js"></script>
+</body>
+</html>

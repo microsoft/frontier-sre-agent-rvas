@@ -1,0 +1,10 @@
+{
+  "slug": "6-month-cost-summary-trends",
+  "title": "6-month cost summary & trends",
+  "category": "billing-cost",
+  "category_label": "Billing and Cost",
+  "mode": "Scheduled",
+  "frequency": "Monthly",
+  "description": "Provides medium-term cost trend visibility, helping teams understand seasonal patterns and growth trajectory.",
+  "example_prompt": "\"Show me a 6-month cost trend summary for subscription '{subscription_name}'. Break down by month, show total and per-service spend, and identify the top 3 services driving growth.\""
+}

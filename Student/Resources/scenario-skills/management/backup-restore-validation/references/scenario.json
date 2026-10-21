@@ -1,0 +1,10 @@
+{
+  "slug": "backup-restore-validation",
+  "title": "Backup and restore validation",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "On demand",
+  "frequency": "After an approved restore exercise or backup review",
+  "description": "Review backup evidence and completed restore exercises against recovery objectives without initiating a restore or treating a successful backup as proof of recoverability.",
+  "example_prompt": ""
+}

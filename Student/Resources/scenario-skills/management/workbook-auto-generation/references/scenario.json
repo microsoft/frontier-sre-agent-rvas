@@ -1,0 +1,10 @@
+{
+  "slug": "workbook-auto-generation",
+  "title": "Workbook auto-generation",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "On-demand",
+  "frequency": "On workload onboarding",
+  "description": "Creates ready-to-use Azure Workbooks tailored to a specific workload's monitoring needs.",
+  "example_prompt": "\"Generate an Azure Workbook for workload in resource group '{rg_name}'. Auto-detect resource types and include relevant panels: (1) resource health overview, (2) key performance metrics per resource type, (3) error/exception trends, (4) cost trend, (5) recent changes. Export as ARM template for deployment.\""
+}

@@ -1,0 +1,10 @@
+{
+  "slug": "disk-tier-down-opportunities",
+  "title": "Disk tier-down opportunities",
+  "category": "billing-cost",
+  "category_label": "Billing and Cost",
+  "mode": "Scheduled",
+  "frequency": "Bi-weekly",
+  "description": "Identifies managed disks provisioned at a higher tier than their actual IOPS/throughput demands.",
+  "example_prompt": "\"List all Premium SSD and Ultra Disk managed disks. Compare their actual P95 IOPS and throughput over the last 14 days against provisioned tier limits. Recommend tier-down to Standard SSD where actual usage is below Standard SSD limits. Show savings estimate.\""
+}

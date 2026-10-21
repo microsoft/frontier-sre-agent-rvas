@@ -1,0 +1,10 @@
+{
+  "slug": "ddos-protection-coverage-audit",
+  "title": "DDoS protection coverage audit",
+  "category": "network",
+  "category_label": "Network",
+  "mode": "Scheduled",
+  "frequency": "Monthly",
+  "description": "Identifies VNets hosting public-facing workloads without DDoS Protection Standard enabled.",
+  "example_prompt": "\"List all VNets containing subnets with public IP addresses or Application Gateways. Check whether DDoS Protection Standard is enabled on each VNet. Flag VNets with public-facing resources but no DDoS protection. Show VNet name, public resource count, and estimated DDoS plan cost.\""
+}

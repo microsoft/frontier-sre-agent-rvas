@@ -1,0 +1,10 @@
+{
+  "slug": "public-ip-inventory-justification",
+  "title": "Public IP inventory & justification",
+  "category": "network",
+  "category_label": "Network",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Inventories all public IP addresses, identifies orphaned ones, and validates that each attached PIP is justified.",
+  "example_prompt": "\"List all Public IP addresses across subscriptions. For each, show: resource name, IP address, SKU, associated resource (or 'unattached'), allocation method, and creation date. Flag PIPs that are: unattached, attached to stopped VMs, or attached to non-production resources.\""
+}

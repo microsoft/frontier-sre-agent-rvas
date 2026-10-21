@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Use a scenario skill | Azure SRE Agent RVAS</title>
+    <meta name="description" content="Inspect, download and install a complete scenario skill with its supporting files and approval boundaries.">
+    <link rel="stylesheet" href="assets/css/brand.css">
+    <link rel="stylesheet" href="assets/css/shell.css">
+    <link rel="stylesheet" href="assets/css/scenarios.css">
+</head>
+<body>
+    <header class="nav" role="banner">
+        <div class="nav-inner">
+            <a class="brand" href="index.html" aria-label="RVAS Azure SRE Agent home">
+                <img src="assets/img/logo-full.png" alt="RVAP" class="rvap-nav-logo" height="32">
+            </a>
+            <nav aria-label="Primary">
+                <a href="skills.html">Back to Skills</a>
+            </nav>
+        </div>
+    </header>
+    <main>
+        <section class="section">
+            <div class="wrap skill-guide">
+                <span class="eyebrow">Azure SRE Agent scenario skills</span>
+                <h1>Use a scenario skill</h1>
+                <p>Choose only the skills you need. Each scenario can map to one or more reusable skills.
+                    Viewing, copying or downloading a skill does not install it, grant permissions or run it.</p>
+                <h2>1. Download and inspect</h2>
+                <ol>
+                    <li>Find a skill in the <a href="skills.html">Skills catalog</a> or open its mapped
+                        scenario in <a href="scenarios.html">Scenario Explorer</a>. Inspect it with
+                        <strong>View instructions</strong>.</li>
+                    <li>Select <strong>Download complete bundle</strong> and extract the ZIP locally.
+                        It contains <code>skills/&lt;skill-id&gt;/SKILL.md</code>, supporting
+                        <code>references/</code> and <code>tools/</code>, a repository configuration
+                        manifest, and license notices.</li>
+                    <li>Read the evidence workflow, permissions, output contract and limitations.
+                        Examples are synthetic, not customer evidence or approved thresholds.</li>
+                </ol>
+                <p><strong>Copy instructions</strong> copies SKILL.md only. Supporting references and
+                    Python tools are still required. A ZIP is a distribution package, not a documented
+                    native Azure SRE Agent import format.</p>
+                <h2>2. Prepare the approved environment</h2>
+                <ul>
+                    <li>Confirm the tenant, explicit subscription and resource allowlist, intended
+                        identity and UTC observation window.</li>
+                    <li>Review the skill's explicit tool list and configure only approved tools and
+                        permissions in the host. Terminal access must be constrained to validated
+                        read commands and local analysis. Instructions alone do not enforce authorization.</li>
+                    <li>Review <code>references/governance.json</code>. Its defaults deny unapproved
+                        scope. The host must enforce policy checks, approval requirements, rate limits
+                        and append only audit logging.</li>
+                    <li>Do not attach an upload tool unless customer delivery is separately approved.
+                        Resource changes, deployment, scheduling, uploads and messages need separate approval.</li>
+                </ul>
+                <h2 id="install">3. Install the complete skill</h2>
+                <p><strong>Portal:</strong> Microsoft Learn documents skill creation in
+                    <strong>Builder &gt; Skills</strong>. Create the skill using its name, description
+                    and SKILL.md, add supporting files while preserving the relative
+                    <code>references/</code>, <code>tools/</code> and any nested <code>shared/</code>
+                    paths, and attach the approved
+                    runtime tools. Check the current portal for available attachment controls.
+                    Do not upload only SKILL.md and assume its linked dependencies are present.</p>
+                <p><strong>Repository automation:</strong> the bundle's <code>skill.yaml</code> follows
+                    this workshop's manifest conventions. Use the existing configuration script from
+                    a checkout of this repository in Linux Bash. Review a local validation and plan,
+                    then apply only after approval. See the
+                    <a href="Student/Resources/scenario-skills/README.md">library setup and command examples</a>.
+                    This library is not added to the workshop's default agent deployment.</p>
+                <p>Assessment bundles preserve their supplied checks and report layouts. Some
+                    collectors need host packages such as <code>requests</code> and
+                    <code>azure-identity</code>; the architecture generator also needs
+                    <code>pandas</code> and an Excel engine. Keep the nested shared runtime intact.
+                    Optional agent and IaC examples are not automatically deployed. Review each
+                    skill's prerequisites before execution.</p>
+                <h2>4. Test a small investigation</h2>
+                <p>Start with approved scope and known evidence. Check a healthy case, a finding,
+                    and denied or missing evidence. A missing observation must remain visible, not
+                    become a healthy result. Six Management skills include a local
+                    analyzer and synthetic evidence fixtures. Run its commands from the extracted
+                    skill directory and supply normalized input with customer approved criteria.</p>
+                <p>Record a customer environment smoke test separately. Local packaging tests do not
+                    establish live Azure validation, service access or operational readiness.
+                    Review and sanitize results before any customer delivery.</p>
+                <h2>Verification boundary</h2>
+                <table>
+                    <thead><tr><th>Claim</th><th>Status</th><th>Evidence</th></tr></thead>
+                    <tbody>
+                        <tr><td>Skills contain SKILL.md, optional tools and supporting files;
+                            creation is in Builder &gt; Skills.</td><td>Verified</td>
+                            <td><a href="https://learn.microsoft.com/en-us/azure/sre-agent/skills">Microsoft Learn</a>,
+                                checked 2026-10-21.</td></tr>
+                        <tr><td>A native portal ZIP import is available.</td><td>Uncertain</td>
+                            <td>Not documented in the consulted skills article. Do not rely on it.</td></tr>
+                        <tr><td>Every imported workflow works in the customer's environment.</td><td>Uncertain</td>
+                            <td>Requires separately approved live validation. Original source dates remain in each skill.</td></tr>
+                    </tbody>
+                </table>
+                <h2>Sources</h2>
+                <ul>
+                    <li><a href="https://learn.microsoft.com/en-us/azure/sre-agent/skills">Microsoft Learn: Skills in Azure SRE Agent</a></li>
+                    <li><a href="Student/Resources/scenario-skills/README.md">Scenario skill library and packaging contract</a></li>
+                    <li><a href="https://github.com/microsoft/frontier-sre-agent-rvas">Workshop repository</a></li>
+                </ul>
+            </div>
+        </section>
+    </main>
+    <footer class="footer"><div class="footer-inner">
+        <p>Azure SRE Agent RVAS &middot; Microsoft Real Value Acceleration Program</p>
+    </div></footer>
+</body>
+</html>

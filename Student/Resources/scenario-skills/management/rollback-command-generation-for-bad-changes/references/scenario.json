@@ -1,0 +1,10 @@
+{
+  "slug": "rollback-command-generation-for-bad-changes",
+  "title": "Rollback command generation for bad changes",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "Event-driven",
+  "frequency": "On failed change",
+  "description": "Automatically generates revert commands when a problematic change is identified, reducing MTTR.",
+  "example_prompt": "\"A problematic change was detected on resource '{resource_id}' at {timestamp}. Based on Change Analysis, identify what was modified. Generate the az CLI or ARM API command to revert the change to its previous value. Include a safety check (--what-if where available).\""
+}

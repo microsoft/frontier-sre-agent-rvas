@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "export-existing-resources-to-arm-bicep evidence contract",
+  "type": "object",
+  "required": [
+    "scenario_id",
+    "scope",
+    "assessed_at",
+    "assessment_status",
+    "coverage",
+    "findings",
+    "limitations"
+  ],
+  "properties": {
+    "scenario_id": {
+      "const": "export-existing-resources-to-arm-bicep"
+    },
+    "scope": {
+      "type": "object",
+      "required": [
+        "subscription_ids"
+      ],
+      "properties": {
+        "subscription_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "resource_groups": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "assessed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "assessment_status": {
+      "enum": [
+        "Complete",
+        "Partial",
+        "Not assessed"
+      ]
+    },
+    "coverage": {
+      "type": "object",
+      "required": [
+        "expected_checks",
+        "assessed_checks",
+        "truncated"
+      ],
+      "properties": {
+        "expected_checks": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "assessed_checks": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "severity",
+          "evidence",
+          "scenario_data"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "Observed",
+              "Needs attention",
+              "Not applicable",
+              "Not assessed"
+            ]
+          },
+          "severity": {
+            "enum": [
+              "Critical",
+              "High",
+              "Medium",
+              "Low",
+              "Info"
+            ]
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "source",
+                "collected_at"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string"
+                },
+                "collected_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "scenario_data": {
+            "type": "object",
+            "required": [
+              "resource_group_id",
+              "selected_resource_ids",
+              "exported_resources",
+              "unsupported_types",
+              "export_warnings",
+              "parameterized_fields",
+              "redaction_review",
+              "module_map",
+              "arm_path",
+              "bicep_path",
+              "local_validation",
+              "cloud_validation",
+              "deployed"
+            ],
+            "properties": {
+              "resource_group_id": {},
+              "selected_resource_ids": {},
+              "exported_resources": {},
+              "unsupported_types": {},
+              "export_warnings": {},
+              "parameterized_fields": {},
+              "redaction_review": {},
+              "module_map": {},
+              "arm_path": {},
+              "bicep_path": {},
+              "local_validation": {},
+              "cloud_validation": {},
+              "deployed": {}
+            }
+          },
+          "recommendation": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

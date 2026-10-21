@@ -1,5 +1,6 @@
 // Scenario data for the Azure SRE Agent Scenario Explorer.
 // Source: https://github.com/alsanch/azure-sre-agent-scenarios (customer-sourced AIOps scenario ideas).
+// Includes six original Management extensions with dedicated skills.
 // Not all scenarios have been validated or tested against Azure SRE Agent capabilities.
 
 const SCENARIO_CATEGORIES = [
@@ -16,6 +17,7 @@ const SCENARIO_CATEGORIES = [
 const SCENARIOS = [
     {
         id: "cost-anomaly-detection",
+        skills: ["cost-anomaly-detection"],
         category: "billing-entra-tenant",
         title: "Cost anomaly detection",
         description: "Continuously monitors spending patterns to detect unusual spikes or drops that may indicate misconfigurations, runaway resources, or billing errors.",
@@ -27,6 +29,7 @@ const SCENARIOS = [
     },
     {
         id: "6-month-cost-summary-trends",
+        skills: ["6-month-cost-summary-trends"],
         category: "billing-entra-tenant",
         title: "6-month cost summary & trends",
         description: "Provides medium-term cost trend visibility, helping teams understand seasonal patterns and growth trajectory.",
@@ -38,6 +41,7 @@ const SCENARIOS = [
     },
     {
         id: "top-consumer-services-identification",
+        skills: ["top-consumer-services-identification"],
         category: "billing-entra-tenant",
         title: "Top consumer services identification",
         description: "Identifies which Azure services drive the most cost, enabling targeted optimization efforts on highest-impact areas.",
@@ -49,6 +53,7 @@ const SCENARIOS = [
     },
     {
         id: "cost-analysis-by-tag-environment",
+        skills: ["cost-analysis-by-tag-environment"],
         category: "billing-entra-tenant",
         title: "Cost analysis by tag/environment",
         description: "Breaks down Azure spending grouped by environment tags (dev, staging, prod), identifies which environments consume disproportionate budget, and tracks the cost ratio between environments over time.",
@@ -60,6 +65,7 @@ const SCENARIOS = [
     },
     {
         id: "cross-period-cost-comparison-mg-level",
+        skills: ["cross-period-cost-comparison-mg-level"],
         category: "billing-entra-tenant",
         title: "Cross-period cost comparison (MG level)",
         description: "Compares cost across billing periods at Management Group level for executive budget reviews.",
@@ -71,6 +77,7 @@ const SCENARIOS = [
     },
     {
         id: "consolidated-cost-reporting",
+        skills: ["consolidated-cost-reporting"],
         category: "billing-entra-tenant",
         title: "Consolidated cost reporting",
         description: "Produces executive-ready cost reports summarizing spend across management groups, subscriptions, and services for leadership reviews.",
@@ -82,6 +89,7 @@ const SCENARIOS = [
     },
     {
         id: "resources-with-highest-cost-increase",
+        skills: ["resources-with-highest-cost-increase"],
         category: "billing-entra-tenant",
         title: "Resources with highest cost increase",
         description: "Identifies individual resources with the sharpest cost growth, catching runaway spending early.",
@@ -93,6 +101,7 @@ const SCENARIOS = [
     },
     {
         id: "underutilized-resources-detection",
+        skills: ["underutilized-resources-detection", "finops-cost-optimizer"],
         category: "billing-entra-tenant",
         title: "Underutilized resources detection",
         description: "Finds resources consuming budget but delivering minimal value based on utilization metrics.",
@@ -104,6 +113,7 @@ const SCENARIOS = [
     },
     {
         id: "disk-tier-down-opportunities",
+        skills: ["disk-tier-down-opportunities"],
         category: "billing-entra-tenant",
         title: "Disk tier-down opportunities",
         description: "Identifies managed disks provisioned at a higher tier than their actual IOPS/throughput demands.",
@@ -115,6 +125,7 @@ const SCENARIOS = [
     },
     {
         id: "orphaned-resources-cost-impact-analysis",
+        skills: ["orphaned-resources-cost-impact-analysis"],
         category: "billing-entra-tenant",
         title: "Orphaned resources & cost impact analysis",
         description: "Finds all types of orphaned resources — unattached disks, unused public IPs, orphaned NICs, empty NSGs, idle Load Balancers, zombie snapshots, unused App Gateways/Front Door backends, and empty App Service Plans — in a single consolidated scan.",
@@ -126,6 +137,7 @@ const SCENARIOS = [
     },
     {
         id: "log-analytics-workspace-ingestion-cost-analysis",
+        skills: ["log-analytics-workspace-ingestion-cost-analysis"],
         category: "billing-entra-tenant",
         title: "Log Analytics workspace ingestion cost analysis",
         description: "Analyzes which data tables and solutions drive the highest log ingestion volume and cost.",
@@ -137,6 +149,7 @@ const SCENARIOS = [
     },
     {
         id: "budget-alerts-configuration-audit",
+        skills: ["budget-alerts-configuration-audit"],
         category: "billing-entra-tenant",
         title: "Budget alerts configuration audit",
         description: "Ensures every subscription and critical resource group has properly configured budget alerts to prevent surprise overruns.",
@@ -148,6 +161,7 @@ const SCENARIOS = [
     },
     {
         id: "rbac-redundancy-over-privilege-assessment",
+        skills: ["rbac-redundancy-over-privilege-assessment"],
         category: "identity-access",
         title: "RBAC redundancy & over-privilege assessment",
         description: "Analyzes all role assignments across scopes to detect redundancies (e.g., same identity assigned Contributor at both subscription and child resource group level) and over-privileged assignments where a narrower role would suffice. Helps reduce attack surface and simplify access governance.",
@@ -159,6 +173,7 @@ const SCENARIOS = [
     },
     {
         id: "rbac-access-audit-who-has-what",
+        skills: ["rbac-access-audit-who-has-what"],
         category: "identity-access",
         title: "RBAC access audit (who has what)",
         description: "Provides comprehensive visibility into access grants, highlighting over-privileged accounts and stale assignments.",
@@ -170,6 +185,7 @@ const SCENARIOS = [
     },
     {
         id: "permissions-required-for-an-action",
+        skills: ["permissions-required-for-an-action"],
         category: "identity-access",
         title: "Permissions required for an action",
         description: "Determines the minimum RBAC permissions required to perform a specific Azure operation, supporting least-privilege design.",
@@ -181,6 +197,7 @@ const SCENARIOS = [
     },
     {
         id: "stale-rbac-assignments",
+        skills: ["stale-rbac-assignments"],
         category: "identity-access",
         title: "Stale RBAC assignments",
         description: "Finds role assignments granted to principals that no longer exist or haven't signed in, reducing attack surface.",
@@ -192,6 +209,7 @@ const SCENARIOS = [
     },
     {
         id: "high-privilege-operation-tracking",
+        skills: ["high-privilege-operation-tracking"],
         category: "identity-access",
         title: "High-privilege operation tracking",
         description: "Monitors sensitive operations (role assignments, policy changes, key vault access) that could indicate security issues or excessive privilege use.",
@@ -203,6 +221,7 @@ const SCENARIOS = [
     },
     {
         id: "resources-created-yesterday",
+        skills: ["resources-created-yesterday"],
         category: "resource-organization",
         title: "Resources created yesterday",
         description: "Detects new resources provisioned in the last 24 hours, catching shadow IT and unauthorized deployments early.",
@@ -214,6 +233,7 @@ const SCENARIOS = [
     },
     {
         id: "resource-age-tracking",
+        skills: ["resource-age-tracking"],
         category: "resource-organization",
         title: "Resource age tracking",
         description: "Identifies long-running resources that may be forgotten, orphaned, or candidates for modernization.",
@@ -225,6 +245,7 @@ const SCENARIOS = [
     },
     {
         id: "ai-model-inventory-retirement-lifecycle",
+        skills: ["ai-model-inventory-retirement-lifecycle"],
         category: "resource-organization",
         title: "AI model inventory & retirement lifecycle",
         description: "Inventories all deployed Azure OpenAI and AI Foundry model deployments across subscriptions, cross-references each model and version against the official Microsoft model retirement schedule, and flags deployments that are already deprecated, approaching retirement, or running on a version with a known successor. Helps teams plan model migrations proactively and avoid service disruptions when deprecated models stop accepting requests.",
@@ -236,6 +257,7 @@ const SCENARIOS = [
     },
     {
         id: "extension-health-across-vms",
+        skills: ["extension-health-across-vms"],
         category: "resource-organization",
         title: "Extension health across VMs",
         description: "Monitors VM extension status to catch failed deployments or stuck provisioning that blocks updates and monitoring.",
@@ -247,6 +269,7 @@ const SCENARIOS = [
     },
     {
         id: "resource-group-sprawl-detection",
+        skills: ["resource-group-sprawl-detection"],
         category: "resource-organization",
         title: "Resource group sprawl detection",
         description: "Identifies resource group proliferation that increases management overhead and indicates organizational disorder.",
@@ -258,6 +281,7 @@ const SCENARIOS = [
     },
     {
         id: "resource-lock-compliance-audit",
+        skills: ["resource-lock-compliance-audit"],
         category: "resource-organization",
         title: "Resource lock compliance audit",
         description: "Ensures production resources have appropriate delete locks to prevent accidental deletion.",
@@ -269,6 +293,7 @@ const SCENARIOS = [
     },
     {
         id: "subscription-hygiene-score",
+        skills: ["subscription-hygiene-score"],
         category: "resource-organization",
         title: "Subscription hygiene score",
         description: "Computes a composite health score per subscription measuring operational maturity across multiple dimensions.",
@@ -280,6 +305,7 @@ const SCENARIOS = [
     },
     {
         id: "subscription-limits-approaching",
+        skills: ["subscription-limits-approaching"],
         category: "resource-organization",
         title: "Subscription limits approaching",
         description: "Monitors Azure subscription-level limits (resource counts, quotas) to prevent deployment failures from hitting limits.",
@@ -291,6 +317,7 @@ const SCENARIOS = [
     },
     {
         id: "management-group-hierarchy-audit",
+        skills: ["management-group-hierarchy-audit"],
         category: "resource-organization",
         title: "Management Group hierarchy audit",
         description: "Validates the MG hierarchy structure, finding misplaced subscriptions or empty management groups.",
@@ -302,6 +329,7 @@ const SCENARIOS = [
     },
     {
         id: "move-resources-between-subscriptions",
+        skills: ["move-resources-between-subscriptions"],
         category: "resource-organization",
         title: "Move resources between subscriptions",
         description: "Validates and plans resource moves between subscriptions, checking for blockers and dependencies.",
@@ -313,6 +341,7 @@ const SCENARIOS = [
     },
     {
         id: "private-endpoint-public-exposure-audit",
+        skills: ["private-endpoint-public-exposure-audit"],
         category: "network-topology",
         title: "Private endpoint & public exposure audit",
         description: "Identifies PaaS resources still accessible over public internet that should use Private Endpoints, and inventories all publicly accessible resources for attack surface awareness.",
@@ -324,6 +353,7 @@ const SCENARIOS = [
     },
     {
         id: "public-ip-inventory-justification",
+        skills: ["public-ip-inventory-justification"],
         category: "network-topology",
         title: "Public IP inventory & justification",
         description: "Inventories all public IP addresses, identifies orphaned ones, and validates that each attached PIP is justified.",
@@ -335,6 +365,7 @@ const SCENARIOS = [
     },
     {
         id: "network-topology-diagram",
+        skills: ["network-topology-diagram"],
         category: "network-topology",
         title: "Network topology diagram",
         description: "Auto-generates a visual network topology showing VNets, peerings, subnets, gateways, and connected resources.",
@@ -346,6 +377,7 @@ const SCENARIOS = [
     },
     {
         id: "azure-firewall-rule-generation",
+        skills: ["azure-firewall-rule-generation"],
         category: "network-topology",
         title: "Azure Firewall rule generation",
         description: "Generates properly structured Azure Firewall rules based on requirements, following naming conventions and best practices.",
@@ -357,6 +389,7 @@ const SCENARIOS = [
     },
     {
         id: "firewall-log-analysis-kql",
+        skills: ["firewall-log-analysis-kql"],
         category: "network-topology",
         title: "Firewall log analysis (KQL)",
         description: "Analyzes Azure Firewall logs to identify blocked traffic patterns, top talkers, and potential misconfigurations.",
@@ -368,6 +401,7 @@ const SCENARIOS = [
     },
     {
         id: "dns-vpn-troubleshooting",
+        skills: ["dns-vpn-troubleshooting"],
         category: "network-topology",
         title: "DNS/VPN troubleshooting",
         description: "Investigates DNS resolution failures and VPN connectivity issues to restore hybrid and name resolution services.",
@@ -379,6 +413,7 @@ const SCENARIOS = [
     },
     {
         id: "overly-permissive-nsg-rules-audit",
+        skills: ["overly-permissive-nsg-rules-audit"],
         category: "network-topology",
         title: "Overly permissive NSG rules audit",
         description: "Identifies network security rules that are too broad, exposing resources to unnecessary risk.",
@@ -390,6 +425,7 @@ const SCENARIOS = [
     },
     {
         id: "vnet-peering-health-check",
+        skills: ["vnet-peering-health-check"],
         category: "network-topology",
         title: "VNet peering health check",
         description: "Monitors VNet peering connections for status issues, disconnected peerings, or asymmetric configurations.",
@@ -401,6 +437,7 @@ const SCENARIOS = [
     },
     {
         id: "expressroute-vpn-gateway-health",
+        skills: ["expressroute-vpn-gateway-health"],
         category: "network-topology",
         title: "ExpressRoute / VPN Gateway health",
         description: "Monitors hybrid connectivity gateway health, tunnel status, and throughput to prevent outages.",
@@ -412,6 +449,7 @@ const SCENARIOS = [
     },
     {
         id: "ssl-tls-certificate-expiration-tracking",
+        skills: ["ssl-tls-certificate-expiration-tracking"],
         category: "network-topology",
         title: "SSL/TLS certificate expiration tracking",
         description: "Tracks certificates across Azure services to prevent outages caused by expired certificates.",
@@ -423,6 +461,7 @@ const SCENARIOS = [
     },
     {
         id: "ddos-protection-coverage-audit",
+        skills: ["ddos-protection-coverage-audit"],
         category: "network-topology",
         title: "DDoS protection coverage audit",
         description: "Identifies VNets hosting public-facing workloads without DDoS Protection Standard enabled.",
@@ -434,6 +473,7 @@ const SCENARIOS = [
     },
     {
         id: "dns-zone-record-hygiene",
+        skills: ["dns-zone-record-hygiene"],
         category: "network-topology",
         title: "DNS zone record hygiene",
         description: "Identifies dangling DNS records pointing to deleted Azure resources, which could be hijacked by attackers.",
@@ -445,6 +485,7 @@ const SCENARIOS = [
     },
     {
         id: "defender-for-cloud-assessment",
+        skills: ["defender-for-cloud-assessment"],
         category: "security",
         title: "Defender for Cloud assessment",
         description: "Provides a security posture snapshot from Defender for Cloud, highlighting critical findings and score trends.",
@@ -456,6 +497,7 @@ const SCENARIOS = [
     },
     {
         id: "certificate-renewal-automation",
+        skills: ["certificate-renewal-automation"],
         category: "security",
         title: "Certificate renewal automation",
         description: "Monitors certificate expiration in Key Vault and triggers renewal workflows before expiry causes outages.",
@@ -467,6 +509,7 @@ const SCENARIOS = [
     },
     {
         id: "service-health-incidents-resource-impact",
+        skills: ["service-health-incidents-resource-impact"],
         category: "management",
         title: "Service Health incidents & resource impact",
         description: "Detects Azure platform incidents and maps them to specific customer resources to quantify blast radius during outages.",
@@ -478,6 +521,7 @@ const SCENARIOS = [
     },
     {
         id: "planned-maintenance-awareness",
+        skills: ["planned-maintenance-awareness"],
         category: "management",
         title: "Planned maintenance awareness",
         description: "Proactively surfaces upcoming Azure maintenance events to plan workload failovers.",
@@ -489,6 +533,7 @@ const SCENARIOS = [
     },
     {
         id: "executive-operational-report-generation-pdf",
+        skills: ["executive-operational-report-generation-pdf"],
         category: "management",
         title: "Executive operational report generation (PDF)",
         description: "Generates a comprehensive, executive-ready operational report consolidating key metrics across cost, security, compliance, and availability into a single formatted document (PDF or HTML). Combines data from multiple sources — Cost Management, Defender for Cloud, Resource Health, alert history, and policy compliance — into a structured narrative with charts, tables, and recommendations that can be shared with leadership without further editing.",
@@ -500,6 +545,7 @@ const SCENARIOS = [
     },
     {
         id: "kql-log-queries-common-patterns",
+        skills: ["kql-log-queries-common-patterns"],
         category: "management",
         title: "KQL log queries (common patterns)",
         description: "Generates or executes KQL queries for common operational scenarios to speed up log investigations.",
@@ -511,6 +557,7 @@ const SCENARIOS = [
     },
     {
         id: "agent-health-monitoring",
+        skills: ["agent-health-monitoring"],
         category: "management",
         title: "Agent health monitoring",
         description: "Monitors the health of monitoring agents (AMA) to ensure telemetry pipeline continuity.",
@@ -522,6 +569,7 @@ const SCENARIOS = [
     },
     {
         id: "diagnostic-settings-coverage-audit",
+        skills: ["diagnostic-settings-coverage-audit"],
         category: "management",
         title: "Diagnostic settings coverage audit",
         description: "Finds resources that lack diagnostic settings, leaving operational blind spots in monitoring.",
@@ -533,6 +581,7 @@ const SCENARIOS = [
     },
     {
         id: "data-collection-rules-audit",
+        skills: ["data-collection-rules-audit"],
         category: "management",
         title: "Data collection rules audit",
         description: "Validates that Data Collection Rules (DCRs) are correctly configured and associated with target resources.",
@@ -544,6 +593,7 @@ const SCENARIOS = [
     },
     {
         id: "resource-metrics-analysis",
+        skills: ["resource-metrics-analysis"],
         category: "management",
         title: "Resource metrics analysis",
         description: "Deep-dives into performance metrics for a specific resource during troubleshooting or capacity planning.",
@@ -555,6 +605,7 @@ const SCENARIOS = [
     },
     {
         id: "vm-performance-anomaly-detection",
+        skills: ["vm-performance-anomaly-detection"],
         category: "management",
         title: "VM performance anomaly detection",
         description: "Continuously baselines VM performance metrics and alerts when behavior deviates from historical normal.",
@@ -566,6 +617,7 @@ const SCENARIOS = [
     },
     {
         id: "resource-health-status-summary",
+        skills: ["resource-health-status-summary"],
         category: "management",
         title: "Resource health status summary",
         description: "Provides a real-time view of all resource health states to quickly identify degraded infrastructure.",
@@ -577,6 +629,7 @@ const SCENARIOS = [
     },
     {
         id: "alert-rules-best-practice-audit",
+        skills: ["alert-rules-best-practice-audit"],
         category: "management",
         title: "Alert rules best-practice audit",
         description: "Evaluates existing alert rules against SRE best practices to find gaps, misconfigurations, or noise generators.",
@@ -588,6 +641,7 @@ const SCENARIOS = [
     },
     {
         id: "alert-fatigue-analysis",
+        skills: ["alert-fatigue-analysis"],
         category: "management",
         title: "Alert fatigue analysis",
         description: "Identifies noisy, low-value alerts that contribute to alert fatigue and reduce team responsiveness.",
@@ -599,6 +653,7 @@ const SCENARIOS = [
     },
     {
         id: "fired-alerts-summary-last-24h",
+        skills: ["fired-alerts-summary-last-24h"],
         category: "management",
         title: "Fired alerts summary (last 24h)",
         description: "Provides a daily operational summary of all alerts that fired, grouped by severity and resolution status.",
@@ -610,6 +665,7 @@ const SCENARIOS = [
     },
     {
         id: "operations-dashboard-generation",
+        skills: ["operations-dashboard-generation"],
         category: "management",
         title: "Operations dashboard generation",
         description: "Auto-generates Azure Monitor dashboards for new workloads with standard SRE metrics panels.",
@@ -621,6 +677,7 @@ const SCENARIOS = [
     },
     {
         id: "workbook-auto-generation",
+        skills: ["workbook-auto-generation"],
         category: "management",
         title: "Workbook auto-generation",
         description: "Creates ready-to-use Azure Workbooks tailored to a specific workload's monitoring needs.",
@@ -632,6 +689,7 @@ const SCENARIOS = [
     },
     {
         id: "changes-in-last-24h-for-a-resource",
+        skills: ["changes-in-last-24h-for-a-resource"],
         category: "management",
         title: "Changes in last 24h for a resource",
         description: "Shows all configuration changes to a specific resource during incident investigation, helping correlate changes with symptoms.",
@@ -643,6 +701,7 @@ const SCENARIOS = [
     },
     {
         id: "changes-by-non-service-principal-users",
+        skills: ["changes-by-non-service-principal-users"],
         category: "management",
         title: "Changes by non-service-principal users",
         description: "Identifies manual changes made by human operators that bypassed automation pipelines, a common source of drift and incidents.",
@@ -654,6 +713,7 @@ const SCENARIOS = [
     },
     {
         id: "all-write-operations-across-subscription-24h",
+        skills: ["all-write-operations-across-subscription-24h"],
         category: "management",
         title: "All write operations across subscription (24h)",
         description: "Provides a daily digest of all infrastructure changes for operational awareness and audit trail.",
@@ -665,6 +725,7 @@ const SCENARIOS = [
     },
     {
         id: "identify-who-added-a-firewall-nsg-rule",
+        skills: ["identify-who-added-a-firewall-nsg-rule"],
         category: "management",
         title: "Identify who added a firewall/NSG rule",
         description: "Traces network security rule changes to the specific user and timestamp for security investigation.",
@@ -676,6 +737,7 @@ const SCENARIOS = [
     },
     {
         id: "rollback-command-generation-for-bad-changes",
+        skills: ["rollback-command-generation-for-bad-changes"],
         category: "management",
         title: "Rollback command generation for bad changes",
         description: "Automatically generates revert commands when a problematic change is identified, reducing MTTR.",
@@ -687,6 +749,7 @@ const SCENARIOS = [
     },
     {
         id: "logic-apps-code-definition-inspection",
+        skills: ["logic-apps-code-definition-inspection"],
         category: "management",
         title: "Logic Apps code/definition inspection",
         description: "Examines the Logic App workflow definition to identify structural issues, deprecated connectors, or error-prone patterns.",
@@ -698,6 +761,7 @@ const SCENARIOS = [
     },
     {
         id: "support-ticket-creation-pre-populated",
+        skills: ["support-ticket-creation-pre-populated"],
         category: "management",
         title: "Support ticket creation (pre-populated)",
         description: "Generates a pre-filled support ticket with all relevant diagnostic context collected by SRE Agent to accelerate resolution.",
@@ -709,6 +773,7 @@ const SCENARIOS = [
     },
     {
         id: "post-incident-review-automation",
+        skills: ["post-incident-review-automation"],
         category: "management",
         title: "Post-incident review automation",
         description: "Auto-generates a post-incident review document with timeline, changes, metrics, and impact data.",
@@ -720,6 +785,7 @@ const SCENARIOS = [
     },
     {
         id: "rto-rpo-gap-analysis",
+        skills: ["rto-rpo-gap-analysis"],
         category: "management",
         title: "RTO/RPO gap analysis",
         description: "Validates that disaster recovery configurations meet stated RTO/RPO targets for each critical workload.",
@@ -731,6 +797,7 @@ const SCENARIOS = [
     },
     {
         id: "backup-policy-compliance-gap-detection",
+        skills: ["backup-policy-compliance-gap-detection"],
         category: "management",
         title: "Backup policy compliance & gap detection",
         description: "Verifies that all critical resources have backup configured and that backup jobs are completing successfully.",
@@ -742,6 +809,7 @@ const SCENARIOS = [
     },
     {
         id: "sku-reliability-assessment",
+        skills: ["sku-reliability-assessment"],
         category: "management",
         title: "SKU reliability assessment",
         description: "Evaluates resource SKUs against availability requirements, identifying single points of failure or SLA gaps.",
@@ -753,6 +821,7 @@ const SCENARIOS = [
     },
     {
         id: "custom-policy-generation",
+        skills: ["custom-policy-generation"],
         category: "governance",
         title: "Custom Policy generation",
         description: "Generates Azure Policy definitions for custom compliance requirements that aren't covered by built-in policies.",
@@ -764,6 +833,7 @@ const SCENARIOS = [
     },
     {
         id: "find-built-in-policy-for-a-requirement",
+        skills: ["find-built-in-policy-for-a-requirement"],
         category: "governance",
         title: "Find built-in policy for a requirement",
         description: "Searches Azure's built-in policy catalog to find the best match for a compliance requirement before creating custom.",
@@ -775,6 +845,7 @@ const SCENARIOS = [
     },
     {
         id: "policy-compliance-state-monitoring",
+        skills: ["policy-compliance-state-monitoring"],
         category: "governance",
         title: "Policy compliance state monitoring",
         description: "Tracks compliance state trends and identifies resources falling out of compliance over time.",
@@ -786,6 +857,7 @@ const SCENARIOS = [
     },
     {
         id: "effective-policies-per-scope",
+        skills: ["effective-policies-per-scope"],
         category: "governance",
         title: "Effective policies per scope",
         description: "Shows all policies that actually apply to a specific scope, helping debug policy conflicts and understand cumulative governance.",
@@ -797,6 +869,7 @@ const SCENARIOS = [
     },
     {
         id: "policy-exemptions-review",
+        skills: ["policy-exemptions-review"],
         category: "governance",
         title: "Policy exemptions review",
         description: "Audits policy exemptions to find expired ones and those without proper justification that may be covering non-compliance.",
@@ -808,6 +881,7 @@ const SCENARIOS = [
     },
     {
         id: "naming-tagging-convention-compliance",
+        skills: ["naming-tagging-convention-compliance"],
         category: "governance",
         title: "Naming & tagging convention compliance",
         description: "Detects resources that violate organizational naming standards and required tag policies, impacting automation, cost allocation, and operational clarity.",
@@ -819,6 +893,7 @@ const SCENARIOS = [
     },
     {
         id: "automated-compliance-remediation-tasks",
+        skills: ["automated-compliance-remediation-tasks"],
         category: "governance",
         title: "Automated compliance remediation tasks",
         description: "Triggers Azure Policy remediation tasks for resources that are non-compliant with 'DeployIfNotExists' or 'Modify' policies.",
@@ -830,6 +905,7 @@ const SCENARIOS = [
     },
     {
         id: "azure-policy-assignment-assessment",
+        skills: ["azure-policy-assignment-assessment"],
         category: "governance",
         title: "Azure Policy assignment assessment",
         description: "Performs a global assessment of all Azure Policy assignments across the management group hierarchy to detect redundancies (same policy assigned at parent and child scope), conflicts (contradictory effects on the same resource type), and shadow assignments (overridden by a higher-scope exemption or a conflicting deny). Provides a clean-sheet view of the effective policy posture.",
@@ -841,6 +917,7 @@ const SCENARIOS = [
     },
     {
         id: "failed-deployments-in-last-24h",
+        skills: ["failed-deployments-in-last-24h"],
         category: "platform-devops",
         title: "Failed deployments in last 24h",
         description: "Surfaces ARM deployment failures with error details to catch broken CI/CD pipelines or misconfigurations early.",
@@ -852,6 +929,7 @@ const SCENARIOS = [
     },
     {
         id: "export-existing-resources-to-arm-bicep",
+        skills: ["export-existing-resources-to-arm-bicep"],
         category: "platform-devops",
         title: "Export existing resources to ARM/Bicep",
         description: "Exports running infrastructure to IaC templates for adopting infrastructure-as-code on existing environments.",
@@ -861,4 +939,238 @@ const SCENARIOS = [
         frequency: "During IaC adoption",
         topPick: false
     },
+    {
+        id: "slo-error-budget-analysis",
+        skills: ["slo-error-budget-analysis"],
+        category: "management",
+        title: "SLO and error budget analysis",
+        description: "Assess service level objectives and error budget consumption from approved reliability evidence, preserving missing observations and operator supplied targets.",
+        samplePrompt: "Use the slo-error-budget-analysis skill for the explicitly approved subscriptions and resource scope. Confirm the UTC observation window, required evidence and customer approved objectives or thresholds before analysis. Report evidence, findings, missing coverage, limitations and recommended next steps. Do not change resources, schedule work or share results without separate approval.",
+        timeSaved: "Medium",
+        timeSavedEstimate: "Heuristic rating for consolidating SLO observations and calculating error budget consumption from prepared evidence; target selection and evidence collection remain operator work.",
+        mode: "Scheduled",
+        frequency: "Daily or during an incident",
+        topPick: false,
+        provenance: "original-extension"
+    },
+    {
+        id: "backup-restore-validation",
+        skills: ["backup-restore-validation"],
+        category: "management",
+        title: "Backup and restore validation",
+        description: "Review backup evidence and completed restore exercises against recovery objectives without initiating a restore or treating a successful backup as proof of recoverability.",
+        samplePrompt: "Use the backup-restore-validation skill for the explicitly approved subscriptions and resource scope. Confirm the UTC observation window, required evidence and customer approved objectives or thresholds before analysis. Report evidence, findings, missing coverage, limitations and recommended next steps. Do not change resources, schedule work or share results without separate approval.",
+        timeSaved: "Medium",
+        timeSavedEstimate: "Heuristic rating for reviewing backup and completed restore evidence against recovery objectives; performing restore exercises is not included.",
+        mode: "On-demand",
+        frequency: "After an approved restore exercise or backup review",
+        topPick: true,
+        provenance: "original-extension"
+    },
+    {
+        id: "release-regression-detection",
+        skills: ["release-regression-detection"],
+        category: "management",
+        title: "Release regression detection",
+        description: "Compare approved baseline and release observations to identify reliability regressions while distinguishing correlation from a confirmed release cause.",
+        samplePrompt: "Use the release-regression-detection skill for the explicitly approved subscriptions and resource scope. Confirm the UTC observation window, required evidence and customer approved objectives or thresholds before analysis. Report evidence, findings, missing coverage, limitations and recommended next steps. Do not change resources, schedule work or share results without separate approval.",
+        timeSaved: "High",
+        timeSavedEstimate: "Heuristic rating for comparing baseline and release telemetry across reliability signals; confirming causation and approving remediation remain operator work.",
+        mode: "On-demand",
+        frequency: "After a release or reported regression",
+        topPick: true,
+        provenance: "original-extension"
+    },
+    {
+        id: "aks-application-incident-triage",
+        skills: ["aks-application-incident-triage"],
+        category: "management",
+        title: "AKS application incident triage",
+        description: "Correlate application symptoms with approved Kubernetes workload evidence and propose bounded investigation steps without changing cluster resources.",
+        samplePrompt: "Use the aks-application-incident-triage skill for the explicitly approved subscriptions and resource scope. Confirm the UTC observation window, required evidence and customer approved objectives or thresholds before analysis. Report evidence, findings, missing coverage, limitations and recommended next steps. Do not change resources, schedule work or share results without separate approval.",
+        timeSaved: "High",
+        timeSavedEstimate: "Heuristic rating for correlating application symptoms with workload events, logs and metrics; cluster changes and incident resolution are not included.",
+        mode: "On-demand",
+        frequency: "During an application incident",
+        topPick: true,
+        provenance: "original-extension"
+    },
+    {
+        id: "messaging-delivery-failure-triage",
+        skills: ["messaging-delivery-failure-triage"],
+        category: "management",
+        title: "Messaging delivery failure triage",
+        description: "Investigate approved messaging delivery observations, backlog and failure evidence without consuming, resubmitting or deleting messages.",
+        samplePrompt: "Use the messaging-delivery-failure-triage skill for the explicitly approved subscriptions and resource scope. Confirm the UTC observation window, required evidence and customer approved objectives or thresholds before analysis. Report evidence, findings, missing coverage, limitations and recommended next steps. Do not change resources, schedule work or share results without separate approval.",
+        timeSaved: "High",
+        timeSavedEstimate: "Heuristic rating for correlating backlog, delivery failures and messaging telemetry; replaying messages and applying fixes are not included.",
+        mode: "On-demand",
+        frequency: "During a delivery failure or backlog investigation",
+        topPick: true,
+        provenance: "original-extension"
+    },
+    {
+        id: "ai-inference-reliability-investigation",
+        skills: ["ai-inference-reliability-investigation"],
+        category: "management",
+        title: "AI inference reliability investigation",
+        description: "Review approved inference availability, latency and failure observations while separating service reliability evidence from model quality conclusions.",
+        samplePrompt: "Use the ai-inference-reliability-investigation skill for the explicitly approved subscriptions and resource scope. Confirm the UTC observation window, required evidence and customer approved objectives or thresholds before analysis. Report evidence, findings, missing coverage, limitations and recommended next steps. Do not change resources, schedule work or share results without separate approval.",
+        timeSaved: "High",
+        timeSavedEstimate: "Heuristic rating for correlating inference availability, latency and failures; model quality evaluation and corrective changes are not included.",
+        mode: "On-demand",
+        frequency: "During an inference reliability investigation",
+        topPick: false,
+        provenance: "original-extension"
+    },
+    {
+        "id": "vulnerability-management",
+        "skills": [
+            "vulnerability-management",
+            "defender-for-cloud-assessment"
+        ],
+        "category": "security",
+        "title": "Vulnerability management",
+        "description": "Build an evidence backed vulnerability backlog, prioritize owner actions, and plan approved remediation and verification without claiming zero vulnerabilities from incomplete coverage.",
+        "samplePrompt": "Review vulnerability findings for the approved subscriptions and workloads. Record scan coverage and freshness, deduplicate resource and vulnerability identifiers, prioritize known exposure and severity, and draft remediation, rollback and validation steps for owner approval. Do not scan actively, patch, change resources or create tickets without separate approval.",
+        "timeSaved": "High",
+        "mode": "Scheduled",
+        "frequency": "Weekly or after an approved security review",
+        "topPick": false,
+        "timeSavedEstimate": "Heuristic rating for consolidating findings and preparing an owner backlog; scanning, patching and verification are not included.",
+        "provenance": "document-use-case"
+    },
+    {
+        "id": "workload-context-consultation",
+        "skills": [
+            "workload-context-consultation"
+        ],
+        "category": "management",
+        "title": "Workload context and Azure consultation",
+        "description": "Ground Azure guidance in the approved workload inventory, objectives and current Microsoft guidance, separating facts from hypotheses and proposed changes.",
+        "samplePrompt": "For the approved workload, explain the relevant Azure components and investigate this question using approved configuration, telemetry and current Microsoft guidance. State evidence, missing context, alternatives and a bounded recommendation. Draft any required platform team handoff; do not apply a fix.",
+        "timeSaved": "Medium",
+        "mode": "On-demand",
+        "frequency": "When a workload team needs contextual Azure guidance",
+        "topPick": true,
+        "timeSavedEstimate": "Heuristic rating for assembling workload context and guidance; customer decisions and change execution are not included.",
+        "provenance": "document-use-case"
+    },
+    {
+        "id": "incident-management-rca",
+        "skills": [
+            "incident-triage-rca",
+            "blameless-postmortem-writer"
+        ],
+        "category": "management",
+        "title": "Incident management and root cause analysis",
+        "description": "Build an incident evidence timeline, assess probable causes and safe mitigation options, then prepare a reviewed stakeholder report without treating correlation as proof.",
+        "samplePrompt": "Investigate the approved incident, affected resource IDs and UTC window. Gather health and change evidence, build a timeline, distinguish observations from probable causes, and identify approved runbooks and mitigation options. Prepare an incident report and postmortem draft. Do not run remediation or send updates without separate approval.",
+        "timeSaved": "High",
+        "mode": "On-demand",
+        "frequency": "During and after an incident",
+        "topPick": false,
+        "timeSavedEstimate": "Heuristic rating for evidence correlation and report drafting; mitigation execution and a confirmed root cause are not guaranteed.",
+        "provenance": "document-use-case"
+    },
+    {
+        "id": "historical-operational-patterns",
+        "skills": [
+            "recurring-incident-patterns"
+        ],
+        "category": "management",
+        "title": "Historical operational patterns",
+        "description": "Review retained alerts, health evidence and approved incident records to identify repeat investigation targets and possible long term improvements.",
+        "samplePrompt": "Analyze the approved historical operational evidence and UTC window. Rank recurring resource signals, document source retention and coverage, and correlate with supplied incident records where available. Separate repeated alerts from distinct incidents and propose owner reviewed prevention work.",
+        "timeSaved": "Medium",
+        "mode": "Scheduled",
+        "frequency": "Monthly using supported retained evidence windows",
+        "topPick": false,
+        "timeSavedEstimate": "Heuristic rating for aggregating historical signals; reconstructing unavailable history and implementing prevention work are not included.",
+        "provenance": "document-use-case"
+    },
+    {
+        "id": "well-architected-health-check",
+        "skills": [
+            "well-architected-review"
+        ],
+        "category": "management",
+        "title": "Well Architected workload health check",
+        "description": "Review a curated set of workload checks across the five Well Architected pillars and prioritize evidence backed recommendations with explicit unassessed coverage.",
+        "samplePrompt": "Run an approved, scoped Well Architected health review using the available curated checks. Record assessed and unassessed coverage for every pillar, separate posture from tested runtime resilience, and prepare a prioritized improvement backlog. Do not call this a certification or apply recommendations.",
+        "timeSaved": "High",
+        "mode": "Scheduled",
+        "frequency": "At an agreed review cadence",
+        "topPick": false,
+        "timeSavedEstimate": "Heuristic rating for collecting a curated posture review; a complete architecture review and remediation remain separate work.",
+        "provenance": "document-use-case"
+    },
+    {
+        "id": "defender-advisor-recommendation-triage",
+        "skills": [
+            "defender-advisor-recommendation-triage",
+            "defender-for-cloud-assessment"
+        ],
+        "category": "management",
+        "title": "Defender and Advisor recommendation triage",
+        "description": "Consolidate current Defender and Advisor recommendations into an owner backlog while preserving source severity, overlap, missing coverage and approval requirements.",
+        "samplePrompt": "Read current Defender and Advisor recommendations for the approved subscriptions. Preserve each source ID and observed priority, group overlapping actions without adding duplicate benefits, and draft an owner backlog with prerequisites, risk and validation. Do not dismiss recommendations or execute changes.",
+        "timeSaved": "Medium",
+        "mode": "Scheduled",
+        "frequency": "Weekly",
+        "topPick": true,
+        "timeSavedEstimate": "Heuristic rating for consolidating and prioritizing recommendations; achieved cost or security outcomes are not included.",
+        "provenance": "document-use-case"
+    },
+    {
+        "id": "cicd-pipeline-failure-investigation",
+        "skills": [
+            "cicd-pipeline-failure-investigation"
+        ],
+        "category": "platform-devops",
+        "title": "CI/CD pipeline failure investigation",
+        "description": "Inspect an approved build timeline and bounded task logs to identify the first evidenced failure, distinguish downstream symptoms and draft a safe fix proposal.",
+        "samplePrompt": "Investigate the supplied Azure DevOps build in the approved organization and project using its timeline and relevant log ranges. Identify the first failed task, compare with a supplied successful build, and separate application, dependency, identity and deployment hypotheses. Redact secrets. Do not rerun, edit a pipeline, change a service connection or bypass approvals.",
+        "timeSaved": "High",
+        "mode": "On-demand",
+        "frequency": "After a failed pipeline run",
+        "topPick": false,
+        "timeSavedEstimate": "Heuristic rating for timeline and log correlation; pipeline fixes, reruns and deployments are not included.",
+        "provenance": "document-use-case"
+    },
+    {
+        "id": "standard-platform-request-planning",
+        "skills": [
+            "standard-platform-request-planning",
+            "pre-change-readiness"
+        ],
+        "category": "platform-devops",
+        "title": "Standard platform request planning",
+        "description": "Validate a platform request against approved policies and conventions, draft the smallest change and rollback plan, and prepare repository and documentation updates for review.",
+        "samplePrompt": "Review this standard platform request for the approved workload and scope. Confirm intent, owner, naming and policy requirements, inspect current configuration, and draft the exact proposed change, risk, rollback and validation plan with repository and documentation handoff. Do not change NSGs, firewalls, repositories or tickets without separate approval.",
+        "timeSaved": "Medium",
+        "mode": "On-demand",
+        "frequency": "When a standard platform request is raised",
+        "topPick": false,
+        "timeSavedEstimate": "Heuristic rating for request validation and change drafting; approval, implementation and post change testing remain separate.",
+        "provenance": "document-use-case"
+    },
+    {
+        "id": "lifecycle-ccoe-alignment",
+        "skills": [
+            "deprecation-retirement-tracker",
+            "policy-compliance-state-monitoring",
+            "tag-governance-compliance"
+        ],
+        "category": "governance",
+        "title": "Lifecycle and CCoE alignment",
+        "description": "Track evidenced platform lifecycle and governance actions against the approved CCoE backlog, assigning owners and verification steps without assuming current support status.",
+        "samplePrompt": "Review the approved workload inventory against current dated lifecycle evidence and supplied CCoE requirements. Use deprecation tracking for lifecycle evidence and the mapped policy workflow for governance evidence. Keep unknown support states explicit, prioritize owner actions and draft a tracked implementation and verification plan. Do not migrate resources, remediate policies or update external backlogs without approval.",
+        "timeSaved": "Medium",
+        "mode": "Scheduled",
+        "frequency": "Monthly and before relevant lifecycle deadlines",
+        "topPick": false,
+        "timeSavedEstimate": "Heuristic rating for consolidating lifecycle and governance evidence; migrations, follow ups and change implementation are not included.",
+        "provenance": "document-use-case"
+    }
 ];

@@ -1,0 +1,10 @@
+{
+  "slug": "subscription-hygiene-score",
+  "title": "Subscription hygiene score",
+  "category": "resource-organization",
+  "category_label": "Resource Organization",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Computes a composite health score per subscription measuring operational maturity across multiple dimensions.",
+  "example_prompt": "\"Calculate a hygiene score (0-100) for each subscription based on: (1) tag compliance (20%), (2) resource lock coverage (15%), (3) alert rule coverage (20%), (4) diagnostic settings coverage (15%), (5) policy compliance (15%), (6) Defender for Cloud score (15%). Show score breakdown and improvement recommendations for subscriptions scoring < 70.\""
+}

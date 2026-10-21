@@ -1,0 +1,10 @@
+{
+  "slug": "custom-policy-generation",
+  "title": "Custom Policy generation",
+  "category": "governance",
+  "category_label": "Governance",
+  "mode": "On-demand",
+  "frequency": "During governance sprint",
+  "description": "Generates Azure Policy definitions for custom compliance requirements that aren't covered by built-in policies.",
+  "example_prompt": "\"Generate an Azure Policy definition that: {requirement_description}. Include the policy rule, parameters, effect (audit/deny/modify), and the az CLI command to deploy it at subscription scope. Follow Microsoft naming conventions.\""
+}

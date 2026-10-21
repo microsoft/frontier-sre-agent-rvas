@@ -1,0 +1,41 @@
+name: Scenario skills
+
+on:
+  pull_request:
+    paths:
+      - 'Student/Resources/scenario-skills/**'
+      - 'web/**'
+      - 'Makefile'
+      - '.github/workflows/scenario-skills.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'Student/Resources/scenario-skills/**'
+      - 'web/**'
+      - 'Makefile'
+      - '.github/workflows/scenario-skills.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  library:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install test dependencies
+        run: python3 -m pip install -r Student/Resources/scenario-skills/requirements-dev.txt
+      - name: Check browser data and mappings
+        run: python3 Student/Resources/scenario-skills/scripts/build_library.py --check
+      - name: Test the library and bundled runtime
+        run: python3 -m pytest Student/Resources/scenario-skills -q
+      - name: Check Explorer syntax
+        run: |
+          node --check web/assets/js/scenarios-data.js
+          node --check web/assets/js/scenario-skills-data.js
+          node --check web/assets/js/skill-library.js
+          node --check web/assets/js/skills-explorer.js
+          node --check web/assets/js/scenario-explorer.js
+      - name: Assemble the customer site and downloads
+        run: make build-web

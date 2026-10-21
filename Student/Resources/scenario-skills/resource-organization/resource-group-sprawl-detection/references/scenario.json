@@ -1,0 +1,10 @@
+{
+  "slug": "resource-group-sprawl-detection",
+  "title": "Resource group sprawl detection",
+  "category": "resource-organization",
+  "category_label": "Resource Organization",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Identifies resource group proliferation that increases management overhead and indicates organizational disorder.",
+  "example_prompt": "\"Analyze all resource groups across subscriptions. Flag: (1) empty RGs with 0 resources, (2) RGs with only 1 resource (consolidation candidate), (3) RGs with names suggesting temporary/test purpose in production, (4) RGs without required tags. Show RG name, resource count, total cost, and creation date.\""
+}

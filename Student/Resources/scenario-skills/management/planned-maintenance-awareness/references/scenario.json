@@ -1,0 +1,10 @@
+{
+  "slug": "planned-maintenance-awareness",
+  "title": "Planned maintenance awareness",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "Scheduled",
+  "frequency": "Daily",
+  "description": "Proactively surfaces upcoming Azure maintenance events to plan workload failovers.",
+  "example_prompt": "\"List all planned maintenance events from Azure Service Health for the next 7 days affecting my subscriptions. Show event name, affected service, scheduled window, impacted region, and my resources in that region.\""
+}

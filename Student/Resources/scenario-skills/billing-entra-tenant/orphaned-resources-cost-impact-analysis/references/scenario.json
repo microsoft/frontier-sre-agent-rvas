@@ -1,0 +1,10 @@
+{
+  "slug": "orphaned-resources-cost-impact-analysis",
+  "title": "Orphaned resources & cost impact analysis",
+  "category": "billing-cost",
+  "category_label": "Billing and Cost",
+  "mode": "Scheduled",
+  "frequency": "Daily",
+  "description": "Finds all types of orphaned resources \u2014 unattached disks, unused public IPs, orphaned NICs, empty NSGs, idle Load Balancers, zombie snapshots, unused App Gateways/Front Door backends, and empty App Service Plans \u2014 in a single consolidated scan.",
+  "example_prompt": "\"Query all subscriptions for orphaned resources: (1) managed disks not attached to any VM, (2) public IPs not associated with any resource, (3) NICs not attached to a VM, (4) NSGs not associated with any subnet or NIC, (5) Load Balancers with 0 healthy backend instances or 0 bytes processed in 7 days, (6) disk snapshots older than 90 days whose source disk no longer exists, (7) App Gateway/Front Door backend pools with 0 requests in 14 days, (8) App Service Plans hosting 0 apps or only stopped apps. For each, show resource name, type, RG, age, and monthly cost. Summarize total waste.\""
+}

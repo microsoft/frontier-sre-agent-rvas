@@ -1,0 +1,10 @@
+{
+  "slug": "kql-log-queries-common-patterns",
+  "title": "KQL log queries (common patterns)",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "On-demand",
+  "frequency": "During troubleshooting",
+  "description": "Generates or executes KQL queries for common operational scenarios to speed up log investigations.",
+  "example_prompt": "\"Run the following investigation on Log Analytics workspace '{workspace}': show all errors (severity >= 3) in the last 2 hours, grouped by source resource, error code, and count. Include sample error messages for the top 5 patterns.\""
+}

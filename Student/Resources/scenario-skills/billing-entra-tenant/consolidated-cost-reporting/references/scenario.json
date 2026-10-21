@@ -1,0 +1,10 @@
+{
+  "slug": "consolidated-cost-reporting",
+  "title": "Consolidated cost reporting",
+  "category": "billing-cost",
+  "category_label": "Billing and Cost",
+  "mode": "Scheduled",
+  "frequency": "Monthly",
+  "description": "Produces executive-ready cost reports summarizing spend across management groups, subscriptions, and services for leadership reviews.",
+  "example_prompt": "\"Generate a consolidated monthly cost report for all subscriptions under management group 'Production'. Include total spend, month-over-month change, top 10 services by cost, and top 5 fastest-growing resources. Format as a summary suitable for leadership.\""
+}

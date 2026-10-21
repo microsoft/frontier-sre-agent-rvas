@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scenario Explorer — Azure SRE Agent — RVAS</title>
     <meta name="description"
-        content="Browse and search 77 real-world Azure SRE Agent scenario ideas with ready-to-use sample prompts, organized by Azure Landing Zone design area.">
+        content="Browse 92 Azure SRE Agent scenarios with sample prompts, organized by Azure Landing Zone design area.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -14,6 +14,7 @@
         rel="stylesheet">
     <link rel="stylesheet" href="assets/css/brand.css" />
     <link rel="stylesheet" href="assets/css/shell.css" />
+    <link rel="stylesheet" href="assets/css/site-nav.css" />
     <link rel="stylesheet" href="assets/css/scenarios.css" />
 </head>
 
@@ -30,6 +31,7 @@
                 <a href="index.html#sql-dba-track">SQL DBA Track</a>
                 <a href="index.html#agents">Subagents</a>
                 <a href="scenarios.html" class="active" aria-current="page">Scenario Explorer</a>
+                <a href="skills.html">Skills</a>
                 <a href="jumpstart.html">SRE Agent Jumpstart</a>
                 <a class="gh" href="https://github.com/microsoft/frontier-sre-agent-rvas" target="_blank"
                     rel="noopener">GitHub ↗</a>
@@ -53,26 +55,29 @@
                 <span class="eyebrow">RVAS — Azure SRE Agent</span>
                 <h1 class="reveal">Scenario Explorer</h1>
                 <p class="lede reveal">
-                    77 real-world AIOps scenario ideas, sourced from Azure enterprise customers and organized by
-                    Azure Landing Zone design area. Each one includes a ready-to-copy sample prompt you can adapt
-                    for your own Azure SRE Agent.
+                    92 real-world AIOps scenario ideas, sourced from Azure enterprise customers and
+                    organized by Azure Landing Zone design area. Each one includes a ready-to-copy
+                    sample prompt you can adapt for your own Azure SRE Agent.
                 </p>
                 <div class="stats stats-4 scenario-stats" aria-label="Scenario library stats">
-                    <div class="stat"><span class="stat-num" data-count="77">77</span><span class="stat-lbl">Scenarios</span>
+                    <div class="stat"><span class="stat-num" data-scenario-stat="total">92</span><span class="stat-lbl">Scenarios</span>
                     </div>
-                    <div class="stat"><span class="stat-num" data-count="8">8</span><span class="stat-lbl">Landing zone
+                    <div class="stat"><span class="stat-num" data-scenario-stat="areas">8</span><span class="stat-lbl">Landing zone
                             areas</span></div>
-                    <div class="stat"><span class="stat-num" data-count="11">11</span><span class="stat-lbl">Quick
+                    <div class="stat"><span class="stat-num" data-scenario-stat="quickWins">17</span><span class="stat-lbl">Quick
                             wins</span></div>
-                    <div class="stat"><span class="stat-num" data-count="4">4</span><span class="stat-lbl">Execution
+                    <div class="stat"><span class="stat-num" data-scenario-stat="modes">4</span><span class="stat-lbl">Execution
                             modes</span></div>
                 </div>
                 <p class="scenario-attribution reveal">
-                    Sourced from
+                    Quick wins are suggested starting points when the required access and evidence are already available.
+                    They do not imply automatic remediation or guaranteed outcomes.
+                </p>
+                <p class="scenario-attribution reveal">
+                    Scenario identification and inspiration:
                     <a href="https://github.com/alsanch/azure-sre-agent-scenarios" target="_blank" rel="noopener">
-                        alsanch/azure-sre-agent-scenarios ↗</a>
-                    — a curated battery of customer-sourced ideas. Not all scenarios have been validated or tested
-                    against Azure SRE Agent capabilities; adapt prompts to your environment before running them.
+                        alsanch/azure-sre-agent-scenarios ↗</a>.
+                    Not all scenario ideas have been validated against Azure SRE Agent capabilities.
                 </p>
             </div>
         </section>
@@ -88,7 +93,7 @@
                             <path d="m21 21-4.3-4.3" />
                         </svg>
                         <input type="search" id="scenario-search-input"
-                            placeholder="Search scenarios, descriptions, or prompts…" aria-label="Search scenarios">
+                            placeholder="Search scenarios, prompts, or skills..." aria-label="Search scenarios and skills">
                     </div>
                     <div class="scenario-select-group">
                         <label for="scenario-mode-filter" class="sr-only">Filter by execution mode</label>
@@ -132,7 +137,8 @@
 
     <!-- Scenario detail drawer -->
     <div id="scenario-drawer-overlay"></div>
-    <div id="scenario-drawer" role="dialog" aria-modal="true" aria-label="Scenario detail">
+    <div id="scenario-drawer" role="dialog" aria-modal="true" aria-labelledby="scenario-drawer-title"
+        aria-hidden="true" inert>
         <div class="drawer-header">
             <div class="drawer-breadcrumb">SCENARIO / <span id="scenario-drawer-category">–</span></div>
             <button class="drawer-close" id="scenario-drawer-close" aria-label="Close">✕</button>
@@ -140,6 +146,7 @@
         <div class="drawer-body">
             <h2 id="scenario-drawer-title" class="scenario-drawer-title"></h2>
             <div class="scenario-drawer-badges" id="scenario-drawer-badges"></div>
+            <p class="scenario-skills-note" id="scenario-drawer-savings-note" hidden></p>
             <p id="scenario-drawer-desc" class="scenario-drawer-desc"></p>
             <div class="scenario-prompt-block">
                 <div class="scenario-prompt-header">
@@ -148,14 +155,25 @@
                 </div>
                 <pre id="scenario-drawer-prompt" class="scenario-prompt"></pre>
             </div>
+            <p id="scenario-copy-status" class="scenario-action-status" role="status" aria-live="polite"></p>
             <dl class="scenario-meta-list">
                 <div><dt>Frequency</dt><dd id="scenario-drawer-frequency"></dd></div>
             </dl>
+            <section class="scenario-skills" aria-labelledby="scenario-skills-heading">
+                <h3 id="scenario-skills-heading">Related skills</h3>
+                <p class="scenario-skills-note">Inspect the instructions before use. Download the complete bundle
+                    for supporting references and tools; copying SKILL.md alone omits required files.
+                    Installation does not grant resource access or authorize changes.</p>
+                <div id="scenario-drawer-skills"></div>
+                <a class="scenario-install-link" href="skill-installation.html">Installation and safety guidance</a>
+            </section>
         </div>
     </div>
 
     <script src="assets/js/shell.js"></script>
     <script src="assets/js/scenarios-data.js"></script>
+    <script src="assets/js/scenario-skills-data.js"></script>
+    <script src="assets/js/skill-library.js"></script>
     <script src="assets/js/scenario-explorer.js"></script>
 </body>
 

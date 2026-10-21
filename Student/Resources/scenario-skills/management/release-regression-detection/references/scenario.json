@@ -1,0 +1,10 @@
+{
+  "slug": "release-regression-detection",
+  "title": "Release regression detection",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "On demand",
+  "frequency": "After a release or reported regression",
+  "description": "Compare approved baseline and release observations to identify reliability regressions while distinguishing correlation from a confirmed release cause.",
+  "example_prompt": ""
+}

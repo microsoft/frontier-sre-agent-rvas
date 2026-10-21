@@ -1,0 +1,55 @@
+<mxfile host="local-draft" modified="2026-10-20T23:31:28Z" compressed="false">
+  <diagram id="landing-zone-draft" name="Unvalidated planning draft">
+    <mxGraphModel grid="1" gridSize="10" guides="1" connect="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title" value="UNVALIDATED XML DRAFT: generic planning symbols, no deployed resources" style="text;whiteSpace=wrap;html=1;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="20" y="20" width="1100" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="region" value="Region: operator selected, applicability not verified" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="20" y="90" width="1100" height="600" as="geometry"/>
+        </mxCell>
+        <mxCell id="subscription" value="Proposed subscription" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="region">
+          <mxGeometry x="20" y="50" width="1060" height="500" as="geometry"/>
+        </mxCell>
+        <mxCell id="hub-rg" value="Proposed connectivity resource group" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="subscription">
+          <mxGeometry x="20" y="50" width="460" height="390" as="geometry"/>
+        </mxCell>
+        <mxCell id="hub-vnet" value="Proposed hub VNet" style="swimlane;whiteSpace=wrap;html=1;startSize=30;dashed=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="hub-rg">
+          <mxGeometry x="20" y="50" width="420" height="300" as="geometry"/>
+        </mxCell>
+        <mxCell id="gateway" value="Gateway candidate, SKU not selected" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="hub-vnet">
+          <mxGeometry x="30" y="70" width="160" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="firewall" value="Firewall candidate, policy not assessed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="hub-vnet">
+          <mxGeometry x="230" y="70" width="160" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="workload-rg" value="Proposed workload resource group" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="subscription">
+          <mxGeometry x="520" y="50" width="520" height="390" as="geometry"/>
+        </mxCell>
+        <mxCell id="spoke-vnet" value="Proposed spoke VNet" style="swimlane;whiteSpace=wrap;html=1;startSize=30;dashed=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="workload-rg">
+          <mxGeometry x="20" y="50" width="480" height="300" as="geometry"/>
+        </mxCell>
+        <mxCell id="workload-subnet" value="Proposed subnet, NSG &amp; routing unverified" style="swimlane;whiteSpace=wrap;html=1;startSize=30;dashed=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="spoke-vnet">
+          <mxGeometry x="20" y="50" width="440" height="210" as="geometry"/>
+        </mxCell>
+        <mxCell id="vm-one" value="VM candidate 1, sizing unverified" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="workload-subnet">
+          <mxGeometry x="20" y="60" width="180" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="vm-two" value="VM candidate 2, placement unverified" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="workload-subnet">
+          <mxGeometry x="240" y="60" width="180" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="gateway-firewall" value="Proposed traffic path" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" source="gateway" target="firewall" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="firewall-vm" value="Proposed private path, protocol TBD" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;endArrow=block;" edge="1" source="firewall" target="vm-one" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend" value="Generic symbols only. Solid: proposed traffic. Dashed: proposed private path or boundary. No routing, zone resilience, sizing or failover has been validated. Import and render validation is required." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="20" y="710" width="1100" height="70" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

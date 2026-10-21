@@ -1,0 +1,10 @@
+{
+  "slug": "private-endpoint-public-exposure-audit",
+  "title": "Private endpoint & public exposure audit",
+  "category": "network",
+  "category_label": "Network",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Identifies PaaS resources still accessible over public internet that should use Private Endpoints, and inventories all publicly accessible resources for attack surface awareness.",
+  "example_prompt": "\"List all Storage Accounts, SQL Servers, Key Vaults, Cosmos DB, App Services, and other PaaS resources across subscriptions. For each, check: (1) is public network access enabled? (2) are there private endpoints configured? (3) what is the public FQDN/IP? Flag resources with public access enabled but no private endpoint. Show resource, public endpoint, and recommendation.\""
+}

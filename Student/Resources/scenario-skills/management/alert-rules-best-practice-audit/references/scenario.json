@@ -1,0 +1,10 @@
+{
+  "slug": "alert-rules-best-practice-audit",
+  "title": "Alert rules best-practice audit",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "Scheduled",
+  "frequency": "Monthly",
+  "description": "Evaluates existing alert rules against SRE best practices to find gaps, misconfigurations, or noise generators.",
+  "example_prompt": "\"Audit all alert rules across subscriptions. Identify: (1) rules that fired > 20 times in 7 days (noisy), (2) rules in 'Disabled' state, (3) resources without any alert rule, (4) rules without an action group, (5) rules using static thresholds where dynamic would be better.\""
+}

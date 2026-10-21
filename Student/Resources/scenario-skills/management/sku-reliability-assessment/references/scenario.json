@@ -1,0 +1,10 @@
+{
+  "slug": "sku-reliability-assessment",
+  "title": "SKU reliability assessment",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "On-demand",
+  "frequency": "Architecture review",
+  "description": "Evaluates resource SKUs against availability requirements, identifying single points of failure or SLA gaps.",
+  "example_prompt": "\"For resources in production tagged 'SLA=99.99%', check: (1) VM \u2014 is it using Availability Zones or VMSS? (2) SQL \u2014 is it Zone-redundant? (3) Storage \u2014 is it GRS/GZRS? (4) App Service \u2014 is it Premium or in ASE? Flag any resource where SKU SLA is below the stated target.\""
+}

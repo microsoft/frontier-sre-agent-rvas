@@ -1,0 +1,10 @@
+{
+  "slug": "resources-created-yesterday",
+  "title": "Resources created yesterday",
+  "category": "resource-organization",
+  "category_label": "Resource Organization",
+  "mode": "Scheduled",
+  "frequency": "Daily",
+  "description": "Detects new resources provisioned in the last 24 hours, catching shadow IT and unauthorized deployments early.",
+  "example_prompt": "\"List all resources created in the last 24 hours across all subscriptions. Show: resource name, type, resource group, subscription, who created it (from Activity Log), and whether it was created via ARM template/pipeline or manual portal action. Flag resources not matching naming conventions.\""
+}

@@ -1,0 +1,10 @@
+{
+  "slug": "vnet-peering-health-check",
+  "title": "VNet peering health check",
+  "category": "network",
+  "category_label": "Network",
+  "mode": "Scheduled",
+  "frequency": "Daily",
+  "description": "Monitors VNet peering connections for status issues, disconnected peerings, or asymmetric configurations.",
+  "example_prompt": "\"List all VNet peerings across subscriptions. Check: (1) peering status (Connected/Disconnected/Initiated), (2) both sides exist and are connected, (3) gateway transit settings are symmetric, (4) address space overlaps. Flag any peering not in 'Connected' state or with misconfigured transit.\""
+}

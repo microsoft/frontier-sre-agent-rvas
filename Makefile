@@ -23,6 +23,8 @@ build-web: clean-web
 	@mkdir -p _site
 	@# Web source (index.html + assets)
 	@cp -r web/. _site/
+	@# Generate complete scenario skill downloads and publish their source documentation.
+	@python3 Student/Resources/scenario-skills/scripts/build_library.py --site _site
 	@# README linked from the page
 	@cp README.md _site/README.md
 	@# Student challenge markdown files, preserving nested track directories

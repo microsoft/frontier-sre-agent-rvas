@@ -1,0 +1,10 @@
+{
+  "slug": "service-health-incidents-resource-impact",
+  "title": "Service Health incidents & resource impact",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "Event-driven",
+  "frequency": "On new incident",
+  "description": "Detects Azure platform incidents and maps them to specific customer resources to quantify blast radius during outages.",
+  "example_prompt": "\"Check Azure Service Health for any active incidents affecting resources in my subscriptions. Show incident title, affected services, impacted regions, status, and list my specific resources in those regions. For each impacted resource, show current health status and dependent workloads affected. Suggest mitigation actions if available.\""
+}

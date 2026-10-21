@@ -1,0 +1,10 @@
+{
+  "slug": "defender-for-cloud-assessment",
+  "title": "Defender for Cloud assessment",
+  "category": "security",
+  "category_label": "Security",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Provides a security posture snapshot from Defender for Cloud, highlighting critical findings and score trends.",
+  "example_prompt": "\"Pull Defender for Cloud assessment for all subscriptions: (1) secure score current and 30-day trend, (2) unhealthy resources by severity (high/medium/low), (3) top 10 recommendations by impacted resource count, (4) new recommendations in last 7 days. Prioritize by exploitability and blast radius.\""
+}

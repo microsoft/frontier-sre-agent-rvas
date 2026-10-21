@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "scope": {"subscription_ids": ["00000000-0000-0000-0000-000000000000"]},
+  "resource_ids": ["/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/synthetic/providers/Microsoft.CognitiveServices/accounts/example"],
+  "window_start": "2026-10-01T00:00:00Z",
+  "window_end": "2026-10-02T00:00:00Z",
+  "collected_at": "2026-10-02T00:05:00Z",
+  "collection_complete": true,
+  "collection_truncated": false,
+  "collection_limitations": [],
+  "evidence": [{"source": "Synthetic inference telemetry and quality dataset only", "collected_at": "2026-10-02T00:05:00Z"}],
+  "thresholds": {"minimum_requests": 100, "minimum_evaluated_cases": 20, "max_failure_rate": 0.02, "max_throttle_rate": 0.01, "max_p95_latency_ms": 2000, "minimum_quality_pass_rate": 0.9},
+  "data": {"comparable_cohorts": true, "requests": 1000, "failed_requests": 10, "throttled_requests": 2, "p95_latency_ms": 800, "latency_definition": "end_to_end_nonstreaming", "tokens_total": 100000, "evaluated_cases": 100, "quality_passed_cases": 95}
+}

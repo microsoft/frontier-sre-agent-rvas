@@ -1,0 +1,10 @@
+{
+  "slug": "high-privilege-operation-tracking",
+  "title": "High-privilege operation tracking",
+  "category": "identity-access",
+  "category_label": "Identity and Access",
+  "mode": "Scheduled",
+  "frequency": "Daily",
+  "description": "Monitors sensitive operations (role assignments, policy changes, key vault access) that could indicate security issues or excessive privilege use.",
+  "example_prompt": "\"Query Activity Log for the last 24 hours. Filter for high-privilege operations: role assignment create/delete, policy assignment create/delete, key vault secret access, subscription-level deployments, management group changes. Show caller, operation, target, and timestamp.\""
+}

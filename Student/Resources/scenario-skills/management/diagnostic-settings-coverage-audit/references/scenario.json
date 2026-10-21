@@ -1,0 +1,10 @@
+{
+  "slug": "diagnostic-settings-coverage-audit",
+  "title": "Diagnostic settings coverage audit",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Finds resources that lack diagnostic settings, leaving operational blind spots in monitoring.",
+  "example_prompt": "\"Query all resources across subscriptions that support diagnostic settings. Identify those with no diagnostic settings configured, or where settings don't include all available log categories. Group by resource type and show coverage percentage.\""
+}

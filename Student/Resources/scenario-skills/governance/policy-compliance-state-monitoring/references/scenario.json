@@ -1,0 +1,10 @@
+{
+  "slug": "policy-compliance-state-monitoring",
+  "title": "Policy compliance state monitoring",
+  "category": "governance",
+  "category_label": "Governance",
+  "mode": "Scheduled",
+  "frequency": "Daily",
+  "description": "Tracks compliance state trends and identifies resources falling out of compliance over time.",
+  "example_prompt": "\"Show policy compliance summary for subscription '{subscription_name}'. Include: (1) total policies assigned, (2) compliant vs non-compliant resource count, (3) top 10 policies by non-compliance count, (4) resources that became non-compliant in the last 7 days. Show trend vs previous week.\""
+}

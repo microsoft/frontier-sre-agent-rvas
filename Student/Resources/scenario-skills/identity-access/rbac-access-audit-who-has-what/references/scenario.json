@@ -1,0 +1,10 @@
+{
+  "slug": "rbac-access-audit-who-has-what",
+  "title": "RBAC access audit (who has what)",
+  "category": "identity-access",
+  "category_label": "Identity and Access",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Provides comprehensive visibility into access grants, highlighting over-privileged accounts and stale assignments.",
+  "example_prompt": "\"List all role assignments across subscription '{subscription_name}'. For each, show: principal name, principal type (user/group/SP), role, scope, assignment source (direct/inherited). Flag: (1) Owner/Contributor at subscription scope, (2) assignments to individual users (should be groups), (3) assignments where principal no longer exists in Entra ID.\""
+}

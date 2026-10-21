@@ -1,0 +1,10 @@
+{
+  "slug": "alert-fatigue-analysis",
+  "title": "Alert fatigue analysis",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Identifies noisy, low-value alerts that contribute to alert fatigue and reduce team responsiveness.",
+  "example_prompt": "\"Analyze all alert rules that fired in the last 30 days. Identify: (1) alerts that fired > 50 times, (2) alerts that auto-resolved within 5 minutes > 80% of the time, (3) alerts where no action was taken (no comments, no state change). Recommend suppression, threshold adjustment, or consolidation.\""
+}

@@ -1,0 +1,10 @@
+{
+  "slug": "expressroute-vpn-gateway-health",
+  "title": "ExpressRoute / VPN Gateway health",
+  "category": "network",
+  "category_label": "Network",
+  "mode": "Hybrid",
+  "frequency": "Every 5 min + alert",
+  "description": "Monitors hybrid connectivity gateway health, tunnel status, and throughput to prevent outages.",
+  "example_prompt": "\"Check all ExpressRoute circuits and VPN Gateways. Show: (1) circuit/gateway provisioning state, (2) peering state (for ER), (3) tunnel connection status (for VPN), (4) BGP peer state, (5) ingress/egress throughput last 1h vs capacity. Alert on any tunnel down or BGP not established.\""
+}

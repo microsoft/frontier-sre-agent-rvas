@@ -1,0 +1,10 @@
+{
+  "slug": "cross-period-cost-comparison-mg-level",
+  "title": "Cross-period cost comparison (MG level)",
+  "category": "billing-cost",
+  "category_label": "Billing and Cost",
+  "mode": "Scheduled",
+  "frequency": "Monthly",
+  "description": "Compares cost across billing periods at Management Group level for executive budget reviews.",
+  "example_prompt": "\"Compare total cost for management group 'Enterprise' between the current month and the same month last year. Break down by subscription, show absolute and percentage change, and highlight any subscription with >25% increase.\""
+}

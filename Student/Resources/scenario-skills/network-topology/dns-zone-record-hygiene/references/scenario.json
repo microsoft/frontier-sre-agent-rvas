@@ -1,0 +1,10 @@
+{
+  "slug": "dns-zone-record-hygiene",
+  "title": "DNS zone record hygiene",
+  "category": "network",
+  "category_label": "Network",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Identifies dangling DNS records pointing to deleted Azure resources, which could be hijacked by attackers.",
+  "example_prompt": "\"Query all Azure DNS zones and Private DNS zones. For each A, AAAA, and CNAME record, verify the target resource still exists in the subscription. Flag records where: (1) target IP is not assigned to any resource, (2) CNAME target domain is not resolving, (3) alias records referencing deleted resources.\""
+}

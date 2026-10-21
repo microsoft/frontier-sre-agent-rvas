@@ -1,0 +1,10 @@
+{
+  "slug": "resource-metrics-analysis",
+  "title": "Resource metrics analysis",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "On-demand",
+  "frequency": "During incident",
+  "description": "Deep-dives into performance metrics for a specific resource during troubleshooting or capacity planning.",
+  "example_prompt": "\"Pull the key metrics for resource '{resource_id}' over the last 4 hours with 5-minute granularity. Include CPU, memory, disk IOPS, network in/out, and any resource-specific metrics. Highlight any values exceeding 80% of the resource limit.\""
+}

@@ -1,0 +1,10 @@
+{
+  "slug": "post-incident-review-automation",
+  "title": "Post-incident review automation",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "Event-driven",
+  "frequency": "On incident closure",
+  "description": "Auto-generates a post-incident review document with timeline, changes, metrics, and impact data.",
+  "example_prompt": "\"Incident on resource '{resource_id}' from {start_time} to {end_time} is now resolved. Generate a post-incident review: (1) timeline of events (first alert \u2192 detection \u2192 response \u2192 resolution), (2) changes made during and before incident, (3) metrics during impact window, (4) user/customer impact estimate, (5) action items to prevent recurrence.\""
+}

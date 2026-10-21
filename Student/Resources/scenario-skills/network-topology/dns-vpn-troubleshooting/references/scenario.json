@@ -1,0 +1,10 @@
+{
+  "slug": "dns-vpn-troubleshooting",
+  "title": "DNS/VPN troubleshooting",
+  "category": "network",
+  "category_label": "Network",
+  "mode": "On-demand",
+  "frequency": "During connectivity issues",
+  "description": "Investigates DNS resolution failures and VPN connectivity issues to restore hybrid and name resolution services.",
+  "example_prompt": "\"Diagnose DNS and VPN issues: (1) check DNS resolution failures \u2014 which queries are returning NXDOMAIN or SERVFAIL, from which clients, for which domains, (2) check VPN tunnel status \u2014 which tunnels are down, disconnect reason, BGP peer state, and last successful connection time. Provide remediation steps.\""
+}

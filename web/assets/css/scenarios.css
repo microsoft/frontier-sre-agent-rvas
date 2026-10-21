@@ -476,6 +476,177 @@
     font-weight: 600;
 }
 
+.scenario-skills {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--c-line);
+}
+
+.scenario-skills h3 {
+    font-size: 1.2rem;
+    margin: 0 0 .75rem;
+}
+
+.scenario-skills-note,
+.scenario-action-status {
+    font-size: .78rem;
+    color: var(--c-dim);
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.scenario-action-status:empty {
+    display: none;
+}
+
+.skills-guidance {
+    max-width: 760px;
+    font-size: .85rem;
+    color: var(--c-dim);
+    margin-top: 1.5rem;
+}
+
+.scenario-stats.stats-2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.skills-guidance p + p {
+    margin-top: 1rem;
+}
+
+.skills-guidance a {
+    color: var(--c-accent);
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+.skills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+    gap: 1rem;
+    align-items: start;
+}
+
+.skills-grid .scenario-skill {
+    min-width: 0;
+    margin: 0;
+    background: var(--c-800);
+}
+
+.skills-grid .scenario-skill-title {
+    font-size: 1.1rem;
+}
+
+.scenario-skill {
+    margin: 1rem 0;
+    padding: 1.1rem;
+    background: var(--c-700);
+    border: 1px solid var(--c-line);
+    border-radius: var(--r-sm);
+}
+
+.scenario-skill-title {
+    font-size: 1rem;
+    line-height: 1.4;
+    margin: .65rem 0;
+}
+
+.scenario-skill-description {
+    font-size: .82rem;
+    color: var(--c-dim);
+}
+
+.scenario-skill-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .6rem;
+    margin: 1rem 0;
+}
+
+.scenario-skill-actions .scenario-copy-btn,
+.scenario-skill-download {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    font-size: .75rem;
+    padding: .5rem .7rem;
+}
+
+.scenario-skill-download {
+    color: var(--c-accent);
+    background: var(--c-800);
+    border: 1px solid var(--c-accent);
+    border-radius: 5px;
+    font-weight: 600;
+}
+
+.scenario-install-link,
+.skill-guide a {
+    color: var(--c-accent);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.scenario-skill-details summary {
+    cursor: pointer;
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--c-heading);
+}
+
+.scenario-skill-instructions,
+.skill-guide pre {
+    max-height: 380px;
+    overflow: auto;
+    padding: 1rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font: .75rem/1.65 var(--font-mono);
+    background: var(--c-800);
+    border: 1px solid var(--c-line);
+    border-radius: var(--r-sm);
+}
+
+.scenario-skill :focus-visible,
+.scenario-install-link:focus-visible,
+.drawer-close:focus-visible {
+    outline: 3px solid var(--c-accent);
+    outline-offset: 3px;
+}
+
+.skill-guide {
+    max-width: 860px;
+}
+
+.skill-guide h2 {
+    font-size: 1.5rem;
+    margin: 2rem 0 1rem;
+}
+
+.skill-guide p,
+.skill-guide li {
+    margin: .8rem 0;
+}
+
+.skill-guide ul,
+.skill-guide ol {
+    padding-left: 1.5rem;
+}
+
+.skill-guide table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .85rem;
+}
+
+.skill-guide th,
+.skill-guide td {
+    text-align: left;
+    padding: .75rem;
+    border: 1px solid var(--c-line);
+    vertical-align: top;
+}
+
 @media (max-width: 640px) {
     .scenario-toolbar {
         flex-direction: column;
@@ -484,5 +655,13 @@
 
     .scenario-select-group {
         justify-content: space-between;
+    }
+
+    #scenario-drawer .drawer-body {
+        padding: 1.25rem;
+    }
+
+    .scenario-skill {
+        padding: .85rem;
     }
 }

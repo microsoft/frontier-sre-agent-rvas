@@ -1,0 +1,10 @@
+{
+  "slug": "log-analytics-workspace-ingestion-cost-analysis",
+  "title": "Log Analytics workspace ingestion cost analysis",
+  "category": "billing-cost",
+  "category_label": "Billing and Cost",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Analyzes which data tables and solutions drive the highest log ingestion volume and cost.",
+  "example_prompt": "\"For each Log Analytics workspace, show ingestion volume by table for the last 30 days. Identify top 5 tables by GB ingested. Show daily trend, cost per table, and recommend tables that could be moved to Basic tier or have shorter retention.\""
+}

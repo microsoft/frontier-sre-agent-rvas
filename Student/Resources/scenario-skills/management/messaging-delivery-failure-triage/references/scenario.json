@@ -1,0 +1,10 @@
+{
+  "slug": "messaging-delivery-failure-triage",
+  "title": "Messaging delivery failure triage",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "On demand",
+  "frequency": "During a delivery failure or backlog investigation",
+  "description": "Investigate approved messaging delivery observations, backlog and failure evidence without consuming, resubmitting or deleting messages.",
+  "example_prompt": ""
+}

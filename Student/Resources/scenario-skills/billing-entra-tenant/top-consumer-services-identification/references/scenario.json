@@ -1,0 +1,10 @@
+{
+  "slug": "top-consumer-services-identification",
+  "title": "Top consumer services identification",
+  "category": "billing-cost",
+  "category_label": "Billing and Cost",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Identifies which Azure services drive the most cost, enabling targeted optimization efforts on highest-impact areas.",
+  "example_prompt": "\"List the top 10 Azure services by cost in the last 30 days across all subscriptions. For each, show current month cost, previous month cost, percentage change, and number of instances.\""
+}

@@ -1,0 +1,10 @@
+{
+  "slug": "logic-apps-code-definition-inspection",
+  "title": "Logic Apps code/definition inspection",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "On-demand",
+  "frequency": "During debugging",
+  "description": "Examines the Logic App workflow definition to identify structural issues, deprecated connectors, or error-prone patterns.",
+  "example_prompt": "\"Retrieve the workflow definition for Logic App '{logic_app_name}'. Analyze for: (1) actions without error handling (no 'runAfter' failure paths), (2) deprecated connector versions, (3) hardcoded values that should be parameters, (4) loops without concurrency limits, (5) missing retry policies on HTTP actions.\""
+}

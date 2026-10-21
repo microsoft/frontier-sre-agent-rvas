@@ -1,0 +1,10 @@
+{
+  "slug": "ssl-tls-certificate-expiration-tracking",
+  "title": "SSL/TLS certificate expiration tracking",
+  "category": "network",
+  "category_label": "Network",
+  "mode": "Scheduled",
+  "frequency": "Daily",
+  "description": "Tracks certificates across Azure services to prevent outages caused by expired certificates.",
+  "example_prompt": "\"Scan all certificates in: Key Vaults, App Service certificates, Application Gateway SSL certs, Front Door custom domains, and API Management. Show certificate subject, issuer, expiration date, and days remaining. Alert on any certificate expiring within 30 days.\""
+}

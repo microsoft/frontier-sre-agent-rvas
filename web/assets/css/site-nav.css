@@ -1,0 +1,22 @@
+/* The Skills tab needs more room than the shared shell's compact desktop menu. */
+@media (min-width: 768px) and (max-width: 1199px) {
+    .nav-links:not(.open) {
+        display: none;
+    }
+
+    .nav-toggle {
+        display: grid;
+    }
+
+    .nav-actions {
+        margin-left: auto;
+    }
+}
+
+@media (min-width: 1200px) {
+    .nav-links:not(.open) a {
+        padding-inline: 8px;
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+}
