@@ -1,0 +1,10 @@
+{
+  "slug": "subscription-limits-approaching",
+  "title": "Subscription limits approaching",
+  "category": "resource-organization",
+  "category_label": "Resource Organization",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Monitors Azure subscription-level limits (resource counts, quotas) to prevent deployment failures from hitting limits.",
+  "example_prompt": "\"Check all subscriptions for resource quota usage. Show: (1) vCPU usage vs limit per family per region, (2) public IP count vs limit, (3) VNet count vs limit, (4) storage account count vs limit. Alert on any quota at > 80% utilization.\""
+}

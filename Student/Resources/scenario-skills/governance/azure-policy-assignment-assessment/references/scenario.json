@@ -1,0 +1,10 @@
+{
+  "slug": "azure-policy-assignment-assessment",
+  "title": "Azure Policy assignment assessment",
+  "category": "governance",
+  "category_label": "Governance",
+  "mode": "Scheduled",
+  "frequency": "Monthly",
+  "description": "Performs a global assessment of all Azure Policy assignments across the management group hierarchy to detect redundancies (same policy assigned at parent and child scope), conflicts (contradictory effects on the same resource type), and shadow assignments (overridden by a higher-scope exemption or a conflicting deny). Provides a clean-sheet view of the effective policy posture.",
+  "example_prompt": "\"List all Azure Policy assignments across the full management group hierarchy. Analyze for: (1) redundant assignments \u2014 same policy definition assigned at both a management group and a child subscription/RG, (2) conflicting assignments \u2014 policies with contradictory effects (e.g., one enforces 'deny' on a resource type while another applies 'deployIfNotExists' for the same), (3) orphaned assignments referencing deleted or deprecated policy definitions, (4) assignments with parameters that override or negate the intended effect. For each finding, show policy name, assignment scope, effect, and recommended action (remove, consolidate, or fix). Summarize total assignments, redundancies found, and conflicts detected.\""
+}

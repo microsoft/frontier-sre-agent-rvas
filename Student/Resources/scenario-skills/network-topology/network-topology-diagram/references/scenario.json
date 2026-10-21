@@ -1,0 +1,10 @@
+{
+  "slug": "network-topology-diagram",
+  "title": "Network topology diagram",
+  "category": "network",
+  "category_label": "Network",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Auto-generates a visual network topology showing VNets, peerings, subnets, gateways, and connected resources.",
+  "example_prompt": "\"Generate a Mermaid diagram showing the network topology for subscription '{subscription_name}'. Include all VNets, their subnets, peering connections, VPN/ExpressRoute gateways, private endpoints, and key resources in each subnet. Show address spaces and peering status.\""
+}

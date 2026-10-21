@@ -1,0 +1,10 @@
+{
+  "slug": "extension-health-across-vms",
+  "title": "Extension health across VMs",
+  "category": "resource-organization",
+  "category_label": "Resource Organization",
+  "mode": "Scheduled",
+  "frequency": "Daily",
+  "description": "Monitors VM extension status to catch failed deployments or stuck provisioning that blocks updates and monitoring.",
+  "example_prompt": "\"Check all VM extensions across subscriptions. Identify: (1) extensions in 'Failed' provisioning state, (2) extensions in 'Transitioning' state for > 1 hour, (3) extensions with handler status errors, (4) VMs with conflicting extensions. Show VM name, extension, status, and error message.\""
+}

@@ -1,0 +1,10 @@
+{
+  "slug": "cost-anomaly-detection",
+  "title": "Cost anomaly detection",
+  "category": "billing-cost",
+  "category_label": "Billing and Cost",
+  "mode": "Hybrid",
+  "frequency": "Daily + event >20% spike",
+  "description": "Continuously monitors spending patterns to detect unusual spikes or drops that may indicate misconfigurations, runaway resources, or billing errors.",
+  "example_prompt": "\"Analyze the cost data for the last 7 days across all subscriptions. Identify any resource or service where daily cost deviates more than 20% from the 30-day rolling average. Provide the resource ID, cost delta, and likely root cause.\""
+}

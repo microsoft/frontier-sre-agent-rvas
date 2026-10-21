@@ -1,0 +1,10 @@
+{
+  "slug": "agent-health-monitoring",
+  "title": "Agent health monitoring",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "Scheduled",
+  "frequency": "Daily",
+  "description": "Monitors the health of monitoring agents (AMA) to ensure telemetry pipeline continuity.",
+  "example_prompt": "\"Check all VMs and Arc machines for monitoring agent health. Identify: (1) machines with no heartbeat in the last 15 minutes, (2) agents in 'Not Ready' or 'Error' state, (3) extension provisioning failures. Show machine name, last heartbeat, agent version, and status.\""
+}

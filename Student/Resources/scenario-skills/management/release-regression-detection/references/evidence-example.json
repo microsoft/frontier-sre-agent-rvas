@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "scope": {"subscription_ids": ["00000000-0000-0000-0000-000000000000"]},
+  "resource_ids": ["/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/synthetic/providers/Microsoft.Insights/components/example"],
+  "window_start": "2026-10-01T00:00:00Z",
+  "window_end": "2026-10-02T00:00:00Z",
+  "collected_at": "2026-10-02T00:05:00Z",
+  "collection_complete": true,
+  "collection_truncated": false,
+  "collection_limitations": [],
+  "evidence": [{"source": "Synthetic deployment cohort comparison only", "collected_at": "2026-10-02T00:05:00Z"}],
+  "thresholds": {"minimum_requests": 100, "max_error_increase_percentage_points": 1, "max_latency_increase_percent": 20},
+  "data": {
+    "comparable_cohorts": true,
+    "baseline": {"requests": 1000, "failed_requests": 10, "p95_latency_ms": 200},
+    "current": {"requests": 1200, "failed_requests": 12, "p95_latency_ms": 210}
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "slug": "certificate-renewal-automation",
+  "title": "Certificate renewal automation",
+  "category": "security",
+  "category_label": "Security",
+  "mode": "Scheduled",
+  "frequency": "Daily",
+  "description": "Monitors certificate expiration in Key Vault and triggers renewal workflows before expiry causes outages.",
+  "example_prompt": "\"Check all certificates in Key Vault accounts across subscriptions. For each: show subject, issuer, expiration date, auto-renewal status, and days remaining. For certificates expiring in < 30 days without auto-renewal: trigger renewal workflow or alert the certificate owner. Show certificates that failed auto-renewal attempts.\""
+}

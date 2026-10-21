@@ -1,0 +1,10 @@
+{
+  "slug": "cost-analysis-by-tag-environment",
+  "title": "Cost analysis by tag/environment",
+  "category": "billing-cost",
+  "category_label": "Billing and Cost",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Breaks down Azure spending grouped by environment tags (dev, staging, prod), identifies which environments consume disproportionate budget, and tracks the cost ratio between environments over time.",
+  "example_prompt": "\"Show me the cost breakdown for the last month grouped by the 'Environment' tag across all subscriptions. Show the ratio of each environment's cost to production. Highlight any environment where spend exceeds the previous month by more than 15% or where dev/test exceeds 30% of production cost.\""
+}

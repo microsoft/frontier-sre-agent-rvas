@@ -1,0 +1,10 @@
+{
+  "slug": "all-write-operations-across-subscription-24h",
+  "title": "All write operations across subscription (24h)",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "Scheduled",
+  "frequency": "Daily digest",
+  "description": "Provides a daily digest of all infrastructure changes for operational awareness and audit trail.",
+  "example_prompt": "\"Summarize all write and delete operations in subscription '{subscription_name}' in the last 24 hours. Group by resource type, show total operations count, and flag any failed operations. Exclude read-only and diagnostic operations.\""
+}

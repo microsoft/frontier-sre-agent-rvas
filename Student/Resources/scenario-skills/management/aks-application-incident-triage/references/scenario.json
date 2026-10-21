@@ -1,0 +1,10 @@
+{
+  "slug": "aks-application-incident-triage",
+  "title": "AKS application incident triage",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "On demand",
+  "frequency": "During an application incident",
+  "description": "Correlate application symptoms with approved Kubernetes workload evidence and propose bounded investigation steps without changing cluster resources.",
+  "example_prompt": ""
+}

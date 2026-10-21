@@ -1,0 +1,10 @@
+{
+  "slug": "support-ticket-creation-pre-populated",
+  "title": "Support ticket creation (pre-populated)",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "On-demand",
+  "frequency": "After auto-resolve fails",
+  "description": "Generates a pre-filled support ticket with all relevant diagnostic context collected by SRE Agent to accelerate resolution.",
+  "example_prompt": "\"Prepare a support ticket for resource '{resource_id}' issue: '{issue_description}'. Collect and include: (1) resource config and SKU, (2) relevant metrics last 4h, (3) related errors in logs, (4) recent changes from Activity Log, (5) Resource Health status. Format as a support request with severity, category, and collected evidence.\""
+}

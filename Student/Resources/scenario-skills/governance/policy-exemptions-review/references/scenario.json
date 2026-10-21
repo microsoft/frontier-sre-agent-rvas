@@ -1,0 +1,10 @@
+{
+  "slug": "policy-exemptions-review",
+  "title": "Policy exemptions review",
+  "category": "governance",
+  "category_label": "Governance",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Audits policy exemptions to find expired ones and those without proper justification that may be covering non-compliance.",
+  "example_prompt": "\"List all policy exemptions across subscriptions. Show: exemption name, scope, exempted policy, category (waiver/mitigated), expiration date, and description. Flag: (1) exemptions past their expiration date, (2) exemptions without an expiration date, (3) exemptions with no description/justification.\""
+}

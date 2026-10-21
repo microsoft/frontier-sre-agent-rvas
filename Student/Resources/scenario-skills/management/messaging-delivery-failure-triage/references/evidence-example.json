@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "scope": {"subscription_ids": ["00000000-0000-0000-0000-000000000000"]},
+  "resource_ids": ["/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/synthetic/providers/Microsoft.ServiceBus/namespaces/example/queues/example"],
+  "window_start": "2026-10-01T00:00:00Z",
+  "window_end": "2026-10-01T00:10:00Z",
+  "collected_at": "2026-10-01T00:15:00Z",
+  "collection_complete": true,
+  "collection_truncated": false,
+  "collection_limitations": [],
+  "evidence": [{"source": "Synthetic queue snapshots and completed operation count only", "collected_at": "2026-10-01T00:15:00Z"}],
+  "thresholds": {"max_backlog_growth_per_minute": 5, "max_dead_letter_count": 0, "max_transfer_dead_letter_count": 0, "minimum_completed_messages": 1},
+  "data": {"active_start": 100, "active_end": 20, "sample_duration_seconds": 600, "dead_letter_count": 0, "transfer_dead_letter_count": 0, "completed_messages": 180}
+}

@@ -1,0 +1,10 @@
+{
+  "slug": "stale-rbac-assignments",
+  "title": "Stale RBAC assignments",
+  "category": "identity-access",
+  "category_label": "Identity and Access",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Finds role assignments granted to principals that no longer exist or haven't signed in, reducing attack surface.",
+  "example_prompt": "\"List all role assignments where: (1) the principal object no longer exists in Entra ID (orphaned SIDs), (2) the user principal hasn't signed in for > 90 days, (3) the service principal has no recent activity. Show assignment scope, role, principal display name/ID, and last sign-in date. Recommend removal.\""
+}

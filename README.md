@@ -15,9 +15,34 @@ investigate:
 | [SQL Server DBA](#sql-server-dba-track) | 10 | Read-only database discovery, Query Store, waits, blocking, query-performance diagnostics, and a build-your-own capstone |
 
 Open `web/index.html` in a browser for the interactive UI (coach mode: **Shift+C**). See also the
-[Scenario Explorer](web/scenarios.html) — a searchable library of 77 real-world Azure SRE Agent
-scenario ideas with ready-to-use sample prompts, sourced from
-[alsanch/azure-sre-agent-scenarios](https://github.com/alsanch/azure-sre-agent-scenarios).
+[Scenario Explorer](web/scenarios.html) is a searchable library of **92 scenarios
+and 110 categorized skills**, with foundational scenario identification from
+[alsanch/azure-sre-agent-scenarios](https://github.com/alsanch/azure-sre-agent-scenarios)
+and skill contributions adapted from
+[onsenturk/SreAgentExtensions](https://github.com/onsenturk/SreAgentExtensions) and 
+[smragav/azure-sre-agent-skills](https://github.com/smragav/azure-sre-agent-skills).
+Open a scenario to view and copy its
+mapped skill instructions, download a complete skill bundle, and follow the
+[installation guide](web/skill-installation.html).
+
+The [scenario skill library](Student/Resources/scenario-skills/README.md) is
+separate from the workshop's default agent configuration. Each scenario supports
+one or more mapped skills. The separate [Skills tab](web/skills.html) lets
+customers search and filter the skill library without opening a scenario, view
+and copy instructions, and download complete bundles. Skill setup and download
+guidance lives there; scenario details retain their mapped skills.
+Customer downloads include required references and
+tools, not just SKILL.md. Local tests do not establish live Azure validation.
+All eleven use cases in the reviewed Azure SRE Agent use cases document are
+mapped in the [coverage record](Student/Resources/scenario-skills/catalog/docx-use-cases.json).
+Nine broader scenario entries and five new evidence workflows complete the
+coverage, reusing existing skills rather than duplicating them. Assessment
+skills can also be explored independently without a scenario mapping.
+
+Run `make build-web` in the supported Linux environment to publish the website
+and its skill downloads. The site build now also needs Python 3.10 or later and
+Node.js. After changing skill content, regenerate the committed browser catalog
+with `python Student/Resources/scenario-skills/scripts/build_library.py`.
 
 ### Azure Operations track
 

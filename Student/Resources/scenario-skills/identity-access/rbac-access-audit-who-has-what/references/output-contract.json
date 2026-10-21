@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "rbac-access-audit-who-has-what evidence contract",
+  "type": "object",
+  "required": [
+    "scenario_id",
+    "scope",
+    "assessed_at",
+    "assessment_status",
+    "coverage",
+    "findings",
+    "limitations"
+  ],
+  "properties": {
+    "scenario_id": {
+      "const": "rbac-access-audit-who-has-what"
+    },
+    "scope": {
+      "type": "object",
+      "required": [
+        "subscription_ids"
+      ],
+      "properties": {
+        "subscription_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "resource_groups": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "assessed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "assessment_status": {
+      "enum": [
+        "Complete",
+        "Partial",
+        "Not assessed"
+      ]
+    },
+    "coverage": {
+      "type": "object",
+      "required": [
+        "expected_checks",
+        "assessed_checks",
+        "truncated"
+      ],
+      "properties": {
+        "expected_checks": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "assessed_checks": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "severity",
+          "evidence",
+          "scenario_data"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "Observed",
+              "Needs attention",
+              "Not applicable",
+              "Not assessed"
+            ]
+          },
+          "severity": {
+            "enum": [
+              "Critical",
+              "High",
+              "Medium",
+              "Low",
+              "Info"
+            ]
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "source",
+                "collected_at"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string"
+                },
+                "collected_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "scenario_data": {
+            "type": "object",
+            "required": [
+              "assignment_id",
+              "principal_id",
+              "principal_name",
+              "principal_type",
+              "role_name",
+              "role_definition_id",
+              "assignment_scope",
+              "assignment_source",
+              "directory_lookup_status",
+              "review_flags"
+            ],
+            "properties": {
+              "assignment_id": {},
+              "principal_id": {},
+              "principal_name": {},
+              "principal_type": {},
+              "role_name": {},
+              "role_definition_id": {},
+              "assignment_scope": {},
+              "assignment_source": {},
+              "directory_lookup_status": {},
+              "review_flags": {}
+            }
+          },
+          "recommendation": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

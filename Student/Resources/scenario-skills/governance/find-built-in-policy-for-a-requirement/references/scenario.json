@@ -1,0 +1,10 @@
+{
+  "slug": "find-built-in-policy-for-a-requirement",
+  "title": "Find built-in policy for a requirement",
+  "category": "governance",
+  "category_label": "Governance",
+  "mode": "On-demand",
+  "frequency": "During compliance planning",
+  "description": "Searches Azure's built-in policy catalog to find the best match for a compliance requirement before creating custom.",
+  "example_prompt": "\"I need to enforce that: '{requirement}'. Search Azure built-in policies for matching definitions. Show the top 5 matches with: display name, policy ID, effect type, and description. Indicate which one best fits the requirement and whether parameters need customization.\""
+}

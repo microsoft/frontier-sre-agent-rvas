@@ -1,0 +1,10 @@
+{
+  "slug": "naming-tagging-convention-compliance",
+  "title": "Naming & tagging convention compliance",
+  "category": "governance",
+  "category_label": "Governance",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Detects resources that violate organizational naming standards and required tag policies, impacting automation, cost allocation, and operational clarity.",
+  "example_prompt": "\"Check all resources against: (1) naming convention regex per resource type: VMs='{vm_pattern}', RGs='{rg_pattern}', Storage='{storage_pattern}'; (2) required tags: 'Environment', 'CostCenter', 'Owner', 'Application'. Show resources not matching patterns and those missing required tags. Prioritize production resources and sort by monthly cost.\""
+}

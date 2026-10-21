@@ -8,6 +8,8 @@ on:
       - 'README.md'
       - 'Student/**'
       - 'Coach/**'
+      - 'Makefile'
+      - '.github/workflows/gh-pages.yml'
 
   workflow_dispatch:
 

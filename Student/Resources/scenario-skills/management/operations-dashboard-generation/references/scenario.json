@@ -1,0 +1,10 @@
+{
+  "slug": "operations-dashboard-generation",
+  "title": "Operations dashboard generation",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "On-demand",
+  "frequency": "On workload onboarding",
+  "description": "Auto-generates Azure Monitor dashboards for new workloads with standard SRE metrics panels.",
+  "example_prompt": "\"Generate an Azure Monitor dashboard JSON for resource group '{rg_name}'. Include panels for: VM CPU/memory/disk, App Service requests/errors/response time, SQL DTU/connections, and a service health tile. Use best-practice layout.\""
+}

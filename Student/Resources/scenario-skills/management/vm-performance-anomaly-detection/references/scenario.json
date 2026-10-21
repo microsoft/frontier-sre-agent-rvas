@@ -1,0 +1,10 @@
+{
+  "slug": "vm-performance-anomaly-detection",
+  "title": "VM performance anomaly detection",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "Hybrid",
+  "frequency": "Every 15 min + alert",
+  "description": "Continuously baselines VM performance metrics and alerts when behavior deviates from historical normal.",
+  "example_prompt": "\"For all production VMs, compare current 15-minute CPU, memory, disk queue length, and network metrics against the 7-day baseline for the same time window. Flag any VM where current values exceed 2 standard deviations from baseline.\""
+}

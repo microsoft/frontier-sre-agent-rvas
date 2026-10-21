@@ -1,0 +1,10 @@
+{
+  "slug": "changes-in-last-24h-for-a-resource",
+  "title": "Changes in last 24h for a resource",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "On-demand",
+  "frequency": "During incident",
+  "description": "Shows all configuration changes to a specific resource during incident investigation, helping correlate changes with symptoms.",
+  "example_prompt": "\"Show all changes detected by Change Analysis and Activity Log for resource '{resource_id}' in the last 24 hours. For each change, show timestamp, property changed, old value, new value, and who initiated it.\""
+}

@@ -1,0 +1,10 @@
+{
+  "slug": "resource-health-status-summary",
+  "title": "Resource health status summary",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "Scheduled",
+  "frequency": "Every 1h",
+  "description": "Provides a real-time view of all resource health states to quickly identify degraded infrastructure.",
+  "example_prompt": "\"Query Azure Resource Health for all resources in subscriptions. Show summary: count by health status (Available, Degraded, Unavailable, Unknown). List all resources currently in 'Degraded' or 'Unavailable' state with reason and since-when timestamp.\""
+}

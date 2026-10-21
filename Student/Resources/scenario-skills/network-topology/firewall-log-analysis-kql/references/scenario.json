@@ -1,0 +1,10 @@
+{
+  "slug": "firewall-log-analysis-kql",
+  "title": "Firewall log analysis (KQL)",
+  "category": "network",
+  "category_label": "Network",
+  "mode": "Hybrid",
+  "frequency": "Daily + on-demand",
+  "description": "Analyzes Azure Firewall logs to identify blocked traffic patterns, top talkers, and potential misconfigurations.",
+  "example_prompt": "\"Query Azure Firewall diagnostic logs for the last 24 hours. Show: (1) top 20 denied flows by count, (2) denied flows where source is an internal subnet (potential misconfiguration), (3) allowed flows to suspicious destinations, (4) traffic volume by rule collection.\""
+}

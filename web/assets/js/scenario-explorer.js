@@ -1,6 +1,6 @@
 /* =====================================================================
    SCENARIO EXPLORER — render, search, filter, and detail drawer logic.
-   Depends on SCENARIO_CATEGORIES / SCENARIOS from scenarios-data.js.
+   Depends on scenarios-data.js, scenario-skills-data.js and skill-library.js.
    ===================================================================== */
 (function () {
   "use strict";
@@ -14,9 +14,34 @@
   var chipsContainer = document.getElementById("scenario-category-chips");
 
   if (!grid || typeof SCENARIOS === "undefined") return;
+  if (typeof SCENARIO_SKILLS === "undefined" || !window.SkillLibrary) {
+    resultsCount.textContent = "The skill catalog could not be loaded. Rebuild the website or reload the page.";
+    resultsCount.setAttribute("role", "alert");
+    return;
+  }
 
   var categoryBySlug = {};
-  (SCENARIO_CATEGORIES || []).forEach(function (c) { categoryBySlug[c.slug] = c; });
+  var categoryOrder = {};
+  (SCENARIO_CATEGORIES || []).forEach(function (c, index) {
+    categoryBySlug[c.slug] = c;
+    categoryOrder[c.slug] = index;
+  });
+  var orderedScenarios = SCENARIOS.slice().sort(function (a, b) {
+    return categoryOrder[a.category] - categoryOrder[b.category];
+  });
+  var stats = {
+    total: SCENARIOS.length,
+    areas: new Set(SCENARIOS.map(function (s) { return s.category; })).size,
+    quickWins: SCENARIOS.filter(function (s) { return s.topPick; }).length,
+    modes: new Set(SCENARIOS.map(function (s) { return s.mode; })).size
+  };
+  document.querySelectorAll("[data-scenario-stat]").forEach(function (node) {
+    var count = stats[node.dataset.scenarioStat];
+    node.textContent = String(count);
+    node.setAttribute("data-count", String(count));
+  });
+  var skillById = {};
+  SCENARIO_SKILLS.forEach(function (skill) { skillById[skill.id] = skill; });
 
   var state = { query: "", category: "", mode: "", topPickOnly: false };
 
@@ -45,13 +70,29 @@
     return div.innerHTML;
   }
 
+  function savingsBadge(scenario, detail) {
+    if (scenario.timeSaved === "Not estimated") return "";
+    var label = scenario.timeSaved + (detail ? " time savings" : " savings");
+    var explanation = "Operator time savings, not Azure bill savings.";
+    if (scenario.timeSavedEstimate) {
+      if (detail) label += " (estimated)";
+      explanation += " " + scenario.timeSavedEstimate + " Not measured or guaranteed.";
+    }
+    return '<span class="scenario-badge ' + timeBadgeClass(scenario.timeSaved) +
+      '" title="' + escapeHtml(explanation).replace(/"/g, "&quot;") + '">' + escapeHtml(label) + '</span>';
+  }
+
   /* ── Filtering ───────────────────────────────────────────────────── */
   function matches(scenario) {
     if (state.category && scenario.category !== state.category) return false;
     if (state.mode && scenario.mode !== state.mode) return false;
     if (state.topPickOnly && !scenario.topPick) return false;
     if (state.query) {
-      var haystack = (scenario.title + " " + scenario.description + " " + scenario.samplePrompt).toLowerCase();
+      var skillText = (scenario.skills || []).map(function (id) {
+        var skill = skillById[id];
+        return skill ? skill.id + " " + skill.title + " " + skill.description + " " + skill.categoryLabel : id;
+      }).join(" ");
+      var haystack = (scenario.title + " " + scenario.description + " " + scenario.samplePrompt + " " + skillText).toLowerCase();
       if (haystack.indexOf(state.query) === -1) return false;
     }
     return true;
@@ -74,14 +115,15 @@
       '<div class="scenario-card-desc">' + escapeHtml(scenario.description) + '</div>' +
       '<div class="scenario-card-footer">' +
       '<span class="scenario-badge scenario-badge-mode">' + escapeHtml(scenario.mode) + '</span>' +
-      '<span class="scenario-badge ' + timeBadgeClass(scenario.timeSaved) + '">' + escapeHtml(scenario.timeSaved) + ' savings</span>' +
+      savingsBadge(scenario, false) +
+      '<span class="scenario-badge">' + (scenario.skills || []).length + ' skill(s)</span>' +
       '</div>';
     card.addEventListener("click", function () { openDrawer(scenario); });
     return card;
   }
 
   function render() {
-    var filtered = SCENARIOS.filter(matches);
+    var filtered = orderedScenarios.filter(matches);
     grid.innerHTML = "";
     var frag = document.createDocumentFragment();
     filtered.forEach(function (s) { frag.appendChild(renderCard(s)); });
@@ -129,14 +171,42 @@
   var drawerCategory = document.getElementById("scenario-drawer-category");
   var drawerTitle = document.getElementById("scenario-drawer-title");
   var drawerBadges = document.getElementById("scenario-drawer-badges");
+  var drawerSavingsNote = document.getElementById("scenario-drawer-savings-note");
   var drawerDesc = document.getElementById("scenario-drawer-desc");
   var drawerPrompt = document.getElementById("scenario-drawer-prompt");
   var drawerFrequency = document.getElementById("scenario-drawer-frequency");
   var drawerClose = document.getElementById("scenario-drawer-close");
   var copyBtn = document.getElementById("scenario-copy-btn");
+  var copyStatus = document.getElementById("scenario-copy-status");
+  var drawerSkills = document.getElementById("scenario-drawer-skills");
+  var background = document.querySelectorAll("body > header, body > main, body > footer");
   var currentScenario = null;
+  var previousFocus = null;
+  var previousOverflow = "";
+
+  function renderSkills(scenario) {
+    drawerSkills.textContent = "";
+    var ids = scenario.skills || [];
+    if (!ids.length) {
+      drawerSkills.appendChild(SkillLibrary.element("p", "scenario-action-status", "No skill has been mapped to this scenario."));
+    }
+    ids.forEach(function (id) {
+      var skill = skillById[id];
+      if (!skill) {
+        var error = SkillLibrary.element("p", "scenario-action-status", "Mapped skill unavailable: " + id + ". Rebuild the skill catalog.");
+        error.setAttribute("role", "alert");
+        drawerSkills.appendChild(error);
+        return;
+      }
+      drawerSkills.appendChild(SkillLibrary.createCard(skill));
+    });
+  }
 
   function openDrawer(scenario) {
+    if (!drawer.classList.contains("open")) {
+      previousFocus = document.activeElement;
+      previousOverflow = document.body.style.overflow;
+    }
     currentScenario = scenario;
     var cat = categoryBySlug[scenario.category] || { label: scenario.category };
     drawerCategory.textContent = cat.label;
@@ -147,56 +217,61 @@
     drawerBadges.innerHTML =
       (scenario.topPick ? '<span class="scenario-badge scenario-card-star" style="color:#b45309;border-color:rgba(180,83,9,.3);background:rgba(180,83,9,.08);">★ Quick win</span>' : "") +
       '<span class="scenario-badge scenario-badge-mode">' + escapeHtml(scenario.mode) + '</span>' +
-      '<span class="scenario-badge ' + timeBadgeClass(scenario.timeSaved) + '">' + escapeHtml(scenario.timeSaved) + ' time savings</span>';
+      savingsBadge(scenario, true);
+    drawerSavingsNote.hidden = !scenario.timeSavedEstimate;
+    drawerSavingsNote.textContent = scenario.timeSavedEstimate
+      ? "Estimated operator time savings: " + scenario.timeSavedEstimate +
+        " Not measured or guaranteed. Actual savings depend on evidence readiness and investigation complexity. This is not an estimate of Azure bill reductions."
+      : "";
     copyBtn.textContent = "Copy prompt";
-    copyBtn.classList.remove("copied");
+    copyStatus.textContent = "";
+    renderSkills(scenario);
+    drawer.inert = false;
+    drawer.setAttribute("aria-hidden", "false");
+    background.forEach(function (node) { node.inert = true; });
+    document.body.style.overflow = "hidden";
     drawer.classList.add("open");
     drawerOverlay.classList.add("open");
     drawer.querySelector(".drawer-body").scrollTop = 0;
+    drawerClose.focus();
   }
 
   function closeDrawer() {
     drawer.classList.remove("open");
     drawerOverlay.classList.remove("open");
+    drawer.inert = true;
+    drawer.setAttribute("aria-hidden", "true");
+    background.forEach(function (node) { node.inert = false; });
+    document.body.style.overflow = previousOverflow;
+    if (previousFocus && previousFocus.isConnected) previousFocus.focus();
+    currentScenario = null;
   }
 
   drawerClose.addEventListener("click", closeDrawer);
   drawerOverlay.addEventListener("click", closeDrawer);
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && drawer.classList.contains("open")) closeDrawer();
+    if (e.key === "Tab" && drawer.classList.contains("open")) {
+      var controls = Array.from(drawer.querySelectorAll("button:not(:disabled), a[href], summary, [tabindex='0']"))
+        .filter(function (node) { return node.offsetParent !== null; });
+      var first = controls[0];
+      var last = controls[controls.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
   });
 
   copyBtn.addEventListener("click", function () {
     if (!currentScenario) return;
-    var text = currentScenario.samplePrompt;
-    function markCopied() {
-      copyBtn.textContent = "Copied ✓";
-      copyBtn.classList.add("copied");
-      setTimeout(function () {
-        copyBtn.textContent = "Copy prompt";
-        copyBtn.classList.remove("copied");
-      }, 1800);
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(markCopied).catch(function () {
-        fallbackCopy(text, markCopied);
-      });
-    } else {
-      fallbackCopy(text, markCopied);
-    }
+    var scenario = currentScenario;
+    SkillLibrary.copyWithFeedback(scenario.samplePrompt, copyBtn, copyStatus, "Sample prompt copied.",
+      function () { return currentScenario === scenario; });
   });
-
-  function fallbackCopy(text, onDone) {
-    var ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.opacity = "0";
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand("copy"); } catch (err) { /* no-op */ }
-    document.body.removeChild(ta);
-    onDone();
-  }
 
   render();
 })();

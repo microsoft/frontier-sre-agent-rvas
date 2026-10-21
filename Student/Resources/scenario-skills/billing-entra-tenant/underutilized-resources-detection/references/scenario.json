@@ -1,0 +1,10 @@
+{
+  "slug": "underutilized-resources-detection",
+  "title": "Underutilized resources detection",
+  "category": "billing-cost",
+  "category_label": "Billing and Cost",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Finds resources consuming budget but delivering minimal value based on utilization metrics.",
+  "example_prompt": "\"Scan all VMs, App Services, SQL Databases, and Redis Caches across subscriptions. Flag resources where average CPU < 5%, average connections < 10, or average requests < 100/hour over the last 7 days. Show monthly cost of each underutilized resource.\""
+}

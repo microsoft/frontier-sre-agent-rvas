@@ -1,0 +1,10 @@
+{
+  "slug": "resources-with-highest-cost-increase",
+  "title": "Resources with highest cost increase",
+  "category": "billing-cost",
+  "category_label": "Billing and Cost",
+  "mode": "Hybrid",
+  "frequency": "Daily + alert >30% WoW",
+  "description": "Identifies individual resources with the sharpest cost growth, catching runaway spending early.",
+  "example_prompt": "\"Identify the top 20 resources with the highest absolute cost increase week-over-week across all subscriptions. For each, show resource name, type, previous week cost, current week cost, delta, and percentage increase.\""
+}

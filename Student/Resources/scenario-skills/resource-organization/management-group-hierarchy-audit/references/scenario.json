@@ -1,0 +1,10 @@
+{
+  "slug": "management-group-hierarchy-audit",
+  "title": "Management Group hierarchy audit",
+  "category": "resource-organization",
+  "category_label": "Resource Organization",
+  "mode": "Scheduled",
+  "frequency": "Monthly",
+  "description": "Validates the MG hierarchy structure, finding misplaced subscriptions or empty management groups.",
+  "example_prompt": "\"Show the full Management Group hierarchy tree. For each MG, show: child subscription count, policies assigned, and RBAC roles. Flag: (1) empty MGs with no children, (2) subscriptions directly under root MG, (3) MGs with conflicting policies compared to parent.\""
+}

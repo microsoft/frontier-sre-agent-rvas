@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "scope": {"subscription_ids": ["00000000-0000-0000-0000-000000000000"]},
+  "resource_ids": ["/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/synthetic/providers/Microsoft.ContainerService/managedClusters/example"],
+  "window_start": "2026-10-01T00:00:00Z",
+  "window_end": "2026-10-02T00:00:00Z",
+  "collected_at": "2026-10-02T00:05:00Z",
+  "collection_complete": true,
+  "collection_truncated": false,
+  "collection_limitations": [],
+  "evidence": [{"source": "Synthetic namespace pod snapshots only", "collected_at": "2026-10-02T00:05:00Z"}],
+  "thresholds": {"restart_threshold": 2},
+  "data": {"pods": [{"uid": "synthetic-pod-uid", "name": "example-pod", "phase": "Running", "ready": true, "waiting_reason": "", "recent_oom_kills": 0, "restart_delta": 0}]}
+}

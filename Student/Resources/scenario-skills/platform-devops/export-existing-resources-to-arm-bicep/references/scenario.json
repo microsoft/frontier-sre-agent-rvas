@@ -1,0 +1,10 @@
+{
+  "slug": "export-existing-resources-to-arm-bicep",
+  "title": "Export existing resources to ARM/Bicep",
+  "category": "platform-automation",
+  "category_label": "Platform Automation",
+  "mode": "On-demand",
+  "frequency": "During IaC adoption",
+  "description": "Exports running infrastructure to IaC templates for adopting infrastructure-as-code on existing environments.",
+  "example_prompt": "\"Export resource group '{rg_name}' to {Bicep/ARM}. Clean up the export: (1) remove read-only and auto-generated properties, (2) parameterize names, SKUs, and locations, (3) add missing dependencies between resources, (4) organize into modules by resource type. Generate the parameter file with current values.\""
+}

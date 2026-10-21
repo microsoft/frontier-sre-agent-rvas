@@ -1,0 +1,10 @@
+{
+  "slug": "failed-deployments-in-last-24h",
+  "title": "Failed deployments in last 24h",
+  "category": "platform-automation",
+  "category_label": "Platform Automation",
+  "mode": "Scheduled",
+  "frequency": "Daily",
+  "description": "Surfaces ARM deployment failures with error details to catch broken CI/CD pipelines or misconfigurations early.",
+  "example_prompt": "\"List all ARM deployments in 'Failed' state across all subscriptions in the last 24 hours. For each, show: resource group, deployment name, timestamp, error code, error message, and correlation ID. Group by error code to identify patterns.\""
+}

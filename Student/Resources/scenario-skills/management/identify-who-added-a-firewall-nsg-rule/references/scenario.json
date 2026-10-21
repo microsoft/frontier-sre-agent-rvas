@@ -1,0 +1,10 @@
+{
+  "slug": "identify-who-added-a-firewall-nsg-rule",
+  "title": "Identify who added a firewall/NSG rule",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "Event-driven",
+  "frequency": "On NSG change alert",
+  "description": "Traces network security rule changes to the specific user and timestamp for security investigation.",
+  "example_prompt": "\"Query the Activity Log for operations on NetworkSecurityGroups and AzureFirewall resources in the last 48 hours. For each rule addition or modification, show: timestamp, caller, resource name, rule name, source/destination configured, and ports.\""
+}

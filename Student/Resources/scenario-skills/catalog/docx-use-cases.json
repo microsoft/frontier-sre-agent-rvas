@@ -1,0 +1,259 @@
+{
+  "document": "Azure SRE Agent - Use Cases.docx",
+  "reviewed_on": "2026-10-21",
+  "scope": "Use case coverage, not a claim that every integration or automated action is configured.",
+  "use_cases": [
+    {
+      "number": 1,
+      "title": "Vulnerability Management (Zero Vulnerabilities Initiative)",
+      "scenario_ids": [
+        "vulnerability-management"
+      ],
+      "coverage": "Added a vulnerability backlog and approval workflow beyond the existing posture snapshot."
+    },
+    {
+      "number": 2,
+      "title": "Bridging Azure Expertise Gaps in DevOps Teams",
+      "scenario_ids": [
+        "workload-context-consultation",
+        "incident-management-rca"
+      ],
+      "coverage": "Shared workload consultation and incident workflow, with evidence and owner approval."
+    },
+    {
+      "number": 3,
+      "title": "Cost Optimization",
+      "scenario_ids": [
+        "cost-anomaly-detection",
+        "underutilized-resources-detection",
+        "disk-tier-down-opportunities"
+      ],
+      "coverage": "Existing cost scenarios, supplemented by the imported FinOps skill."
+    },
+    {
+      "number": 4,
+      "title": "Incident Management and RCA",
+      "scenario_ids": [
+        "incident-management-rca",
+        "post-incident-review-automation"
+      ],
+      "coverage": "Added the incident investigation entry point and reused incident and postmortem skills."
+    },
+    {
+      "number": 5,
+      "title": "Leveraging Historical Operational Data",
+      "scenario_ids": [
+        "historical-operational-patterns"
+      ],
+      "coverage": "Added historical signal analysis using the recurring incidents skill; counts are not distinct incident counts."
+    },
+    {
+      "number": 6,
+      "title": "Context-Aware Consultation",
+      "scenario_ids": [
+        "workload-context-consultation"
+      ],
+      "coverage": "Uses the same consultation workflow as the Azure expertise use case, without a duplicate scenario."
+    },
+    {
+      "number": 7,
+      "title": "Health Checks (WAF Alignment)",
+      "scenario_ids": [
+        "well-architected-health-check"
+      ],
+      "coverage": "Added a WAF review entry point using the imported curated assessment, not a certification."
+    },
+    {
+      "number": 8,
+      "title": "Defender and Advisor Recommendations",
+      "scenario_ids": [
+        "defender-advisor-recommendation-triage",
+        "defender-for-cloud-assessment"
+      ],
+      "coverage": "Added cross source recommendation triage; the existing Defender assessment remains available."
+    },
+    {
+      "number": 9,
+      "title": "CI/CD Pipeline Failure Assistance",
+      "scenario_ids": [
+        "cicd-pipeline-failure-investigation",
+        "failed-deployments-in-last-24h"
+      ],
+      "coverage": "Added build and task evidence beyond ARM deployment failures."
+    },
+    {
+      "number": 10,
+      "title": "Handling Standard Platform Requests",
+      "scenario_ids": [
+        "standard-platform-request-planning",
+        "azure-firewall-rule-generation"
+      ],
+      "coverage": "Added request validation, change planning and documentation handoff; applying changes requires separate approval."
+    },
+    {
+      "number": 11,
+      "title": "Supporting Lifecycle Management (CCoE Alignment)",
+      "scenario_ids": [
+        "lifecycle-ccoe-alignment",
+        "policy-compliance-state-monitoring"
+      ],
+      "coverage": "Added lifecycle and governance ownership tracking; current support evidence and change approval remain required."
+    }
+  ],
+  "integration_boundary": {
+    "systems": [
+      "ServiceNow",
+      "Jira",
+      "Confluence",
+      "Azure DevOps",
+      "SharePoint",
+      "Teams",
+      "Outlook"
+    ],
+    "handling": "Integration context, not extra scenarios. Only use configured, authorized connectors. Draft tickets, documentation and notifications locally until destination and delivery are approved."
+  },
+  "scenarios": [
+    {
+      "id": "vulnerability-management",
+      "skills": [
+        "vulnerability-management",
+        "defender-for-cloud-assessment"
+      ],
+      "category": "security",
+      "title": "Vulnerability management",
+      "description": "Build an evidence backed vulnerability backlog, prioritize owner actions, and plan approved remediation and verification without claiming zero vulnerabilities from incomplete coverage.",
+      "samplePrompt": "Review vulnerability findings for the approved subscriptions and workloads. Record scan coverage and freshness, deduplicate resource and vulnerability identifiers, prioritize known exposure and severity, and draft remediation, rollback and validation steps for owner approval. Do not scan actively, patch, change resources or create tickets without separate approval.",
+      "timeSaved": "High",
+      "mode": "Scheduled",
+      "frequency": "Weekly or after an approved security review",
+      "topPick": false,
+      "timeSavedEstimate": "Heuristic rating for consolidating findings and preparing an owner backlog; scanning, patching and verification are not included."
+    },
+    {
+      "id": "workload-context-consultation",
+      "skills": [
+        "workload-context-consultation"
+      ],
+      "category": "management",
+      "title": "Workload context and Azure consultation",
+      "description": "Ground Azure guidance in the approved workload inventory, objectives and current Microsoft guidance, separating facts from hypotheses and proposed changes.",
+      "samplePrompt": "For the approved workload, explain the relevant Azure components and investigate this question using approved configuration, telemetry and current Microsoft guidance. State evidence, missing context, alternatives and a bounded recommendation. Draft any required platform team handoff; do not apply a fix.",
+      "timeSaved": "Medium",
+      "mode": "On-demand",
+      "frequency": "When a workload team needs contextual Azure guidance",
+      "topPick": true,
+      "timeSavedEstimate": "Heuristic rating for assembling workload context and guidance; customer decisions and change execution are not included."
+    },
+    {
+      "id": "incident-management-rca",
+      "skills": [
+        "incident-triage-rca",
+        "blameless-postmortem-writer"
+      ],
+      "category": "management",
+      "title": "Incident management and root cause analysis",
+      "description": "Build an incident evidence timeline, assess probable causes and safe mitigation options, then prepare a reviewed stakeholder report without treating correlation as proof.",
+      "samplePrompt": "Investigate the approved incident, affected resource IDs and UTC window. Gather health and change evidence, build a timeline, distinguish observations from probable causes, and identify approved runbooks and mitigation options. Prepare an incident report and postmortem draft. Do not run remediation or send updates without separate approval.",
+      "timeSaved": "High",
+      "mode": "On-demand",
+      "frequency": "During and after an incident",
+      "topPick": false,
+      "timeSavedEstimate": "Heuristic rating for evidence correlation and report drafting; mitigation execution and a confirmed root cause are not guaranteed."
+    },
+    {
+      "id": "historical-operational-patterns",
+      "skills": [
+        "recurring-incident-patterns"
+      ],
+      "category": "management",
+      "title": "Historical operational patterns",
+      "description": "Review retained alerts, health evidence and approved incident records to identify repeat investigation targets and possible long term improvements.",
+      "samplePrompt": "Analyze the approved historical operational evidence and UTC window. Rank recurring resource signals, document source retention and coverage, and correlate with supplied incident records where available. Separate repeated alerts from distinct incidents and propose owner reviewed prevention work.",
+      "timeSaved": "Medium",
+      "mode": "Scheduled",
+      "frequency": "Monthly using supported retained evidence windows",
+      "topPick": false,
+      "timeSavedEstimate": "Heuristic rating for aggregating historical signals; reconstructing unavailable history and implementing prevention work are not included."
+    },
+    {
+      "id": "well-architected-health-check",
+      "skills": [
+        "well-architected-review"
+      ],
+      "category": "management",
+      "title": "Well Architected workload health check",
+      "description": "Review a curated set of workload checks across the five Well Architected pillars and prioritize evidence backed recommendations with explicit unassessed coverage.",
+      "samplePrompt": "Run an approved, scoped Well Architected health review using the available curated checks. Record assessed and unassessed coverage for every pillar, separate posture from tested runtime resilience, and prepare a prioritized improvement backlog. Do not call this a certification or apply recommendations.",
+      "timeSaved": "High",
+      "mode": "Scheduled",
+      "frequency": "At an agreed review cadence",
+      "topPick": false,
+      "timeSavedEstimate": "Heuristic rating for collecting a curated posture review; a complete architecture review and remediation remain separate work."
+    },
+    {
+      "id": "defender-advisor-recommendation-triage",
+      "skills": [
+        "defender-advisor-recommendation-triage",
+        "defender-for-cloud-assessment"
+      ],
+      "category": "management",
+      "title": "Defender and Advisor recommendation triage",
+      "description": "Consolidate current Defender and Advisor recommendations into an owner backlog while preserving source severity, overlap, missing coverage and approval requirements.",
+      "samplePrompt": "Read current Defender and Advisor recommendations for the approved subscriptions. Preserve each source ID and observed priority, group overlapping actions without adding duplicate benefits, and draft an owner backlog with prerequisites, risk and validation. Do not dismiss recommendations or execute changes.",
+      "timeSaved": "Medium",
+      "mode": "Scheduled",
+      "frequency": "Weekly",
+      "topPick": true,
+      "timeSavedEstimate": "Heuristic rating for consolidating and prioritizing recommendations; achieved cost or security outcomes are not included."
+    },
+    {
+      "id": "cicd-pipeline-failure-investigation",
+      "skills": [
+        "cicd-pipeline-failure-investigation"
+      ],
+      "category": "platform-devops",
+      "title": "CI/CD pipeline failure investigation",
+      "description": "Inspect an approved build timeline and bounded task logs to identify the first evidenced failure, distinguish downstream symptoms and draft a safe fix proposal.",
+      "samplePrompt": "Investigate the supplied Azure DevOps build in the approved organization and project using its timeline and relevant log ranges. Identify the first failed task, compare with a supplied successful build, and separate application, dependency, identity and deployment hypotheses. Redact secrets. Do not rerun, edit a pipeline, change a service connection or bypass approvals.",
+      "timeSaved": "High",
+      "mode": "On-demand",
+      "frequency": "After a failed pipeline run",
+      "topPick": false,
+      "timeSavedEstimate": "Heuristic rating for timeline and log correlation; pipeline fixes, reruns and deployments are not included."
+    },
+    {
+      "id": "standard-platform-request-planning",
+      "skills": [
+        "standard-platform-request-planning",
+        "pre-change-readiness"
+      ],
+      "category": "platform-devops",
+      "title": "Standard platform request planning",
+      "description": "Validate a platform request against approved policies and conventions, draft the smallest change and rollback plan, and prepare repository and documentation updates for review.",
+      "samplePrompt": "Review this standard platform request for the approved workload and scope. Confirm intent, owner, naming and policy requirements, inspect current configuration, and draft the exact proposed change, risk, rollback and validation plan with repository and documentation handoff. Do not change NSGs, firewalls, repositories or tickets without separate approval.",
+      "timeSaved": "Medium",
+      "mode": "On-demand",
+      "frequency": "When a standard platform request is raised",
+      "topPick": false,
+      "timeSavedEstimate": "Heuristic rating for request validation and change drafting; approval, implementation and post change testing remain separate."
+    },
+    {
+      "id": "lifecycle-ccoe-alignment",
+      "skills": [
+        "deprecation-retirement-tracker",
+        "policy-compliance-state-monitoring",
+        "tag-governance-compliance"
+      ],
+      "category": "governance",
+      "title": "Lifecycle and CCoE alignment",
+      "description": "Track evidenced platform lifecycle and governance actions against the approved CCoE backlog, assigning owners and verification steps without assuming current support status.",
+      "samplePrompt": "Review the approved workload inventory against current dated lifecycle evidence and supplied CCoE requirements. Use deprecation tracking for lifecycle evidence and the mapped policy workflow for governance evidence. Keep unknown support states explicit, prioritize owner actions and draft a tracked implementation and verification plan. Do not migrate resources, remediate policies or update external backlogs without approval.",
+      "timeSaved": "Medium",
+      "mode": "Scheduled",
+      "frequency": "Monthly and before relevant lifecycle deadlines",
+      "topPick": false,
+      "timeSavedEstimate": "Heuristic rating for consolidating lifecycle and governance evidence; migrations, follow ups and change implementation are not included."
+    }
+  ],
+  "document_sha256": "ca795bc5477efffa73e5b7a62cc80389378cc3601c2019efef9c3f516a73a1e0"
+}

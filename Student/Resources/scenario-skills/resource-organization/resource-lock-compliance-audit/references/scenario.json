@@ -1,0 +1,10 @@
+{
+  "slug": "resource-lock-compliance-audit",
+  "title": "Resource lock compliance audit",
+  "category": "resource-organization",
+  "category_label": "Resource Organization",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Ensures production resources have appropriate delete locks to prevent accidental deletion.",
+  "example_prompt": "\"Check all resources in subscriptions tagged 'Environment=Production'. Identify resources of type VM, SQL Server, Storage Account, Key Vault, and AKS that do NOT have a CanNotDelete or ReadOnly lock. Show resource name, type, RG, and recommend lock type.\""
+}

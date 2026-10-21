@@ -1,0 +1,65 @@
+{
+  "provenance": "original-extension",
+  "scenarios": [
+    {
+      "slug": "slo-error-budget-analysis",
+      "title": "SLO and error budget analysis",
+      "category": "management",
+      "mode": "Scheduled",
+      "frequency": "Daily or during an incident",
+      "description": "Assess service level objectives and error budget consumption from approved reliability evidence, preserving missing observations and operator supplied targets.",
+      "prompt": "",
+      "provenance": "original-extension"
+    },
+    {
+      "slug": "backup-restore-validation",
+      "title": "Backup and restore validation",
+      "category": "management",
+      "mode": "On demand",
+      "frequency": "After an approved restore exercise or backup review",
+      "description": "Review backup evidence and completed restore exercises against recovery objectives without initiating a restore or treating a successful backup as proof of recoverability.",
+      "prompt": "",
+      "provenance": "original-extension"
+    },
+    {
+      "slug": "release-regression-detection",
+      "title": "Release regression detection",
+      "category": "management",
+      "mode": "On demand",
+      "frequency": "After a release or reported regression",
+      "description": "Compare approved baseline and release observations to identify reliability regressions while distinguishing correlation from a confirmed release cause.",
+      "prompt": "",
+      "provenance": "original-extension"
+    },
+    {
+      "slug": "aks-application-incident-triage",
+      "title": "AKS application incident triage",
+      "category": "management",
+      "mode": "On demand",
+      "frequency": "During an application incident",
+      "description": "Correlate application symptoms with approved Kubernetes workload evidence and propose bounded investigation steps without changing cluster resources.",
+      "prompt": "",
+      "provenance": "original-extension"
+    },
+    {
+      "slug": "messaging-delivery-failure-triage",
+      "title": "Messaging delivery failure triage",
+      "category": "management",
+      "mode": "On demand",
+      "frequency": "During a delivery failure or backlog investigation",
+      "description": "Investigate approved messaging delivery observations, backlog and failure evidence without consuming, resubmitting or deleting messages.",
+      "prompt": "",
+      "provenance": "original-extension"
+    },
+    {
+      "slug": "ai-inference-reliability-investigation",
+      "title": "AI inference reliability investigation",
+      "category": "management",
+      "mode": "On demand",
+      "frequency": "During an inference reliability investigation",
+      "description": "Review approved inference availability, latency and failure observations while separating service reliability evidence from model quality conclusions.",
+      "prompt": "",
+      "provenance": "original-extension"
+    }
+  ]
+}

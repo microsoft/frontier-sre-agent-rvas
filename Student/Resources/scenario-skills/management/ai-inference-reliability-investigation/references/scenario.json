@@ -1,0 +1,10 @@
+{
+  "slug": "ai-inference-reliability-investigation",
+  "title": "AI inference reliability investigation",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "On demand",
+  "frequency": "During an inference reliability investigation",
+  "description": "Review approved inference availability, latency and failure observations while separating service reliability evidence from model quality conclusions.",
+  "example_prompt": ""
+}

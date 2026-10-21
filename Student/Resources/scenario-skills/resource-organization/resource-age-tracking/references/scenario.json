@@ -1,0 +1,10 @@
+{
+  "slug": "resource-age-tracking",
+  "title": "Resource age tracking",
+  "category": "resource-organization",
+  "category_label": "Resource Organization",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Identifies long-running resources that may be forgotten, orphaned, or candidates for modernization.",
+  "example_prompt": "\"Find all resources older than {X} months (default 12) that have had no write operations in their Activity Log in the last 90 days. Show resource name, type, creation date, last activity date, and monthly cost. Flag as potential candidates for decommission review.\""
+}

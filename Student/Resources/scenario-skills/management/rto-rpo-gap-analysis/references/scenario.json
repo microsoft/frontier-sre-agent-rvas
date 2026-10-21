@@ -1,0 +1,10 @@
+{
+  "slug": "rto-rpo-gap-analysis",
+  "title": "RTO/RPO gap analysis",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "Scheduled",
+  "frequency": "Monthly",
+  "description": "Validates that disaster recovery configurations meet stated RTO/RPO targets for each critical workload.",
+  "example_prompt": "\"For all resources tagged 'Tier=Critical', assess DR posture: (1) is backup configured? frequency vs RPO target, (2) is geo-replication enabled? (3) replication lag vs RPO, (4) is there a failover plan? last DR drill date. Flag workloads where configured RPO > stated RPO target or no DR mechanism exists.\""
+}

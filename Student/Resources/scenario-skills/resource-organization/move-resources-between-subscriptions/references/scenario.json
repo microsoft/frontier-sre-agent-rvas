@@ -1,0 +1,10 @@
+{
+  "slug": "move-resources-between-subscriptions",
+  "title": "Move resources between subscriptions",
+  "category": "resource-organization",
+  "category_label": "Resource Organization",
+  "mode": "On-demand",
+  "frequency": "During reorg",
+  "description": "Validates and plans resource moves between subscriptions, checking for blockers and dependencies.",
+  "example_prompt": "\"Evaluate moving resources from resource group '{source_rg}' to subscription '{target_subscription}'. Run validation: (1) check resource types that support move, (2) identify resources that cannot be moved (locks, dependencies), (3) check quota in target subscription, (4) identify impacted RBAC and policies. Generate the move command with --validate-only first.\""
+}

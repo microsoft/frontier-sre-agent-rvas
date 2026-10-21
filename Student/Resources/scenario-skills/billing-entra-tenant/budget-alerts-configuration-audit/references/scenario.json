@@ -1,0 +1,10 @@
+{
+  "slug": "budget-alerts-configuration-audit",
+  "title": "Budget alerts configuration audit",
+  "category": "billing-cost",
+  "category_label": "Billing and Cost",
+  "mode": "Scheduled",
+  "frequency": "Monthly",
+  "description": "Ensures every subscription and critical resource group has properly configured budget alerts to prevent surprise overruns.",
+  "example_prompt": "\"Check all subscriptions and resource groups tagged 'CostCenter'. Identify those without a budget configured or where budget alerts are set above 100% only. Recommend budget amounts based on 3-month average spend + 20% buffer.\""
+}

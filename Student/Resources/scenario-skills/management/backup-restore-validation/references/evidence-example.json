@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "scope": {"subscription_ids": ["00000000-0000-0000-0000-000000000000"]},
+  "resource_ids": ["/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/synthetic/providers/Microsoft.RecoveryServices/vaults/example"],
+  "window_start": "2026-10-01T00:00:00Z",
+  "window_end": "2026-10-02T00:00:00Z",
+  "collected_at": "2026-10-02T00:05:00Z",
+  "collection_complete": true,
+  "collection_truncated": false,
+  "collection_limitations": [],
+  "evidence": [{"source": "Synthetic approved drill log and integrity check only", "collected_at": "2026-10-02T00:05:00Z"}],
+  "thresholds": {"rto_seconds": 1800, "rpo_seconds": 300},
+  "data": {
+    "restore_completed": true,
+    "isolated_target": true,
+    "integrity_passed": true,
+    "recovery_started_at": "2026-10-01T10:00:00Z",
+    "application_ready_at": "2026-10-01T10:20:00Z",
+    "loss_reference_at": "2026-10-01T10:00:00Z",
+    "recovered_through_at": "2026-10-01T09:58:00Z"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "slug": "changes-by-non-service-principal-users",
+  "title": "Changes by non-service-principal users",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "Scheduled",
+  "frequency": "Daily",
+  "description": "Identifies manual changes made by human operators that bypassed automation pipelines, a common source of drift and incidents.",
+  "example_prompt": "\"Query the Activity Log for the last 24 hours across all subscriptions. Filter for write/delete operations where the caller is NOT a service principal or managed identity. Group by caller, show operation count, resources affected, and timestamps.\""
+}

@@ -1,0 +1,10 @@
+{
+  "slug": "slo-error-budget-analysis",
+  "title": "SLO and error budget analysis",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "Scheduled",
+  "frequency": "Daily or during an incident",
+  "description": "Assess service level objectives and error budget consumption from approved reliability evidence, preserving missing observations and operator supplied targets.",
+  "example_prompt": ""
+}

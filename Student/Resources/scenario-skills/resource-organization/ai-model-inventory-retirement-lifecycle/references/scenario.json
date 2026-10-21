@@ -1,0 +1,10 @@
+{
+  "slug": "ai-model-inventory-retirement-lifecycle",
+  "title": "AI model inventory & retirement lifecycle",
+  "category": "resource-organization",
+  "category_label": "Resource Organization",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Inventories all deployed Azure OpenAI and AI Foundry model deployments across subscriptions, cross-references each model and version against the official Microsoft model retirement schedule, and flags deployments that are already deprecated, approaching retirement, or running on a version with a known successor. Helps teams plan model migrations proactively and avoid service disruptions when deprecated models stop accepting requests.",
+  "example_prompt": "\"List all Azure OpenAI and AI Foundry model deployments across all subscriptions. For each, show: resource name, resource group, model name, model version, deployment name, and deployment date. Cross-reference each model and version against the official retirement schedule at https://learn.microsoft.com/en-us/azure/foundry-classic/openai/concepts/model-retirement-schedule. Classify each deployment as: (1) 'Retired' \u2014 model version past its retirement date, (2) 'Retiring soon' \u2014 retirement date within the next 90 days, (3) 'Current' \u2014 no retirement date announced or retirement date > 90 days away. For retired and retiring-soon models, show the retirement date, recommended replacement model/version, and the number of days until retirement. Summarize total deployments by status.\""
+}

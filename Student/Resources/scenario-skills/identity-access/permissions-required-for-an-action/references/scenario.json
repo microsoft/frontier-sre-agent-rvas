@@ -1,0 +1,10 @@
+{
+  "slug": "permissions-required-for-an-action",
+  "title": "Permissions required for an action",
+  "category": "identity-access",
+  "category_label": "Identity and Access",
+  "mode": "On-demand",
+  "frequency": "During access request",
+  "description": "Determines the minimum RBAC permissions required to perform a specific Azure operation, supporting least-privilege design.",
+  "example_prompt": "\"What is the minimum RBAC role or specific permissions needed to perform: '{operation_description}'? Show: (1) required resource provider operations (e.g., Microsoft.Compute/virtualMachines/start/action), (2) matching built-in role(s), (3) if no exact match, a custom role definition JSON with minimum permissions.\""
+}

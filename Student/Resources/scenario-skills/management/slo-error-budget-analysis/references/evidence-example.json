@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "scope": {"subscription_ids": ["00000000-0000-0000-0000-000000000000"]},
+  "resource_ids": ["/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/synthetic/providers/Microsoft.Insights/components/example"],
+  "window_start": "2026-10-01T00:00:00Z",
+  "window_end": "2026-10-02T00:00:00Z",
+  "collected_at": "2026-10-02T00:05:00Z",
+  "collection_complete": true,
+  "collection_truncated": false,
+  "collection_limitations": [],
+  "evidence": [{"source": "Synthetic fixture only, not customer telemetry", "collected_at": "2026-10-02T00:05:00Z"}],
+  "thresholds": {"slo_target": 0.99},
+  "data": {"total_events": 10000, "good_events": 9950, "unknown_events": 0}
+}

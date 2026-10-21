@@ -1,0 +1,10 @@
+{
+  "slug": "effective-policies-per-scope",
+  "title": "Effective policies per scope",
+  "category": "governance",
+  "category_label": "Governance",
+  "mode": "On-demand",
+  "frequency": "During audit",
+  "description": "Shows all policies that actually apply to a specific scope, helping debug policy conflicts and understand cumulative governance.",
+  "example_prompt": "\"List all effective policies at scope '{scope}' (subscription/RG/resource). Show: policy name, assignment scope (inherited from where), effect, parameters, and exemptions if any. Identify conflicting policies (e.g., one audits and another denies the same condition).\""
+}

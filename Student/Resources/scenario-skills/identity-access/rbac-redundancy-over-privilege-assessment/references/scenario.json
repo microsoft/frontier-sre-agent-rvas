@@ -1,0 +1,10 @@
+{
+  "slug": "rbac-redundancy-over-privilege-assessment",
+  "title": "RBAC redundancy & over-privilege assessment",
+  "category": "identity-access",
+  "category_label": "Identity and Access",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Analyzes all role assignments across scopes to detect redundancies (e.g., same identity assigned Contributor at both subscription and child resource group level) and over-privileged assignments where a narrower role would suffice. Helps reduce attack surface and simplify access governance.",
+  "example_prompt": "\"Analyze all RBAC role assignments across subscriptions. Identify: (1) redundant assignments \u2014 same principal with the same or higher role at a parent scope making child-scope assignments unnecessary, (2) principals with Owner or Contributor that could operate with a narrower built-in role based on their Activity Log operations in the last 30 days, (3) multiple role assignments to the same principal at the same scope that could be consolidated. For each finding, show principal name, type, assigned roles, scopes, and recommended action.\""
+}

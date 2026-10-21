@@ -1,0 +1,10 @@
+{
+  "slug": "azure-firewall-rule-generation",
+  "title": "Azure Firewall rule generation",
+  "category": "network",
+  "category_label": "Network",
+  "mode": "On-demand",
+  "frequency": "During provisioning",
+  "description": "Generates properly structured Azure Firewall rules based on requirements, following naming conventions and best practices.",
+  "example_prompt": "\"Generate an Azure Firewall network rule to allow traffic from subnet '{source_subnet}' to '{destination}' on ports {ports}. Follow naming convention '{prefix}-{direction}-{service}'. Include the az CLI command and Bicep snippet to deploy it.\""
+}

@@ -1,0 +1,10 @@
+{
+  "slug": "data-collection-rules-audit",
+  "title": "Data collection rules audit",
+  "category": "management",
+  "category_label": "Management",
+  "mode": "Scheduled",
+  "frequency": "Weekly",
+  "description": "Validates that Data Collection Rules (DCRs) are correctly configured and associated with target resources.",
+  "example_prompt": "\"List all Data Collection Rules. For each, show: associated resources count, data sources configured, destinations, and transformation status. Flag DCRs with 0 associated resources, DCRs referencing deleted workspaces, or DCRs with no data flowing in the last 24h.\""
+}

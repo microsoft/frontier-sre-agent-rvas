@@ -1,0 +1,10 @@
+{
+  "slug": "overly-permissive-nsg-rules-audit",
+  "title": "Overly permissive NSG rules audit",
+  "category": "network",
+  "category_label": "Network",
+  "mode": "Scheduled",
+  "frequency": "Daily",
+  "description": "Identifies network security rules that are too broad, exposing resources to unnecessary risk.",
+  "example_prompt": "\"Scan all NSGs across subscriptions. Flag rules where: (1) source = 'Any' or '0.0.0.0/0' on non-load-balancer ports, (2) destination port = '*' (any), (3) priority allows wide port ranges (>100 ports). Show NSG name, rule name, direction, access, source, destination, and port range. Recommend tighter scoping.\""
+}
