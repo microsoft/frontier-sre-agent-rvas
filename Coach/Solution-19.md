@@ -7,7 +7,7 @@
 ## Purpose
 
 - Capstone: students synthesize skills, knowledge, subagents, routing, and governance into a use case that matters to them.
-- The goal is not perfection; it is a credible design plus an end-to-end demonstration.
+- Require a credible design and an end-to-end demonstration. A successful lab test does not establish production readiness.
 - Expected time: 45–60 minutes.
 
 ## Mini-Lecture (5–7 min before challenge)
@@ -27,7 +27,7 @@
 ## Common Issues and Hints
 
 - **Symptom:** Use case is too broad (“handle all outages”). **Fix:** force scope reduction to one repeating failure mode.
-- **Symptom:** Student jumps into YAML without clear operational procedure. **Fix:** make them write the human runbook first.
+- **Symptom:** Student jumps into YAML without a clear operational procedure. **Fix:** ask them to explain the investigation, validation, and escalation path before configuring it.
 - **Symptom:** They add write permissions casually. **Fix:** ask what rollback, validation, and ownership model would justify that.
 - **Symptom:** Demo is purely conceptual. **Fix:** require at least one concrete test prompt, alert simulation, or captured agent log.
 - **Symptom:** Student is stuck mapping their use case to the building-blocks table. **Fix:** suggest the `rvas-sre-agent-jumpstart` skill — it interviews the student and drafts the skill YAML, knowledge doc, and subagent configuration for them to review and refine, rather than leaving them staring at a blank table.

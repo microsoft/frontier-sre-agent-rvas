@@ -8,9 +8,7 @@
 
 ## Introduction
 
-Challenges 11 and 12 showed the agent fix a service — restart nginx, delete an NSG rule — and move on. That's remediation. This challenge goes one step further: **validated remediation**.
-
-Validated remediation means the agent doesn't just apply a fix; it verifies the fix worked, retries if the service hasn't recovered, and escalates to a human if all attempts fail. This loop — fix → validate → retry → escalate — is what turns a one-shot script into a production-grade autonomous operator.
+A remediation is not complete until recovery is verified. Test a workflow that applies a fix, checks service health, retries within a configured limit, and escalates if recovery fails.
 
 In this challenge you'll stop the Paris Parking API systemd service, watch the agent restart its VM, and observe how it confirms recovery (or handles the case where the first restart wasn't enough) before closing the incident. Unlike Challenge 10's synthetic health alert, this is a real service outage with a separate alert and response plan.
 
@@ -113,6 +111,6 @@ make restore-parking-service
 
 ## Tips
 
-- Autonomous remediation is only safe when the fix is idempotent and the validation is reliable. A VM restart is a good candidate — it's reversible, it has a clear success signal (VM back to running + service responding), and the blast radius is contained.
+- Limit autonomous remediation to tested actions with reliable validation and a defined scope. For this lab, verify both VM state and API health after a restart; a running VM alone does not establish recovery.
 - If the agent's first remediation attempt fails validation, it will retry up to the `maxAutomatedInvestigationAttempts` limit (2, for this filter). Watch for this in the portal — it's the agent's equivalent of a human trying the same fix twice before escalating.
 - The key governance control here is that write actions (`az vm restart`) are only reachable because the skill's `tools` list includes a write tool and the incident filter's `agentMode` is `Autonomous`. There is no `safety` block on the skill itself — remove either the write tool or set `agentMode: Review` to add a gate.

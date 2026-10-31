@@ -6,8 +6,7 @@
 
 ## Purpose
 
-- Turn the workshop story from chat-driven assistance into alert-driven autonomous response.
-- Students should see that a fully capable agent still does nothing automatically until incident filters and scheduled tasks exist.
+- Configure alert-driven investigations and scheduled tasks. Show that capabilities alone do not start these workflows; they need triggers.
 - Expected time: 25–30 minutes including alert propagation.
 
 ## Mini-Lecture (5–7 min before challenge)
@@ -26,7 +25,7 @@
 ## Expected Student Output
 
 - After `make incident-platforms`, Azure Monitor is configured as the agent's incident platform.
-- Before filters, `make break-food` eventually produces an unrouted incident.
+- Before filters, `make break-food` produces an Azure Monitor alert but no SRE Agent investigation.
 - After `make incident-filters`, the same `alert-food-http-5xx` routes automatically to `aca-app-incident-handler`.
 - After `make scheduled-tasks`, all six tasks appear in the portal.
 - Students can read mode and max-attempt behavior from a filter definition.

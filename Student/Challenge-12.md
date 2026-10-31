@@ -8,9 +8,7 @@
 
 ## Introduction
 
-Nothing crashes. Nothing restarts. The metrics look fine. But the application can't reach the database — and nobody knows why.
-
-Silent traffic drops caused by **Network Security Group** deny rules are among the most time-consuming incidents to investigate manually: they leave no application-level error messages, only denied flows buried in network telemetry. In this challenge you'll inject an NSG misconfiguration, watch the agent find the exact blocking rule from flow log evidence, and remediate it autonomously.
+An NSG deny rule can block database traffic while the VMs remain running. Inject this fault, then check whether the agent traces the denied flows to the exact rule, removes it, and verifies recovery.
 
 ## Description
 

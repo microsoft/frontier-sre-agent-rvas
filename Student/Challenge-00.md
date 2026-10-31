@@ -6,13 +6,11 @@
 
 ## Introduction
 
-Before the learning starts, three things must exist: your own fork of this repository, the Azure lab infrastructure, and your SRE Agent. This challenge takes care of all three.
+Create your own fork of this repository, deploy the Azure lab infrastructure, and create your SRE Agent.
 
-You'll deploy the workload infrastructure with Terraform and then create your own Azure SRE Agent. In Challenges 01 through 06 you will add capabilities to the agent, one at a time, and observe exactly what each addition unlocks. By the end of Challenge 06 you'll have built the fully configured agent from scratch.
+Deploy the workloads with Terraform, then create the agent yourself. In Challenges 01 through 06, add capabilities one at a time and compare what the agent can do before and after each addition.
 
 The lab infrastructure includes: a hub-spoke network with Azure Firewall, IaaS VMs running a web/API/DB tier, VNet Flow Logs with Traffic Analytics, the **Grubify** food-ordering app on Azure Container Apps, and the containerized **Parking Manager** solution. The Parking Manager frontend, Madrid VM, and Paris VM share a dedicated Parking VNet, isolated from the Web/API IaaS VNets and their NSGs and routes. This VNet is not peered with the hub and does not use the firewall; the VMs use their own NAT Gateway for outbound access, while the frontend uses a UDR-free integration subnet to reach the private VM-hosted APIs. All of this is provisioned by Terraform.
-
-> **Note:** The SRE Agent creation and configuration are entirely up to you.
 
 ## Description
 

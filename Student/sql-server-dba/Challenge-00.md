@@ -6,14 +6,11 @@
 
 ## Introduction
 
-An SRE agent should not receive unrestricted database access simply because it
-can explain SQL Server. In this challenge, you establish a controlled path from
-Azure SRE Agent to a dedicated workshop database through the supplied SQL
-Server MCP container.
+Connect Azure SRE Agent to a dedicated workshop database through the supplied
+SQL Server MCP container. Keep the database identity read-only.
 
-Your outcome is a healthy connector, a discoverable database profile, and
-proof that the database identity can observe diagnostic evidence but cannot
-change data or objects.
+Verify connector health, profile discovery, diagnostic access, and refusal of
+requests to change data or objects.
 
 ## Description
 

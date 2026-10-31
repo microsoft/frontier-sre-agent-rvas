@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The Frontier Azure SRE Agent Solution is a comprehensive framework designed to enhance the reliability, scalability, and performance of applications deployed on Microsoft Azure. This solution provides a set of tools, best practices, and automation scripts that enable Site Reliability Engineers (SREs) to effectively monitor, manage, and optimize their cloud infrastructure using Azure SRE agent.
+Build and test Azure SRE Agent capabilities in a hands-on lab. Use the workshop's tools, runbooks, and automation to investigate Azure workloads, respond to incidents, and review costs.
 
 ## Tracks
 
@@ -21,8 +21,8 @@ scenario ideas with ready-to-use sample prompts, sourced from
 
 ### Azure Operations track
 
-Twenty hands-on challenges with a progressive learning path: from agent
-fundamentals through advanced autonomous operations and FinOps.
+Twenty hands-on challenges cover agent fundamentals, autonomous operations,
+and FinOps.
 
 **Capability progression:** Knowledge → Skills → MCP → Subagents → Response Plans → Telemetry → Investigation → Incidents → GitHub → Code Analysis → Auto-Remediation → Scheduled Tasks → Executive Operations → FinOps
 
@@ -51,10 +51,9 @@ fundamentals through advanced autonomous operations and FinOps.
 
 ### SQL Server DBA track
 
-Ten challenges use a dedicated, read-only SQL Server MCP server to turn Azure
-SRE Agent into a database reliability specialist. The track moves from secure
-deployment and schema orientation through deterministic performance incidents
-to a build-your-own DBA agent capstone.
+Ten challenges use a dedicated, read-only SQL Server MCP server for database
+investigation. Deploy it securely, explore the schema, diagnose repeatable
+performance incidents, and build your own DBA agent.
 
 **Capability progression:** MCP trust boundary → Schema discovery → Query Store → Wait interpretation → Blocking → Index analysis → SARGability → Parameter sensitivity → Incident triage → Custom DBA agent capstone
 

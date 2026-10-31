@@ -1,10 +1,11 @@
 # Lisbon Parking API
 
-A containerized NodeJS API for the Lisbon parking facility with Azure Log Analytics integration. This API represents a single parking location and provides real-time information about parking availability, levels, and facilities.
+A containerized Node.js API for one Lisbon parking facility. It reports availability, levels,
+and facilities, and sends custom logs to Azure Log Analytics when configured.
 
 ## Features
 
-- **Real-time Parking Information** for Lisbon parking facility
+- **Parking Information** for the Lisbon facility
 - **Level Management** - Track availability across multiple parking levels
 - **Metrics Tracking**:
   - Number of levels
@@ -53,7 +54,7 @@ Copy `.env.example` to `.env` and configure:
 cp .env.example .env
 ```
 
-Required variables:
+Configuration variables (optional values are marked):
 
 - `WORKSPACE_ID` - Azure Log Analytics Workspace ID (optional, will log to console if not set)
 - `SHARED_KEY` - Azure Log Analytics Shared Key (optional)
@@ -180,7 +181,7 @@ Logs can be queried in Azure using the configured `LOG_TYPE` (default: `LisbonPa
 
 ## Architecture Notes
 
-This API represents a single parking location (Lisbon). The Parking Manager frontend will coordinate multiple such APIs for different cities to provide a centralized management interface.
+The Parking Manager frontend combines this API with the other city APIs.
 
 ## License
 

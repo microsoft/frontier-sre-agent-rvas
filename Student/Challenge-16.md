@@ -8,11 +8,9 @@
 
 ## Introduction
 
-Reactive operations wait for an alert. Proactive operations look for conditions that will become alerts — before the pager goes off.
+Review 24 hours of network telemetry without waiting for an alert. The daily report should summarize denied flows, top talkers, missing VNet coverage, unusual ports, and ingestion delays, with enough context to guide an on-call engineer's next action.
 
-The **Daily Network Health Report** demonstrates the proactive path: a scheduled task that wakes up every morning, reviews 24 hours of network telemetry, and produces a decision-ready summary — denied flows, top talkers, missing VNet coverage, unusual ports, and ingestion delays — delivered as a narrative, not a dashboard of raw metrics.
-
-While Challenge 09 generated a health report for application-layer APIs, this challenge shifts to the **network layer** — demonstrating that the same proactive reporting pattern applies across every layer of your stack, from application to infrastructure.
+Challenge 09 reported application health. This challenge applies scheduled reporting to the network.
 
 ## Description
 
@@ -98,4 +96,4 @@ You don't need to implement this — discuss the approach with your coach.
 
 - The `daily-network-observability-health` scheduled task runs at 06:00 UTC. If you want to see it execute during the workshop, you can trigger it manually from the portal's scheduled tasks section.
 - "Missing VNet coverage" is one of the most important signals in this report: if a VNet stops producing flow records, you lose visibility into that segment of the network *before* an incident occurs. The agent checks this by comparing expected VNets (from the Terraform configuration) against records actually present in `NTANetAnalytics`.
-- The report intentionally runs in `Autonomous` mode with a narrative-only prompt ("Do not change resources") — no write operations, no resource changes, just the report. This is a different safety mechanism than an `agentMode: Review` gate: it relies on prompt discipline plus a task that never asks the specialist to remediate anything. That's what makes it safe to run frequently and unattended.
+- The report runs in `Autonomous` mode with a narrative-only prompt ("Do not change resources"). Unlike an `agentMode: Review` gate, this relies on the specialist following instructions rather than withholding tool approval. Check the tool-call log for unintended writes before using this pattern unattended.

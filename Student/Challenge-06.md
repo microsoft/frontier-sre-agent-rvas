@@ -8,9 +8,9 @@
 
 ## Introduction
 
-Your agent is fully capable now — it has a connected codebase, knowledge, skills, connectors, and domain specialists. But everything so far has been chat-driven: you ask, it answers. In a real SRE environment, you can't be at the keyboard when every alert fires at 3 AM.
+Your agent has a connected codebase, knowledge, skills, connectors, and domain specialists. So far, you have started every investigation from chat. Now configure investigations to start from alerts.
 
-**Incident filters** (response plans) close that gap. Each filter watches for incoming Azure Monitor alerts that match a severity and title pattern, routes the alert to the right specialist, and launches an autonomous investigation — without a human trigger. This is the difference between an *assistant* and an *autonomous operator*.
+Incident filters (response plans) match Azure Monitor alerts by severity and title, route them to a specialist, and start an investigation in Review or Autonomous mode.
 
 In this challenge you'll first connect Azure Monitor as the incident platform, then fire an alert with no matching response plan configured. You will observe that the alert remains in Azure Monitor without creating an SRE Agent investigation, add response plans, and watch the same alert type trigger an autonomous investigation.
 
@@ -131,5 +131,5 @@ Verify under **Automation** in the portal. You should see **6 active scheduled t
 
 - The `titleContains` matching is case-insensitive. Each filter uses a distinct keyword so alerts route to the right specialist: `food` for Grubify 5xx, `nginx` for web-tier VM failures, `Denied` for VNet denied-flow spikes.
 - Severity alone does not identify the correct workflow. The two Parking plans are both Sev2, so their specific alert titles separate GitHub reporting from VM remediation.
-- `Autonomous` mode is powerful — set it only for remediation procedures that are **idempotent** and have a clear success validation step. For new or untested procedures, start with `Review` mode.
-- **Congratulations:** your agent is now fully configured. Challenges 07–19 are operational scenarios that use everything you've just built.
+- Use `Autonomous` mode only for tested, **idempotent** remediation procedures with a clear validation step. Start new or untested procedures in `Review` mode.
+- Challenges 07–19 use the capabilities you've configured in operational scenarios.

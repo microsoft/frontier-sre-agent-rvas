@@ -6,13 +6,9 @@
 
 ## Introduction
 
-Database incidents are difficult to explain when the investigator understands
-tables but not the business flow they represent. Your DBA agent can now inspect
-native metadata through MCP, but it must distinguish declared facts from
-inferred meaning.
-
-In this challenge, you turn the `stockOrders` catalog into both a technical
-schema map and a concise explanation for an operations stakeholder.
+Use the DBA agent to map the `stockOrders` schema and explain its business flow
+to an operations stakeholder. Distinguish relationships declared in native
+metadata from business meaning inferred from names or structure.
 
 ## Description
 
@@ -52,4 +48,3 @@ only after the agent completes its independent discovery.
 * Optional relationships and inferred lifecycle steps need explicit labels.
 * Use `get_object` for detail on one known relation and bounded `run_query`
   calls for broader catalog evidence.
-

@@ -53,11 +53,10 @@
                 <span class="eyebrow">RVAS — Azure SRE Agent</span>
                 <h1 class="reveal">SRE Agent Jumpstart Skill</h1>
                 <p class="lede reveal">
-                    An installable Copilot CLI plugin that interviews you about an operational need, researches
-                    the right Azure SRE Agent building blocks, and generates a reviewable plan — then, once you
-                    approve it, authors the skill YAML, knowledge docs, subagent configuration, or capability
-                    manifests for you. Useful as an optional accelerator for Challenge 19 and the SQL Server DBA
-                    capstone.
+                    Use this optional Copilot CLI plugin for Challenge 19 or the SQL Server DBA capstone.
+                    It asks about your operations problem, researches Azure SRE Agent building blocks,
+                    and proposes a plan. After you approve the plan, it drafts the skills, knowledge docs,
+                    subagent configuration, or capability manifests.
                 </p>
             </div>
         </section>
@@ -81,9 +80,8 @@ copilot plugin install rvas-sre-agent-jumpstart@rvas-sre-agent-jumpstart</pre>
 
                 <h2>Install the dependency skills</h2>
                 <p class="lede">
-                    The jumpstart skill activates two companion skills by name during its interview and research
-                    steps: <code>grilling</code> (structured interview protocol) and <code>azure-sre-agent</code>
-                    (the Azure SRE Agent documentation pointer skill). Install both with the
+                    The jumpstart skill uses <code>grilling</code> for the interview and <code>azure-sre-agent</code>
+                    for documentation research. Install both with the
                     <code>gh skill install</code> command.
                 </p>
                 <div class="scenario-prompt-block">
@@ -100,9 +98,9 @@ gh skill install MicrosoftDocs/Agent-Skills skills/azure-sre-agent --agent githu
 
                 <h2>When to use it</h2>
                 <p class="lede">
-                    Both capstones ask you to design a production-ready SRE Agent capability from scratch. The
-                    jumpstart skill is an optional accelerator in each — it does not replace or widen either
-                    track's existing trust boundaries or Success Criteria.
+                    Both capstones ask you to design and test your own agent configuration. The jumpstart
+                    skill helps draft it; you still need to meet the track's Success Criteria and preserve
+                    its trust boundaries.
                 </p>
                 <ul>
                     <li>

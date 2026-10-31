@@ -8,11 +8,9 @@
 
 ## Introduction
 
-The most dangerous failure mode in operations is **silent telemetry loss**: every dashboard is green, every alert threshold is calm, every health check passes — because no data is arriving. You're not monitoring a healthy system; you're flying blind with gauges frozen at the last known reading.
+No recent alerts may mean no telemetry is arriving, not that the system is healthy. Check timestamps and VNet coverage in Storage and Log Analytics to distinguish these cases.
 
-Continuous telemetry freshness verification is the antidote: a scheduled task that doesn't just use the monitoring pipeline, but proves that the pipeline itself is **alive, current, and complete** — end to end, from the VNet to the Log Analytics workspace.
-
-Where Challenge 16 used the monitoring pipeline to report on network health, this challenge turns the lens around and **validates the pipeline itself** — ensuring the data the agent depends on is actually flowing, end to end.
+Challenge 16 used telemetry to report network health. This challenge checks the pipeline that supplies that telemetry.
 
 ## Description
 

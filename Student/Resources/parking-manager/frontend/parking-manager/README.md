@@ -6,7 +6,7 @@ React-based frontend application for managing multiple parking facilities across
 
 - **Multi-City Management**: View and manage parking facilities for Lisbon, Madrid, Paris, and Berlin
 - **Chaos Backoffice**: Configure and trigger chaos scenarios (latency/error injection) per city
-- **Real-Time Updates**: Auto-refresh every 30 seconds
+- **Automatic Updates**: Refresh every 30 seconds
 - **Interactive Dashboard**: Occupancy rates, available slots, and facility details
 - **Level Management**: Update availability for individual parking levels
 - **Responsive Design**: Works on desktop and mobile devices
@@ -29,7 +29,8 @@ The frontend consists of two parts:
 | `/api/chaos-control` | Chaos Control | 3090 |
 | `/api/vm-health-control` | VM Health Control | 3095 |
 
-Backend URLs are configured via environment variables (see below). The proxy handles timeouts and surfaces meaningful errors when a backend service is unreachable.
+Configure backend URLs with the environment variables below. The proxy reports timeouts and
+unreachable backend services.
 
 ## Quick Start (Local)
 

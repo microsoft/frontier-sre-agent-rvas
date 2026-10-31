@@ -8,9 +8,9 @@
 
 ## Introduction
 
-Your agent is generalist. It handles everything — network, application, cost, code analysis — with the same set of tools and the same system prompt. For simple queries this works, but for complex domain investigations it's a problem: a generalist network diagnosis is shallower than one done by an agent whose entire identity, toolset, and runbooks are focused on network forensics.
+The main agent handles network, application, cost, and code questions with one configuration. Subagents let you give each domain its own instructions, tools, and runbooks.
 
-**Subagents** are named domain specialists. Each has a scoped system prompt, a curated toolset, and a deep knowledge of one failure domain. When you invoke one, you're handing the investigation to an expert — and the agent platform routes incoming alerts to the right expert automatically, based on incident filter rules you'll configure in Challenge 06.
+Invoke a named subagent to use its domain-specific configuration. In Challenge 06, incident filter rules will route incoming alerts to these subagents automatically.
 
 ## Description
 
@@ -28,7 +28,7 @@ What are the first 5 steps you would take to investigate a database connectivity
 
 Without subagents configured, `/agent network-traffic-analyst` will fail or give a generalist answer — no specialist with that name exists.
 
-Also note: if you ask the main agent to investigate a network issue, it answers with generic advice rather than the precise VNet Flow Log KQL queries and effective-route analysis a real network specialist would start with.
+Also ask the main agent to investigate a network issue. Compare its answer with the specialist's VNet Flow Log queries and effective-route analysis after deployment.
 
 ### Step 2 — Add the subagents
 
@@ -48,7 +48,7 @@ Verify in the portal under **Subagents** — you should see all **12** listed.
 What are the first 5 steps you would take to investigate a database connectivity failure from the app tier?
 ```
 
-Now you get a network-expert response: VNet Flow Log queries, effective route checks, NSG rule analysis, next-hop validation — not generic advice.
+Look for VNet Flow Log queries, effective route checks, NSG rule analysis, and next-hop validation.
 
 Compare this response to what the main agent gave in Step 1.
 
@@ -60,7 +60,7 @@ Compare this response to what the main agent gave in Step 1.
 The Grubify API is returning HTTP 503. Walk me through your first 3 investigation steps.
 ```
 
-The Container Apps specialist will jump directly to `ContainerAppHTTPLogs` KQL, replica health, and ingress status — exactly what a Container Apps expert would do.
+Look for `ContainerAppHTTPLogs` queries, replica health checks, and ingress status.
 
 ### Step 5 — Understand the specialist roster
 
@@ -88,7 +88,7 @@ The agent should list all **11** specialists. The roster includes:
 
 ### Step 6 — Inspect a subagent definition in the portal
 
-In the portal under **Sub Agents**, click `network-traffic-analyst` to view its configuration. Note the `system_prompt` or `instructions`, `skills`, and `tools` fields. The system prompt is what makes this agent a network expert rather than a generalist.
+In the portal under **Sub Agents**, click `network-traffic-analyst` to view its configuration. Note how the `system_prompt` or `instructions`, `skills`, and `tools` fields define its network investigation scope.
 
 ## Success Criteria
 
@@ -106,6 +106,6 @@ In the portal under **Sub Agents**, click `network-traffic-analyst` to view its 
 
 ## Tips
 
-- The `system_prompt` field in the subagent YAML is the most important field. It is what makes a specialist an expert rather than a generalist with a different name.
+- The `system_prompt` field defines the specialist's role and investigation approach. Read it alongside the tool grants and skills.
 - You invoke a specialist with `/agent <name>`. Use `@<name>:` as an inline prefix for the same effect. Type `/agent` (no name) to return to the main agent.
 - After this challenge: the agent has identity, knowledge, skills, connectors, and domain specialists — but all interactions are still chat-driven. Alerts don't automatically trigger investigations yet. That's Challenge 06.

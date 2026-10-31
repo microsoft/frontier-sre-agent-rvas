@@ -8,9 +8,9 @@
 
 ## Introduction
 
-An alert fires, the agent investigates, and then… what? In a mature SRE practice, every incident generates a traceable artifact: a GitHub issue that captures the root cause, the timeline, the remediation steps, and the follow-up work. That artifact is what turns a one-off incident into institutional knowledge.
+Trigger a Parking Manager incident and have the agent create or update a GitHub issue. The issue should record the evidence, timeline, root cause or hypothesis, remediation already applied, and recommended next steps.
 
-In this challenge you'll trigger a Parking Manager incident and direct the agent to open a GitHub issue from the alert — closing the loop between monitoring and the engineering backlog without a human copy-pasting between tools.
+This workflow hands the incident to engineering; it does not restart a VM.
 
 ## Description
 

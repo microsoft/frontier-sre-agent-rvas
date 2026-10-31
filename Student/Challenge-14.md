@@ -8,9 +8,7 @@
 
 ## Introduction
 
-This is the strongest "wow" challenge. An application failure that starts as a spike in HTTP 5xx errors becomes a full root-cause investigation: from the alert, through container logs and Application Insights telemetry, all the way to the specific line of code that causes an out-of-memory crash — and ends with a GitHub issue linking the evidence to the code.
-
-No human switches tools. No copy-paste between dashboards and editors. The agent connects all three planes — **observability**, **infrastructure**, and **source code** — in a single autonomous thread.
+Investigate a Grubify HTTP 5xx spike from alert to source code. The agent should correlate container logs and Application Insights with the code path that causes an out-of-memory crash, then open a GitHub issue linking the evidence to the code.
 
 ## Description
 
@@ -93,6 +91,6 @@ make food-status
 
 ## Tips
 
-- The `aca-app-incident-handler → source-fix-delivery` handoff is the most sophisticated pattern in this lab. The agent uses the skill, which then focuses exclusively on the code. This division of expertise is what makes the pattern scalable.
+- The `aca-app-incident-handler → source-fix-delivery` handoff separates the incident investigation from the focused source-code work.
 - The scheduled task `triage-grubify-issues` (cron `0 */12 * * *`) runs independently of this challenge and continuously triages `[Customer Issue]` backlog items. You may see it interleave with your incident during the demo — that's expected behavior.
 - If the GitHub issue is created but missing the code reference, confirm the `grubify` repository link is active in the portal and the OAuth connector has `repo` scope.

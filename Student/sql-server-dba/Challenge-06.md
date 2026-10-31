@@ -6,10 +6,9 @@
 
 ## Introduction
 
-An index cannot help when a predicate prevents SQL Server from seeking into it,
-and a data-type mismatch can add conversion work or distort cardinality
-estimates. These defects often look like an indexing problem until the query
-shape is examined.
+A predicate can prevent SQL Server from seeking into an index. A data-type
+mismatch can add conversion work or distort cardinality estimates. Examine
+the query shape before treating either pattern as a missing-index problem.
 
 In this challenge, you diagnose both patterns and create a safe handoff for the
 application owner.
@@ -47,4 +46,3 @@ the DBA agent to:
 * Ask which side of a comparison SQL Server converts.
 * Estimated plans show compilation choices, not actual runtime row counts.
 * A safe recommendation includes a testable query rewrite, not only a label.
-
