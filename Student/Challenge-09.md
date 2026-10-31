@@ -8,11 +8,9 @@
 
 ## Introduction
 
-SRE practice is built on measurement. Before you can define reliability targets, you need a consistent, repeatable way to measure the health of every service in your fleet — every day, not just when something breaks.
+Generate a daily health report for Parking Manager's backend APIs. Compare CPU, memory, request volume, response time, and error rate in one table, then explain the thresholds used to assign each API a health status.
 
-In this challenge you'll ask the agent to generate a **daily health report** for the Parking Manager's backend APIs, producing the kind of summary an on-call engineer would want to read every morning: service by service, with CPU, memory, request volume, and response time in a single consolidated view.
-
-Unlike Challenge 08 (which traced topology and dependencies for a single app), this challenge focuses on **multi-service SLI/SLO-style health scoring** — producing the kind of at-a-glance fleet summary an on-call engineer reads every morning.
+Challenge 08 mapped dependencies. This challenge measures health across services and introduces SLI/SLO concepts.
 
 ## Description
 
@@ -67,7 +65,7 @@ How would you configure a scheduled task to run this health report every morning
 
 Compare the agent's description to the scheduled task configurations already in the lab — browse them in the portal under **Automation**.
 
-You can tell the agent to create the scheduled  task:
+You can ask the agent to create the scheduled task:
 
 ```text
 Create this scheduled task.

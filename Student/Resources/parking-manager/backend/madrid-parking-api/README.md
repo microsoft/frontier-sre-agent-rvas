@@ -1,10 +1,11 @@
 # Madrid Parking API
 
-A NodeJS API for the Madrid parking facility designed to run on **Windows Server** with **Windows Event Viewer** logging. This API represents a single parking location and provides real-time information about parking availability, levels, and facilities.
+A Node.js API for one Madrid parking facility. It reports availability, levels, and facilities,
+and uses Windows Event Viewer logging on Windows Server.
 
 ## Features
 
-- **Real-time Parking Information** for Madrid parking facility
+- **Parking Information** for the Madrid facility
 - **Level Management** - Track availability across multiple parking levels
 - **Windows Event Viewer Logging** - All operations logged to Windows Event Viewer
 - **Cross-Platform Fallback** - Console logging when not running on Windows
@@ -19,7 +20,7 @@ A NodeJS API for the Madrid parking facility designed to run on **Windows Server
 
 ## Windows Event Viewer Integration
 
-This API is specifically designed for Windows Server and logs all operations to the Windows Event Viewer for centralized monitoring and diagnostics.
+On Windows Server, the API writes operation logs to Windows Event Viewer.
 
 ### Event Types Logged
 
@@ -80,7 +81,7 @@ Environment variables:
 
 ### 3. Register Windows Event Source (Windows Only)
 
-**⚠️ This step requires administrator privileges on Windows**
+**This step requires administrator privileges on Windows.**
 
 ```bash
 # Run as Administrator
@@ -274,7 +275,7 @@ To run behind IIS using iisnode:
 
 ## Architecture Notes
 
-This API represents a single parking location (Madrid). The Parking Manager frontend will coordinate multiple such APIs for different cities to provide a centralized management interface.
+The Parking Manager frontend combines this API with the other city APIs.
 
 **Key Differences from Lisbon API:**
 - Uses Windows Event Viewer instead of Azure Log Analytics

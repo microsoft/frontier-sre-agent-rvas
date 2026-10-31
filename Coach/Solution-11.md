@@ -7,7 +7,7 @@
 ## Purpose
 
 - Demonstrate the difference between platform health and guest-OS service health.
-- This challenge is the cleanest example of why Syslog and AMA matter: Azure sees a running VM while nginx is dead inside it.
+- Use Syslog and AMA to detect stopped nginx services on running VMs.
 - Expected time: 20–25 minutes.
 
 ## Mini-Lecture (3–5 min before challenge)

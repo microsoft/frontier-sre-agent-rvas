@@ -1,14 +1,16 @@
 # Berlin Parking API
 
-A containerized NodeJS API for the Berlin parking facility with OpenTelemetry metrics. This API represents a single parking location and provides real-time information about parking availability, levels, and facilities. **Unlike other parking APIs in this project, this API does NOT integrate with Azure Log Analytics** and instead exposes metrics in OpenTelemetry format for external monitoring systems.
+A containerized Node.js API for one Berlin parking facility. It reports availability, levels,
+and facilities, logs to the console, and exposes OpenTelemetry-format metrics for external
+monitoring. It does not integrate with Azure Log Analytics.
 
 ## Features
 
 - **Standard Parking Management APIs** - Same REST API as other parking facilities
-- **OpenTelemetry Metrics** - Comprehensive metrics exposed in OpenTelemetry format
+- **OpenTelemetry Metrics** - Metrics exposed in OpenTelemetry format
 - **Console Logging Only** - No Azure Log Analytics integration
-- **Real-time Simulation** - Parking activity simulation (updates every 5 seconds)
-- **Docker Ready** - Containerized for easy deployment
+- **Parking Simulation** - Updates every 5 seconds
+- **Docker** - Containerized deployment
 - **Business Metrics** - Track occupancy rates, car movements, and trends
 - **Infrastructure Metrics** - Mocked CPU, memory, and disk usage
 - **Health Checks** - Built-in health check endpoint
@@ -174,10 +176,10 @@ Update parking configuration.
 
 ### OpenTelemetry Metrics API
 
-This endpoint is **NOT** consumed by the frontend. It's designed for external monitoring systems to scrape metrics.
+External monitoring systems use this endpoint to retrieve metrics; the frontend does not use it.
 
 #### `GET /metrics/opentelemetry`
-Get comprehensive metrics in OpenTelemetry format.
+Get metrics in OpenTelemetry format.
 
 **Response:** (Abbreviated example)
 ```json

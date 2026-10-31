@@ -6,8 +6,7 @@
 
 ## Purpose
 
-- Deliver the end-to-end “wow” moment: telemetry → failing endpoint → source code evidence → GitHub artifact.
-- This challenge demonstrates multi-plane reasoning better than any other in the workshop.
+- Trace the failure from telemetry to endpoint and source code, then record the evidence in a GitHub issue.
 - Expected time: 25–30 minutes.
 
 ## Mini-Lecture (5–7 min before challenge)

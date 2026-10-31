@@ -7,7 +7,7 @@
 ## Purpose
 
 - Demonstrate proactive operations: the agent scans for patterns before a specific incident is raised.
-- This is also the clearest reuse case for `network-traffic-analyst` beyond break/fix work.
+- Reuse `network-traffic-analyst` for reporting as well as incident response.
 - Expected time: 20 minutes.
 
 ## Mini-Lecture (3–5 min before challenge)
@@ -15,7 +15,7 @@
 - Name the scheduled task exactly: `daily-network-observability-health`, cron `0 6 * * *`, agent `network-traffic-analyst`, mode `Autonomous`.
 - Explain the five report dimensions students should hear: denied flows, top talkers, missing VNet coverage, unusual ports, ingestion delays.
 - Connect it to earlier labs: historical artifacts from NSG/UDR faults may still appear inside a 24-hour window.
-- Clarify that the task's safety comes from its narrative-only prompt ("Do not change resources") and the subagent having no write path invoked for this task — not from an `agentMode: Review` gate, since this task is configured `Autonomous`.
+- The task is `Autonomous`, not gated by `agentMode: Review`. Its narrative-only prompt ("Do not change resources") instructs the specialist not to write; inspect the tool log to verify compliance.
 
 ## Expected Student Output
 

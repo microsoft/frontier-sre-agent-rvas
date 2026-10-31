@@ -7,7 +7,7 @@
 ## Purpose
 
 - Teach that skills are reusable operational procedures with declared tools; custom-agent grants and trigger mode enforce the execution boundary.
-- This challenge converts the agent from “can explain” to “can actually investigate.”
+- Check that the agent runs an investigation rather than only describing one.
 - Expected time: 20 minutes.
 
 ## Mini-Lecture (3–5 min before challenge)

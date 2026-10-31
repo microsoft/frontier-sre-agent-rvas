@@ -6,8 +6,7 @@
 
 ## Purpose
 
-- Teach FinOps-style, evidence-backed cost review with business context, not blind “downsize everything” advice.
-- This challenge is also a governance showcase: powerful analysis, zero resource modification.
+- Review cost opportunities using evidence and workload context, with no resource changes.
 - Expected time: 25–30 minutes.
 
 ## Mini-Lecture (5–7 min before challenge)

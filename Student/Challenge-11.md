@@ -8,9 +8,9 @@
 
 ## Introduction
 
-Platform health checks only tell you what Azure can see. A VM can show "Running" and "Healthy" in the portal while the service inside it is completely stopped — because the platform doesn't know about nginx, systemd, or the application process.
+A VM can show "Running" and "Healthy" in the portal while nginx is stopped. VM status alone does not establish application health.
 
-In this challenge you'll inject a guest-OS failure that the platform cannot detect, watch the agent discover it from **Syslog telemetry**, correctly assess the full blast radius (both VMs, not just the first one found), and restore the service autonomously on every affected instance.
+Stop nginx on both web VMs. Check whether the agent uses Syslog to identify both affected instances, restore the service, and verify recovery on each VM.
 
 ## Description
 

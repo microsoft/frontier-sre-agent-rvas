@@ -8,9 +8,7 @@
 
 ## Introduction
 
-Cost is a reliability metric. An overprovisioned environment wastes budget that could fund resilience improvements. An underprovisioned one risks performance degradation under load. And orphaned resources — disconnected NICs, empty load balancers, unused public IPs, stale snapshots — are both a cost problem and a security surface.
-
-In this challenge you'll run a **subscription-wide cost optimization review**: from resource inventory through actual spend, utilization, and Azure Advisor recommendations, to a prioritized savings table — grounded in business context so that recommendations are actionable, not just technically correct.
+Review subscription costs without changing resources. Combine inventory, spend, utilization, and Azure Advisor findings into a prioritized savings table. Account for workload criticality and SLAs before recommending changes: reducing capacity can affect performance and reliability.
 
 ## Description
 
@@ -39,7 +37,7 @@ Run a subscription-wide cost optimization review using the cost-optimization-met
 Recommend only — do not modify any Azure resource.
 ```
 
-> **Why a short prompt?** The ordered 8-step method and its executable calls live in the `cost-optimization` skill (`Student/Resources/azure-sre-agent-config/skills/cost-optimization.md`); the `cost-optimization-methodology.md` knowledge document holds the guardrails, de-duplication rules, confidence model, and escalation criteria used to judge each candidate. Splitting *how to find* (skill) from *how to judge* (knowledge doc) means both stay accurate independently as the lab evolves, and it demonstrates the core SRE Agent design principle: prompts describe the *goal*, skills define the *procedure*, and knowledge documents define the *judgment criteria*.
+> The `cost-optimization` skill (`Student/Resources/azure-sre-agent-config/skills/cost-optimization.md`) holds the ordered 8-step procedure and executable calls. The `cost-optimization-methodology.md` knowledge document holds guardrails, de-duplication rules, the confidence model, and escalation criteria. The prompt names the goal; these files supply the procedure and judgment criteria.
 
 ### Step 2 — Review the output
 
@@ -91,6 +89,6 @@ If I asked you to implement one of these recommendations right now, could you? I
 
 ## Tips
 
-- The `cost-optimization-methodology.md` knowledge document contains the business-context framing that makes this review actionable. Without it, recommendations are technically correct but operationally naive (e.g., "downsize the firewall" without noting it handles all spoke egress).
+- The `cost-optimization-methodology.md` knowledge document supplies business context. Check that recommendations account for dependencies, such as the firewall handling spoke egress.
 - Azure Advisor's `--refresh` flag triggers a fresh scan that takes several minutes. The review prompt explicitly says never use `--refresh` — always read cached recommendations to keep the agent run fast and reproducible.
 - Unit economics (cost per API request) require correlating Cost Management spend data with Application Insights request volume. The agent needs both data sources simultaneously, which is why the `cost-optimization` skill grants both `QueryLogAnalyticsByWorkspaceId` and `QueryAppInsightsByResourceId`.

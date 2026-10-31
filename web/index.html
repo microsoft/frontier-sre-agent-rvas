@@ -951,8 +951,8 @@
                     </p>
                     <p><a href="#requirements">Before you start: check requirements and choose your Linux environment →</a></p>
                     <div class="stats stats-4" aria-label="Lab statistics">
-                        <div class="stat"><span class="stat-num" data-count="30">30</span><span class="stat-lbl">Azure
-                                Operations Track</span></div>
+                        <div class="stat"><span class="stat-num" data-count="30">30</span><span class="stat-lbl">Challenges
+                                across both tracks</span></div>
                         <div class="stat"><span class="stat-num" data-count="6">6</span><span
                                 class="stat-lbl">Subagents</span></div>
                         <div class="stat"><span class="stat-num" data-count="8">8</span><span
@@ -963,7 +963,7 @@
                 </div>
                 <div class="hero-modules" aria-label="Scenario overview">
                     <a href="#challenges" class="hero-mod-card" style="--mod-color:#7c3aed">
-                        <div class="mod-name">Agent configuration primitives</div>
+                        <div class="mod-name">Agent configuration</div>
                         <div class="mod-count">CH-01–06 · Skills · Knowledge · MCP · Subagents</div>
                     </a>
                     <a href="#challenges" class="hero-mod-card" style="--mod-color:#1A77E3">
@@ -1019,11 +1019,10 @@
                         <div class="section-label"></div>
                         <h2 class="section-title display reveal">Azure Operations Track</h2>
                         <p class="section-desc reveal">
-                            Challenges 00–06 cover SRE Agent configuration primitives. Challenges 07–09 establish
-                            observability baselines. Challenges 10–15 are live
-                            incident scenarios spanning PaaS, IaaS, and network layers. Challenges 16–18 are
-                            advanced operational skills and automation tasks. Challenge 19 is the capstone: bring
-                            your own use case and build a production-ready agent.
+                            Configure the agent in Challenges 00–06, explore telemetry in 07–09, and investigate
+                            PaaS, IaaS, and network incidents in 10–15. Challenges 16–18 cover scheduled reporting
+                            and cost review. In Challenge 19, build and test your own use case and explain what
+                            it needs before production use.
                             Coaches: press <kbd
                                 style="font-family:var(--font-mono);font-size:.75em;background:#F5F8FE;border:1px solid #E3E6ED;padding:.1em .4em;border-radius:3px;">Shift+C</kbd>
                             to unlock solution guides.
@@ -1046,10 +1045,8 @@
                             </div>
                             <div style="display:flex;flex-direction:column;justify-content:space-between;">
                                 <p class="card-desc">
-                                    Deploy the lab workload infrastructure with Terraform, then create your own Azure
-                                    SRE Agent resource via the portal or CLI — an empty agent with zero configuration.
-                                    Generate baseline traffic to seed the observability pipeline before Challenges
-                                    01–06.
+                                    Deploy the workloads with Terraform, create your Azure SRE Agent, and generate
+                                    baseline traffic. Add the agent's capabilities in Challenges 01–06.
                                 </p>
                                 <div class="card-footer">
                                     <div class="card-tags">
@@ -1072,8 +1069,8 @@
                         </div>
                         <h3 class="card-title display">Connect Your<br>Codebase</h3>
                         <p class="card-desc">
-                            Your agent is running but isolated from source code. Connect a GitHub OAuth
-                            Connector and link your repository so the agent can read code and open pull requests.
+                            Connect GitHub and link your repository. Verify that the agent can read source code
+                            and use GitHub actions within the configured scope.
                         </p>
                         <div class="card-footer">
                             <div class="card-tags">
@@ -1094,8 +1091,8 @@
                         </div>
                         <h3 class="card-title display">Explore the<br>Knowledge Base</h3>
                         <p class="card-desc">
-                            Your agent answers from training data alone — it knows nothing about your lab.
-                            Attach knowledge documents so it gives grounded, accurate answers about your environment.
+                            Add lab knowledge documents, then compare the agent's answers before and after
+                            upload. Check resource details and citations.
                         </p>
                         <div class="card-footer">
                             <div class="card-tags">
@@ -1116,8 +1113,8 @@
                         </div>
                         <h3 class="card-title display">Discover Operational<br>Skills</h3>
                         <p class="card-desc">
-                            Your agent can answer questions but can't act. Author a skill YAML so it can
-                            execute KQL queries, inspect Container App health, and run operational runbooks.
+                            Add the supplied skills so the agent can run KQL queries, inspect Container App
+                            health, and follow operational runbooks. Test its tool and approval boundaries.
                         </p>
                         <div class="card-footer">
                             <div class="card-tags">
@@ -1138,8 +1135,8 @@
                         </div>
                         <h3 class="card-title display">Discover Connected<br>Systems</h3>
                         <p class="card-desc">
-                            Your agent relies on stale training data for best practices. Connect MCP servers
-                            to give it access to live, curated knowledge and tools beyond its training cutoff.
+                            Connect Microsoft Learn through MCP so the agent can retrieve current Azure
+                            documentation. Verify its citations.
                         </p>
                         <div class="card-footer">
                             <div class="card-tags">
@@ -1160,8 +1157,8 @@
                         </div>
                         <h3 class="card-title display">Discover Specialist<br>Agents</h3>
                         <p class="card-desc">
-                            A generalist handles everything from one system prompt. Define specialist subagents —
-                            each with its own identity, tools, and runbooks — and route incidents to the right expert.
+                            Add domain-specific subagents with their own instructions, tools, and runbooks.
+                            Compare their investigation plans with the main agent's.
                         </p>
                         <div class="card-footer">
                             <div class="card-tags">
@@ -1182,8 +1179,8 @@
                         </div>
                         <h3 class="card-title display">Understand<br>Response Plans</h3>
                         <p class="card-desc">
-                            Everything so far is chat-driven — you ask, it answers. Configure incident filters
-                            and response plans so the agent acts autonomously when alerts fire at 3 AM.
+                            Connect Azure Monitor and configure response plans. Compare an unmatched alert
+                            with one that starts an investigation, then inspect Review and Autonomous modes.
                         </p>
                         <div class="card-footer">
                             <div class="card-tags">
@@ -1226,9 +1223,8 @@
                         </div>
                         <h3 class="card-title display">Application Dependency<br>Mapping</h3>
                         <p class="card-desc">
-                            When an app fails, which dependency is the culprit? Drive the agent to map the
-                            full Parking Manager dependency graph using App Insights — the foundation for
-                            every root-cause investigation.
+                            Map Grubify dependencies from Application Insights, including call counts and
+                            response times. Add Berlin Parking API metrics as a separate telemetry source.
                         </p>
                         <div class="card-footer">
                             <div class="card-tags">
@@ -1272,9 +1268,9 @@
                         </div>
                         <h3 class="card-title display">Incident to<br>GitHub Issue</h3>
                         <p class="card-desc">
-                            Trigger a Parking Manager incident and let the agent investigate, then close the loop
-                            by automatically opening a GitHub issue with the root cause, timeline, and
-                            remediation steps — no copy-paste required.
+                            Trigger a Parking Manager incident and have the agent create or update a GitHub
+                            issue with evidence, a timeline, and next steps. This workflow reports the incident;
+                            it does not restart a VM.
                         </p>
                         <div class="card-footer">
                             <div class="card-tags">
@@ -1318,9 +1314,8 @@
                         </div>
                         <h3 class="card-title display">Network Security<br>Investigation</h3>
                         <p class="card-desc">
-                            Inject an NSG misconfiguration that silently drops database traffic. The agent
-                            finds the blocking rule from flow log evidence and remediates it autonomously —
-                            no application-level error message to guide it.
+                            Inject an NSG rule that blocks database traffic. Check whether the agent traces
+                            denied flows to the rule, removes it, and verifies recovery.
                         </p>
                         <div class="card-footer">
                             <div class="card-tags">
@@ -1364,9 +1359,8 @@
                         </div>
                         <h3 class="card-title display">Application Root<br>Cause Analysis</h3>
                         <p class="card-desc">
-                            From a 5xx spike the agent traces through container logs, Application Insights
-                            telemetry, and source code to the exact line causing an OOM crash — then opens
-                            a GitHub issue linking evidence to code. No human switches tools.
+                            Trace a Grubify 5xx spike through container logs, Application Insights, and source
+                            code to the OOM fault path. Review the GitHub issue linking evidence to code.
                         </p>
                         <div class="card-footer">
                             <div class="card-tags">
@@ -1387,9 +1381,8 @@
                         </div>
                         <h3 class="card-title display">Autonomous<br>Remediation</h3>
                         <p class="card-desc">
-                            Trigger a Parking Manager backend failure, then watch the agent detect it,
-                            apply the automated fix, and validate recovery — closing the full remediation
-                            loop without human intervention.
+                            Stop the Paris Parking API service. Check whether the agent restarts the VM,
+                            validates service and API health, and retries or escalates if recovery fails.
                         </p>
                         <div class="card-footer">
                             <div class="card-tags">
@@ -1433,9 +1426,8 @@
                         </div>
                         <h3 class="card-title display">Observability<br>Freshness Verification</h3>
                         <p class="card-desc">
-                            Build a scheduled task that proves the monitoring pipeline itself is alive —
-                            checking VNet Flow Log ingestion end-to-end so silent telemetry loss is caught
-                            before it masks real failures.
+                            Check VNet Flow Log freshness in Storage and Traffic Analytics. Compare expected
+                            VNet coverage with recent records to find missing or stale telemetry.
                         </p>
                         <div class="card-footer">
                             <div class="card-tags">
@@ -1456,9 +1448,8 @@
                         </div>
                         <h3 class="card-title display">Subscription Cost<br>Optimization Review</h3>
                         <p class="card-desc">
-                            Run a subscription-wide cost review: resource inventory, actual spend,
-                            utilization, and Azure Advisor recommendations — grounded in business context
-                            so the savings table is actionable, not just technically correct.
+                            Review inventory, spend, utilization, and Azure Advisor findings. Rank savings
+                            opportunities against workload criticality and SLAs without changing resources.
                         </p>
                         <div class="card-footer">
                             <div class="card-tags">
@@ -1480,9 +1471,9 @@
                             </div>
                             <h3 class="card-title display">Build Your Own<br>Production-Ready SRE Agent</h3>
                             <p class="card-desc">
-                                Bring a real reliability problem from your own environment. Design and implement
-                                a custom subagent — skills, knowledge docs, incident filter or scheduled trigger —
-                                then demo it end-to-end to the group and defend its production readiness.
+                                Bring a real reliability problem, build a focused agent configuration, and
+                                demonstrate an end-to-end test. Explain the controls and validation needed
+                                before production use.
                             </p>
                             <div class="card-footer">
                                 <div class="card-tags">
@@ -1741,7 +1732,8 @@
                 <h2 class="section-title display reveal">Subagents</h2>
                 <p class="section-desc reveal">
                     Each subagent is a specialist with its own system prompt, tool grants, and incident routing.
-                    The <code>network-traffic-analyst</code> supports both interactive and autonomous modes.
+                    Invoke <code>network-traffic-analyst</code> from chat or a response plan; both lab paths
+                    use autonomous remediation.
                 </p>
                 <div class="agent-grid">
                     <div class="agent-card">
@@ -1814,7 +1806,7 @@
             <div class="wrap">
                 <div class="coach-banner">
                     <span class="coach-label">Coach</span>
-                    Solution guides — visible only to coaches. Press Shift+C to hide.
+                    Coaches only — do not share with participants. Press Shift+C to hide.
                 </div>
                 <div class="section-label">Solutions</div>
                 <h2 class="section-title display">Solution Guides</h2>
@@ -1909,8 +1901,8 @@
                         <div class="card-bg-number display">10</div>
                         <div class="coach-num mono">SOL — 10</div>
                         <div class="coach-title">Incident to GitHub Issue</div>
-                        <div class="coach-desc">Incident report template, telemetry-to-backlog lifecycle, follow-up
-                            comment discipline.</div>
+                        <div class="coach-desc">Incident report template, GitHub handoff, and follow-up comments
+                            with fresh evidence.</div>
                         <div class="coach-arrow mono">Open →</div>
                     </a>
                     <a class="coach-card" href="Coach/Solution-11.md">
@@ -1941,8 +1933,8 @@
                         <div class="card-bg-number display">14</div>
                         <div class="coach-num mono">SOL — 14</div>
                         <div class="coach-title">Application Root Cause Analysis</div>
-                        <div class="coach-desc">End-to-end telemetry → source-code correlation → GitHub artifact, the
-                            workshop's signature "wow" moment.</div>
+                        <div class="coach-desc">Trace telemetry to the failing source code and record the
+                            evidence in a GitHub issue.</div>
                         <div class="coach-arrow mono">Open →</div>
                     </a>
                     <a class="coach-card" href="Coach/Solution-15.md">
@@ -1957,8 +1949,8 @@
                         <div class="card-bg-number display">16</div>
                         <div class="coach-num mono">SOL — 16</div>
                         <div class="coach-title">Daily Network Health Report</div>
-                        <div class="coach-desc">Proactive scheduled-task reporting, five report dimensions, narrative
-                            -only safety without a write path.</div>
+                        <div class="coach-desc">Scheduled network reporting across five dimensions. Verify that
+                            the specialist follows the report-only instruction.</div>
                         <div class="coach-arrow mono">Open →</div>
                     </a>
                     <a class="coach-card" href="Coach/Solution-17.md">
@@ -1973,8 +1965,8 @@
                         <div class="card-bg-number display">18</div>
                         <div class="coach-num mono">SOL — 18</div>
                         <div class="coach-title">Subscription Cost Optimization Review</div>
-                        <div class="coach-desc">Evidence-backed FinOps review, cost-optimization-agent cadence,
-                            recommendations-only governance showcase.</div>
+                        <div class="coach-desc">Evidence-backed FinOps review, cost-optimization-agent schedule,
+                            and read-only recommendations.</div>
                         <div class="coach-arrow mono">Open →</div>
                     </a>
                     <a class="coach-card" href="Coach/Solution-19.md">

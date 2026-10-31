@@ -6,11 +6,9 @@
 
 ## Introduction
 
-You've configured skills, subagents, incident filters, connectors, and scheduled tasks. You've watched the Azure SRE Agent autonomously detect, investigate, and remediate faults across PaaS, IaaS, and network layers.
+Use the skills, subagents, incident filters, connectors, and scheduled tasks you've explored to build an agent configuration for a real operations problem from your environment.
 
-Now it's your turn.
-
-In this capstone challenge, you'll design and implement a **production-ready SRE agent configuration** for a real use case **you bring from your own environment**. There is no pre-built scenario, no trigger script, and no expected output — only the requirements of the problem you choose to solve.
+Choose the scenario, implement it, and demonstrate an end-to-end test. Treat the result as a tested prototype: explain what further controls and validation it would need before production use.
 
 ## Description
 
@@ -107,7 +105,7 @@ To complete this challenge, demonstrate:
 ## Tips
 
 - **Start small.** Pick a use case that fits in a single subagent with 3–5 tool calls. You can always expand scope later.
-- **The system prompt is the most important artifact.** A well-written system prompt with a clear persona, scope, and escalation path will outperform a complex skill configuration every time.
+- **Make the system prompt specific.** Define the agent's role, scope, and escalation path, then test it with the configured tools and skills.
 - **Use knowledge docs for everything you'd put in a runbook.** Thresholds, resource names, subscription IDs, known failure modes — if a human would look it up, the agent should have it.
-- **Think about blast radius before adding write permissions.** Autonomous write commands are powerful; make sure your system prompt constrains them to the narrowest possible scope.
+- **Limit blast radius before adding write permissions.** Use narrow tool grants and resource permissions as well as explicit scope in the system prompt.
 - **The demo is the deliverable.** A working 3-minute demo with a real trigger and a coherent agent response is more valuable than a perfect YAML that's never been tested.

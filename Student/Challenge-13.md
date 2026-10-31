@@ -8,7 +8,7 @@
 
 ## Introduction
 
-The forward path is perfectly healthy — packets leave the app tier, traverse the firewall, and arrive at the database. The replies never make it back. This **asymmetric routing black hole** is one of the hardest infrastructure failures to diagnose: everything looks fine until you trace the return path.
+Packets from the app tier reach the database through the firewall, but replies do not return. Trace the return path to diagnose this asymmetric routing failure.
 
 There is no dedicated alert for this challenge. You'll invoke the `network-traffic-analyst` specialist directly from chat and reason over effective routes and next-hop analysis to correct the misrouted return path. This subagent always runs in **Autonomous** mode — even invoked from chat, it investigates and applies the fix itself rather than waiting for your approval (its system prompt states it runs fully autonomously and the block-unsafe-remediation hook is disabled for this demo lab; see `Student/Resources/azure-sre-agent-config/subagents/network-traffic-analyst.yaml`).
 

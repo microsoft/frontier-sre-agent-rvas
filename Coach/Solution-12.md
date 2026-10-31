@@ -7,7 +7,7 @@
 ## Purpose
 
 - Teach denied-flow forensics from Traffic Analytics through to the exact NSG rule and remediation.
-- This is the clearest workshop example of using `NTANetAnalytics` as the primary evidence chain.
+- Use `NTANetAnalytics` as the primary flow evidence.
 - Expected time: 20–25 minutes.
 
 ## Mini-Lecture (3–5 min before challenge)

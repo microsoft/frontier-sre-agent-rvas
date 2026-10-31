@@ -8,9 +8,9 @@
 
 ## Introduction
 
-Modern applications don't live on a single platform. The **Parking Manager** spans Azure Container Apps (integrated with Azure Monitor), virtual machines generating Windows Event Logs and Linux Syslog, and a third-party telemetry API based on OpenTelemetry that simulates an external partner integration. No single dashboard covers all of it.
+Parking Manager uses Azure Container Apps with Azure Monitor, VMs with Windows Event Logs and Linux Syslog, and an OpenTelemetry API that simulates an external partner's telemetry.
 
-In this challenge you'll query a hybrid ecosystem from a single agent session — correlating Azure-native logs with third-party telemetry — and produce a consolidated view of an API's health across every monitoring plane.
+Query Azure-native logs and third-party telemetry from one agent session, then compare API health across the two sources.
 
 ## Description
 

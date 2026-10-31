@@ -1,10 +1,12 @@
 # Azure SRE Demo Manager
 
-A multi-city parking management demo showcasing Azure SRE patterns: containerized services, VM deployments, chaos engineering, and observability integrations.
+A parking management lab for container and VM operations, fault injection, and telemetry investigation.
 
 ## Overview
 
-The **Parking Manager** application manages parking facilities across multiple cities (Lisbon, Madrid, Paris, Berlin). Each city runs its own backend API with distinct infrastructure and observability characteristics. A React frontend, served by an Express proxy server, provides a unified management and chaos-control interface.
+Parking Manager has one backend API per city: Lisbon, Madrid, Paris, and Berlin. Each uses a
+different hosting or telemetry setup. A React frontend served by an Express proxy provides
+parking management and fault-injection controls.
 
 ## Architecture
 
@@ -66,7 +68,7 @@ parking-manager/
 - **Paris API** (port 3003): Node.js on Linux with Syslog logging
 - **Berlin API** (port 3004): Containerized Node.js with OpenTelemetry metrics
 - **RESTful API Design** — Standard HTTP methods for all operations
-- **Real-time Parking Data** — Track availability across multiple levels
+- **Parking Data** — Track availability across multiple levels
 
 ### Support Services
 - **Chaos Control** (port 3090): Injects latency/errors into city APIs for SRE demos
@@ -76,7 +78,7 @@ parking-manager/
 ### Frontend (Parking Manager)
 - **Multi-City Dashboard** — View and manage parking across all cities
 - **Chaos Backoffice** — Configure chaos scenarios per city API
-- **Real-Time Updates** — Auto-refresh every 30 seconds
+- **Automatic Updates** — Refresh every 30 seconds
 - **Express Proxy** — `server.js` proxies all `/api/*` routes to backend services; the UI is served on port 8080
 
 ## Quick Start
@@ -94,15 +96,11 @@ This script installs missing dependencies, builds the frontend when needed, and 
 
 ### Manual local startup
 
-Use the following manual steps to run the full local stack.
+Start the services individually with the commands below.
 
-Open **http://localhost:8080** in your browser after starting the backend services and frontend proxy. The Chaos Backoffice panel is available in the UI.
-
-> **Requirements**: Node.js 18+. Docker is not required for a local run.
-
-If you prefer to start services individually:
-
-**Prerequisites**: Node.js 18+, Docker (optional for containerised build), Azure account (optional for Log Analytics)
+**Prerequisites**: Node.js 18+. Docker is optional for container builds; an Azure account is
+optional for Log Analytics. Open **http://localhost:8080** after starting the backend services
+and frontend proxy. The UI includes the Chaos Backoffice panel.
 
 #### Start backend services
 

@@ -8,9 +8,9 @@
 
 ## Introduction
 
-Your agent is running but completely isolated from your source code. Ask it to read the Grubify cart service implementation and it will decline — it has no access to GitHub. Ask it to list open issues and it cannot reach your repository.
+Your agent is running but has no access to your GitHub repository. Test this by asking it to read the Grubify cart service or list open issues.
 
-**The GitHub OAuth connector** gives the agent a secure, scoped connection to GitHub. **The repository link** tells it which repository to treat as the Grubify source of truth. Together they unlock code navigation, issue reading, and pull request creation — the foundation for every use case that correlates a live incident with source code.
+The GitHub OAuth connector provides scoped access for GitHub actions. The repository link gives Code Access the Grubify source to search and read. Configure both to connect incident investigations with source code, issues, and proposed fixes.
 
 ## Description
 
@@ -46,7 +46,7 @@ started by incident automations. Those threads therefore also need the legacy Gi
 connector to perform GitHub actions. For example, the incident automation in Challenge 10 uses
 the legacy connector to open a GitHub issue.
 
-Unfortunately, the legacy connector requires a GitHub Personal Access Token (PAT) for
+The legacy connector requires a GitHub Personal Access Token (PAT) for
 authentication. Create a PAT in GitHub that is limited to the workshop repository and can create
 issues and pull requests. Later challenges use these permissions to open incident-tracking issues
 and submit proposed fixes. Then load the PAT into the `GITHUB_PAT` environment variable before
@@ -66,8 +66,8 @@ Deploy both connectors from `Student/Resources/azure-sre-agent-config/connectors
 make connectors
 ```
 
-This dual-connector setup is temporary. Once the GitHub OAuth connector exposes its tools to
-incident automation threads, the legacy GitHub MCP connector will no longer be required.
+The legacy connector is needed while GitHub OAuth tools remain unavailable to incident
+automation threads.
 
 ### Step 4 — Complete the OAuth authorization in the portal
 

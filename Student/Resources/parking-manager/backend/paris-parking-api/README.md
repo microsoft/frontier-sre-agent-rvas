@@ -1,10 +1,11 @@
 # Paris Parking API
 
-A NodeJS API for the Paris parking facility designed to run on **Linux** with **Syslog** logging. This API represents a single parking location and provides real-time information about parking availability, levels, and facilities.
+A Node.js API for one Paris parking facility. It reports availability, levels, and facilities,
+and uses Syslog logging on Linux.
 
 ## Features
 
-- **Real-time Parking Information** for Paris parking facility
+- **Parking Information** for the Paris facility
 - **Level Management** - Track availability across 6 parking levels
 - **Syslog Integration** - All operations logged to syslog using RFC 5424 standards
 - **Cross-platform Fallback** - Console logging when syslog is not available
@@ -19,7 +20,7 @@ A NodeJS API for the Paris parking facility designed to run on **Linux** with **
 
 ## Syslog Integration
 
-This API is specifically designed for Linux systems and logs all operations to syslog for centralized monitoring and diagnostics.
+On Linux, the API writes operation logs to Syslog.
 
 ### Syslog Features
 
@@ -292,7 +293,7 @@ sudo journalctl -u paris-parking -f
 
 ## Architecture Notes
 
-This API represents a single parking location (Paris). The Parking Manager frontend will coordinate multiple such APIs for different cities to provide a centralized management interface.
+The Parking Manager frontend combines this API with the other city APIs.
 
 **Key Differences from Other APIs:**
 - Uses Linux syslog instead of Azure Log Analytics or Windows Event Viewer
@@ -428,9 +429,8 @@ sudo journalctl -t ParisParkingAPI --since today > paris-parking-logs.txt
 
 ## Performance
 
-- Syslog is lightweight and has minimal performance impact
-- Asynchronous logging prevents blocking API operations
-- Structured JSON format enables efficient parsing and analysis
+- Logging is asynchronous
+- Structured JSON supports log parsing and analysis
 - Compatible with log aggregation tools (ELK, Splunk, Graylog)
 
 ## License

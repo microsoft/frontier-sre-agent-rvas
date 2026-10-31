@@ -7,7 +7,7 @@
 ## Purpose
 
 - Teach UDR precedence, effective routes, next-hop reasoning, and why one-way success can still be an outage.
-- This is the best interactive governance discussion because the lab demonstrates Autonomous remediation and students evaluate where production should require Review.
+- Compare the lab's Autonomous remediation with cases where production route changes should require Review.
 - Expected time: 25–30 minutes.
 
 ## Mini-Lecture (3–5 min before challenge)

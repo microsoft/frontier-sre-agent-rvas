@@ -6,8 +6,7 @@
 
 ## Purpose
 
-- Show how knowledge docs reduce hallucination by grounding the agent in the workshop’s actual topology, runbooks, and KQL.
-- This is the bridge from generic model knowledge to lab-specific answers with real names, IPs, and tables.
+- Compare answers before and after loading knowledge docs about the lab's topology, runbooks, and KQL. Look for correct resource names, IPs, tables, and citations.
 - Expected time: 15–20 minutes.
 
 ## Mini-Lecture (3–5 min before challenge)

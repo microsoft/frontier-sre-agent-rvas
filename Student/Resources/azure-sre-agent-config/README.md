@@ -50,17 +50,18 @@ spec:
 
 ### Example manifests
 
-Files whose names start with `example-` are **excluded from deployment** by every discovery path in `sre-agent-config.sh` (`validate`, `plan`, `apply`, `verify`, `delete`), for both full desired state and `--target` selections, and the same rule applies to `example-*` knowledge files. The repository ships two **enablement runbooks** — `connectors/example-outlook.yaml` and `connectors/example-teams.yaml` — that give the complete, certified portal-wizard setup for the Outlook and Teams notification connectors used by `cost-optimization-agent` report delivery. These connectors are OAuth-interactive (OAuth sign-in + managed identity + `Microsoft.Web/connections`) and **cannot** be created by a data-plane apply, so they stay `example-`-prefixed by necessity (not because they are incomplete) — the same one-time portal step the GitHub OAuth connector needs. The exclusion remains in effect for any other `example-*` files added later.
+Files starting with `example-` are **excluded from deployment** by `sre-agent-config.sh`
+in `validate`, `plan`, `apply`, `verify`, and `delete`, including `--target` selections.
+The same rule applies to `example-*` knowledge files.
+
+Use `connectors/example-outlook.yaml` and `connectors/example-teams.yaml` as portal
+setup runbooks for `cost-optimization-agent` notifications. These connectors require
+OAuth sign-in, managed identity, and `Microsoft.Web/connections`; a data-plane apply
+cannot create them.
 
 ## Imported Demo Lab Agent Assets
 
-The VNet Flow Logs and Sample Food demo lab imports Azure SRE Agent configuration from the external branch `feature/app-sample-food-container-app` and normalizes it into this repository's YAML-plus-Markdown desired-state format.
-
-Skills (9). The seven imported networking skills were first consolidated into five to stay
-within the official five-active-skills cap
-(https://learn.microsoft.com/en-us/azure/sre-agent/skills). A later consolidation folded
-`nsg-deny-flow-investigation` and `udr-asymmetry-investigation` into `connectivity-diagnostics`,
-and three delivery-oriented skills were added:
+The VNet Flow Logs and Sample Food lab uses nine skills in YAML-plus-Markdown format:
 
 - `cost-optimization` (evolved from the imported `cost-retention-optimization` into a
   subscription-wide FinOps skill - the specialist that uses it is `subagents/cost-optimization-agent.yaml`)
@@ -90,7 +91,7 @@ The Sample Food / Grubify operational layer is imported from `dm-chelupati/sre-a
 
 Subagents:
 
-- `aca-app-incident-handler` (imported as `incident-handler`, renamed 2026-06-14 to a domain-speaking name)
+- `aca-app-incident-handler`
 - `code-analyzer`
 - `issue-triager`
 
@@ -114,8 +115,8 @@ GitHub and incident-response surfaces:
   Scope warning: the Azure SRE Agent repository resource exposes no field that restricts the agent
   to a subdirectory, so the whole repository is cloned. Confining the agent to the Grubify folder
   is a behavioural rule stated in `custom-instructions.md`, in the `code-analyzer` and
-  `aca-app-incident-handler` subagents and in the `source-fix-delivery` skill. It is not a
-  boundary enforced by the platform, and the workshop material says so openly.
+  `aca-app-incident-handler` subagents and in the `source-fix-delivery` skill. The platform
+  does not enforce that folder boundary.
 - `incident-platforms/azure-monitor.yaml` — connects Azure Monitor by applying
   `incidentManagementConfiguration = { type: AzMonitor, connectionName: azmonitor }` through an
   ARM PATCH. Run `make incident-platforms` for focused deployment. The full configuration workflow
@@ -135,15 +136,15 @@ GitHub and incident-response surfaces:
 
 - `custom-instructions.md` — instructions applied to every investigation the agent performs,
   independently of which subagent or skill handles it.
-- `knowledge/.knowledgeignore` — documents that must stay in Git but must never enter agent
-  retrieval. The decisive rule is scenario integrity: any document that names a fault-injection or
-  restore script is excluded, because an agent that retrieved it during an investigation would
-  cite the script that caused the fault instead of discovering the cause from the evidence, which
-  destroys the demonstrative value of the exercise.
+- `knowledge/.knowledgeignore` — excludes documents from agent retrieval without removing them
+  from Git. Documents naming fault-injection or restore scripts are excluded so the agent must
+  investigate telemetry rather than read the scenario's answer.
 
 ## Domain-routing re-architecting (2026-06-14)
 
-Incident response plans were re-architected from severity-only bands to a **domain-routing rule**: each plan owns one failure domain, keyed by incident title (`titleContains` / `titleNotContains`, case-insensitive) on top of severity, so every alert reaches the specialist scoped to that domain. The plans are disjoint by construction at every severity (see the `automations/incident-filters/` bullet above). This added:
+Each incident response plan matches a failure domain by severity and title
+(`titleContains` / `titleNotContains`, case-insensitive). The plans use distinct
+title predicates to separate workflows at the same severity. The handlers are:
 
 - `subagents/iaas-vm-incident-handler.yaml` — new Autonomous IaaS web-tier handler (Syslog-based diagnosis + autonomous in-guest `az vm run-command` restart) that owns the NGINX-down / VM service-health domain, previously mis-routed to `network-traffic-analyst`.
 - `subagents/parking-vm-incident-reporter.yaml` — investigates synthetic Parking VM health events and creates or updates the corresponding GitHub issue; it has no Azure write tool.
@@ -184,15 +185,6 @@ optional for the lab and can be supplied through `Student/.env`.
 For focused challenge deployment, `make connectors` applies the GitHub and Berlin connectors but
 excludes Microsoft Learn. Use `make connectors-learn` to apply only `microsoft-learn-mcp`.
 The broad `make config-sre-agent` workflow still includes all three certified connectors.
-
-Full desired-state deployment:
-
-```bash
-./infra/scripts/sre-agent-config.sh validate
-./infra/scripts/sre-agent-config.sh plan --subscription <sub> --resource-group <rg> --agent <agent>
-./infra/scripts/sre-agent-config.sh apply --subscription <sub> --resource-group <rg> --agent <agent>
-./infra/scripts/sre-agent-config.sh verify --subscription <sub> --resource-group <rg> --agent <agent>
-```
 
 The certified profile has three connector manifests: ARM-managed `berlin-monitoring-v6` and
 `microsoft-learn-mcp`, plus the data-plane ConnectorV2 `github-mcp`. Complete OAuth consent for

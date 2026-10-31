@@ -8,9 +8,9 @@
 
 ## Introduction
 
-Your agent can read the Grubify source code (from Challenge 01) but knows nothing about *your running environment*. Ask it about the Grubify architecture or its monitoring configuration and it will either say it doesn't know, or it will hallucinate — drawing on generic Azure knowledge and inventing details that don't match the lab.
+Your agent can read the Grubify source code from Challenge 01, but it has no documentation about the running lab. Ask about its architecture or monitoring configuration and check whether the answer matches the environment.
 
-**Knowledge documents** are how you fix that. They are Markdown files — architecture diagrams, runbooks, incident reports, troubleshooting guides, KQL catalogs — that the agent retrieves at query time to ground its answers in your actual environment. Once loaded, every response about Grubify, its network, or its costs is backed by real documentation, not guesswork.
+Knowledge documents provide that context. The agent retrieves relevant Markdown files, such as architecture notes, runbooks, incident reports, troubleshooting guides, and KQL catalogs, when answering a query. Loading them helps ground answers in the lab; verify the answers and citations rather than assuming retrieval makes them correct.
 
 ## Description
 
@@ -83,9 +83,8 @@ No knowledge document describes the Parking Manager app. Ask:
 Explain the Parking Manager architecture. What backend APIs does it expose, what technology stack does each use, and how is observability configured for the hybrid components?
 ```
 
-A well-grounded agent should say it doesn't have documentation for the Parking Manager rather than
-inventing an architecture — this is the flip side of Step 3: retrieval grounds real answers *and*
-prevents hallucination when there is nothing to retrieve.
+The agent should acknowledge that it has no Parking Manager documentation rather than inventing
+an architecture. Check whether it makes that limitation clear.
 
 ### Step 5 — Verify citation
 
@@ -117,5 +116,5 @@ In the portal under **Knowledge sources**, open 2–3 uploaded documents. Confir
 
 - The quality of a grounded response depends on the quality of the documentation. Vague documents produce vague answers.
 - Knowledge documents are retrieved by **semantic similarity** — the agent retrieves the most relevant ones for each query, not all documents for every query. Document titles and first paragraphs matter for retrieval.
-- Try asking about a fictional component (something not in the knowledge base). A well-configured agent should say it doesn't know rather than hallucinate. This builds trust.
+- Try asking about a fictional component that is not in the knowledge base. The agent should say it doesn't know rather than invent details.
 - After this challenge: the agent knows your environment but still can't *investigate* it — it has no tools to run queries or CLI commands. That comes next.

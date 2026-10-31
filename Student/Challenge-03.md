@@ -8,9 +8,9 @@
 
 ## Introduction
 
-Your agent can answer questions from documentation (Challenge 02) but it cannot *act*. Ask it to run a KQL query or check a Container App's health and it will describe what it would do — but it can't actually do it, because it has no tools.
+Your agent can answer questions from documentation (Challenge 02). Now test whether it can run a KQL query or check a Container App's health before you add the investigation skills.
 
-**Skills** unlock action. Each skill is a YAML file that packages a named investigation procedure, a constrained set of tools (specific `az` commands, KQL queries, REST calls), and a safety posture into a reusable capability. When a skill is loaded, the agent can execute that procedure — following the runbook, calling only the allowed tools, producing a consistent result.
+Each skill defines an investigation procedure and its tools, such as specific `az` commands, KQL queries, or REST calls. The agent uses the skill's runbook to guide its investigation. Tool grants, subagent instructions, and invocation mode govern what it can do.
 
 ## Description
 
@@ -22,7 +22,7 @@ In the SRE Agent portal, ask:
 Investigate the current health of the Grubify Container App. Check for any active errors or anomalies.
 ```
 
-Note the response. The agent knows *how* to investigate (from its knowledge documents) but cannot actually run any queries or commands. It's like asking an expert to examine a patient but not allowing them to touch anything.
+Note whether the agent only describes an investigation or actually runs queries and commands.
 
 Also ask:
 

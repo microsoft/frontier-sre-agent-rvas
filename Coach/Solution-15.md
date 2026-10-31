@@ -6,8 +6,8 @@
 
 ## Purpose
 
-- Focus the class on the validation loop: a remediation is only complete when the agent proves it worked.
-- This challenge compares autonomous MTTR against human-driven recovery.
+- Verify recovery after remediation and examine retry and escalation behavior.
+- Compare observed autonomous recovery time with an estimate of manual recovery; do not present the estimate as measured MTTR improvement.
 - Expected time: 20–25 minutes.
 
 ## Mini-Lecture (3–5 min before challenge)

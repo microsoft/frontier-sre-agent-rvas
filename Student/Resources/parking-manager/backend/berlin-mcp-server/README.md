@@ -1,14 +1,14 @@
 # Berlin MCP Monitoring Server
 
-A Model Context Protocol (MCP) server that provides monitoring and observability tools for the Berlin Parking API. This server acts as an integration layer between Azure SRE agents and the Berlin API.
+A Model Context Protocol (MCP) server that lets Azure SRE Agent query Berlin Parking API health and metrics.
 
 ## Purpose
 
-The Berlin API represents a simulated **external/third-party service** that you don't directly control or monitor. This MCP server:
+The Berlin API simulates a third-party service observed through MCP. This server:
 - Runs in the shared workshop resource group, tagged `workload=parking-berlin`
 - Provides tools for SRE agents to query the Berlin API
 - Exports its performance logs to Application Insights when a connection string is configured
-- Allows SRE to monitor YOUR integration infrastructure, not the external API
+- Records the integration's performance separately from the external API's metrics
 
 ## Architecture
 
@@ -271,13 +271,12 @@ If `MCP_AUTH_TOKEN` is not set, the server will:
 
 ### DNS Rebinding Protection - DISABLED
 
-**Note:** DNS rebinding protection is **disabled** in this deployment because the MCP library's strict Host header validation is incompatible with Azure Container Apps ingress handling.
+DNS rebinding protection is **disabled** because the MCP library's strict Host header validation
+is incompatible with Azure Container Apps ingress handling. This is a workshop compatibility
+choice, not evidence of production security; authentication is also disabled by default.
 
 This is acceptable for this isolated workshop because:
 - ✅ **Bearer authentication is available** through `MCP_AUTH_TOKEN` when the Terraform input is configured
-- ✅ This is an **internal monitoring tool** within Azure infrastructure
-- ✅ Azure Container Apps provides **network-level security** (WAF, DDoS protection)
-- ✅ The ingress is already behind Azure's security infrastructure
 
 ### Why DNS Rebinding Protection is Disabled
 

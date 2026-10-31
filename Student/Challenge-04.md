@@ -8,9 +8,9 @@
 
 ## Introduction
 
-Your agent can investigate the Azure environment (Challenge 03) but when it answers questions about Azure best practices it draws only on its training data — potentially stale, uncited, and not tied to the current state of the documentation.
+Your agent can investigate Azure (Challenge 03), but it has no connection to current Microsoft Learn documentation. Answers based on training data may be outdated or lack verifiable citations.
 
-**MCP connectors** break that limitation. Through the Model Context Protocol, the agent reaches into external systems in real time. In this challenge you'll connect the agent to **Microsoft Learn** — so every documentation answer comes from the live, citable source rather than from model memory.
+MCP connectors give the agent access to external systems through the Model Context Protocol. Connect Microsoft Learn, then check whether the agent retrieves current documentation and cites it.
 
 ## Description
 
@@ -30,7 +30,7 @@ Also ask:
 What is the latest guidance on configuring health probes for Azure Container Apps? Provide the documentation URL.
 ```
 
-Again — the agent may answer, but it cannot produce a real, current article URL.
+The agent may supply a URL from memory, but it cannot retrieve the current article through Microsoft Learn yet.
 
 ### Step 2 — Apply the Microsoft Learn MCP connector
 
@@ -78,7 +78,7 @@ The agent should confirm that it can only reach explicitly connected systems —
 
 ## Success Criteria
 
-- [ ] Before adding the connector, the agent answers documentation questions from training data with no real URL
+- [ ] Before adding the connector, you record the agent's answer and whether it can retrieve current documentation
 - [ ] After adding the connector, the agent retrieves and cites a specific, current Microsoft Learn article
 - [ ] The `microsoft-learn-mcp` connector shows as connected (green) in the portal
 - [ ] The agent combines live documentation with its Azure investigation skills in a single response

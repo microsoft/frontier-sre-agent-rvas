@@ -10,8 +10,8 @@ A missing-index suggestion is not a change request. It is one signal that must
 be compared with real workload frequency, existing indexes, selectivity,
 storage, and write cost.
 
-Your task is to build a decision-ready case for the deliberate product-led
-access-path gap in `sales.SalesOrderLine`, without creating an index.
+Evaluate the deliberate gap in index access for product-led queries on
+`sales.SalesOrderLine`, without creating an index.
 
 ## Description
 
@@ -46,4 +46,3 @@ the DBA agent to:
 * A high estimated improvement value can still describe a rare query.
 * Check key order, included columns, filters, and existing index prefixes.
 * Keep observations, hypotheses, and recommendations in separate sections.
-

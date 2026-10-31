@@ -7,7 +7,7 @@
 ## Purpose
 
 - Establish the baseline: a student-owned repository fork, Linux pre-flight readiness, Azure authentication, Student workload Terraform deployment, a reachable Azure SRE Agent, and working validation.
-- Students manually create the control-plane agent in the portal (Terraform intentionally does not create it for Student's root); `make deploy` in this challenge only provisions the workload every later data-plane capability depends on, and Challenges 01 through 06 build the data plane.
+- Students create the agent manually in the portal. `make deploy` provisions only the workloads; Challenges 01 through 06 add the agent's capabilities.
 - Expected time: 30–45 minutes.
 
 Use the shared [Requirements](../README.md#requirements) and
@@ -22,8 +22,7 @@ not the Coach reference deployment.
 - Dependency chain to draw: fork and clone the repository → Azure authentication → `make deploy` (workload only) → manual agent creation in the portal → resource-group association + Contributor role → baseline traffic → workload validation.
 - Explain the remote layout: the student's fork must be `origin`, while the Microsoft repository is `upstream`. Later configuration derives `GRUBIFY_REPO_URL` from `origin`, allowing the student and SRE Agent workflows to push branches and open pull requests against a repository the student owns.
 - Ensure GitHub Issues are enabled on the student's fork: open the fork on GitHub.com, select **Settings** → **General**, scroll to **Features**, and select **Issues**. Later incident-automation challenges create issues in this repository.
-- Call out slow resources: Container Apps environment and monitoring plumbing are the usual long pole.
-- Emphasize that the Student Terraform root deliberately does **not** create the SRE Agent — `make deploy` provisions only the workload. Creating the agent by hand and associating it with the workload resource group is the point of Step 4 in Challenge 00.
+- Allow time for the Container Apps environment and monitoring setup.
 - Note the Coach environment is different: `Coach/` runs its own Terraform root (`Solutions/infra`), which additionally deploys a Coach-owned reference agent via `module "sre_agent"` (`make infra` from `Coach/`). This lets a coach stand up a fully wired reference environment for demos and answer-checking without doing the manual portal steps every time — it is not what students do, and should not be presented to students as an alternative.
 - Show the three workload validation surfaces: `make validate` for VNet Flow Logs and the virtual machine lab, `make validate-food` for Grubify, and `make validate-parking` for the public Parking Manager Web App, its VNet integration, and proxied APIs.
 
@@ -74,7 +73,7 @@ not the Coach reference deployment.
 - Why does the Coach's own Terraform additionally deploy the agent? → So coaches can stand up a working reference environment quickly for demos, without repeating the manual student steps for every session.
 - Why start traffic generators before the operational labs? → Many later challenges fail silently if there is no telemetry history.
 - What is the risk of an agent with excess or missing role assignments? → Missing assignments block expected remediation; excess assignments widen blast radius beyond what the workshop's governance story assumes.
-- Which dependency here is most fragile in real workshops? → Usually monitoring lag, not infrastructure creation.
+- Which delays affected this deployment? → Discuss infrastructure provisioning and telemetry ingestion separately.
 
 ## Success Criteria Notes
 

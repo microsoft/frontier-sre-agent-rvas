@@ -8,7 +8,7 @@
 
 ## Introduction
 
-When an application fails, the first question is always: *what does it depend on, and which dependency is the culprit?* For a distributed application like **Grubify (Sample Food)** — with its Container Apps API/frontend plus a third-party integration outside Application Insights — mapping the dependency graph is the foundation of every root-cause investigation.
+A dependency map helps you trace which downstream services may contribute to an application failure. Map the Grubify (Sample Food) frontend and API from Application Insights, then add Berlin Parking API telemetry as a separate integration example.
 
 In this challenge you'll use the agent to generate a dependency map from live telemetry, infer backend topology from Application Insights call data, and produce both a visual diagram and a structured summary table.
 

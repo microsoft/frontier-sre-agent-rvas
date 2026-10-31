@@ -6,8 +6,7 @@
 
 ## Purpose
 
-- Teach “monitoring the monitoring”: proving the telemetry pipeline is alive, fresh, and complete.
-- This is a high-value SRE habit because silent observability failure makes every dashboard lie.
+- Check telemetry freshness and coverage. Missing data can hide failures even when a dashboard shows no alerts.
 - Expected time: 20 minutes.
 
 ## Mini-Lecture (3–5 min before challenge)

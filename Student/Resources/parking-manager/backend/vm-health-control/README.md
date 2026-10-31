@@ -1,6 +1,7 @@
 # VM Health Control
 
-Simulates VM health state changes by sending fake unhealthy/healthy log entries to a custom Log Analytics table. No actual VM changes are made — this is purely a log-generation tool for SRE observability demos.
+Sends synthetic healthy or unhealthy VM records to a custom Log Analytics table for
+observability demos. It does not change VMs.
 
 ## Configuration
 

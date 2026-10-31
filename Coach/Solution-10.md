@@ -6,8 +6,7 @@
 
 ## Purpose
 
-- Show how incidents become durable engineering artifacts instead of disappearing after chat.
-- This challenge closes the loop between monitoring evidence and backlog workflow.
+- Create or update a GitHub issue with incident evidence and next steps for engineering.
 - Expected time: 20 minutes.
 
 ## Mini-Lecture (3–5 min before challenge)

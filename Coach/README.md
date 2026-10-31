@@ -118,11 +118,11 @@ It uses fake Azure/Terraform responses; it does not deploy the lab.
 
 ## Coaching Philosophy
 
-1. **Don't give the answer — give the next question.** When a team is stuck, ask what the agent's last tool call returned, not what command they should run.
-2. **Let the agent surprise them.** The most effective learning moments happen when the agent does something unexpected. Don't pre-warn teams about every capability.
-3. **Enforce the coach discussion questions.** Every challenge has an "Explain to your coach" criterion. Hold teams to it — the conceptual discussion is as important as the working demo.
+1. **Ask guiding questions.** When a team is stuck, ask what the agent's last tool call returned rather than giving them the next command.
+2. **Let teams explore.** Don't explain every capability in advance. Use unexpected agent behavior as a discussion point.
+3. **Require the coach discussion.** Every challenge has an "Explain to your coach" criterion. Check understanding as well as the working demo.
 4. **Time-box fault scenarios.** Challenges 11–13 depend on alert propagation (2–15 min). Start the fault injection early and move to the next challenge's mini-lecture while waiting.
-5. **The lab is the safety net.** All fault scenarios have a `make restore-*` command. If a team breaks something unexpected, `make restore-*` or `make validate` will return the lab to a known good state.
+5. **Restore and verify after faults.** All fault scenarios have a `make restore-*` command. Use the matching command to reverse an injected fault, then use `make validate` to check health. An unexpected failure may need separate diagnosis.
 6. **Separate approval from authorization.** Contributor remains the simplest full-workshop baseline because NSG and UDR challenges require broader writes. If VM Run Command or restart alone is denied, an Owner or Role Based Access Control Administrator can run `make grant-agent-vm-remediation` to add the narrow VM role without replacing existing assignments.
 
 ## Per-Challenge Coach Guide
