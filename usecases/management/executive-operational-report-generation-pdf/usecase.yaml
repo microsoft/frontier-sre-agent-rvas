@@ -1,0 +1,11 @@
+id: executive-operational-report-generation-pdf
+status: idea
+title: "Executive operational report generation (PDF)"
+summary: "Draft a PDF- or HTML-ready report on cost, security, compliance, and availability. Combine Cost Management, Defender for Cloud, Resource Health, alerts, and policy evidence for leadership review."
+domain: management
+trigger: [schedule]
+frequency: "Monthly"
+timeSaved: High
+topPick: true
+samplePrompt: "Generate a monthly executive operational report for management group 'Production' covering the last 30 days. Include sections for: (1) Cost summary — total spend, MoM change, top 5 cost drivers, anomalies detected, (2) Security posture — Defender secure score trend, new high-severity findings, (3) Availability — resource health summary, SLA breaches, top 5 incidents by duration, (4) Compliance — policy compliance %, top non-compliant policies, (5) Operational hygiene — orphaned resources count and cost, stale RBAC assignments found, alert noise ratio. Format as a structured PDF-ready report with an executive summary, key metrics dashboard table, and per-section details with recommendations."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

@@ -1,0 +1,11 @@
+id: resource-group-sprawl-detection
+status: idea
+title: "Resource group sprawl detection"
+summary: "Find empty, single-resource, temporary, or untagged resource groups for an ownership and consolidation review."
+domain: resource-organization
+trigger: [schedule]
+frequency: "Weekly"
+timeSaved: Medium
+topPick: false
+samplePrompt: "Analyze all resource groups across subscriptions. Flag: (1) empty RGs with 0 resources, (2) RGs with only 1 resource (consolidation candidate), (3) RGs with names suggesting temporary/test purpose in production, (4) RGs without required tags. Show RG name, resource count, total cost, and creation date."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

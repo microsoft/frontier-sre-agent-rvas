@@ -1,0 +1,11 @@
+id: fired-alerts-summary-last-24h
+status: idea
+title: "Fired alerts summary (last 24h)"
+summary: "Provides a daily operational summary of all alerts that fired, grouped by severity and resolution status."
+domain: management
+trigger: [schedule]
+frequency: "Daily morning"
+timeSaved: Low
+topPick: false
+samplePrompt: "List all alerts that fired in the last 24 hours across all subscriptions. Group by severity (Sev0-Sev4), show count per severity, average time to resolution, and list unresolved alerts with resource name, alert rule, and time fired."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

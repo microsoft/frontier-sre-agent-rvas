@@ -1,0 +1,11 @@
+id: agent-health-monitoring
+status: idea
+title: "Agent health monitoring"
+summary: "Check AMA health, recent heartbeats, and extension failures for gaps in telemetry collection."
+domain: management
+trigger: [schedule]
+frequency: "Daily"
+timeSaved: Medium
+topPick: false
+samplePrompt: "Check all VMs and Arc machines for monitoring agent health. Identify: (1) machines with no heartbeat in the last 15 minutes, (2) agents in 'Not Ready' or 'Error' state, (3) extension provisioning failures. Show machine name, last heartbeat, agent version, and status."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

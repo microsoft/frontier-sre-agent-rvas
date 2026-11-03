@@ -1,0 +1,11 @@
+id: effective-policies-per-scope
+status: idea
+title: "Effective policies per scope"
+summary: "List effective policies, inherited assignments, parameters, and exemptions at a scope. Identify potential conflicts."
+domain: governance
+trigger: [chat]
+frequency: "During audit"
+timeSaved: Medium
+topPick: false
+samplePrompt: "List all effective policies at scope '{scope}' (subscription/RG/resource). Show: policy name, assignment scope (inherited from where), effect, parameters, and exemptions if any. Identify conflicting policies (e.g., one audits and another denies the same condition)."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

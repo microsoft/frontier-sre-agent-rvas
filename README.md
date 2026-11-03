@@ -15,8 +15,9 @@ investigate:
 | [SQL Server DBA](#sql-server-dba-track) | 10 | Read-only database discovery, Query Store, waits, blocking, query-performance diagnostics, and a build-your-own capstone |
 
 Open `web/index.html` in a browser for the interactive UI (coach mode: **Shift+C**). See also the
-[Scenario Explorer](web/scenarios.html) — a searchable library of 77 real-world Azure SRE Agent
-scenario ideas with ready-to-use sample prompts, sourced from
+[Scenario Explorer](web/scenarios.html) — a searchable library of Azure SRE Agent use cases, from ideas to built agents, generated from the folders in [usecases/](usecases/README.md). To add one, run
+`usecases/_framework/usecases.sh new <domain> <slug>`, fill in the files, then run `usecases/_framework/usecases.sh validate`.
+The ideas come from
 [alsanch/azure-sre-agent-scenarios](https://github.com/alsanch/azure-sre-agent-scenarios).
 
 ### Azure Operations track

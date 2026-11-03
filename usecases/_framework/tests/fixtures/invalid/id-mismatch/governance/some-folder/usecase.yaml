@@ -1,0 +1,6 @@
+id: other-id
+status: idea
+title: Mismatch
+summary: The id does not match the folder.
+domain: governance
+trigger: [chat]

@@ -1,0 +1,11 @@
+id: changes-by-non-service-principal-users
+status: idea
+title: "Changes by non-service-principal users"
+summary: "Review changes made by users rather than service principals or managed identities."
+domain: management
+trigger: [schedule]
+frequency: "Daily"
+timeSaved: High
+topPick: false
+samplePrompt: "Query the Activity Log for the last 24 hours across all subscriptions. Filter for write/delete operations where the caller is NOT a service principal or managed identity. Group by caller, show operation count, resources affected, and timestamps."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

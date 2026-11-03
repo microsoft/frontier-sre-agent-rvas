@@ -1,0 +1,11 @@
+id: cost-anomaly-detection
+status: idea
+title: "Cost anomaly detection"
+summary: "Compare spending with its baseline to find spikes or drops that may indicate misconfiguration, runaway resources, or billing errors."
+domain: billing-entra-tenant
+trigger: [schedule, alert]
+frequency: "Daily + event >20% spike"
+timeSaved: High
+topPick: true
+samplePrompt: "Analyze the cost data for the last 7 days across all subscriptions. Identify any resource or service where daily cost deviates more than 20% from the 30-day rolling average. Provide the resource ID, cost delta, and likely root cause."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

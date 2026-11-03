@@ -1,0 +1,8 @@
+id: skill-only
+status: built
+title: Skill only
+summary: A built use case with a skill and no subagent.
+domain: management
+trigger: [chat]
+products: [azure-monitor]
+autonomy: read-only

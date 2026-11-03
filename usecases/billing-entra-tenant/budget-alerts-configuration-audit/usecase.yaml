@@ -1,0 +1,11 @@
+id: budget-alerts-configuration-audit
+status: idea
+title: "Budget alerts configuration audit"
+summary: "Check budget and alert coverage across subscriptions and critical resource groups."
+domain: billing-entra-tenant
+trigger: [schedule]
+frequency: "Monthly"
+timeSaved: Medium
+topPick: false
+samplePrompt: "Check all subscriptions and resource groups tagged 'CostCenter'. Identify those without a budget configured or where budget alerts are set above 100% only. Recommend budget amounts based on 3-month average spend + 20% buffer."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

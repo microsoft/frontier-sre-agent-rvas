@@ -12,3 +12,12 @@ instructions provided by the bot. You will only need to do this once across all 
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
 For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/)
 or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+## Add a use case
+
+Use cases live in [usecases/](usecases/README.md). Adding one is adding a folder:
+
+1. Run `usecases/_framework/usecases.sh new <domain> <slug>`.
+2. Fill in `usecase.yaml` and the other files.
+3. Run `usecases/_framework/usecases.sh validate`.
+
+The Scenario Explorer is generated from the folders, so nothing else needs editing.

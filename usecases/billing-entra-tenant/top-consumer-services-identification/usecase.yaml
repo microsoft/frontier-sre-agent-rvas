@@ -1,0 +1,11 @@
+id: top-consumer-services-identification
+status: idea
+title: "Top consumer services identification"
+summary: "Identify the Azure services with the highest costs and compare their spending over time."
+domain: billing-entra-tenant
+trigger: [schedule]
+frequency: "Weekly"
+timeSaved: Low
+topPick: false
+samplePrompt: "List the top 10 Azure services by cost in the last 30 days across all subscriptions. For each, show current month cost, previous month cost, percentage change, and number of instances."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

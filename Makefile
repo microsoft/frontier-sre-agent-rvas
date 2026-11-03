@@ -25,6 +25,8 @@ build-web: clean-web
 	@cp -r web/. _site/
 	@# README linked from the page
 	@cp README.md _site/README.md
+	@# Scenario Explorer data, generated from usecases/ (fails when a use case is invalid)
+	@usecases/_framework/usecases.sh index -o _site/usecases.json
 	@# Student challenge markdown files, preserving nested track directories
 	@mkdir -p _site/Student
 	@find Student -type f -name "Challenge-*.md" | while IFS= read -r file; do \

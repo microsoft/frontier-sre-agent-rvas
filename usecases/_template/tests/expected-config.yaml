@@ -1,0 +1,5 @@
+# What `usecases.sh verify` should find on the live agent after deploying this package.
+skills: [example]
+subagents: [example]
+tools: [example]
+scheduledTasks: [example-monthly-check]

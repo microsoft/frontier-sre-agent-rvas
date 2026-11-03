@@ -1,0 +1,11 @@
+id: consolidated-cost-reporting
+status: idea
+title: "Consolidated cost reporting"
+summary: "Summarize spending across management groups, subscriptions, and services for a leadership review."
+domain: billing-entra-tenant
+trigger: [schedule]
+frequency: "Monthly"
+timeSaved: Medium
+topPick: false
+samplePrompt: "Generate a consolidated monthly cost report for all subscriptions under management group 'Production'. Include total spend, month-over-month change, top 10 services by cost, and top 5 fastest-growing resources. Format as a summary suitable for leadership."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

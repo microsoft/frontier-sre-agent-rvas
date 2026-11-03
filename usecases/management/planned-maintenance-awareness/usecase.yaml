@@ -1,0 +1,11 @@
+id: planned-maintenance-awareness
+status: idea
+title: "Planned maintenance awareness"
+summary: "List upcoming Azure maintenance events and affected resources to support failover planning."
+domain: management
+trigger: [schedule]
+frequency: "Daily"
+timeSaved: Low
+topPick: true
+samplePrompt: "List all planned maintenance events from Azure Service Health for the next 7 days affecting my subscriptions. Show event name, affected service, scheduled window, impacted region, and my resources in that region."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

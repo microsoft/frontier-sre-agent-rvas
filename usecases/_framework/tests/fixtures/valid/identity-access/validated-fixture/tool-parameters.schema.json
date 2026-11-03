@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "properties": {
+    "tenant": { "type": "string", "description": "Tenant id" },
+    "days": { "type": "integer" }
+  },
+  "required": ["tenant"]
+}

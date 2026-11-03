@@ -1,0 +1,15 @@
+api_version: azuresre.ai/v1
+kind: SubAgent
+metadata:
+  name: example
+spec:
+  description: Specialist for the example check.
+  handoff_description: Runs the example check and reports findings in a table.
+  enable_skills: true
+  allowed_skills:
+    - example
+  tools:
+    - example
+  system_prompt: |-
+    You are a specialist for the example check. Use the `example` skill.
+    Report findings in a table.

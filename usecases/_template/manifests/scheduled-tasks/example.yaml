@@ -1,0 +1,12 @@
+api_version: azuresre.ai/v1
+kind: ScheduledTask
+metadata:
+  name: example-monthly-check
+spec:
+  description: Monthly run of the example check.
+  schedule: "0 8 1 * *"
+  time_zone: UTC
+  enabled: false
+  agent: example
+  mode: Review
+  prompt: Run the example check and post a summary of the findings.

@@ -1,0 +1,15 @@
+# Allowed values for usecase.yaml fields. Edit here to add a domain or change a vocabulary.
+domain:
+  billing-entra-tenant: { label: "Billing & Entra Tenant", color: "#1A77E3" }
+  identity-access: { label: "Identity & Access", color: "#7c3aed" }
+  resource-organization: { label: "Resource Organization", color: "#0F7B6C" }
+  network-topology: { label: "Network Topology", color: "#f59e0b" }
+  security: { label: "Security", color: "#f87171" }
+  management: { label: "Management", color: "#0078D4" }
+  governance: { label: "Governance", color: "#504092" }
+  platform-devops: { label: "Platform & DevOps", color: "#38bdf8" }
+trigger: [schedule, chat, alert]
+autonomy: [read-only, approval, autonomous]
+timeSaved: [High, Medium, Low]
+status: [idea, built, validated]
+sourceType: [community]

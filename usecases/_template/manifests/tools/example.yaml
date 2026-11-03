@@ -1,0 +1,17 @@
+api_version: azuresre.ai/v1
+kind: Tool
+metadata:
+  name: example
+spec:
+  type: PythonFunctionTool
+  description: Return the findings for the example check.
+  timeoutSeconds: 300
+  functionCode: |
+    def main(subscription_id: str = "") -> dict:
+        """Return the findings for the example check."""
+        return {"subscription": subscription_id, "findings": []}
+  parameters:
+    - name: subscription_id
+      type: string
+      required: false
+      description: Subscription to check

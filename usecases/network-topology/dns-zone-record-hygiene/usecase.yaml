@@ -1,0 +1,11 @@
+id: dns-zone-record-hygiene
+status: idea
+title: "DNS zone record hygiene"
+summary: "Identifies dangling DNS records pointing to deleted Azure resources, which could be hijacked by attackers."
+domain: network-topology
+trigger: [schedule]
+frequency: "Weekly"
+timeSaved: High
+topPick: false
+samplePrompt: "Query all Azure DNS zones and Private DNS zones. For each A, AAAA, and CNAME record, verify the target resource still exists in the subscription. Flag records where: (1) target IP is not assigned to any resource, (2) CNAME target domain is not resolving, (3) alias records referencing deleted resources."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }
