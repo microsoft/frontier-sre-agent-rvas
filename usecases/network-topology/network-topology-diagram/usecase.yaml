@@ -1,0 +1,11 @@
+id: network-topology-diagram
+status: idea
+title: "Network topology diagram"
+summary: "Auto-generates a visual network topology showing VNets, peerings, subnets, gateways, and connected resources."
+domain: network-topology
+trigger: [schedule]
+frequency: "Weekly"
+timeSaved: High
+topPick: false
+samplePrompt: "Generate a Mermaid diagram showing the network topology for subscription '{subscription_name}'. Include all VNets, their subnets, peering connections, VPN/ExpressRoute gateways, private endpoints, and key resources in each subnet. Show address spaces and peering status."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

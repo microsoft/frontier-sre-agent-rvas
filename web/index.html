@@ -299,90 +299,6 @@
             color: #032254;
         }
 
-        /* ─── Subagent inventory ────────────────────────────────────────── */
-        #agents {
-            border-bottom: 1px solid var(--border);
-            background: #F5F8FE;
-        }
-
-        .agent-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 1px;
-            background: #fff;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            overflow: hidden;
-            margin-top: 2rem;
-        }
-
-        .agent-card {
-            background: #fff;
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: .5rem;
-        }
-
-        .agent-name {
-            font-family: var(--font-mono, monospace);
-            font-size: .75rem;
-            font-weight: 500;
-            color: var(--cyan);
-            letter-spacing: .04em;
-        }
-
-        .agent-role {
-            font-family: var(--font-display, "Outfit", sans-serif);
-            font-size: .95rem;
-            font-weight: 700;
-            color: #032254;
-        }
-
-        .agent-desc {
-            font-size: .8rem;
-            color: #47494E;
-            line-height: 1.6;
-            flex: 1;
-        }
-
-        .agent-badges {
-            display: flex;
-            flex-wrap: wrap;
-            gap: .35rem;
-            margin-top: .5rem;
-        }
-
-        .agent-badge {
-            font-family: var(--font-mono, monospace);
-            font-size: .58rem;
-            font-weight: 600;
-            letter-spacing: .08em;
-            text-transform: uppercase;
-            padding: .18rem .5rem;
-            border-radius: 3px;
-        }
-
-        .ab-write {
-            background: rgba(209, 52, 56, .08);
-            color: #D13438;
-        }
-
-        .ab-github {
-            background: rgba(80, 64, 146, .08);
-            color: #504092;
-        }
-
-        .ab-sched {
-            background: rgba(26, 119, 227, .08);
-            color: #1A77E3;
-        }
-
-        .ab-kql {
-            background: rgba(20, 134, 138, .08);
-            color: #14868A;
-        }
-
         /* ─── Coach section ─────────────────────────────────────────────── */
         #coach {
             border-top: 2px solid var(--amber);
@@ -872,10 +788,6 @@
             .coach-card-grid {
                 grid-template-columns: 1fr;
             }
-
-            .agent-grid {
-                grid-template-columns: 1fr;
-            }
         }
     </style>
     <link rel="stylesheet" href="assets/css/brand.css" />
@@ -894,7 +806,6 @@
                 <a href="#requirements">Before you start</a>
                 <a href="#challenges">Azure Operations Track</a>
                 <a href="#sql-dba-track">SQL DBA Track</a>
-                <a href="#agents">Subagents</a>
                 <a href="scenarios.html">Scenario Explorer</a>
                 <a href="jumpstart.html">SRE Agent Jumpstart</a>
                 <a class="gh" href="https://github.com/microsoft/frontier-sre-agent-rvas" target="_blank"
@@ -950,11 +861,9 @@
                         performance without changing the database.
                     </p>
                     <p><a href="#requirements">Before you start: check requirements and choose your Linux environment →</a></p>
-                    <div class="stats stats-4" aria-label="Lab statistics">
+                    <div class="stats" aria-label="Lab statistics">
                         <div class="stat"><span class="stat-num" data-count="30">30</span><span class="stat-lbl">Challenges
                                 across both tracks</span></div>
-                        <div class="stat"><span class="stat-num" data-count="6">6</span><span
-                                class="stat-lbl">Subagents</span></div>
                         <div class="stat"><span class="stat-num" data-count="8">8</span><span
                                 class="stat-lbl">Skills</span></div>
                         <div class="stat"><span class="stat-num" data-count="5">5</span><span class="stat-lbl">Scheduled
@@ -1721,82 +1630,6 @@
                             <div class="card-arrow mono">Open →</div>
                         </div>
                     </a>
-                </div>
-            </div>
-        </section>
-
-        <!-- Subagents -->
-        <section id="agents" class="section">
-            <div class="wrap">
-                <div class="section-label"></div>
-                <h2 class="section-title display reveal">Subagents</h2>
-                <p class="section-desc reveal">
-                    Each subagent is a specialist with its own system prompt, tool grants, and incident routing.
-                    Invoke <code>network-traffic-analyst</code> from chat or a response plan; both lab paths
-                    use autonomous remediation.
-                </p>
-                <div class="agent-grid">
-                    <div class="agent-card">
-                        <div class="agent-name">aca-app-incident-handler</div>
-                        <div class="agent-role">PaaS Incident Handler</div>
-                        <div class="agent-desc">Investigates Grubify Container Apps 5xx incidents. Queries App Insights,
-                            identifies bad revisions, deactivates or rolls back, optionally analyzes source code and
-                            opens GitHub PRs.</div>
-                        <div class="agent-badges">
-                            <span class="agent-badge ab-write">Write CLI</span>
-                            <span class="agent-badge ab-github">GitHub OAuth</span>
-                            <span class="agent-badge ab-kql">App Insights</span>
-                        </div>
-                    </div>
-                    <div class="agent-card">
-                        <div class="agent-name">iaas-vm-incident-handler</div>
-                        <div class="agent-role">IaaS VM Recovery Agent</div>
-                        <div class="agent-desc">Handles NGINX and other VM service failures detected via Syslog. Uses az
-                            vm run-command to restart services and verify recovery.</div>
-                        <div class="agent-badges">
-                            <span class="agent-badge ab-write">Write CLI</span>
-                            <span class="agent-badge ab-kql">Log Analytics</span>
-                        </div>
-                    </div>
-                    <div class="agent-card">
-                        <div class="agent-name">network-traffic-analyst</div>
-                        <div class="agent-role">Network Observability &amp; Remediation</div>
-                        <div class="agent-desc">Analyzes VNet Flow Logs, Traffic Analytics KQL, and NSG/UDR configs.
-                            Supports interactive investigation (CH-13) and autonomous remediation (CH-12).</div>
-                        <div class="agent-badges">
-                            <span class="agent-badge ab-write">Write CLI</span>
-                            <span class="agent-badge ab-kql">NTANetAnalytics</span>
-                        </div>
-                    </div>
-                    <div class="agent-card">
-                        <div class="agent-name">issue-triager</div>
-                        <div class="agent-role">GitHub Issue Classifier</div>
-                        <div class="agent-desc">Runs on a schedule to triage [Customer Issue] GitHub issues. Classifies
-                            as Bug/Performance/Feature/Question, adds labels, and posts a structured bot comment.</div>
-                        <div class="agent-badges">
-                            <span class="agent-badge ab-github">GitHub OAuth</span>
-                            <span class="agent-badge ab-sched">Scheduled</span>
-                        </div>
-                    </div>
-                    <div class="agent-card">
-                        <div class="agent-name">cost-optimization-agent</div>
-                        <div class="agent-role">Cost &amp; Efficiency Analyst</div>
-                        <div class="agent-desc">Reviews Azure resource costs on a weekly schedule. Queries Cost
-                            Management, correlates with workload usage, and reports optimization opportunities.</div>
-                        <div class="agent-badges">
-                            <span class="agent-badge ab-sched">Scheduled</span>
-                            <span class="agent-badge ab-kql">Cost Management</span>
-                        </div>
-                    </div>
-                    <div class="agent-card">
-                        <div class="agent-name">azure-resource-config-auditor</div>
-                        <div class="agent-role">Compliance &amp; Config Auditor</div>
-                        <div class="agent-desc">Audits Azure resource configuration against best practices. Checks SKU
-                            selection, redundancy settings, diagnostic settings, and security posture on demand.</div>
-                        <div class="agent-badges">
-                            <span class="agent-badge ab-kql">Read-only</span>
-                        </div>
-                    </div>
                 </div>
             </div>
         </section>

@@ -1,0 +1,11 @@
+id: policy-exemptions-review
+status: idea
+title: "Policy exemptions review"
+summary: "Audits policy exemptions to find expired ones and those without proper justification that may be covering non-compliance."
+domain: governance
+trigger: [schedule]
+frequency: "Weekly"
+timeSaved: Medium
+topPick: false
+samplePrompt: "List all policy exemptions across subscriptions. Show: exemption name, scope, exempted policy, category (waiver/mitigated), expiration date, and description. Flag: (1) exemptions past their expiration date, (2) exemptions without an expiration date, (3) exemptions with no description/justification."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

@@ -1,0 +1,11 @@
+id: management-group-hierarchy-audit
+status: idea
+title: "Management Group hierarchy audit"
+summary: "Validates the MG hierarchy structure, finding misplaced subscriptions or empty management groups."
+domain: resource-organization
+trigger: [schedule]
+frequency: "Monthly"
+timeSaved: Medium
+topPick: false
+samplePrompt: "Show the full Management Group hierarchy tree. For each MG, show: child subscription count, policies assigned, and RBAC roles. Flag: (1) empty MGs with no children, (2) subscriptions directly under root MG, (3) MGs with conflicting policies compared to parent."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

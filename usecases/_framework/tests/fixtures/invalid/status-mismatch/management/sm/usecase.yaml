@@ -1,0 +1,8 @@
+id: sm
+status: validated
+title: Status mismatch
+summary: Declares validated but has no components.
+domain: management
+trigger: [chat]
+products: [azure-monitor]
+autonomy: read-only

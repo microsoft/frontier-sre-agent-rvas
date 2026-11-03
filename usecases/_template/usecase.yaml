@@ -1,0 +1,26 @@
+id: example
+status: built
+title: Example use case
+summary: One sentence that says what the agent finds or does.
+domain: management
+trigger: [schedule]
+frequency: Monthly
+timeSaved: Medium
+topPick: false
+products: [azure-monitor]
+autonomy: read-only
+samplePrompt: "Run the example check and summarize the findings."
+source: { type: community }
+package:
+  version: 0.1.0
+  apiVersion: azuresre.ai/v1
+  requires:
+    connectors: []
+    roles: []
+  parameters: {}
+  contents:
+    skills: [manifests/skills/example/SKILL.md]
+    subagents: [manifests/subagents/example.yaml]
+    tools: [manifests/tools/example.yaml]
+    scheduledTasks: [manifests/scheduled-tasks/example.yaml]
+    permissions: [permissions/grant-example-permission.ps1]

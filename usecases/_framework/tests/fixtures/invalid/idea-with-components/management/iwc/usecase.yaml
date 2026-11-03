@@ -1,0 +1,8 @@
+id: iwc
+status: idea
+title: Idea with components
+summary: Declares idea but already has a skill and subagent.
+domain: management
+trigger: [chat]
+products: [azure-monitor]
+autonomy: read-only

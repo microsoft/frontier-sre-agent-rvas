@@ -1,0 +1,11 @@
+id: dns-vpn-troubleshooting
+status: idea
+title: "DNS/VPN troubleshooting"
+summary: "Investigate DNS resolution failures and VPN connection issues, then recommend recovery steps."
+domain: network-topology
+trigger: [chat]
+frequency: "During connectivity issues"
+timeSaved: Medium
+topPick: false
+samplePrompt: "Diagnose DNS and VPN issues: (1) check DNS resolution failures — which queries are returning NXDOMAIN or SERVFAIL, from which clients, for which domains, (2) check VPN tunnel status — which tunnels are down, disconnect reason, BGP peer state, and last successful connection time. Provide remediation steps."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

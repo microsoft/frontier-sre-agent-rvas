@@ -1,0 +1,6 @@
+id: bad-schema
+status: idea
+title: Bad schema
+summary: The tool schema is not valid JSON.
+domain: security
+trigger: [chat]

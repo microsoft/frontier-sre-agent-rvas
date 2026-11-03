@@ -1,0 +1,11 @@
+id: automated-compliance-remediation-tasks
+status: idea
+title: "Automated compliance remediation tasks"
+summary: "Triggers Azure Policy remediation tasks for resources that are non-compliant with 'DeployIfNotExists' or 'Modify' policies."
+domain: governance
+trigger: [schedule]
+frequency: "Weekly"
+timeSaved: High
+topPick: false
+samplePrompt: "List all non-compliant resources under policies with effect 'DeployIfNotExists' or 'Modify' that have a remediation task available. For each policy: (1) count of remediable resources, (2) create a remediation task if none exists or last task is > 7 days old, (3) check status of in-progress remediation tasks. Report: tasks created, in-progress, and completed."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

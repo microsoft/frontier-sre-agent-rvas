@@ -1,0 +1,11 @@
+id: logic-apps-code-definition-inspection
+status: idea
+title: "Logic Apps code/definition inspection"
+summary: "Examines the Logic App workflow definition to identify structural issues, deprecated connectors, or error-prone patterns."
+domain: management
+trigger: [chat]
+frequency: "During debugging"
+timeSaved: Medium
+topPick: false
+samplePrompt: "Retrieve the workflow definition for Logic App '{logic_app_name}'. Analyze for: (1) actions without error handling (no 'runAfter' failure paths), (2) deprecated connector versions, (3) hardcoded values that should be parameters, (4) loops without concurrency limits, (5) missing retry policies on HTTP actions."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

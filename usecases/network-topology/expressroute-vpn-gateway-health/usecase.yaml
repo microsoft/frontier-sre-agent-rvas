@@ -1,0 +1,11 @@
+id: expressroute-vpn-gateway-health
+status: idea
+title: "ExpressRoute / VPN Gateway health"
+summary: "Check ExpressRoute and VPN gateway health, tunnel status, BGP peers, and throughput."
+domain: network-topology
+trigger: [schedule, alert]
+frequency: "Every 5 min + alert"
+timeSaved: High
+topPick: false
+samplePrompt: "Check all ExpressRoute circuits and VPN Gateways. Show: (1) circuit/gateway provisioning state, (2) peering state (for ER), (3) tunnel connection status (for VPN), (4) BGP peer state, (5) ingress/egress throughput last 1h vs capacity. Alert on any tunnel down or BGP not established."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

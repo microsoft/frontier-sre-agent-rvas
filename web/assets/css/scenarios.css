@@ -381,8 +381,37 @@
     scrollbar-color: var(--c-line) transparent;
 }
 
-.scenario-drawer-title {
+.scenario-drawer-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
     margin-bottom: .75rem;
+}
+
+.scenario-drawer-title {
+    margin: 0;
+}
+
+.scenario-github-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    flex-shrink: 0;
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--c-accent);
+    background: #fff;
+    border: 1px solid var(--c-line);
+    padding: .4rem .8rem;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: background .2s, border-color .2s;
+}
+
+.scenario-github-btn:hover {
+    border-color: var(--c-accent);
+    background: var(--c-accent-glow);
 }
 
 .scenario-drawer-badges {
@@ -485,4 +514,10 @@
     .scenario-select-group {
         justify-content: space-between;
     }
+}
+
+#scenario-drawer-components.is-empty {
+    list-style: none;
+    padding: 0;
+    margin: 0;
 }

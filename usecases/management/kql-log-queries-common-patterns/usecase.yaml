@@ -1,0 +1,11 @@
+id: kql-log-queries-common-patterns
+status: idea
+title: "KQL log queries (common patterns)"
+summary: "Generates or executes KQL queries for common operational scenarios to speed up log investigations."
+domain: management
+trigger: [chat]
+frequency: "During troubleshooting"
+timeSaved: Medium
+topPick: false
+samplePrompt: "Run the following investigation on Log Analytics workspace '{workspace}': show all errors (severity >= 3) in the last 2 hours, grouped by source resource, error code, and count. Include sample error messages for the top 5 patterns."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

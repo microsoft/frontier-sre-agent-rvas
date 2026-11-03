@@ -1,0 +1,11 @@
+id: public-ip-inventory-justification
+status: idea
+title: "Public IP inventory & justification"
+summary: "List public IPs and their associated resources. Flag unattached IPs and attachments that need justification."
+domain: network-topology
+trigger: [schedule]
+frequency: "Weekly"
+timeSaved: Medium
+topPick: false
+samplePrompt: "List all Public IP addresses across subscriptions. For each, show: resource name, IP address, SKU, associated resource (or 'unattached'), allocation method, and creation date. Flag PIPs that are: unattached, attached to stopped VMs, or attached to non-production resources."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }
