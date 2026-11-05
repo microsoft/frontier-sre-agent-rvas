@@ -26,10 +26,17 @@
                 <img src="assets/img/logo-full.png" alt="RVAP" class="rvap-nav-logo" height="32">
             </a>
             <nav class="nav-links" id="navLinks" aria-label="Primary">
-                <a href="index.html#challenges">Azure Operations Track</a>
-                <a href="index.html#sql-dba-track">SQL DBA Track</a>
-                <a href="scenarios.html" class="active" aria-current="page">Scenario Explorer</a>
+                <a href="index.html" class="active" aria-current="page">Azure SRE Scenario Explorer</a>
                 <a href="jumpstart.html">SRE Agent Jumpstart</a>
+                <div class="nav-menu">
+                    <button type="button" class="nav-menu-btn" aria-haspopup="true" aria-expanded="false">Labs
+                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 4l4 4 4-4" /></svg></button>
+                    <div class="nav-menu-list">
+                        <a href="labs.html#requirements">Before you start</a>
+                        <a href="labs.html#challenges">Azure Operations Track</a>
+                        <a href="labs.html#sql-dba-track">SQL DBA Track</a>
+                    </div>
+                </div>
                 <a class="gh" href="https://github.com/microsoft/frontier-sre-agent-rvas" target="_blank"
                     rel="noopener">GitHub ↗</a>
             </nav>
@@ -48,7 +55,7 @@
     <main>
         <section class="section-tight uc-hero">
             <div class="wrap">
-                <a class="uc-back" href="scenarios.html#explorer">← Scenario Explorer</a>
+                <a class="uc-back" href="index.html#explorer">← Azure SRE Scenario Explorer</a>
                 <div id="uc-error" class="scenario-empty" hidden></div>
                 <div id="uc-head" hidden>
                     <span class="eyebrow" id="uc-category"></span>

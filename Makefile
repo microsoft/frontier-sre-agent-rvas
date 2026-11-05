@@ -21,7 +21,7 @@ build-web: clean-web
 	@echo "Building _site..."
 	@rm -rf _site
 	@mkdir -p _site
-	@# Web source (index.html + assets)
+	@# Web source (index.html, labs.html + assets)
 	@cp -r web/. _site/
 	@# README linked from the page
 	@cp README.md _site/README.md

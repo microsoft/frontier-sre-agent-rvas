@@ -14,8 +14,7 @@ investigate:
 | [Azure Operations](#azure-operations-track) | 20 | Agent fundamentals, Azure observability, autonomous incident response, and FinOps |
 | [SQL Server DBA](#sql-server-dba-track) | 10 | Read-only database discovery, Query Store, waits, blocking, query-performance diagnostics, and a build-your-own capstone |
 
-Open `web/index.html` in a browser for the interactive UI (coach mode: **Shift+C**). See also the
-[Scenario Explorer](web/scenarios.html) — a searchable library of Azure SRE Agent use cases, from ideas to built agents, generated from the folders in [usecases/](usecases/README.md). To add one, run
+Open `web/index.html` in a browser for the [Scenario Explorer](web/index.html), a searchable library of Azure SRE Agent use cases, from ideas to built agents, generated from the folders in [usecases/](usecases/README.md). The labs are in `web/labs.html` (coach mode: **Shift+C**). To add one, run
 `usecases/_framework/usecases.sh new <domain> <slug>`, fill in the files, then run `usecases/_framework/usecases.sh validate`.
 The ideas come from
 [alsanch/azure-sre-agent-scenarios](https://github.com/alsanch/azure-sre-agent-scenarios).

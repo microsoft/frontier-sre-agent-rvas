@@ -35,6 +35,32 @@
     });
   }
 
+  /* ── Dropdown menus ─────────────────────────────────────────────── */
+  function initMenus() {
+    var menus = document.querySelectorAll(".nav-menu");
+    if (!menus.length || document.body.dataset.menuBound) return;
+    document.body.dataset.menuBound = "1";
+    function closeAll(except) {
+      menus.forEach(function (m) {
+        if (m === except) return;
+        m.classList.remove("open");
+        m.querySelector(".nav-menu-btn").setAttribute("aria-expanded", "false");
+      });
+    }
+    menus.forEach(function (m) {
+      var btn = m.querySelector(".nav-menu-btn");
+      btn.addEventListener("click", function () {
+        var open = m.classList.toggle("open");
+        btn.setAttribute("aria-expanded", String(open));
+        closeAll(m);
+      });
+    });
+    document.addEventListener("click", function (e) {
+      if (!e.target.closest(".nav-menu")) closeAll();
+    });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeAll(); });
+  }
+
   /* ── Scroll reveal ──────────────────────────────────────────────── */
   function initReveal() {
     var els = document.querySelectorAll(".reveal:not(.visible)");
@@ -132,6 +158,7 @@
 
   function boot() {
     initNav();
+    initMenus();
     initReveal();
     initCounters();
   }

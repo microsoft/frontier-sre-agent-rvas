@@ -207,6 +207,27 @@ main { flex: 1 0 auto; }
 .nav-links a.gh { color: var(--c-dim); font-weight: 600; }
 .nav-links a.gh:hover { color: var(--c-accent); background: transparent; }
 
+/* Labs dropdown */
+.nav-menu { position: relative; }
+.nav-menu-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 11px; border: 0; border-radius: var(--r-sm); background: transparent;
+  font: inherit; font-size: 0.875rem; font-weight: 500; color: var(--c-dim); cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+.nav-menu-btn:hover, .nav-menu-btn.active, .nav-menu.open .nav-menu-btn { color: var(--c-fg); background: var(--c-600); }
+.nav-menu-list {
+  display: none; position: absolute; top: 100%; left: 0; min-width: 220px; padding: 6px;
+  background: #fff; border: 1px solid var(--c-line); border-radius: var(--r-sm);
+  box-shadow: 0 8px 24px rgba(3, 34, 84, 0.12); z-index: var(--z-dropdown);
+}
+.nav-menu-list a { display: block; white-space: nowrap; }
+.nav-menu.open .nav-menu-list { display: block; }
+@media (hover: hover) { .nav-menu:hover .nav-menu-list { display: block; } }
+.nav-links.open .nav-menu { width: 100%; }
+.nav-links.open .nav-menu-btn { width: 100%; justify-content: space-between; }
+.nav-links.open .nav-menu-list { display: block; position: static; border: 0; box-shadow: none; padding: 0 0 0 12px; }
+
 .nav-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
 @media (min-width: 768px) { .nav-actions { margin-left: 0; } }
 .icon-btn {

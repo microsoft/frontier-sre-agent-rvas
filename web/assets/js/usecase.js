@@ -39,7 +39,7 @@
       var uc = (data.usecases || []).filter(function (u) { return u.id === id; })[0];
       if (!uc) { fail("Use case \"" + id + "\" was not found."); return; }
       if (!uc.page) {
-        location.replace("scenarios.html#explorer");
+        location.replace("index.html#explorer");
         return;
       }
       render(uc, data);
