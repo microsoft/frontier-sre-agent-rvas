@@ -85,7 +85,7 @@
   function renderSide(uc) {
     var pkg = uc.package || {};
 
-    if (uc.samplePrompt) {
+    if (uc.samplePrompt && uc.status === "idea") {
       $("uc-prompt").textContent = uc.samplePrompt;
       $("uc-prompt-card").hidden = false;
       var btn = $("uc-copy");

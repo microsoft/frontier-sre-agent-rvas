@@ -236,7 +236,7 @@
     drawerTitle.textContent = scenario.title;
     drawerDesc.textContent = scenario.summary;
     drawerPrompt.textContent = scenario.samplePrompt || "";
-    promptBlock.hidden = !scenario.samplePrompt;
+    promptBlock.hidden = !scenario.samplePrompt || scenario.status !== "idea";
     drawerFrequency.textContent = scenario.frequency || "—";
     drawerBadges.innerHTML =
       (scenario.topPick ? '<span class="scenario-badge scenario-card-star" style="color:#b45309;border-color:rgba(180,83,9,.3);background:rgba(180,83,9,.08);">★ Quick win</span>' : "") +
