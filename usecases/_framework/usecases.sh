@@ -4,6 +4,7 @@
 #   usecases.sh [--root DIR] validate
 #   usecases.sh [--root DIR] index [-o FILE] [--readme]
 #   usecases.sh [--root DIR] portal-blocks <id|path> [-o FILE]
+#   usecases.sh [--root DIR] package <id|path|--all> [-o DIR]   (builds <id>.zip and <id>.zip.sha256)
 #   usecases.sh [--root DIR] new <domain> <slug>   (creates the next NNNN-<slug> folder)
 #   usecases.sh [--root DIR] deploy <id|path> --endpoint URL [--subscription ID] [--dry-run]
 #   usecases.sh [--root DIR] diff <id|path> --endpoint URL [--subscription ID]
@@ -108,7 +109,8 @@ components_json() {
 }
 
 maturity_of() {
-  jq -r 'if (.skill or .subagent) then (if (.tests and .sampleReport) then "validated" else "built" end) else "idea" end' <<<"$1"
+  jq -r 'if (.skill or .subagent) then (if (.tests and .sampleReport) then "validated" else "built" end)
+         elif .readme then "draft" else "idea" end' <<<"$1"
 }
 
 # Rules -----------------------------------------------------------------------
@@ -225,8 +227,12 @@ build_records() {
     m="$(maturity_of "$c")"
     if [ -f "$d/usecase.yaml" ]; then y="$(jq -c --arg p "$d/usecase.yaml" '.[$p]' <<<"$yj")"
     else y='{"error":"usecase.yaml is missing"}'; fi
-    jq -cn --arg f "$f" --arg d "$d" --argjson y "$y" --argjson c "$c" --arg m "$m" \
-      '{folder:$f, dir:$d, entry:$y, components:$c, maturity:$m}' >>"$RECORDS_FILE"
+    local imgs="[]"
+    if [ -d "$d/docs/images" ]; then
+      imgs="$(cd "$d" && find docs/images -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.gif' -o -iname '*.svg' -o -iname '*.webp' \) | LC_ALL=C sort | jq -R . | jq -sc .)"
+    fi
+    jq -cn --arg f "$f" --arg d "$d" --argjson y "$y" --argjson c "$c" --arg m "$m" --argjson imgs "$imgs" \
+      '{folder:$f, dir:$d, entry:$y, components:$c, maturity:$m, images:$imgs}' >>"$RECORDS_FILE"
   done
 }
 
@@ -289,7 +295,12 @@ build_index_json() {
         (.entry.data + {
           path: "\($root)/\(.folder)",
           components: (.components | {skill, subagent, tool, task, permissions, tests, sampleReport, images}),
-          readme: (if .components.readme then "\($root)/\(.folder)/README.md" else null end)
+          readme: (if .components.readme then "\($root)/\(.folder)/README.md" else null end),
+          images: .images,
+          page: (if .components.readme and .entry.data.status != "idea" then "usecases/\(.folder)/" else null end),
+          download: (if (.entry.data.package != null) and (.entry.data.status == "built" or .entry.data.status == "validated")
+                     then {url: "downloads/\(.folder).zip", sha256Url: "downloads/\(.folder).zip.sha256", version: .entry.data.package.version}
+                     else null end)
         })) | sort_by(.id))
     }' "$RECORDS_FILE"
 }
@@ -622,6 +633,76 @@ cmd_verify() {
   echo "verify: all expected resources found"
 }
 
+# Builds a standalone zip: usecases/<id>/ plus the framework CLI, so the README commands work after unzipping.
+cmd_package() {
+  need jq
+  command -v python3 >/dev/null 2>&1 || die "package: python3 is required"
+  local out="dist" all=false arg=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -o) out="${2:-}"; shift 2 ;;
+      --all) all=true; shift ;;
+      *) arg="$1"; shift ;;
+    esac
+  done
+  mkdir -p "$out"
+  local targets=() d y
+  if $all; then
+    build_records || exit 1
+    while IFS= read -r d; do targets+=("$d"); done < <(
+      jq -r 'select(.entry.data.package != null and (.entry.data.status == "built" or .entry.data.status == "validated")) | .dir' "$RECORDS_FILE")
+    rm -f "$RECORDS_FILE"
+  else
+    targets+=("$(resolve_dir "$arg")")
+  fi
+  for d in "${targets[@]}"; do
+    y="$(yaml_to_json "$d/usecase.yaml")" || exit 1
+    jq -e --arg p "$d/usecase.yaml" '.[$p].data.package != null' >/dev/null <<<"$y" \
+      || die "package: $(basename "$d") has no package block in usecase.yaml"
+    python3 - "$d" "$out" "$FRAMEWORK_DIR" "$(jq -c --arg p "$d/usecase.yaml" '.[$p].data | {id, title, status, package}' <<<"$y")" <<'PY' || exit 1
+import hashlib, json, os, sys, zipfile
+src, out, fw, meta = sys.argv[1:5]
+meta = json.loads(meta)
+name = os.path.basename(src)
+skip_dirs = {"__pycache__", "node_modules", ".git", ".venv", "fixtures"}
+skip_files = {".DS_Store", ".env"}
+entries = []
+def walk(root, prefix, tests_fixtures=False):
+    for dp, dns, fns in os.walk(root):
+        dns[:] = sorted(x for x in dns if x not in skip_dirs)
+        for fn in sorted(fns):
+            if fn in skip_files or fn.endswith(".pyc") or fn.startswith(".env."):
+                continue
+            full = os.path.join(dp, fn)
+            entries.append((full, prefix + "/" + os.path.relpath(full, root).replace(os.sep, "/")))
+walk(src, "usecases/" + name)
+for f in ("usecases.sh", "taxonomy.yaml"):
+    entries.append((os.path.join(fw, f), "usecases/_framework/" + f))
+entries.sort(key=lambda e: e[1])
+manifest = {"id": meta["id"], "title": meta["title"], "status": meta["status"],
+            "version": meta["package"]["version"], "apiVersion": meta["package"]["apiVersion"],
+            "files": [arc for _, arc in entries]}
+zpath = os.path.join(out, name + ".zip")
+def add(z, arc, data, mode):
+    zi = zipfile.ZipInfo(arc, (1980, 1, 1, 0, 0, 0))
+    zi.external_attr = mode << 16
+    zi.compress_type = zipfile.ZIP_DEFLATED
+    z.writestr(zi, data)
+with zipfile.ZipFile(zpath, "w") as z:
+    add(z, "MANIFEST.json", json.dumps(manifest, indent=2) + "\n", 0o644)
+    for full, arc in entries:
+        with open(full, "rb") as fh:
+            add(z, arc, fh.read(), 0o755 if os.access(full, os.X_OK) else 0o644)
+with open(zpath, "rb") as fh:
+    digest = hashlib.sha256(fh.read()).hexdigest()
+with open(zpath + ".sha256", "w") as fh:
+    fh.write(digest + "  " + name + ".zip\n")
+print("packaged " + zpath + " (v" + meta["package"]["version"] + ", " + str(len(entries)) + " files)")
+PY
+  done
+  [ "${#targets[@]}" -gt 0 ] || echo "package: no built use cases with a package block"
+}
+
 main() {
   if [ "${1:-}" = "--root" ]; then ROOT="$(cd "${2:-}" && pwd)" || die "root not found"; shift 2; fi
   local cmd="${1:-}"; [ $# -gt 0 ] && shift
@@ -629,11 +710,12 @@ main() {
     validate) cmd_validate "$@" ;;
     index) cmd_index "$@" ;;
     portal-blocks) cmd_portal_blocks "$@" ;;
+    package) cmd_package "$@" ;;
     new) cmd_new "$@" ;;
     deploy) cmd_deploy "$@" ;;
     diff) cmd_diff "$@" ;;
     verify) cmd_verify "$@" ;;
-    ""|-h|--help|help) sed -n '2,11p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
+    ""|-h|--help|help) sed -n '2,12p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
     *) die "unknown command: $cmd" ;;
   esac
 }

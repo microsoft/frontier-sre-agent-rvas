@@ -8,7 +8,7 @@
   var REPO_TREE = "https://github.com/microsoft/frontier-sre-agent-rvas/tree/main/";
   var TRIGGER_LABELS = { schedule: "Scheduled", chat: "On-demand", alert: "Event-driven" };
   var AUTONOMY_LABELS = { "read-only": "Read-only", approval: "Needs approval", autonomous: "Autonomous" };
-  var STATUS_LABELS = { idea: "Idea", built: "Built", validated: "Validated" };
+  var STATUS_LABELS = { idea: "Idea", draft: "Draft", built: "Built", validated: "Validated" };
   var COMPONENT_LABELS = [
     ["skill", "Skill"], ["subagent", "Subagent"], ["tool", "Tool"], ["task", "Scheduled task"],
     ["permissions", "Permission script"], ["tests", "Tests"], ["sampleReport", "Sample report"]
@@ -23,13 +23,12 @@
   var statusFilter = document.getElementById("scenario-status-filter");
   var topPickToggle = document.getElementById("scenario-toppick-toggle");
   var chipsContainer = document.getElementById("scenario-category-chips");
-  var productChips = document.getElementById("scenario-product-chips");
 
   if (!grid) return;
 
   var SCENARIOS = [];
   var categoryBySlug = {};
-  var state = { query: "", category: "", trigger: "", autonomy: "", status: "", product: "", topPickOnly: false };
+  var state = { query: "", category: "", trigger: "", autonomy: "", status: "", topPickOnly: false };
 
   function showError(message) {
     grid.innerHTML = "";
@@ -73,10 +72,9 @@
     });
     var triggers = uniq(flat(SCENARIOS.map(function (s) { return s.trigger || []; })));
     var autonomies = uniq(SCENARIOS.map(function (s) { return s.autonomy; }).filter(Boolean));
-    var statuses = ["idea", "built", "validated"].filter(function (m) {
+    var statuses = ["idea", "draft", "built", "validated"].filter(function (m) {
       return SCENARIOS.some(function (s) { return s.status === m; });
     });
-    var products = uniq(flat(SCENARIOS.map(function (s) { return s.products || []; }))).sort();
 
     setText("scenario-count-hero", SCENARIOS.length);
     setText("scenario-lede-count", SCENARIOS.length);
@@ -99,20 +97,6 @@
     fillOptions(triggerFilter, triggers, TRIGGER_LABELS);
     fillOptions(autonomyFilter, autonomies, AUTONOMY_LABELS);
     fillOptions(statusFilter, statuses, STATUS_LABELS);
-
-    if (products.length) {
-      products.forEach(function (p) {
-        var btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "scenario-chip";
-        btn.dataset.product = p;
-        btn.setAttribute("aria-pressed", "false");
-        btn.textContent = p;
-        productChips.appendChild(btn);
-      });
-    } else {
-      productChips.hidden = true;
-    }
 
     bindEvents();
     render();
@@ -142,7 +126,6 @@
     if (state.trigger && (scenario.trigger || []).indexOf(state.trigger) === -1) return false;
     if (state.autonomy && scenario.autonomy !== state.autonomy) return false;
     if (state.status && scenario.status !== state.status) return false;
-    if (state.product && (scenario.products || []).indexOf(state.product) === -1) return false;
     if (state.topPickOnly && !scenario.topPick) return false;
     if (state.query) {
       var haystack = (scenario.title + " " + scenario.summary + " " + (scenario.samplePrompt || "")).toLowerCase();
@@ -208,19 +191,6 @@
       });
     });
 
-    productChips.addEventListener("click", function (e) {
-      var btn = e.target.closest(".scenario-chip");
-      if (!btn) return;
-      var selected = state.product === btn.dataset.product;
-      state.product = selected ? "" : btn.dataset.product;
-      productChips.querySelectorAll(".scenario-chip").forEach(function (c) {
-        var on = c === btn && !selected;
-        c.classList.toggle("active", on);
-        c.setAttribute("aria-pressed", String(on));
-      });
-      render();
-    });
-
     topPickToggle.addEventListener("click", function () {
       state.topPickOnly = !state.topPickOnly;
       topPickToggle.classList.toggle("active", state.topPickOnly);
@@ -254,6 +224,9 @@
   var drawerProducts = document.getElementById("scenario-drawer-products");
   var drawerGithub = document.getElementById("scenario-drawer-github");
   var copyBtn = document.getElementById("scenario-copy-btn");
+  var drawerActions = document.getElementById("scenario-drawer-actions");
+  var drawerPage = document.getElementById("scenario-drawer-page");
+  var drawerDownload = document.getElementById("scenario-drawer-download");
   var currentScenario = null;
 
   function openDrawer(scenario) {
@@ -272,6 +245,12 @@
       (scenario.autonomy ? '<span class="scenario-badge scenario-badge-mode">' + escapeHtml(AUTONOMY_LABELS[scenario.autonomy] || scenario.autonomy) + '</span>' : "") +
       (scenario.timeSaved ? '<span class="scenario-badge ' + timeBadgeClass(scenario.timeSaved) + '">' + escapeHtml(scenario.timeSaved) + ' time savings</span>' : "");
     renderComponents(scenario);
+    drawerActions.hidden = !scenario.page;
+    if (scenario.page) {
+      drawerPage.href = "usecase.html?id=" + encodeURIComponent(scenario.id);
+      drawerDownload.hidden = !scenario.download;
+      if (scenario.download) drawerDownload.href = scenario.download.url;
+    }
     copyBtn.textContent = "Copy prompt";
     copyBtn.classList.remove("copied");
     drawer.classList.add("open");

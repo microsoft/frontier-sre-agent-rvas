@@ -52,15 +52,16 @@ Folders that start with `_` are skipped.
 | `title`, `summary` | yes | Free text |
 | `domain` | yes | One of the domains in [`_framework/taxonomy.yaml`](_framework/taxonomy.yaml) |
 | `trigger` | yes | List of `schedule`, `chat`, `alert` |
-| `status` | yes | `idea`, `built` or `validated`. `validate` checks it against the files |
+| `status` | yes | `idea`, `draft`, `built` or `validated`. `validate` checks it against the files |
 | `products` | built and validated | List of Azure products, for example `entra-id` |
 | `autonomy` | built and validated | `read-only`, `approval`, `autonomous` |
 | `frequency`, `timeSaved`, `topPick`, `samplePrompt`, `source` | no | `timeSaved` is `High`, `Medium` or `Low`; `source.type` is `community` |
 
 You declare `status`, and `validate` fails if the files do not support it:
 
-* **idea**: no skill and no subagent.
-* **built**: a skill and / or a subagent.
+* **idea**: no skill and no subagent, and no `README.md`.
+* **draft**: a `README.md` but no skill and no subagent yet. The explorer shows a full documentation page, without a download.
+* **built**: a skill and / or a subagent. With a `package` block in `usecase.yaml`, the site publishes a download.
 * **validated**: built, plus `tests/` and `sample-report/`.
 
 A tool (`generate-*.py`) needs a skill or a subagent next to it.
@@ -74,6 +75,7 @@ All commands are in `usecases/_framework/usecases.sh` and need `jq` and Python 3
 | `validate` | Checks every folder against the contract and the README index. Fails on a secret pattern. Bare GUIDs only warn. This is a pattern check, not a security guarantee. |
 | `index -o <file> [--readme]` | Writes `usecases.json` for the explorer. `--readme` also rewrites the index below. |
 | `portal-blocks <id or path> [-o file]` | Prints the text to paste into the portal: permissions, tool, skill, subagent, task. |
+| `package <id or path or --all> [-o dir]` | Builds `<id>.zip` and `<id>.zip.sha256` for built and validated use cases that have a `package` block. The zip holds `usecases/<id>/` and the framework CLI, so the README commands work after unzipping. |
 | `new <domain> <slug>` | Scaffolds `usecases/<NNNN>-<slug>` from `_template/` with the next number and sets `domain`. |
 | `diff <id or path> --endpoint <url> [--subscription <id>]` | Compares the local tool, skill and subagent with the live agent. Prints NEW, CHANGED or SAME per resource. |
 | `verify <id or path> --endpoint <url> [--subscription <id>]` | Checks that the resources in `tests/expected-config.yaml` exist on the live agent. |
@@ -85,6 +87,8 @@ An agent allows five active skills. `validate` checks the limit per use case, no
 
 Every command accepts `--root DIR` before the command name to work on a use-case tree other than `usecases/`.
 
+The Pages build (`make build-web`) runs `package --all` into `_site/downloads/` and publishes the README and `docs/` of every non-idea use case under `_site/usecases/<id>/`. The explorer links them from `usecase.html?id=<id>`.
+
 Run the framework tests with `usecases/_framework/tests/run.sh`.
 
 ## Index
@@ -93,6 +97,7 @@ Run the framework tests with `usecases/_framework/tests/run.sh`.
 | ID | Title | Domain | Status |
 |----|-------|--------|--------|
 | [0001-6-month-cost-summary-trends](0001-6-month-cost-summary-trends/) | 6-month cost summary & trends | billing-entra-tenant | idea |
+| [0001-six-month-cost-summary-trends](0001-six-month-cost-summary-trends/) | six month cost summary & trends | billing-entra-tenant | idea |
 | [0002-agent-health-monitoring](0002-agent-health-monitoring/) | Agent health monitoring | management | idea |
 | [0003-ai-model-inventory-retirement-lifecycle](0003-ai-model-inventory-retirement-lifecycle/) | AI model inventory & retirement lifecycle | resource-organization | idea |
 | [0004-alert-fatigue-analysis](0004-alert-fatigue-analysis/) | Alert fatigue analysis | management | idea |

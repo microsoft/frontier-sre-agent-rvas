@@ -11,5 +11,5 @@ domain:
 trigger: [schedule, chat, alert]
 autonomy: [read-only, approval, autonomous]
 timeSaved: [High, Medium, Low]
-status: [idea, built, validated]
+status: [idea, draft, built, validated]
 sourceType: [community]

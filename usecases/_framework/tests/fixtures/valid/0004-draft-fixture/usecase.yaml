@@ -1,0 +1,6 @@
+id: 0004-draft-fixture
+status: draft
+title: Idea fixture
+summary: An idea with only a usecase.yaml.
+domain: governance
+trigger: [alert]

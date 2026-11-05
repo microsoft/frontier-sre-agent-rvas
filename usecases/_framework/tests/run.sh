@@ -41,7 +41,9 @@ check "bad-folder-name message" grep -q 'folder name must be <NNNN>-<slug>' <<<"
 
 # Index: declared status and derived components.
 json="$("$SH" --root "$FX/valid" index)"
-check "index count is 3" jq -e '.count == 3' <<<"$json"
+check "index count is 4" jq -e '.count == 4' <<<"$json"
+check "draft status exposed with a page and no download" jq -e '.usecases[] | select(.id=="0004-draft-fixture") | .status=="draft" and .page=="usecases/0004-draft-fixture/" and .download==null' <<<"$json"
+check "idea has no page" jq -e '.usecases[] | select(.id=="0001-idea-fixture") | .page==null' <<<"$json"
 check "validated status exposed" jq -e '.usecases[] | select(.id=="0002-validated-fixture") | .status=="validated" and (has("maturity") | not)' <<<"$json"
 check "idea status exposed" jq -e '.usecases[] | select(.id=="0001-idea-fixture") | .status=="idea"' <<<"$json"
 check "components detected" jq -e '.usecases[] | select(.id=="0002-validated-fixture") | .components | .skill and .subagent and .task and .permissions and .tests and .sampleReport and (.tool=="generate-fixture.py")' <<<"$json"
@@ -101,6 +103,14 @@ check "verify fails when a resource is missing" fails env PATH="$bin:$PATH" "$SH
 
 out="$("$SH" deploy databricks-dependency-configuration-review --endpoint https://example.test --dry-run 2>&1)"
 check "tool code_file is inlined as functionCode" bash -c "grep -q 'tools/generate-databricks-dependency-report.*functionCode' <<<\"\$1\" && ! grep -q 'code_file' <<<\"\$1\"" _ "$out"
+
+# package builds a standalone zip with the framework CLI and a matching checksum.
+pk="$tmp/dist"
+check "package builds a zip" "$SH" --root "$tmp" package my-case -o "$pk"
+check "package checksum matches" bash -c 'cd "$1" && sha256sum -c 0001-my-case.zip.sha256' _ "$pk"
+check "package contains use case and CLI" bash -c 'unzip -l "$1" | grep -q "usecases/0001-my-case/usecase.yaml" && unzip -l "$1" | grep -q "usecases/_framework/usecases.sh"' _ "$pk/0001-my-case.zip"
+check "package is reproducible" bash -c 'a="$(sha256sum <"$1")"; "$2" --root "$3" package my-case -o "$4" >/dev/null && [ "$a" = "$(sha256sum <"$1")" ]' _ "$pk/0001-my-case.zip" "$SH" "$tmp" "$pk"
+check "package rejects an idea" fails "$SH" --root "$FX/valid" package 0001-idea-fixture -o "$pk"
 
 echo "elapsed: $(( $(date +%s) - start ))s; passed $pass, failed $fail"
 [ "$fail" -eq 0 ]

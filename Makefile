@@ -27,6 +27,15 @@ build-web: clean-web
 	@cp README.md _site/README.md
 	@# Scenario Explorer data, generated from usecases/ (fails when a use case is invalid)
 	@usecases/_framework/usecases.sh index -o _site/usecases.json
+	@# Download packages and documentation for use cases that are no longer ideas
+	@mkdir -p _site/downloads _site/usecases
+	@usecases/_framework/usecases.sh package --all -o _site/downloads
+	@jq -r '.usecases[] | select(.page != null) | .id' _site/usecases.json | while IFS= read -r id; do \
+		mkdir -p "_site/usecases/$$id"; \
+		cp "usecases/$$id/README.md" "_site/usecases/$$id/"; \
+		[ -d "usecases/$$id/docs" ] && cp -r "usecases/$$id/docs" "_site/usecases/$$id/"; \
+		true; \
+	done
 	@# Student challenge markdown files, preserving nested track directories
 	@mkdir -p _site/Student
 	@find Student -type f -name "Challenge-*.md" | while IFS= read -r file; do \
