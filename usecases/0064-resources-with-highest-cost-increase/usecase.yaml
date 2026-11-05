@@ -1,0 +1,11 @@
+id: 0064-resources-with-highest-cost-increase
+status: idea
+title: "Resources with highest cost increase"
+summary: "Rank resources by cost growth to identify spending that needs investigation."
+domain: billing-entra-tenant
+trigger: [schedule, alert]
+frequency: "Daily + alert >30% WoW"
+timeSaved: High
+topPick: false
+samplePrompt: "Identify the top 20 resources with the highest absolute cost increase week-over-week across all subscriptions. For each, show resource name, type, previous week cost, current week cost, delta, and percentage increase."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

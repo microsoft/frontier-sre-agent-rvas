@@ -1,0 +1,11 @@
+id: 0019-custom-policy-generation
+status: idea
+title: "Custom Policy generation"
+summary: "Generates Azure Policy definitions for custom compliance requirements that aren't covered by built-in policies."
+domain: governance
+trigger: [chat]
+frequency: "During governance sprint"
+timeSaved: High
+topPick: false
+samplePrompt: "Generate an Azure Policy definition that: {requirement_description}. Include the policy rule, parameters, effect (audit/deny/modify), and the az CLI command to deploy it at subscription scope. Follow Microsoft naming conventions."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

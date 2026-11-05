@@ -1,0 +1,11 @@
+id: 0001-bad-package
+status: idea
+title: Bad package
+summary: Package block points at a missing file.
+domain: security
+trigger: [schedule]
+package:
+  version: one
+  apiVersion: azuresre.ai/v9
+  contents:
+    skills: [missing.md]

@@ -1,5 +1,0 @@
-id: ms
-title: Missing status
-summary: No status declared.
-domain: management
-trigger: [chat]

@@ -1,0 +1,11 @@
+id: 0025-disk-tier-down-opportunities
+status: idea
+title: "Disk tier-down opportunities"
+summary: "Identifies managed disks provisioned at a higher tier than their actual IOPS/throughput demands."
+domain: billing-entra-tenant
+trigger: [schedule]
+frequency: "Bi-weekly"
+timeSaved: Medium
+topPick: false
+samplePrompt: "List all Premium SSD and Ultra Disk managed disks. Compare their actual P95 IOPS and throughput over the last 14 days against provisioned tier limits. Recommend tier-down to Standard SSD where actual usage is below Standard SSD limits. Show savings estimate."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

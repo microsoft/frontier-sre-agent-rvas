@@ -1,0 +1,11 @@
+id: 0060-resource-health-status-summary
+status: idea
+title: "Resource health status summary"
+summary: "Summarize current Resource Health states and list degraded or unavailable resources."
+domain: management
+trigger: [schedule]
+frequency: "Every 1h"
+timeSaved: Medium
+topPick: false
+samplePrompt: "Query Azure Resource Health for all resources in subscriptions. Show summary: count by health status (Available, Degraded, Unavailable, Unknown). List all resources currently in 'Degraded' or 'Unavailable' state with reason and since-when timestamp."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

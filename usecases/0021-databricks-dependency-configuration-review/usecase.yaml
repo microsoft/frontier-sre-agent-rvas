@@ -1,0 +1,34 @@
+id: 0021-databricks-dependency-configuration-review
+status: built
+title: "Azure Databricks dependency and configuration review"
+summary: "Read-only review of a fixed Azure Databricks scope: dependency map (observed, inferred, unknown), security, FinOps and optimization findings, delivered as HTML, JSON and two CSVs."
+domain: platform-devops
+trigger: [chat]
+frequency: "On demand"
+timeSaved: High
+topPick: false
+products: [azure-databricks, azure-sre-agent, azure-resource-manager, unity-catalog]
+autonomy: read-only
+samplePrompt: "Run the complete Azure Databricks dependency map and configuration review for <APPROVED_DATABRICKS_WORKSPACE_NAME> using operation=report and deliver all four files."
+source: { type: community, url: "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/08-databricks-dependency-configuration-review" }
+package:
+  version: 0.1.0
+  apiVersion: azuresre.ai/v1
+  requires:
+    connectors: []
+    roles:
+      - "Reader on the Databricks resource group (ARM)"
+      - "CAN VIEW on in-scope jobs, pipelines, SQL warehouses and compute (Databricks)"
+      - "BROWSE, USE CATALOG, USE SCHEMA on in-scope Unity Catalog objects"
+  parameters:
+    SUBSCRIPTION_ID: Subscription of the Databricks workspace
+    SRE_TENANT_ID: Tenant of the SRE Agent
+    TARGET_TENANT_ID: Tenant of the Databricks workspace
+    MANAGED_IDENTITY_CLIENT_ID: Client ID of the agent user-assigned managed identity
+    FEDERATED_APP_CLIENT_ID: App registration used for cross-tenant federation, if any
+    APPROVED_WORKSPACES: Allowlist of workspace names, resource groups and hosts
+  contents:
+    tools: [manifests/tools/generate-databricks-dependency-report.yaml]
+    skills: [manifests/skills/databricks-dependency-live/SKILL.md]
+    subagents: [manifests/subagents/databricks-dependency-live.yaml]
+    permissions: [permissions/grant-databricks-reader.ps1]

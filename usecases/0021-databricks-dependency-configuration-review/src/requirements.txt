@@ -1,0 +1,2 @@
+azure-identity>=1.19,<2
+Pillow>=12.2,<13

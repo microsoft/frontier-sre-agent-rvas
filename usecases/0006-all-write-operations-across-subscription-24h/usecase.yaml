@@ -1,0 +1,11 @@
+id: 0006-all-write-operations-across-subscription-24h
+status: idea
+title: "All write operations across subscription (24h)"
+summary: "Provides a daily digest of all infrastructure changes for operational awareness and audit trail."
+domain: management
+trigger: [schedule]
+frequency: "Daily digest"
+timeSaved: Medium
+topPick: false
+samplePrompt: "Summarize all write and delete operations in subscription '{subscription_name}' in the last 24 hours. Group by resource type, show total operations count, and flag any failed operations. Exclude read-only and diagnostic operations."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

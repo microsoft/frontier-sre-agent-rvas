@@ -1,0 +1,7 @@
+id: 0001-no-products
+status: built
+title: No products
+summary: A built use case without products.
+domain: security
+trigger: [chat]
+autonomy: read-only

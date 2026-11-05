@@ -1,6 +1,0 @@
-id: dm
-status: idea
-title: Domain mismatch
-summary: Sits under security but declares management.
-domain: management
-trigger: [chat]

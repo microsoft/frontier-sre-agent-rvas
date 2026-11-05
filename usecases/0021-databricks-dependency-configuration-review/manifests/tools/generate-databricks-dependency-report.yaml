@@ -1,0 +1,72 @@
+api_version: azuresre.ai/v1
+kind: Tool
+metadata:
+  name: generate-databricks-dependency-report
+spec:
+  type: PythonFunctionTool
+  description: Read-only Azure Databricks dependency mapping, configuration, security, FinOps and optimization
+    review for a fixed approved workspace allowlist. operation=report writes four files (HTML, snapshot
+    JSON, findings CSV, dependencies CSV); query filters a fresh collection; list_workspaces returns the
+    configured roster without network calls.
+  timeoutSeconds: 900
+  code_file: ./generate-databricks-dependency-report.py
+  parameters:
+  - name: operation
+    type: string
+    required: false
+    description: 'report writes four complete files for selected fixed workspace(s); query filters a fresh
+      collection; list_workspaces returns the configured roster without authentication/network, not observed
+      health. Allowed: report, query, list_workspaces.'
+  - name: view
+    type: string
+    required: false
+    description: 'findings exposes all checks; report findings contains failed checks only. coverage exposes
+      scoped source receipts. dependencies exposes OBSERVED, INFERRED and UNKNOWN nodes, edges and blind
+      spots. Allowed: summary, workspace, compute, jobs, pipelines, warehouses, unity_catalog, resources,
+      findings, finops, coverage, actions, dependencies.'
+  - name: workspace_name
+    type: string
+    required: false
+    description: 'Exact fixed operator allowlist. Empty selects the first configured workspace; replace
+      enum privately with the same approved names as code. Allowed: <APPROVED_DATABRICKS_WORKSPACE_NAME>.'
+  - name: workspace_names
+    type: string
+    required: false
+    description: One to five distinct, exact comma-separated fixed allowlist names, without spaces. Mutually
+      exclusive with workspace_name.
+  - name: workload_name
+    type: string
+    required: false
+    description: Exact local filter for cluster, job, pipeline, SQL warehouse, Unity Catalog object or
+      resource name; no URL/path/query/command.
+  - name: classification
+    type: string
+    required: false
+    description: 'Local provenance filter for view=dependencies: OBSERVED native ID/key joins, INFERRED
+      URI/host references, or UNKNOWN blind spots. Allowed: all, OBSERVED, INFERRED, UNKNOWN.'
+  - name: area
+    type: string
+    required: false
+    description: ' Allowed: all, best_practices, security, finops, optimization.'
+  - name: level
+    type: string
+    required: false
+    description: ' Allowed: all, workspace, workload, resource.'
+  - name: severity
+    type: string
+    required: false
+    description: ' Allowed: all, critical, high, medium, low.'
+  - name: status
+    type: string
+    required: false
+    description: ' Allowed: all, passed, failed, not_evaluated, not_applicable, complete, partial, denied,
+      error, not_configured.'
+  - name: limit
+    type: integer
+    required: false
+    description: Requested row count; 3500-byte default-JSON budget may return fewer whole rows with exact
+      paging disclosure.
+  - name: offset
+    type: integer
+    required: false
+    description: Local offset in this fresh collection; not a persistent cursor.

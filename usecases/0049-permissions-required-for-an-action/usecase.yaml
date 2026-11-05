@@ -1,0 +1,11 @@
+id: 0049-permissions-required-for-an-action
+status: idea
+title: "Permissions required for an action"
+summary: "Determines the minimum RBAC permissions required to perform a specific Azure operation, supporting least-privilege design."
+domain: identity-access
+trigger: [chat]
+frequency: "During access request"
+timeSaved: Medium
+topPick: false
+samplePrompt: "What is the minimum RBAC role or specific permissions needed to perform: '{operation_description}'? Show: (1) required resource provider operations (e.g., Microsoft.Compute/virtualMachines/start/action), (2) matching built-in role(s), (3) if no exact match, a custom role definition JSON with minimum permissions."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

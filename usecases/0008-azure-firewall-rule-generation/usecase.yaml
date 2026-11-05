@@ -1,0 +1,11 @@
+id: 0008-azure-firewall-rule-generation
+status: idea
+title: "Azure Firewall rule generation"
+summary: "Draft Azure Firewall rules from traffic requirements and naming conventions."
+domain: network-topology
+trigger: [chat]
+frequency: "During provisioning"
+timeSaved: Medium
+topPick: false
+samplePrompt: "Generate an Azure Firewall network rule to allow traffic from subnet '{source_subnet}' to '{destination}' on ports {ports}. Follow naming convention '{prefix}-{direction}-{service}'. Include the az CLI command and Bicep snippet to deploy it."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

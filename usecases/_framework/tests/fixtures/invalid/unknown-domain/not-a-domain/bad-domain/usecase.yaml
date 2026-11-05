@@ -1,6 +1,0 @@
-id: bad-domain
-status: idea
-title: Bad domain
-summary: The domain is not in the taxonomy.
-domain: not-a-domain
-trigger: [chat]

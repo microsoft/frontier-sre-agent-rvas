@@ -1,0 +1,11 @@
+id: 0043-move-resources-between-subscriptions
+status: idea
+title: "Move resources between subscriptions"
+summary: "Validates and plans resource moves between subscriptions, checking for blockers and dependencies."
+domain: resource-organization
+trigger: [chat]
+frequency: "During reorg"
+timeSaved: High
+topPick: false
+samplePrompt: "Evaluate moving resources from resource group '{source_rg}' to subscription '{target_subscription}'. Run validation: (1) check resource types that support move, (2) identify resources that cannot be moved (locks, dependencies), (3) check quota in target subscription, (4) identify impacted RBAC and policies. Generate the move command with --validate-only first."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

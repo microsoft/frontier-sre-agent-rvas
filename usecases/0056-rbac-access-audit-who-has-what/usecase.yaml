@@ -1,0 +1,11 @@
+id: 0056-rbac-access-audit-who-has-what
+status: idea
+title: "RBAC access audit (who has what)"
+summary: "Review who has access, at which scope, and through which role. Flag broad or stale assignments."
+domain: identity-access
+trigger: [schedule]
+frequency: "Weekly"
+timeSaved: High
+topPick: false
+samplePrompt: "List all role assignments across subscription '{subscription_name}'. For each, show: principal name, principal type (user/group/SP), role, scope, assignment source (direct/inherited). Flag: (1) Owner/Contributor at subscription scope, (2) assignments to individual users (should be groups), (3) assignments where principal no longer exists in Entra ID."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

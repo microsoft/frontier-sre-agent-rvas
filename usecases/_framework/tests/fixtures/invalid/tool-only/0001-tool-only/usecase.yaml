@@ -1,0 +1,6 @@
+id: 0001-tool-only
+status: idea
+title: Tool only
+summary: Has a tool but no skill or subagent.
+domain: management
+trigger: [chat]

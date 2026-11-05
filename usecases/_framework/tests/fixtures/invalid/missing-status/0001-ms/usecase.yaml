@@ -1,0 +1,5 @@
+id: 0001-ms
+title: Missing status
+summary: No status declared.
+domain: management
+trigger: [chat]

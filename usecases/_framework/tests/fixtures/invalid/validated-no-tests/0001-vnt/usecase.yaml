@@ -1,0 +1,8 @@
+id: 0001-vnt
+status: validated
+title: Validated without tests
+summary: Declares validated but has no tests or sample report.
+domain: management
+trigger: [chat]
+products: [azure-monitor]
+autonomy: read-only

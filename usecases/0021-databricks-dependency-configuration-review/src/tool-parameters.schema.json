@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "generate-databricks-dependency-report parameters",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "operation": {
+      "type": "string",
+      "enum": ["report", "query", "list_workspaces"],
+      "default": "report",
+      "description": "report writes four complete files for selected fixed workspace(s); query filters a fresh collection; list_workspaces returns the configured roster without authentication/network, not observed health."
+    },
+    "view": {
+      "type": "string",
+      "enum": [
+        "summary",
+        "workspace",
+        "compute",
+        "jobs",
+        "pipelines",
+        "warehouses",
+        "unity_catalog",
+        "resources",
+        "findings",
+        "finops",
+        "coverage",
+        "actions",
+        "dependencies"
+      ],
+      "default": "summary",
+      "description": "findings exposes all checks; report findings contains failed checks only. coverage exposes scoped source receipts. dependencies exposes OBSERVED, INFERRED and UNKNOWN nodes, edges and blind spots."
+    },
+    "workspace_name": {
+      "type": "string",
+      "enum": ["", "<APPROVED_DATABRICKS_WORKSPACE_NAME>"],
+      "maxLength": 64,
+      "default": "",
+      "description": "Exact fixed operator allowlist. Empty selects the first configured workspace; replace enum privately with the same approved names as code."
+    },
+    "workspace_names": {
+      "type": "string",
+      "maxLength": 324,
+      "pattern": "^(?:[A-Za-z0-9_.()-]{1,64}(?:,[A-Za-z0-9_.()-]{1,64}){0,4})?$",
+      "default": "",
+      "description": "One to five distinct, exact comma-separated fixed allowlist names, without spaces. Mutually exclusive with workspace_name."
+    },
+    "workload_name": {
+      "type": "string",
+      "maxLength": 253,
+      "pattern": "^[A-Za-z0-9_.:()-]*$",
+      "default": "",
+      "description": "Exact local filter for cluster, job, pipeline, SQL warehouse, Unity Catalog object or resource name; no URL/path/query/command."
+    },
+    "classification": {
+      "type": "string",
+      "enum": ["all", "OBSERVED", "INFERRED", "UNKNOWN"],
+      "default": "all",
+      "description": "Local provenance filter for view=dependencies: OBSERVED native ID/key joins, INFERRED URI/host references, or UNKNOWN blind spots."
+    },
+    "area": {
+      "type": "string",
+      "enum": ["all", "best_practices", "security", "finops", "optimization"],
+      "default": "all"
+    },
+    "level": {
+      "type": "string",
+      "enum": ["all", "workspace", "workload", "resource"],
+      "default": "all"
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["all", "critical", "high", "medium", "low"],
+      "default": "all"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "all",
+        "passed",
+        "failed",
+        "not_evaluated",
+        "not_applicable",
+        "complete",
+        "partial",
+        "denied",
+        "error",
+        "not_configured"
+      ],
+      "default": "all"
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 25,
+      "description": "Requested row count; 3500-byte default-JSON budget may return fewer whole rows with exact paging disclosure."
+    },
+    "offset": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 500000,
+      "default": 0,
+      "description": "Local offset in this fresh collection; not a persistent cursor."
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "operation": { "enum": ["report", "list_workspaces"] } } },
+      "then": {
+        "properties": {
+          "view": { "const": "summary" },
+          "workload_name": { "const": "" },
+          "classification": { "const": "all" },
+          "area": { "const": "all" },
+          "level": { "const": "all" },
+          "severity": { "const": "all" },
+          "status": { "const": "all" },
+          "limit": { "const": 25 },
+          "offset": { "const": 0 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "workspace_name": { "minLength": 1 } }, "required": ["workspace_name"] },
+      "then": { "properties": { "workspace_names": { "const": "" } } }
+    },
+    {
+      "if": { "properties": { "workspace_names": { "minLength": 1 } }, "required": ["workspace_names"] },
+      "then": { "properties": { "workspace_name": { "const": "" } } }
+    },
+    {
+      "if": { "properties": { "operation": { "const": "list_workspaces" } } },
+      "then": { "properties": { "workspace_name": { "const": "" }, "workspace_names": { "const": "" } } }
+    }
+  ]
+}

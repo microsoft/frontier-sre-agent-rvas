@@ -1,0 +1,11 @@
+id: 0069-ssl-tls-certificate-expiration-tracking
+status: idea
+title: "SSL/TLS certificate expiration tracking"
+summary: "Track certificate expiry across Azure services and flag upcoming renewals."
+domain: network-topology
+trigger: [schedule]
+frequency: "Daily"
+timeSaved: High
+topPick: false
+samplePrompt: "Scan all certificates in: Key Vaults, App Service certificates, Application Gateway SSL certs, Front Door custom domains, and API Management. Show certificate subject, issuer, expiration date, and days remaining. Alert on any certificate expiring within 30 days."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

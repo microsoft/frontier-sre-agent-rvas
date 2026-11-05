@@ -1,0 +1,11 @@
+id: 0022-ddos-protection-coverage-audit
+status: idea
+title: "DDoS protection coverage audit"
+summary: "Identifies VNets hosting public-facing workloads without DDoS Protection Standard enabled."
+domain: network-topology
+trigger: [schedule]
+frequency: "Monthly"
+timeSaved: Medium
+topPick: false
+samplePrompt: "List all VNets containing subnets with public IP addresses or Application Gateways. Check whether DDoS Protection Standard is enabled on each VNet. Flag VNets with public-facing resources but no DDoS protection. Show VNet name, public resource count, and estimated DDoS plan cost."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

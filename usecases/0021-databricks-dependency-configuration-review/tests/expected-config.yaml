@@ -1,0 +1,4 @@
+skills: [databricks-dependency-live]
+subagents: [databricks-dependency-live]
+tools: [generate-databricks-dependency-report]
+scheduledTasks: []

@@ -1,0 +1,7 @@
+*.py text eol=lf
+rules_catalog.json text eol=lf
+report_template.html text eol=lf
+tool-parameters.schema.json text eol=lf
+visual-evidence.json text eol=lf
+native-readiness-validation.json -text whitespace=-blank-at-eol
+*.png binary
