@@ -1,0 +1,11 @@
+id: 0073-support-ticket-creation-pre-populated
+status: idea
+title: "Support ticket creation (pre-populated)"
+summary: "Draft a support ticket with resource configuration, metrics, errors, recent changes, and health evidence."
+domain: management
+trigger: [chat]
+frequency: "After auto-resolve fails"
+timeSaved: Medium
+topPick: false
+samplePrompt: "Prepare a support ticket for resource '{resource_id}' issue: '{issue_description}'. Collect and include: (1) resource config and SKU, (2) relevant metrics last 4h, (3) related errors in logs, (4) recent changes from Activity Log, (5) Resource Health status. Format as a support request with severity, category, and collected evidence."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

@@ -1,0 +1,11 @@
+id: 0036-firewall-log-analysis-kql
+status: idea
+title: "Firewall log analysis (KQL)"
+summary: "Analyzes Azure Firewall logs to identify blocked traffic patterns, top talkers, and potential misconfigurations."
+domain: network-topology
+trigger: [schedule, chat]
+frequency: "Daily + on-demand"
+timeSaved: High
+topPick: false
+samplePrompt: "Query Azure Firewall diagnostic logs for the last 24 hours. Show: (1) top 20 denied flows by count, (2) denied flows where source is an internal subnet (potential misconfiguration), (3) allowed flows to suspicious destinations, (4) traffic volume by rule collection."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

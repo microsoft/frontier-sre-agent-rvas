@@ -1,0 +1,870 @@
+{
+  "generated_at_utc": "2026-10-16T19:08:56.336008+00:00",
+  "status": "PARENT_VISUALLY_REVIEWED_READINESS_IMAGES_ONLY",
+  "images": [
+    {
+      "filename": "01-saved-tool-and-12-parameters.png",
+      "sha256": "9ca4954d7153175a111e7bbbb18dc1d6c4ec53fcc6a548c9ca5a0f3d22de7916",
+      "bytes": 128294,
+      "width": 1520,
+      "height": 1356,
+      "evidence_kind": "actual_saved_SRE_or_unconfigured_readiness_UI",
+      "caption": "Real saved Python tool profile: verify the exact tool name, definition-only main signature and all 12 native parameter rows; limit and offset use int.",
+      "callouts": [
+        {
+          "number": 1,
+          "meaning": "The exact saved dedicated tool name",
+          "box": [
+            927,
+            68,
+            1483,
+            129
+          ],
+          "badge": [
+            932,
+            42,
+            959,
+            65
+          ]
+        },
+        {
+          "number": 2,
+          "meaning": "Actual main signature excerpt; full saved source is verified separately",
+          "box": [
+            927,
+            351,
+            1493,
+            615
+          ],
+          "badge": [
+            932,
+            325,
+            959,
+            348
+          ]
+        },
+        {
+          "number": 3,
+          "meaning": "All twelve native parameter rows, including integer limit and offset",
+          "box": [
+            927,
+            643,
+            1493,
+            1259
+          ],
+          "badge": [
+            932,
+            617,
+            959,
+            640
+          ]
+        }
+      ],
+      "privacy_and_annotation_pixel_proof": true,
+      "PNG_metadata_absent": true,
+      "customer_source_assessment": "NOT_CONFIGURED_NOT_RUN"
+    },
+    {
+      "filename": "02-private-code-and-timeout.png",
+      "sha256": "94f90a3fa09e3c91435ab8d0a046c95a10ad93eeeff5802cca5b21bb6d607db9",
+      "bytes": 39066,
+      "width": 1400,
+      "height": 1278,
+      "evidence_kind": "actual_saved_SRE_or_unconfigured_readiness_UI",
+      "caption": "Actual saved-tool edit view: exact name, 900-second timeout and complete code editor. The entire private configuration/logo editor region is deliberately masked, not replaced with invented code.",
+      "callouts": [
+        {
+          "number": 1,
+          "meaning": "Keep the dedicated saved name and 900-second timeout",
+          "box": [
+            722,
+            165,
+            1093,
+            238
+          ],
+          "badge": [
+            727,
+            139,
+            754,
+            162
+          ]
+        },
+        {
+          "number": 2,
+          "meaning": "Paste the complete reviewed file; private identity and artwork source is masked",
+          "box": [
+            722,
+            343,
+            1383,
+            1181
+          ],
+          "badge": [
+            727,
+            317,
+            754,
+            340
+          ]
+        }
+      ],
+      "privacy_and_annotation_pixel_proof": true,
+      "PNG_metadata_absent": true,
+      "customer_source_assessment": "NOT_CONFIGURED_NOT_RUN"
+    },
+    {
+      "filename": "03-identity-access-off.png",
+      "sha256": "ecae5ceb0a053dbc90f306aa159ec52bcf0e548b79e8439d16fb972165213523",
+      "bytes": 31751,
+      "width": 1400,
+      "height": 1278,
+      "evidence_kind": "actual_saved_SRE_or_unconfigured_readiness_UI",
+      "caption": "Actual Identity tab with Enable Azure Identity OFF. The fixed collector uses explicit managed-identity authentication after valid configuration; this toggle does not grant cross-tenant access.",
+      "callouts": [
+        {
+          "number": 1,
+          "meaning": "Open the native Identity tab",
+          "box": [
+            921,
+            105,
+            995,
+            152
+          ],
+          "badge": [
+            926,
+            79,
+            953,
+            102
+          ]
+        },
+        {
+          "number": 2,
+          "meaning": "Enable Azure Identity is OFF; source authorization is separate",
+          "box": [
+            725,
+            206,
+            1021,
+            249
+          ],
+          "badge": [
+            730,
+            180,
+            757,
+            203
+          ]
+        }
+      ],
+      "privacy_and_annotation_pixel_proof": true,
+      "PNG_metadata_absent": true,
+      "customer_source_assessment": "NOT_CONFIGURED_NOT_RUN"
+    },
+    {
+      "filename": "04-native-unconfigured-test.png",
+      "sha256": "ff0f4877fe84b7a8bfea68a301ac6a19ce7cafdca624739cfbb055a5d1b70f3a",
+      "bytes": 62957,
+      "width": 1400,
+      "height": 1278,
+      "evidence_kind": "actual_saved_SRE_or_unconfigured_readiness_UI",
+      "caption": "Actual native Test playground: Function test succeeded means Python returned normally, while the domain result is configuration_required and artifact_status=not_written. No tenant-B authentication, source read, report or simulated graph occurred.",
+      "callouts": [
+        {
+          "number": 1,
+          "meaning": "The actual native Test action",
+          "box": [
+            722,
+            196,
+            828,
+            242
+          ],
+          "badge": [
+            727,
+            170,
+            754,
+            193
+          ]
+        },
+        {
+          "number": 2,
+          "meaning": "Harness execution success is not source-access success",
+          "box": [
+            735,
+            288,
+            1341,
+            334
+          ],
+          "badge": [
+            740,
+            262,
+            767,
+            285
+          ]
+        },
+        {
+          "number": 3,
+          "meaning": "Read the real configuration_required / not_written result",
+          "box": [
+            734,
+            362,
+            1341,
+            475
+          ],
+          "badge": [
+            739,
+            336,
+            766,
+            359
+          ]
+        }
+      ],
+      "privacy_and_annotation_pixel_proof": true,
+      "PNG_metadata_absent": true,
+      "customer_source_assessment": "NOT_CONFIGURED_NOT_RUN"
+    },
+    {
+      "filename": "05-saved-runtime-skill.png",
+      "sha256": "43b8f5131178f5d7b6873facd645d2d3396b0615239621035b008d2fdc6c7878",
+      "bytes": 85931,
+      "width": 1520,
+      "height": 816,
+      "evidence_kind": "actual_saved_SRE_or_unconfigured_readiness_UI",
+      "caption": "Actual saved databricks-dependency-live skill: one dedicated tool binding and the full SKILL.md file, independently matched to committed bytes.",
+      "callouts": [
+        {
+          "number": 1,
+          "meaning": "Exact saved runtime skill name",
+          "box": [
+            927,
+            68,
+            1483,
+            129
+          ],
+          "badge": [
+            932,
+            42,
+            959,
+            65
+          ]
+        },
+        {
+          "number": 2,
+          "meaning": "Bind only the dedicated Databricks Python tool",
+          "box": [
+            927,
+            279,
+            1493,
+            397
+          ],
+          "badge": [
+            932,
+            253,
+            959,
+            276
+          ]
+        },
+        {
+          "number": 3,
+          "meaning": "The complete SKILL.md is saved, not a shortened procedure",
+          "box": [
+            927,
+            418,
+            1493,
+            535
+          ],
+          "badge": [
+            932,
+            392,
+            959,
+            415
+          ]
+        }
+      ],
+      "privacy_and_annotation_pixel_proof": true,
+      "PNG_metadata_absent": true,
+      "customer_source_assessment": "NOT_CONFIGURED_NOT_RUN"
+    },
+    {
+      "filename": "06-saved-restricted-specialist.png",
+      "sha256": "0dec47ec6b4f6be0762bc01c765b228f7454af7bddf6afd62e41d2ed9151b9d5",
+      "bytes": 101553,
+      "width": 1520,
+      "height": 796,
+      "evidence_kind": "actual_saved_SRE_or_unconfigured_readiness_UI",
+      "caption": "Actual specialist profile: full source-qualified instructions, the dedicated tool and matching skill. No hooks or additional execution surface is added; saved policy is verified independently of summary badges.",
+      "callouts": [
+        {
+          "number": 1,
+          "meaning": "Saved specialist and complete instruction body",
+          "box": [
+            927,
+            68,
+            1493,
+            424
+          ],
+          "badge": [
+            932,
+            42,
+            959,
+            65
+          ]
+        },
+        {
+          "number": 2,
+          "meaning": "Only the dedicated Databricks tool",
+          "box": [
+            927,
+            448,
+            1493,
+            564
+          ],
+          "badge": [
+            932,
+            422,
+            959,
+            445
+          ]
+        },
+        {
+          "number": 3,
+          "meaning": "The exact matching runtime skill",
+          "box": [
+            927,
+            578,
+            1483,
+            651
+          ],
+          "badge": [
+            932,
+            552,
+            959,
+            575
+          ]
+        }
+      ],
+      "privacy_and_annotation_pixel_proof": true,
+      "PNG_metadata_absent": true,
+      "customer_source_assessment": "NOT_CONFIGURED_NOT_RUN"
+    },
+    {
+      "filename": "07-saved-explicit-allowlists.png",
+      "sha256": "fdc252d09e49820873a4eb6f21cbf4ddcff88494c6d63bf27b5c8b091f8f3ec6",
+      "bytes": 71012,
+      "width": 1206,
+      "height": 805,
+      "evidence_kind": "actual_saved_SRE_or_unconfigured_readiness_UI",
+      "caption": "Actual saved form: verify selected tool and skill names, not inherited-global summary counts. Save and Discard are disabled because this is unchanged saved state; do not change Global Settings.",
+      "callouts": [
+        {
+          "number": 1,
+          "meaning": "The exact selected runtime skill overrides an empty/default selection",
+          "box": [
+            18,
+            509,
+            730,
+            587
+          ],
+          "badge": [
+            23,
+            483,
+            50,
+            506
+          ]
+        },
+        {
+          "number": 2,
+          "meaning": "The exact selected dedicated tool, not global inheritance",
+          "box": [
+            18,
+            649,
+            730,
+            730
+          ],
+          "badge": [
+            23,
+            623,
+            50,
+            646
+          ]
+        },
+        {
+          "number": 3,
+          "meaning": "Saved state is unchanged; Save and Discard are disabled",
+          "box": [
+            864,
+            746,
+            1075,
+            792
+          ],
+          "badge": [
+            869,
+            720,
+            896,
+            743
+          ]
+        }
+      ],
+      "privacy_and_annotation_pixel_proof": true,
+      "PNG_metadata_absent": true,
+      "customer_source_assessment": "NOT_CONFIGURED_NOT_RUN"
+    },
+    {
+      "filename": "08-create-drop-down-arrow.png",
+      "sha256": "3d84dfea1278e4284f44a79b443f6f0f5d15fbb81efa55c2e98cdd33b1a5493a",
+      "bytes": 6173,
+      "width": 162,
+      "height": 191,
+      "evidence_kind": "actual_saved_SRE_or_unconfigured_readiness_UI",
+      "caption": "Real Builder navigation excerpt in Canvas view: use the arrow beside Create, then Tool and Python tool. Clicking the Create button body opens the custom-agent form instead. This navigation-only crop is not Databricks deployment evidence.",
+      "callouts": [
+        {
+          "number": 1,
+          "meaning": "Use the Create drop-down arrow, not its custom-agent button body",
+          "box": [
+            101,
+            1,
+            131,
+            39
+          ],
+          "badge": [
+            133,
+            44,
+            160,
+            67
+          ]
+        },
+        {
+          "number": 2,
+          "meaning": "Choose Tool, then Python tool in its submenu",
+          "box": [
+            10,
+            134,
+            144,
+            172
+          ],
+          "badge": [
+            133,
+            137,
+            160,
+            160
+          ]
+        }
+      ],
+      "privacy_and_annotation_pixel_proof": true,
+      "PNG_metadata_absent": true,
+      "customer_source_assessment": "NOT_CONFIGURED_NOT_RUN"
+    },
+    {
+      "filename": "09-native-no-source-no-files.png",
+      "sha256": "e7b5a8b2a19c652c6c42fd88d30d724fd041cbe7f3cfb267fcaa761c010e3af1",
+      "bytes": 70469,
+      "width": 810,
+      "height": 798,
+      "evidence_kind": "actual_saved_SRE_or_unconfigured_readiness_UI",
+      "caption": "Actual selected-specialist readiness conversation: the collector stops before authentication, explicitly returns configuration_required, and discloses that no source data, dependency graph or four-file bundle exists. LIVE is the collector-path label, not evidence of a connected source run.",
+      "callouts": [
+        {
+          "number": 1,
+          "meaning": "Actual returned configuration_required / not_written result",
+          "box": [
+            20,
+            73,
+            792,
+            255
+          ],
+          "badge": [
+            25,
+            47,
+            52,
+            70
+          ]
+        },
+        {
+          "number": 2,
+          "meaning": "The actual answer explicitly states that no source read occurred",
+          "box": [
+            21,
+            360,
+            792,
+            412
+          ],
+          "badge": [
+            26,
+            334,
+            53,
+            357
+          ]
+        },
+        {
+          "number": 3,
+          "meaning": "No graph, score, cost figure or report files were fabricated",
+          "box": [
+            21,
+            411,
+            792,
+            489
+          ],
+          "badge": [
+            26,
+            385,
+            53,
+            408
+          ]
+        }
+      ],
+      "privacy_and_annotation_pixel_proof": true,
+      "PNG_metadata_absent": true,
+      "customer_source_assessment": "NOT_CONFIGURED_NOT_RUN"
+    },
+    {
+      "filename": "10-select-registered-specialist.png",
+      "sha256": "9dd905354901b84a2503739cd1b6152eafeaa3909129272886cb53deeabccac9",
+      "bytes": 10030,
+      "width": 550,
+      "height": 90,
+      "evidence_kind": "actual_saved_SRE_or_unconfigured_readiness_UI",
+      "caption": "Actual /agent picker excerpt showing the full registered databricks-dependency-live name. Unrelated specialists are excluded by the crop; this is not a typed @name substitute.",
+      "callouts": [
+        {
+          "number": 1,
+          "meaning": "Choose the real registered Databricks specialist",
+          "box": [
+            22,
+            8,
+            528,
+            34
+          ],
+          "badge": [
+            521,
+            1,
+            548,
+            24
+          ]
+        }
+      ],
+      "privacy_and_annotation_pixel_proof": true,
+      "PNG_metadata_absent": true,
+      "customer_source_assessment": "NOT_CONFIGURED_NOT_RUN"
+    },
+    {
+      "filename": "11-selected-specialist-composer.png",
+      "sha256": "384e1788baabca2030aabd6db3096318091bb5b3cf8391981f720dbffb4c579c",
+      "bytes": 20765,
+      "width": 810,
+      "height": 242,
+      "evidence_kind": "actual_saved_SRE_or_unconfigured_readiness_UI",
+      "caption": "Actual New chat composer after selecting the saved specialist; no message is sent by this capture. The visible chip can be ellipsized; use the full registered name shown in the preceding image.",
+      "callouts": [
+        {
+          "number": 1,
+          "meaning": "The composer now targets the actual saved specialist; no message was sent",
+          "box": [
+            62,
+            125,
+            229,
+            172
+          ],
+          "badge": [
+            67,
+            99,
+            94,
+            122
+          ]
+        },
+        {
+          "number": 2,
+          "meaning": "Enter the approved report or readiness prompt only after selecting the specialist",
+          "box": [
+            30,
+            89,
+            779,
+            120
+          ],
+          "badge": [
+            35,
+            63,
+            62,
+            86
+          ]
+        }
+      ],
+      "privacy_and_annotation_pixel_proof": true,
+      "PNG_metadata_absent": true,
+      "customer_source_assessment": "NOT_CONFIGURED_NOT_RUN"
+    },
+    {
+      "filename": "12-live-chat-four-files.png",
+      "bytes": 111957,
+      "sha256": "24d5d53beb65365cd6d0e6db61e36f9259618990575cf6a518f43c0d5d2b7d7f",
+      "width": 1400,
+      "height": 760,
+      "evidence_kind": "actual_connected_cross_tenant_live_run",
+      "caption": "Connected cross-tenant report turn (cross_tenant_multitenant_fic): delivers all four native files, discloses partial source coverage (14 complete, 6 denied, 4 not_configured) alongside the local score, and summarizes OBSERVED, INFERRED and UNKNOWN dependency counts without starting compute.",
+      "callouts": [
+        {
+          "number": 1,
+          "meaning": "Four native downloadable files (HTML, full snapshot JSON, findings CSV, dependencies CSV) returned from one report call",
+          "box": [
+            53,
+            237,
+            1347,
+            314
+          ],
+          "badge": [
+            57,
+            211,
+            85,
+            235
+          ]
+        },
+        {
+          "number": 2,
+          "meaning": "Cross-tenant source coverage (14 complete Plane 2 sources, 6 denied 403 sources, 4 not_configured) and local score beside 31 No evaluado checks",
+          "box": [
+            53,
+            322,
+            696,
+            685
+          ],
+          "badge": [
+            57,
+            296,
+            85,
+            320
+          ]
+        },
+        {
+          "number": 3,
+          "meaning": "Deep dependency graph counts (9 OBSERVED joins, 2 INFERRED ADLS URI edges, 12 UNKNOWN blind spots) with zero compute started",
+          "box": [
+            704,
+            322,
+            1347,
+            685
+          ],
+          "badge": [
+            708,
+            296,
+            736,
+            320
+          ]
+        }
+      ],
+      "privacy_and_annotation_pixel_proof": true,
+      "PNG_metadata_absent": true,
+      "customer_source_assessment": "CONNECTED_CROSS_TENANT_PARTIAL_LIVE_RUN"
+    },
+    {
+      "filename": "13-report-overview-and-pillars.png",
+      "bytes": 136580,
+      "sha256": "c2b4890e422a6cd238d6364d544c1cb50543fa62ff2e42f237f5c79f80fe076a",
+      "width": 1440,
+      "height": 1020,
+      "evidence_kind": "actual_connected_cross_tenant_live_run",
+      "caption": "Generated Spanish HTML dossier cover and executive overview (customer-neutral CLIENTE rendering): local score is always paired with evaluated (4), No evaluado (31) and coverage (11.43%) across the 4 areas and 5 WAF pillars.",
+      "callouts": [
+        {
+          "number": 1,
+          "meaning": "Top action bar with dark-mode toggle and local JSON / Dependencies CSV / Findings CSV / Print exports",
+          "box": [
+            8,
+            8,
+            1432,
+            76
+          ],
+          "badge": [
+            388,
+            6,
+            416,
+            30
+          ]
+        },
+        {
+          "number": 2,
+          "meaning": "Live cross-tenant provenance card (CLIENTE, cross_tenant_multitenant_fic, LIVE, LAB, UTC timestamp)",
+          "box": [
+            271,
+            110,
+            1400,
+            554
+          ],
+          "badge": [
+            275,
+            84,
+            303,
+            108
+          ]
+        },
+        {
+          "number": 3,
+          "meaning": "Executive reading, local score donut and area/pillar breakdown paired with evaluated (4) and No evaluado (31) counts",
+          "box": [
+            271,
+            586,
+            1400,
+            1010
+          ],
+          "badge": [
+            275,
+            560,
+            303,
+            584
+          ]
+        }
+      ],
+      "privacy_and_annotation_pixel_proof": true,
+      "PNG_metadata_absent": true,
+      "customer_source_assessment": "CONNECTED_CROSS_TENANT_PARTIAL_LIVE_RUN"
+    },
+    {
+      "filename": "14-report-dependency-graph.png",
+      "bytes": 110468,
+      "sha256": "684b1a83fab822ed1ba1418092c3389c021414bc4ad51357f4889b8e143917c2",
+      "width": 1440,
+      "height": 1020,
+      "evidence_kind": "actual_connected_cross_tenant_live_run",
+      "caption": "Section 3 Deep Dependency Map: interactive layer and provenance filters separating 9 OBSERVED native ID joins from 2 INFERRED ADLS Gen2 URI references.",
+      "callouts": [
+        {
+          "number": 1,
+          "meaning": "Observed vs. undeployed reference tabs and interactive layer/classification filters (OBSERVED, INFERRED, UNKNOWN)",
+          "box": [
+            271,
+            239,
+            1400,
+            409
+          ],
+          "badge": [
+            275,
+            213,
+            303,
+            237
+          ]
+        },
+        {
+          "number": 2,
+          "meaning": "Visual architecture cards across the 5 layers (Control Plane, Compute, Orchestration, Unity Catalog Governance, Associated Azure Resources)",
+          "box": [
+            271,
+            417,
+            1400,
+            899
+          ],
+          "badge": [
+            275,
+            391,
+            303,
+            415
+          ]
+        },
+        {
+          "number": 3,
+          "meaning": "Dependency edges table showing 9 OBSERVED native ID joins and 2 INFERRED ADLS Gen2 URI edges",
+          "box": [
+            272,
+            949,
+            1399,
+            1010
+          ],
+          "badge": [
+            276,
+            923,
+            304,
+            947
+          ]
+        }
+      ],
+      "privacy_and_annotation_pixel_proof": true,
+      "PNG_metadata_absent": true,
+      "customer_source_assessment": "CONNECTED_CROSS_TENANT_PARTIAL_LIVE_RUN"
+    },
+    {
+      "filename": "15-report-controls-and-reference.png",
+      "bytes": 118916,
+      "sha256": "4e2174f9a949222010bb93cfe529bc88404acb352bada4da22808c9f4484438b",
+      "width": 1440,
+      "height": 1020,
+      "evidence_kind": "actual_connected_cross_tenant_live_run",
+      "caption": "Undeployed Azure Databricks Well-Architected Lakehouse reference tab ('Propuesta de referencia - NO desplegada'), kept visually separate from observed customer inventory.",
+      "callouts": [
+        {
+          "number": 1,
+          "meaning": "Explicitly labeled 'Propuesta de referencia - NO desplegada' tab so reference components are never mistaken for deployed customer assets",
+          "box": [
+            628,
+            239,
+            961,
+            287
+          ],
+          "badge": [
+            632,
+            213,
+            660,
+            237
+          ]
+        },
+        {
+          "number": 2,
+          "meaning": "Well-Architected Lakehouse reference diagram and component table across Control Plane, Compute, Orchestration, Unity Catalog and Cross-Tenant Federation",
+          "box": [
+            271,
+            376,
+            1400,
+            1010
+          ],
+          "badge": [
+            275,
+            350,
+            303,
+            374
+          ]
+        }
+      ],
+      "privacy_and_annotation_pixel_proof": true,
+      "PNG_metadata_absent": true,
+      "customer_source_assessment": "CONNECTED_CROSS_TENANT_PARTIAL_LIVE_RUN"
+    },
+    {
+      "filename": "16-report-source-coverage-ledger.png",
+      "bytes": 87136,
+      "sha256": "0c619cdac5f00f7902484176fb16532cdaaccf3be4c2e036be0327502ca55490",
+      "width": 1440,
+      "height": 1020,
+      "evidence_kind": "actual_connected_cross_tenant_live_run",
+      "caption": "Section 8 Source Coverage & HTTP Receipts Ledger: shows Plane 1 ARM 403 denials alongside Plane 2 Workspace/Unity Catalog complete reads.",
+      "callouts": [
+        {
+          "number": 1,
+          "meaning": "Plane 1 ARM receipts honestly recorded as denied (HTTP 403) and not_configured when Azure RBAC Reader is pending on the target resource group",
+          "box": [
+            273,
+            268,
+            1398,
+            610
+          ],
+          "badge": [
+            277,
+            242,
+            305,
+            266
+          ]
+        },
+        {
+          "number": 2,
+          "meaning": "Plane 2 Databricks Workspace & Unity Catalog REST sources returning complete (HTTP 200) via cross_tenant_multitenant_fic alongside optional admin 403s",
+          "box": [
+            273,
+            688,
+            1398,
+            1009
+          ],
+          "badge": [
+            277,
+            662,
+            305,
+            686
+          ]
+        }
+      ],
+      "privacy_and_annotation_pixel_proof": true,
+      "PNG_metadata_absent": true,
+      "customer_source_assessment": "CONNECTED_CROSS_TENANT_PARTIAL_LIVE_RUN"
+    }
+  ]
+}

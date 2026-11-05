@@ -1,0 +1,11 @@
+id: 0071-subscription-hygiene-score
+status: idea
+title: "Subscription hygiene score"
+summary: "Score subscriptions against tag, lock, alert, diagnostic, policy, and Defender for Cloud coverage."
+domain: resource-organization
+trigger: [schedule]
+frequency: "Weekly"
+timeSaved: High
+topPick: false
+samplePrompt: "Calculate a hygiene score (0-100) for each subscription based on: (1) tag compliance (20%), (2) resource lock coverage (15%), (3) alert rule coverage (20%), (4) diagnostic settings coverage (15%), (5) policy compliance (15%), (6) Defender for Cloud score (15%). Show score breakdown and improvement recommendations for subscriptions scoring < 70."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

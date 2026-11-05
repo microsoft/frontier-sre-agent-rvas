@@ -1,0 +1,1054 @@
+<!doctype html>
+<!--
+THESIS: An offline Lakehouse consulting dossier connects dated Azure Databricks dependency and configuration evidence to human engineering decisions without fabricating lineage or savings.
+OWN-WORLD: Fluent 2 reading layout framed by corporate industrial navy/steel (#003865, #0066a1) and Databricks lakehouse lava/teal (#ff3621, #00875a) ribbon; color never substitutes for evidence.
+STORY: Establish cross-tenant/identity provenance, read the local index beside coverage, inspect OBSERVED vs INFERRED vs UNKNOWN dependencies, drill into workloads/Unity Catalog, and prioritize actions.
+-->
+<html lang="es-ES">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta name="color-scheme" content="light dark">
+<title>Revisión Azure Databricks | Mapa de dependencias y configuración</title>
+<style>
+:root {
+  color-scheme: light;
+  --canvas: #f4f6f8; --surface: #ffffff; --subtle: #f8fafc; --wash: #edf1f5;
+  --ink: #1b242c; --muted: #52606d; --line: #cbd5e1; --field-line: #7b8794;
+  --accent: #003865; --accent-hover: #002848; --accent-wash: #eef4f9; --on-accent: #ffffff;
+  --critical: #a4262c; --critical-wash: #fde7e9; --high: #9c2b13; --high-wash: #ffede8;
+  --medium: #795b00; --medium-wash: #fff8d6; --low: #475569; --low-wash: #edf2f7;
+  --observed: #005a3c; --observed-wash: #e3fcef;
+  --inferred: #795b00; --inferred-wash: #fff8d6;
+  --unknown: #475569; --unknown-wash: #edf2f7;
+  --chrome: #003865; --chrome-hover: #002848; --on-chrome: #ffffff; --chrome-line: #b8d0e5;
+  --cover: #eef4f9; --cover-ink: #002b4e; --cover-muted: #334e68;
+  --nav: #e6eff7; --nav-ink: #002b4e; --nav-muted: #3e5871;
+  --brand-navy: #003865; --brand-lava: #ff3621; --brand-steel: #0066a1; --brand-teal: #00875a;
+  --radius: 4px; --space: 16px;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas: #141a1f; --surface: #1b242c; --subtle: #24303a; --wash: #2e3c48;
+  --ink: #f1f5f9; --muted: #cbd5e1; --line: #475569; --field-line: #94a3b8;
+  --accent: #7cc4fa; --accent-hover: #a5d8ff; --accent-wash: #1b3348; --on-accent: #141a1f;
+  --critical: #ffb3b8; --critical-wash: #442326; --high: #ffbaa8; --high-wash: #42251d;
+  --medium: #f5d875; --medium-wash: #383323; --low: #d6d6d6; --low-wash: #2e3c48;
+  --observed: #8ce9bf; --observed-wash: #16382b;
+  --inferred: #f5d875; --inferred-wash: #383323;
+  --unknown: #cbd5e1; --unknown-wash: #2e3c48;
+  --chrome: #002848; --chrome-hover: #003865; --on-chrome: #f1f5f9; --chrome-line: #84b6de;
+  --cover: #162b3d; --cover-ink: #d0e8ff; --cover-muted: #bdd8ef;
+  --nav: #132535; --nav-ink: #d0e8ff; --nav-muted: #bdd8ef;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: auto; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--canvas); color: var(--ink); font: 16px/1.5 "Segoe UI", system-ui, sans-serif; overflow-wrap: anywhere; }
+[hidden] { display: none !important; }
+button, input, select { font: inherit; }
+button, select, input { min-height: 40px; border: 1px solid var(--field-line); border-radius: var(--radius); background: var(--surface); color: var(--ink); padding: 6px 12px; }
+button { cursor: pointer; font-weight: 600; }
+button:hover:not(:disabled), select:hover, input:hover { background: var(--wash); }
+button.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+button.primary:hover:not(:disabled) { background: var(--accent-hover); }
+a { color: var(--accent); text-underline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.skip { position: absolute; left: 16px; top: -100px; z-index: 5; padding: 12px 16px; background: var(--surface); border: 2px solid var(--accent); }
+.skip:focus { top: 12px; }
+.toolbar { border-bottom: 1px solid var(--chrome-line); background: var(--chrome); color: var(--on-chrome); }
+.toolbar-inner { max-width: 1440px; margin: auto; display: flex; gap: 16px; align-items: center; justify-content: space-between; padding: 14px 32px; flex-wrap: wrap; }
+.toolbar-title { font-size: 18px; font-weight: 600; }
+.toolbar-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.toolbar button { background: transparent; color: var(--on-chrome); border-color: var(--chrome-line); font-size: 14px; }
+.toolbar button:hover:not(:disabled) { background: var(--chrome-hover); }
+.toolbar button.primary { background: #ffffff; color: #002b4e; border-color: #ffffff; }
+.brand-ribbon { display: flex; height: 5px; }
+.brand-ribbon span { flex: 1; }
+.brand-ribbon .navy { background: var(--brand-navy); }
+.brand-ribbon .lava { background: var(--brand-lava); }
+.brand-ribbon .steel { background: var(--brand-steel); }
+.brand-ribbon .teal { background: var(--brand-teal); }
+.shell { max-width: 1440px; margin: auto; display: grid; grid-template-columns: 230px minmax(0, 1fr); }
+.contents { padding: 32px 20px 24px 28px; align-self: start; position: sticky; top: 0; background: var(--nav); min-height: calc(100vh - 70px); }
+.contents h2 { font-size: 16px; margin: 0 0 12px; color: var(--nav-ink); }
+.contents ol { padding: 0; margin: 0; list-style: none; display: grid; gap: 4px; }
+.contents a { display: block; font-size: 14px; padding: 8px; border-radius: var(--radius); color: var(--nav-ink); text-decoration: none; }
+.contents a:hover, .contents a:focus-visible { background: var(--accent-wash); color: var(--accent); }
+.document { min-width: 0; background: var(--surface); border-left: 1px solid var(--line); padding: 40px 44px 32px; }
+h1 { margin: 0 0 16px; font-size: 36px; line-height: 1.25; font-weight: 600; letter-spacing: -.02em; color: var(--cover-ink); }
+h2 { margin: 0 0 14px; font-size: 26px; line-height: 1.3; font-weight: 600; color: var(--cover-ink); }
+h3 { margin: 0 0 10px; font-size: 19px; line-height: 1.35; font-weight: 600; }
+p { margin: 0 0 14px; }
+.muted { color: var(--muted); font-size: 14px; }
+.cover-head { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 28px; align-items: start; background: var(--cover); border: 1px solid var(--line); padding: 24px; border-radius: var(--radius); }
+.brand-plaque { color-scheme: only light; background: #ffffff; color: #334155; border: 1px solid #cbd5e1; width: 220px; max-width: 100%; min-height: 76px; padding: 14px; display: flex; align-items: center; justify-content: center; }
+.brand-plaque img { max-width: 100%; max-height: 56px; object-fit: contain; display: block; }
+.brand-placeholder { color: #334155; font-size: 19px; font-weight: 600; letter-spacing: .04em; }
+.client-name { margin: 8px 0 0; font-size: 17px; font-weight: 600; color: var(--cover-ink); }
+.provenance { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.badge { display: inline-block; font-size: 12px; font-weight: 600; border: 1px solid var(--line); background: var(--subtle); padding: 3px 8px; border-radius: var(--radius); }
+.badge.critical { background: var(--critical-wash); color: var(--critical); border-color: var(--critical); }
+.badge.high { background: var(--high-wash); color: var(--high); border-color: var(--high); }
+.badge.medium { background: var(--medium-wash); color: var(--medium); border-color: var(--medium); }
+.badge.low { background: var(--low-wash); color: var(--low); border-color: var(--low); }
+.badge.OBSERVED { background: var(--observed-wash); color: var(--observed); border-color: var(--observed); }
+.badge.INFERRED { background: var(--inferred-wash); color: var(--inferred); border-color: var(--inferred); }
+.badge.UNKNOWN { background: var(--unknown-wash); color: var(--unknown); border-color: var(--unknown); }
+.cover-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px 24px; padding: 24px 0; margin: 0; }
+dt { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+dd { margin: 0; font-size: 15px; font-weight: 600; }
+.chapter { padding-top: 44px; margin-top: 40px; border-top: 1px solid var(--line); min-width: 0; }
+.score-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 32px; margin: 24px 0; }
+.global-index { padding-right: 24px; border-right: 1px solid var(--line); }
+.score-value { display: block; font-size: 42px; font-weight: 600; font-variant-numeric: tabular-nums; margin: 10px 0; }
+.score-row { margin-bottom: 14px; }
+.score-row-head { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.score-track { height: 8px; background: var(--wash); border-radius: 2px; overflow: hidden; border: 1px solid var(--line); }
+.score-fill { background: var(--brand-lava); height: 100%; }
+.assessment-chart { margin: 24px 0; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 28px; align-items: center; padding: 20px; background: var(--accent-wash); border: 1px solid var(--line); }
+.assessment-chart svg { width: 180px; height: auto; display: block; margin: auto; }
+.filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin: 16px 0; padding: 16px; background: var(--subtle); border: 1px solid var(--line); border-radius: var(--radius); }
+.filter-field { display: grid; gap: 4px; font-size: 13px; font-weight: 600; }
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+.tabs button[aria-selected="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.table-wrap { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
+th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { background: var(--subtle); font-weight: 600; }
+.graph-box { overflow-x: auto; border: 1px solid var(--line); background: var(--subtle); padding: 16px; margin: 16px 0; }
+.graph-box svg { min-width: 720px; width: 100%; height: auto; display: block; }
+.finops-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin: 20px 0; }
+.finops-panel { padding: 20px; border: 1px solid var(--line); background: var(--subtle); }
+.finops-amount { font-size: 34px; font-weight: 600; margin: 8px 0; }
+.error-banner { padding: 20px; border: 2px solid var(--critical); background: var(--critical-wash); color: var(--critical); margin: 20px 0; }
+@media (max-width: 960px) {
+  .shell { grid-template-columns: 1fr; }
+  .contents { position: static; min-height: auto; border-bottom: 1px solid var(--line); }
+  .document { border-left: 0; padding: 24px 16px; }
+  .cover-head, .score-layout, .assessment-chart, .finops-grid, .cover-facts { grid-template-columns: 1fr; }
+  .global-index { border-right: 0; padding-right: 0; border-bottom: 1px solid var(--line); padding-bottom: 16px; }
+}
+@media print {
+  .toolbar, .filters, .tabs, .no-print { display: none !important; }
+  .shell { display: block; }
+  .contents { display: none; }
+  .document { border: 0; padding: 0; }
+  [hidden].print-show { display: block !important; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main-document">Saltar al contenido principal</a>
+<header class="toolbar">
+  <div class="toolbar-inner">
+    <div class="toolbar-title">Dossier de Dependencias y Configuración Azure Databricks</div>
+    <div class="toolbar-controls">
+      <label id="workspace-selector-wrap" hidden>Workspace:
+        <select id="workspace-selector" aria-label="Seleccionar workspace"></select>
+      </label>
+      <button type="button" id="theme-toggle">Modo oscuro</button>
+      <button type="button" id="export-json-btn">Exportar JSON</button>
+      <button type="button" id="export-deps-csv-btn">Exportar Dependencias CSV</button>
+      <button type="button" id="export-findings-csv-btn">Exportar Hallazgos CSV</button>
+      <button type="button" class="primary" id="print-btn">Imprimir / PDF</button>
+    </div>
+  </div>
+  <div class="brand-ribbon" aria-hidden="true">
+    <span class="navy"></span><span class="lava"></span><span class="steel"></span><span class="teal"></span>
+  </div>
+</header>
+<div class="shell">
+  <nav class="contents" aria-label="Índice del informe">
+    <h2>Contenido</h2>
+    <ol>
+      <li><a href="#sec-cover">1. Portada y procedencia</a></li>
+      <li><a href="#sec-executive">2. Resumen ejecutivo y WAF</a></li>
+      <li><a href="#sec-dependencies">3. Mapa de dependencias</a></li>
+      <li><a href="#sec-inventory">4. Inventario Lakehouse y ARM</a></li>
+      <li><a href="#sec-findings">5. Hallazgos y reglas</a></li>
+      <li><a href="#sec-finops">6. FinOps y capacidad</a></li>
+      <li><a href="#sec-actions">7. Plan de acción</a></li>
+      <li><a href="#sec-sources">8. Fuentes y metodología</a></li>
+    </ol>
+  </nav>
+  <main class="document" id="main-document">
+    <div id="opening-state" class="error-banner" hidden></div>
+    <div id="multi-overview" hidden></div>
+    <div id="workspace-error-view" class="error-banner" hidden></div>
+    <div id="report-body" hidden>
+      <section id="sec-cover">
+        <div class="cover-head">
+          <div>
+            <h1 id="cover-title">Revisión de arquitectura, dependencias y configuración de Azure Databricks</h1>
+            <p class="muted" id="cover-subtitle"></p>
+            <div class="provenance" id="cover-badges"></div>
+          </div>
+          <div class="brand">
+            <div class="brand-plaque" id="brand-plaque"></div>
+            <p class="client-name" id="client-name-label"></p>
+          </div>
+        </div>
+        <dl class="cover-facts" id="cover-facts"></dl>
+        <p class="muted" id="cover-resource-id"></p>
+      </section>
+
+      <section class="chapter" id="sec-executive">
+        <h2>2. Lectura ejecutiva, cobertura e indicadores locales</h2>
+        <p class="muted">El índice local mide únicamente las reglas evaluadas sobre evidencia observada. Nunca sustituye una evaluación oficial de Microsoft Well-Architected ni oculta fuentes no evaluadas.</p>
+        <ul id="executive-messages"></ul>
+        <div class="score-layout">
+          <div class="global-index" id="global-score-box"></div>
+          <div>
+            <h3>Desglose por área (Buenas prácticas, Seguridad, FinOps, Optimización)</h3>
+            <div id="area-scores"></div>
+            <h3>Desglose por pilar Well-Architected</h3>
+            <div id="pillar-scores"></div>
+          </div>
+        </div>
+        <figure class="assessment-chart">
+          <div id="donut-holder"></div>
+          <div>
+            <h3>Distribución de comprobaciones</h3>
+            <div class="table-wrap"><table id="check-status-table"></table></div>
+          </div>
+        </figure>
+        <h3>Prioridades críticas y de alta severidad observadas</h3>
+        <div class="table-wrap"><table id="priority-findings-table"></table></div>
+      </section>
+
+      <section class="chapter" id="sec-dependencies">
+        <h2>3. Mapa de dependencias y arquitectura Lakehouse</h2>
+        <p class="muted">Cada relación se clasifica explícitamente como <strong>OBSERVED</strong> (join exacto de ID/clave nativa confirmado en las APIs), <strong>INFERRED</strong> (referencia explícita de URI/host hacia un recurso no recolectado en ARM) o <strong>UNKNOWN</strong> (linaje dinámico en tiempo de ejecución o alcance no consultado sin arrancar cómputo).</p>
+        <div class="tabs" role="tablist" aria-label="Vistas de arquitectura y dependencias">
+          <button type="button" role="tab" id="tab-dep-observed" aria-selected="true">Mapa de dependencias observado e inferido</button>
+          <button type="button" role="tab" id="tab-dep-reference" aria-selected="false">Propuesta de referencia - NO desplegada</button>
+        </div>
+        <div id="panel-dep-observed" class="print-show">
+          <div class="filters">
+            <label class="filter-field">Capa
+              <select id="dep-layer-filter">
+                <option value="all">Todas las capas</option>
+                <option value="control_plane">Plano de control (ARM)</option>
+                <option value="compute">Cómputo (Clústeres / Pools / Warehouses)</option>
+                <option value="orchestration">Orquestación (Jobs / Tareas / Pipelines)</option>
+                <option value="governance">Gobernanza (Unity Catalog / Secret Scopes)</option>
+                <option value="associated_resource">Recursos Azure asociados</option>
+              </select>
+            </label>
+            <label class="filter-field">Clasificación
+              <select id="dep-class-filter">
+                <option value="all">Todas (OBSERVED / INFERRED / UNKNOWN)</option>
+                <option value="OBSERVED">OBSERVED (Join nativo exacto)</option>
+                <option value="INFERRED">INFERRED (Referencia URI/host)</option>
+                <option value="UNKNOWN">UNKNOWN (Punto ciego explícito)</option>
+              </select>
+            </label>
+            <label class="filter-field">Buscar nodo / carga
+              <input type="search" id="dep-search-filter" placeholder="Job, clúster, catálogo, cuenta ADLS...">
+            </label>
+          </div>
+          <div class="graph-box" id="dep-graph-box"></div>
+          <h3>Relaciones de dependencia (<span id="dep-edges-count">0</span>)</h3>
+          <div class="table-wrap"><table id="dep-edges-table"></table></div>
+          <h3>Nodos del grafo (<span id="dep-nodes-count">0</span>)</h3>
+          <div class="table-wrap"><table id="dep-nodes-table"></table></div>
+          <h3>Referencias rotas detectadas (<span id="dep-broken-count">0</span>)</h3>
+          <div class="table-wrap"><table id="dep-broken-table"></table></div>
+          <h3>Puntos ciegos y alcances UNKNOWN (<span id="dep-unknowns-count">0</span>)</h3>
+          <div class="table-wrap"><table id="dep-unknowns-table"></table></div>
+        </div>
+        <div id="panel-dep-reference" class="print-show" hidden>
+          <h3>Arquitectura de referencia Azure Databricks Lakehouse — Propuesta NO desplegada</h3>
+          <p class="muted">Este diagrama representa la línea base recomendada por Microsoft y Databricks Well-Architected Lakehouse. <strong>No representa recursos desplegados en el entorno del cliente.</strong></p>
+          <div class="graph-box" id="ref-arch-box"></div>
+          <div class="table-wrap"><table id="ref-arch-table"></table></div>
+        </div>
+      </section>
+
+      <section class="chapter" id="sec-inventory">
+        <h2>4. Inventario de Workspace, Cómputo, Orquestación, Unity Catalog y Recursos Asociados</h2>
+        <h3>Clústeres All-Purpose, Job Clusters, Instance Pools y Cluster Policies</h3>
+        <div class="table-wrap"><table id="inv-compute-table"></table></div>
+        <h3>Jobs, DAG de tareas, Pipelines declarativos (Lakeflow / DLT) y SQL Warehouses</h3>
+        <div class="table-wrap"><table id="inv-orchestration-table"></table></div>
+        <h3>Unity Catalog (Metastore, Catálogos, Esquemas, Storage Credentials, External Locations, Conexiones) y Secret Scopes</h3>
+        <div class="table-wrap"><table id="inv-uc-table"></table></div>
+        <h3>Recursos Azure asociados y Endpoints de dependencia saliente del plano de control</h3>
+        <div class="table-wrap"><table id="inv-resources-table"></table></div>
+      </section>
+
+      <section class="chapter" id="sec-findings">
+        <h2>5. Hallazgos y evaluación detallada de reglas</h2>
+        <div class="filters">
+          <label class="filter-field">Área
+            <select id="find-area-filter">
+              <option value="all">Todas</option>
+              <option value="best_practices">Buenas prácticas</option>
+              <option value="security">Seguridad</option>
+              <option value="finops">FinOps</option>
+              <option value="optimization">Optimización</option>
+            </select>
+          </label>
+          <label class="filter-field">Nivel
+            <select id="find-level-filter">
+              <option value="all">Todos</option>
+              <option value="workspace">Workspace / Gobernanza</option>
+              <option value="workload">Workload (Cómputo / Jobs / SQL)</option>
+              <option value="resource">Recurso Azure asociado</option>
+            </select>
+          </label>
+          <label class="filter-field">Severidad
+            <select id="find-sev-filter">
+              <option value="all">Todas</option>
+              <option value="critical">Crítica</option>
+              <option value="high">Alta</option>
+              <option value="medium">Media</option>
+              <option value="low">Baja</option>
+            </select>
+          </label>
+          <label class="filter-field">Estado
+            <select id="find-status-filter">
+              <option value="all">Todos</option>
+              <option value="failed">No cumple (failed)</option>
+              <option value="passed">Cumple (passed)</option>
+              <option value="not_evaluated">No evaluado</option>
+              <option value="not_applicable">No aplica</option>
+            </select>
+          </label>
+          <label class="filter-field">Buscar recurso / carga
+            <input type="search" id="find-search-filter" placeholder="Filtrar por regla, job, clúster...">
+          </label>
+        </div>
+        <p class="muted" id="findings-count-label"></p>
+        <div class="table-wrap"><table id="findings-table"></table></div>
+      </section>
+
+      <section class="chapter" id="sec-finops">
+        <h2>6. FinOps, costes observados y candidatos de optimización</h2>
+        <div class="finops-grid">
+          <div class="finops-panel">
+            <h3>Coste real observado (ARM ActualCost)</h3>
+            <div class="finops-amount" id="finops-actual-cost"></div>
+            <p class="muted" id="finops-cost-note"></p>
+          </div>
+          <div class="finops-panel">
+            <h3>Ahorro estimado</h3>
+            <div class="finops-amount">Por estimar / No calculado</div>
+            <p class="muted">No se inventan ahorros DBU ni descuentos sin medir el consumo histórico en system.billing.usage y validar compromisos comerciales.</p>
+          </div>
+        </div>
+        <h3>Candidatos de eficiencia operativa y FinOps</h3>
+        <div class="table-wrap"><table id="finops-candidates-table"></table></div>
+        <h3>Filas de facturación ARM observadas</h3>
+        <div class="table-wrap"><table id="finops-cost-table"></table></div>
+      </section>
+
+      <section class="chapter" id="sec-actions">
+        <h2>7. Plan de acción priorizado para revisión humana</h2>
+        <p class="muted">Los horizontes Quick-win (&lt;1 semana), Corto plazo (1-3 meses) y Medio plazo son categorías orientativas de planificación, no promesas de entrega ni cambios automáticos.</p>
+        <div class="table-wrap"><table id="actions-table"></table></div>
+      </section>
+
+      <section class="chapter" id="sec-sources">
+        <h2>8. Registro de fuentes, recibos HTTP y límites metodológicos</h2>
+        <div class="table-wrap"><table id="sources-table"></table></div>
+        <h3>Limitaciones y reglas de interpretación</h3>
+        <ul id="methodology-limitations"></ul>
+      </section>
+    </div>
+  </main>
+</div>
+<script type="application/json" id="report-data">__REPORT_DATA_JSON__</script>
+<script>
+(function () {
+  "use strict";
+  function el(tag, attrs, children) {
+    var node = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (k) {
+        if (k === "text") { node.textContent = String(attrs[k]); }
+        else if (k === "className") { node.className = attrs[k]; }
+        else if (attrs[k] !== null && attrs[k] !== undefined) { node.setAttribute(k, String(attrs[k])); }
+      });
+    }
+    if (children) {
+      children.forEach(function (c) {
+        if (typeof c === "string" || typeof c === "number") { node.appendChild(document.createTextNode(String(c))); }
+        else if (c) { node.appendChild(c); }
+      });
+    }
+    return node;
+  }
+  function clear(node) { while (node.firstChild) { node.removeChild(node.firstChild); } }
+  function safeLearnUrl(u) {
+    if (typeof u !== "string") { return null; }
+    try {
+      var parsed = new URL(u);
+      return (parsed.protocol === "https:" && (parsed.hostname === "learn.microsoft.com" || parsed.hostname === "docs.databricks.com")) ? u : null;
+    } catch (e) { return null; }
+  }
+  function renderTable(tableNode, headers, rows) {
+    clear(tableNode);
+    var thead = el("thead"), trHead = el("tr");
+    headers.forEach(function (h) { trHead.appendChild(el("th", { text: h })); });
+    thead.appendChild(trHead);
+    tableNode.appendChild(thead);
+    var tbody = el("tbody");
+    if (!rows.length) {
+      var trEmpty = el("tr");
+      trEmpty.appendChild(el("td", { colspan: headers.length, text: "Sin registros en este alcance o filtro." }));
+      tbody.appendChild(trEmpty);
+    } else {
+      rows.forEach(function (cells) {
+        var tr = el("tr");
+        cells.forEach(function (c) {
+          var td = el("td");
+          if (c instanceof Node) { td.appendChild(c); }
+          else { td.textContent = c === null || c === undefined ? "—" : String(c); }
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    }
+    tableNode.appendChild(tbody);
+  }
+
+  var rawText = document.getElementById("report-data").textContent;
+  var rootData;
+  try {
+    rootData = JSON.parse(rawText);
+  } catch (e) {
+    var openErr = document.getElementById("opening-state");
+    openErr.hidden = false;
+    openErr.textContent = "Error al cargar el modelo JSON embebido del informe.";
+    return;
+  }
+
+  var isMulti = rootData && rootData.schema_version === "databricks-dep-multi-workspace-v1";
+  var currentSnap = null;
+
+  var themeBtn = document.getElementById("theme-toggle");
+  themeBtn.addEventListener("click", function () {
+    var dark = document.documentElement.getAttribute("data-theme") === "dark";
+    if (dark) {
+      document.documentElement.removeAttribute("data-theme");
+      themeBtn.textContent = "Modo oscuro";
+    } else {
+      document.documentElement.setAttribute("data-theme", "dark");
+      themeBtn.textContent = "Modo claro";
+    }
+  });
+  document.getElementById("print-btn").addEventListener("click", function () { window.print(); });
+
+  function downloadBlob(filename, content, mime) {
+    var blob = new Blob([content], { type: mime });
+    var url = URL.createObjectURL(blob);
+    var a = el("a", { href: url, download: filename });
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+  function csvEscape(v) {
+    if (v === null || v === undefined) { return ""; }
+    var s = typeof v === "object" ? JSON.stringify(v) : String(v);
+    if (/^[=+\-@\t\r\n]/.test(s.trimLeft())) { s = "'" + s; }
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  document.getElementById("export-json-btn").addEventListener("click", function () {
+    downloadBlob("databricks-dependency-snapshot.json", JSON.stringify(rootData, null, 2), "application/json;charset=utf-8");
+  });
+  document.getElementById("export-deps-csv-btn").addEventListener("click", function () {
+    if (!currentSnap) { return; }
+    var cols = ["record_type", "classification", "layer", "id", "kind", "label", "from", "to", "relation", "join_fields", "source_ids"];
+    var lines = [cols.join(",")];
+    var dep = currentSnap.dependencies;
+    [].concat(dep.nodes || [], dep.edges || [], dep.unknowns || []).forEach(function (r) {
+      lines.push(cols.map(function (c) { return csvEscape(r[c]); }).join(","));
+    });
+    downloadBlob("databricks-dependencies.csv", "\uFEFF" + lines.join("\r\n"), "text/csv;charset=utf-8");
+  });
+  document.getElementById("export-findings-csv-btn").addEventListener("click", function () {
+    if (!currentSnap) { return; }
+    var cols = ["check_id", "rule_id", "title", "status", "level", "area", "pillar", "severity", "workload_name", "reason", "recommendation", "learn_url"];
+    var lines = [cols.join(",")];
+    (currentSnap.checks || []).forEach(function (r) {
+      lines.push(cols.map(function (c) { return csvEscape(r[c]); }).join(","));
+    });
+    downloadBlob("databricks-findings.csv", "\uFEFF" + lines.join("\r\n"), "text/csv;charset=utf-8");
+  });
+
+  var tabObs = document.getElementById("tab-dep-observed");
+  var tabRef = document.getElementById("tab-dep-reference");
+  var panelObs = document.getElementById("panel-dep-observed");
+  var panelRef = document.getElementById("panel-dep-reference");
+  tabObs.addEventListener("click", function () {
+    tabObs.setAttribute("aria-selected", "true");
+    tabRef.setAttribute("aria-selected", "false");
+    panelObs.hidden = false;
+    panelRef.hidden = true;
+  });
+  tabRef.addEventListener("click", function () {
+    tabObs.setAttribute("aria-selected", "false");
+    tabRef.setAttribute("aria-selected", "true");
+    panelObs.hidden = true;
+    panelRef.hidden = false;
+  });
+
+  function renderDonut(scoreObj) {
+    var holder = document.getElementById("donut-holder");
+    clear(holder);
+    var svgNS = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("viewBox", "0 0 120 120");
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", "Distribución de comprobaciones");
+    var bg = document.createElementNS(svgNS, "circle");
+    bg.setAttribute("cx", "60"); bg.setAttribute("cy", "60"); bg.setAttribute("r", "46");
+    bg.setAttribute("fill", "none"); bg.setAttribute("stroke", "#cbd5e1"); bg.setAttribute("stroke-width", "14");
+    svg.appendChild(bg);
+    var total = Math.max(1, scoreObj.total || 0);
+    var segments = [
+      { count: scoreObj.passed || 0, color: "#00875a" },
+      { count: scoreObj.failed || 0, color: "#ff3621" },
+      { count: scoreObj.not_evaluated || 0, color: "#64748b" },
+      { count: scoreObj.not_applicable || 0, color: "#cbd5e1" }
+    ];
+    var circumference = 2 * Math.PI * 46;
+    var offset = 0;
+    segments.forEach(function (seg) {
+      if (!seg.count) { return; }
+      var len = (seg.count / total) * circumference;
+      var circle = document.createElementNS(svgNS, "circle");
+      circle.setAttribute("cx", "60"); circle.setAttribute("cy", "60"); circle.setAttribute("r", "46");
+      circle.setAttribute("fill", "none"); circle.setAttribute("stroke", seg.color);
+      circle.setAttribute("stroke-width", "14");
+      circle.setAttribute("stroke-dasharray", len + " " + (circumference - len));
+      circle.setAttribute("stroke-dashoffset", String(-offset));
+      circle.setAttribute("transform", "rotate(-90 60 60)");
+      svg.appendChild(circle);
+      offset += len;
+    });
+    var txt = document.createElementNS(svgNS, "text");
+    txt.setAttribute("x", "60"); txt.setAttribute("y", "58");
+    txt.setAttribute("text-anchor", "middle"); txt.setAttribute("font-size", "20"); txt.setAttribute("font-weight", "600");
+    txt.setAttribute("fill", "currentColor");
+    txt.textContent = String(scoreObj.total || 0);
+    svg.appendChild(txt);
+    var sub = document.createElementNS(svgNS, "text");
+    sub.setAttribute("x", "60"); sub.setAttribute("y", "74");
+    sub.setAttribute("text-anchor", "middle"); sub.setAttribute("font-size", "10");
+    sub.setAttribute("fill", "currentColor");
+    sub.textContent = "controles";
+    svg.appendChild(sub);
+    holder.appendChild(svg);
+  }
+
+  function renderNeighborhoodSvg(nodes, edges) {
+    var box = document.getElementById("dep-graph-box");
+    clear(box);
+    var subset = nodes.slice(0, 13);
+    var svgNS = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("viewBox", "0 0 860 320");
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", "Subgrafo vecindario de dependencias (máximo 13 nodos visibles)");
+    var pos = {};
+    subset.forEach(function (n, idx) {
+      var col = idx % 4;
+      var row = Math.floor(idx / 4);
+      pos[n.id] = { x: 110 + col * 210, y: 50 + row * 82, node: n };
+    });
+    edges.forEach(function (e) {
+      if (!pos[e.from] || !pos[e.to]) { return; }
+      var line = document.createElementNS(svgNS, "line");
+      line.setAttribute("x1", String(pos[e.from].x));
+      line.setAttribute("y1", String(pos[e.from].y));
+      line.setAttribute("x2", String(pos[e.to].x));
+      line.setAttribute("y2", String(pos[e.to].y));
+      line.setAttribute("stroke", e.classification === "INFERRED" ? "#b45309" : "#003865");
+      line.setAttribute("stroke-width", "2");
+      if (e.classification === "INFERRED") { line.setAttribute("stroke-dasharray", "5,4"); }
+      svg.appendChild(line);
+    });
+    subset.forEach(function (n) {
+      var p = pos[n.id];
+      var g = document.createElementNS(svgNS, "g");
+      var rect = document.createElementNS(svgNS, "rect");
+      rect.setAttribute("x", String(p.x - 85));
+      rect.setAttribute("y", String(p.y - 22));
+      rect.setAttribute("width", "170");
+      rect.setAttribute("height", "44");
+      rect.setAttribute("rx", "4");
+      rect.setAttribute("fill", n.classification === "INFERRED" ? "#fff8d6" : "#eef4f9");
+      rect.setAttribute("stroke", n.classification === "INFERRED" ? "#795b00" : "#003865");
+      rect.setAttribute("stroke-width", "1.5");
+      g.appendChild(rect);
+      var t1 = document.createElementNS(svgNS, "text");
+      t1.setAttribute("x", String(p.x)); t1.setAttribute("y", String(p.y - 4));
+      t1.setAttribute("text-anchor", "middle"); t1.setAttribute("font-size", "11"); t1.setAttribute("font-weight", "600");
+      t1.setAttribute("fill", "#002b4e");
+      t1.textContent = (n.label || n.id).slice(0, 24);
+      g.appendChild(t1);
+      var t2 = document.createElementNS(svgNS, "text");
+      t2.setAttribute("x", String(p.x)); t2.setAttribute("y", String(p.y + 12));
+      t2.setAttribute("text-anchor", "middle"); t2.setAttribute("font-size", "9");
+      t2.setAttribute("fill", "#334e68");
+      t2.textContent = n.kind + " [" + n.classification + "]";
+      g.appendChild(t2);
+      svg.appendChild(g);
+    });
+    box.appendChild(svg);
+    box.appendChild(el("p", {
+      className: "muted",
+      text: "Mostrando " + subset.length + " de " + nodes.length + " nodos filtrados en vista gráfica acotada (máximo 13 nodos). Las tablas inferiores contienen el 100% de los nodos, aristas y puntos ciegos."
+    }));
+  }
+
+  function renderReferenceArchitecture() {
+    var box = document.getElementById("ref-arch-box");
+    clear(box);
+    var svgNS = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("viewBox", "0 0 860 220");
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", "Arquitectura de referencia Azure Databricks Lakehouse - Propuesta NO desplegada");
+    var boxes = [
+      { x: 20, y: 30, w: 185, h: 70, title: "Red y Perímetro (ARM)", sub: "VNet Injection + SCC + Private Link" },
+      { x: 235, y: 30, w: 185, h: 70, title: "Identidad y Secretos", sub: "Entra SP/UAMI + Key Vault Scopes" },
+      { x: 450, y: 30, w: 185, h: 70, title: "Cómputo y Orquestación", sub: "Cluster Policies + Job/Serverless" },
+      { x: 665, y: 30, w: 175, h: 70, title: "Unity Catalog & ADLS", sub: "Access Connector UAMI + Linaje" }
+    ];
+    boxes.forEach(function (b, idx) {
+      var r = document.createElementNS(svgNS, "rect");
+      r.setAttribute("x", String(b.x)); r.setAttribute("y", String(b.y));
+      r.setAttribute("width", String(b.w)); r.setAttribute("height", String(b.h));
+      r.setAttribute("rx", "4"); r.setAttribute("fill", "#eef4f9"); r.setAttribute("stroke", "#003865"); r.setAttribute("stroke-width", "2");
+      svg.appendChild(r);
+      var t = document.createElementNS(svgNS, "text");
+      t.setAttribute("x", String(b.x + 12)); t.setAttribute("y", String(b.y + 28));
+      t.setAttribute("font-size", "12"); t.setAttribute("font-weight", "600"); t.setAttribute("fill", "#002b4e");
+      t.textContent = b.title;
+      svg.appendChild(t);
+      var s = document.createElementNS(svgNS, "text");
+      s.setAttribute("x", String(b.x + 12)); s.setAttribute("y", String(b.y + 48));
+      s.setAttribute("font-size", "10"); s.setAttribute("fill", "#334e68");
+      s.textContent = b.sub;
+      svg.appendChild(s);
+      if (idx < boxes.length - 1) {
+        var ln = document.createElementNS(svgNS, "line");
+        ln.setAttribute("x1", String(b.x + b.w)); ln.setAttribute("y1", "65");
+        ln.setAttribute("x2", String(boxes[idx + 1].x)); ln.setAttribute("y2", "65");
+        ln.setAttribute("stroke", "#ff3621"); ln.setAttribute("stroke-width", "2");
+        svg.appendChild(ln);
+      }
+    });
+    var note = document.createElementNS(svgNS, "text");
+    note.setAttribute("x", "20"); note.setAttribute("y", "150");
+    note.setAttribute("font-size", "12"); note.setAttribute("font-weight", "600"); note.setAttribute("fill", "#9c2b13");
+    note.textContent = "PROPUESTA DE REFERENCIA (NO DESPLEGADA): Integración entre tenants mediante Entra Multi-tenant FIC o Lighthouse + Databricks OIDC.";
+    svg.appendChild(note);
+    box.appendChild(svg);
+    renderTable(document.getElementById("ref-arch-table"),
+      ["Componente de referencia", "Práctica recomendada Microsoft / Databricks", "Compromiso / Trade-off"],
+      [
+        ["VNet Injection + Secure Cluster Connectivity", "Desplegar en VNet propia con enableNoPublicIp=true y subredes delegadas host/container con NSG.", "Exige planificación IPAM y rutas salientes hacia endpoints de plano de control."],
+        ["Private Link (Front-end / Back-end / WebAuth)", "Aislar tráfico de usuarios y plano de datos mediante Private Endpoints aprobados y zonas DNS privadas.", "Requiere SKU Premium y gestión de DNS privado entre redes hub-spoke."],
+        ["Unity Catalog + Access Connector (UAMI)", "Gobernar catálogos y External Locations con Storage Credentials basadas en Managed Identity.", "Sustituye claves compartidas y montajes DBFS heredados."],
+        ["Jobs sobre Job Compute / Serverless + Service Principal", "Ejecutar jobs productivos con run_as Service Principal sobre cómputo efímero de Job o Serverless.", "Reduce coste DBU frente a All-Purpose y evita fallos por baja de usuarios."],
+        ["Integración Cross-Tenant sin secretos", "Usar App multitenant con Federated Identity Credential (UAMI) o Azure Lighthouse (ARM) + Databricks OIDC Federation.", "Requiere consentimiento/asignación por administradores de ambos tenants."]
+      ]
+    );
+  }
+
+  function applyDependencyFilters() {
+    if (!currentSnap) { return; }
+    var layer = document.getElementById("dep-layer-filter").value;
+    var cls = document.getElementById("dep-class-filter").value;
+    var q = (document.getElementById("dep-search-filter").value || "").toLowerCase().trim();
+    var dep = currentSnap.dependencies || { nodes: [], edges: [], unknowns: [], broken_references: [] };
+    var nodes = (dep.nodes || []).filter(function (n) {
+      if (layer !== "all" && n.layer !== layer) { return false; }
+      if (cls !== "all" && n.classification !== cls) { return false; }
+      if (q && JSON.stringify(n).toLowerCase().indexOf(q) === -1) { return false; }
+      return true;
+    });
+    var edges = (dep.edges || []).filter(function (e) {
+      if (layer !== "all" && e.layer !== layer) { return false; }
+      if (cls !== "all" && e.classification !== cls) { return false; }
+      if (q && JSON.stringify(e).toLowerCase().indexOf(q) === -1) { return false; }
+      return true;
+    });
+    var unknowns = (dep.unknowns || []).filter(function (u) {
+      if (layer !== "all" && u.layer !== layer) { return false; }
+      if (cls !== "all" && u.classification !== cls) { return false; }
+      if (q && JSON.stringify(u).toLowerCase().indexOf(q) === -1) { return false; }
+      return true;
+    });
+    var nodeLabels = {};
+    (dep.nodes || []).forEach(function (n) { nodeLabels[n.id] = n.label + " (" + n.kind + ")"; });
+    renderNeighborhoodSvg(nodes, edges);
+    document.getElementById("dep-edges-count").textContent = String(edges.length);
+    renderTable(document.getElementById("dep-edges-table"),
+      ["Clasificación", "Capa", "Origen", "Relación", "Destino", "Campos Join", "Fuentes"],
+      edges.map(function (e) {
+        return [
+          el("span", { className: "badge " + e.classification, text: e.classification }),
+          e.layer,
+          nodeLabels[e.from] || e.from,
+          e.relation,
+          nodeLabels[e.to] || e.to,
+          (e.join_fields || []).join(", "),
+          (e.source_ids || []).join(", ")
+        ];
+      })
+    );
+    document.getElementById("dep-nodes-count").textContent = String(nodes.length);
+    renderTable(document.getElementById("dep-nodes-table"),
+      ["Clasificación", "Capa", "Tipo", "Nombre / Etiqueta", "Fuente", "Evidencia"],
+      nodes.map(function (n) {
+        return [
+          el("span", { className: "badge " + n.classification, text: n.classification }),
+          n.layer,
+          n.kind,
+          n.label,
+          n.source_id,
+          JSON.stringify(n.evidence || {})
+        ];
+      })
+    );
+    var broken = dep.broken_references || [];
+    document.getElementById("dep-broken-count").textContent = String(broken.length);
+    renderTable(document.getElementById("dep-broken-table"),
+      ["Objeto origen", "Tipo de referencia rota", "ID destino no encontrado"],
+      broken.map(function (b) { return [b.source_object, b.kind, b.target_id]; })
+    );
+    document.getElementById("dep-unknowns-count").textContent = String(unknowns.length);
+    renderTable(document.getElementById("dep-unknowns-table"),
+      ["Clasificación", "Capa", "Código", "Descripción del punto ciego", "Fuentes"],
+      unknowns.map(function (u) {
+        return [
+          el("span", { className: "badge UNKNOWN", text: "UNKNOWN" }),
+          u.layer,
+          u.code,
+          u.message,
+          (u.source_ids || []).join(", ")
+        ];
+      })
+    );
+  }
+
+  function applyFindingFilters() {
+    if (!currentSnap) { return; }
+    var area = document.getElementById("find-area-filter").value;
+    var level = document.getElementById("find-level-filter").value;
+    var sev = document.getElementById("find-sev-filter").value;
+    var st = document.getElementById("find-status-filter").value;
+    var q = (document.getElementById("find-search-filter").value || "").toLowerCase().trim();
+    var allChecks = currentSnap.checks || [];
+    var filtered = allChecks.filter(function (c) {
+      if (area !== "all" && c.area !== area) { return false; }
+      if (level !== "all" && c.level !== level) { return false; }
+      if (sev !== "all" && c.severity !== sev) { return false; }
+      if (st !== "all" && c.status !== st) { return false; }
+      if (q && JSON.stringify(c).toLowerCase().indexOf(q) === -1) { return false; }
+      return true;
+    });
+    document.getElementById("findings-count-label").textContent = "Mostrando " + filtered.length + " de " + allChecks.length + " comprobaciones.";
+    renderTable(document.getElementById("findings-table"),
+      ["Regla", "Estado", "Severidad", "Área / Pilar", "Nivel / Carga", "Título y evidencia", "Recomendación"],
+      filtered.map(function (c) {
+        var link = safeLearnUrl(c.learn_url);
+        var recCell = el("div");
+        recCell.appendChild(el("p", { text: c.recommendation }));
+        if (link) { recCell.appendChild(el("a", { href: link, target: "_blank", rel: "noopener noreferrer", text: "Documentación oficial" })); }
+        var detailCell = el("div");
+        detailCell.appendChild(el("strong", { text: c.title }));
+        detailCell.appendChild(el("p", { className: "muted", text: c.reason }));
+        return [
+          c.rule_id + " (" + c.reference_id + ")",
+          c.status,
+          el("span", { className: "badge " + c.severity, text: c.severity_label || c.severity }),
+          c.area + " / " + c.pillar,
+          c.level + (c.workload_name ? ": " + c.workload_name : ""),
+          detailCell,
+          recCell
+        ];
+      })
+    );
+  }
+
+  ["dep-layer-filter", "dep-class-filter", "dep-search-filter"].forEach(function (id) {
+    document.getElementById(id).addEventListener("input", applyDependencyFilters);
+    document.getElementById(id).addEventListener("change", applyDependencyFilters);
+  });
+  ["find-area-filter", "find-level-filter", "find-sev-filter", "find-status-filter", "find-search-filter"].forEach(function (id) {
+    document.getElementById(id).addEventListener("input", applyFindingFilters);
+    document.getElementById(id).addEventListener("change", applyFindingFilters);
+  });
+
+  function renderSnapshot(snap) {
+    currentSnap = snap;
+    document.getElementById("workspace-error-view").hidden = true;
+    document.getElementById("report-body").hidden = false;
+    var ws = snap.workspace || {};
+    var client = snap.client || { name: "CLIENTE", logo_data_uri: "", logo_alt: "Customer logo" };
+    document.getElementById("cover-subtitle").textContent = "Workspace: " + (ws.name || "—") + " (" + (ws.workspace_url || "—") + ") · Modo auth: " + (ws.auth_mode || "—");
+    var badges = document.getElementById("cover-badges");
+    clear(badges);
+    [
+      "Procedencia: " + snap.provenance,
+      "Entorno: " + snap.environment,
+      "UTC: " + snap.reference_utc,
+      ws.cross_tenant ? "Cross-Tenant (" + ws.sre_tenant_id + " -> " + ws.target_tenant_id + ")" : "Same-Tenant (" + (ws.target_tenant_id || "—") + ")",
+      "SKU: " + (ws.sku_name || "—")
+    ].forEach(function (b) { badges.appendChild(el("span", { className: "badge", text: b })); });
+
+    var plaque = document.getElementById("brand-plaque");
+    clear(plaque);
+    if (client.logo_data_uri && /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(client.logo_data_uri)) {
+      plaque.appendChild(el("img", { src: client.logo_data_uri, alt: client.logo_alt || client.name || "CLIENTE" }));
+    } else {
+      plaque.appendChild(el("span", { className: "brand-placeholder", text: client.name || "CLIENTE" }));
+    }
+    document.getElementById("client-name-label").textContent = client.name || "CLIENTE";
+
+    var facts = document.getElementById("cover-facts");
+    clear(facts);
+    [
+      ["Workspace", ws.name || "—"],
+      ["Host Workspace", ws.workspace_url || "—"],
+      ["Grupo de recursos", ws.resource_group || "—"],
+      ["Grupo administrado", ws.managed_resource_group || "—"],
+      ["Región / SKU", (ws.region || "—") + " / " + (ws.sku_name || "—")],
+      ["No Public IP / Acceso público", String(ws.enable_no_public_ip) + " / " + (ws.public_network_access || "—")]
+    ].forEach(function (pair) {
+      var d = el("div");
+      d.appendChild(el("dt", { text: pair[0] }));
+      d.appendChild(el("dd", { text: pair[1] }));
+      facts.appendChild(d);
+    });
+    document.getElementById("cover-resource-id").textContent = "ARM Resource ID: " + (ws.id || "—");
+
+    var msgList = document.getElementById("executive-messages");
+    clear(msgList);
+    (snap.executive_messages || []).forEach(function (m) { msgList.appendChild(el("li", { text: m })); });
+
+    var gScore = (snap.scores && snap.scores.global) || {};
+    var gBox = document.getElementById("global-score-box");
+    clear(gBox);
+    gBox.appendChild(el("h3", { text: "Índice local de configuración" }));
+    gBox.appendChild(el("span", { className: "score-value", text: gScore.score === null || gScore.score === undefined ? "No evaluado" : gScore.score + "%" }));
+    gBox.appendChild(el("p", { text: "Cobertura evaluada: " + (gScore.coverage_percent === null || gScore.coverage_percent === undefined ? "0%" : gScore.coverage_percent + "%") + " (" + (gScore.evaluated || 0) + " evaluados, " + (gScore.not_evaluated || 0) + " No evaluado, " + (gScore.not_applicable || 0) + " No aplica)." }));
+
+    function renderBars(containerId, mapObj) {
+      var holder = document.getElementById(containerId);
+      clear(holder);
+      Object.keys(mapObj || {}).forEach(function (k) {
+        var item = mapObj[k];
+        var row = el("div", { className: "score-row" });
+        var head = el("div", { className: "score-row-head" });
+        head.appendChild(el("span", { text: k }));
+        head.appendChild(el("span", { text: (item.score === null ? "No evaluado" : item.score + "%") + " · Cobertura " + (item.coverage_percent === null ? "0%" : item.coverage_percent + "%") }));
+        row.appendChild(head);
+        var track = el("div", { className: "score-track" });
+        var fill = el("div", { className: "score-fill", style: "width:" + (item.score || 0) + "%" });
+        track.appendChild(fill);
+        row.appendChild(track);
+        holder.appendChild(row);
+      });
+    }
+    renderBars("area-scores", snap.scores && snap.scores.areas);
+    renderBars("pillar-scores", snap.scores && snap.scores.pillars);
+    renderDonut(gScore);
+    renderTable(document.getElementById("check-status-table"),
+      ["Estado", "Recuento", "Significado"],
+      [
+        ["Cumple (passed)", gScore.passed || 0, "Configuración observada conforme con la regla local."],
+        ["No cumple (failed)", gScore.failed || 0, "Desviación o referencia rota observada."],
+        ["No evaluado (not_evaluated)", gScore.not_evaluated || 0, "Fuente no disponible, requisito no confirmado o alcance sin cómputo."],
+        ["No aplica (not_applicable)", gScore.not_applicable || 0, "Excluido del denominador por tipo de objeto o requisito falso."]
+      ]
+    );
+
+    var priorities = (snap.findings || []).filter(function (f) { return f.severity === "critical" || f.severity === "high"; });
+    renderTable(document.getElementById("priority-findings-table"),
+      ["Regla", "Severidad", "Nivel / Objeto", "Título", "Evidencia / Motivo"],
+      priorities.map(function (f) {
+        return [
+          f.rule_id,
+          el("span", { className: "badge " + f.severity, text: f.severity_label || f.severity }),
+          f.level + (f.workload_name ? ": " + f.workload_name : ""),
+          f.title,
+          f.reason
+        ];
+      })
+    );
+
+    var inv = snap.inventory || {};
+    var computeRows = [].concat(inv.clusters || [], inv.instance_pools || [], inv.cluster_policies || [], inv.global_init_scripts || []);
+    renderTable(document.getElementById("inv-compute-table"),
+      ["Tipo", "Nombre / ID", "Estado / Runtime", "Modo acceso / Autoterminación", "Política / Pool"],
+      computeRows.map(function (r) {
+        return [
+          r.kind,
+          (r.name || "—") + " (" + (r.id || "—") + ")",
+          (r.state || "—") + (r.spark_version ? " · " + r.spark_version : ""),
+          (r.data_security_mode || "—") + (r.autotermination_minutes !== undefined ? " · " + r.autotermination_minutes + " min" : ""),
+          (r.policy_id || "—") + (r.instance_pool_id ? " / Pool: " + r.instance_pool_id : "")
+        ];
+      })
+    );
+
+    var orchRows = [];
+    (inv.jobs || []).forEach(function (j) {
+      orchRows.push(["Job", j.name + " (" + j.id + ")", "Programado: " + j.scheduled, "run_as SP: " + (j.run_as_service_principal || "No"), (j.tasks || []).map(function (t) { return t.task_key; }).join(", ")]);
+    });
+    (inv.pipelines || []).forEach(function (p) {
+      orchRows.push(["LakeflowPipeline", p.name + " (" + p.id + ")", p.state || "—", "Serverless: " + p.serverless, "Catálogo: " + (p.catalog || "hive_metastore") + " · Target: " + (p.target || "—")]);
+    });
+    (inv.sql_warehouses || []).forEach(function (w) {
+      orchRows.push(["SqlWarehouse", w.name + " (" + w.id + ")", (w.state || "—") + " · " + (w.cluster_size || "—"), "Serverless: " + w.enable_serverless_compute + " · Auto-stop: " + w.auto_stop_mins + "m", w.warehouse_type || "—"]);
+    });
+    renderTable(document.getElementById("inv-orchestration-table"),
+      ["Tipo", "Nombre / ID", "Estado / Programación", "Identidad / Modo", "Tareas / Destino"],
+      orchRows
+    );
+
+    var ucRows = [];
+    if (inv.uc_metastore) {
+      ucRows.push(["Metastore", inv.uc_metastore.name, inv.uc_metastore.id, inv.uc_metastore.storage_root || "—", "Región: " + (inv.uc_metastore.region || "—")]);
+    }
+    (inv.uc_catalogs || []).forEach(function (c) {
+      ucRows.push(["Catalog", c.name, c.catalog_type || "—", c.storage_root || "—", "Isolation: " + (c.isolation_mode || "—")]);
+    });
+    (inv.uc_schemas || []).forEach(function (s) {
+      ucRows.push(["Schema", s.full_name, s.catalog_name, s.storage_root || "—", "—"]);
+    });
+    (inv.uc_storage_credentials || []).forEach(function (cr) {
+      ucRows.push(["StorageCredential", cr.name, cr.uses_managed_identity ? "Managed Identity" : "Service Principal", cr.access_connector_id || "—", "Read-only: " + cr.read_only]);
+    });
+    (inv.uc_external_locations || []).forEach(function (loc) {
+      ucRows.push(["ExternalLocation", loc.name, "Credential: " + (loc.credential_name || "—"), loc.url || "—", "Read-only: " + loc.read_only]);
+    });
+    (inv.uc_connections || []).forEach(function (cn) {
+      ucRows.push(["Connection", cn.name, cn.connection_type || "—", cn.host || "—", "Credential: " + (cn.credential_type || "—")]);
+    });
+    (inv.secret_scopes || []).forEach(function (sc) {
+      ucRows.push(["SecretScope", sc.name, sc.backend_type || "—", sc.keyvault_dns_name || sc.keyvault_resource_id || "—", "Valores nunca leídos"]);
+    });
+    renderTable(document.getElementById("inv-uc-table"),
+      ["Objeto", "Nombre", "Tipo / Credencial", "URI / Recurso", "Detalle"],
+      ucRows
+    );
+
+    var resRows = [];
+    (inv.related_resources || []).forEach(function (r) {
+      resRows.push([r.resource_kind, r.name || "—", r.id, JSON.stringify(r.association || {}), JSON.stringify(r.configuration || {})]);
+    });
+    (inv.outbound_endpoints || []).forEach(function (o) {
+      resRows.push(["OutboundDependency", o.category, o.id, "outboundNetworkDependenciesEndpoints", JSON.stringify(o.endpoints || [])]);
+    });
+    renderTable(document.getElementById("inv-resources-table"),
+      ["Tipo de recurso", "Nombre", "ARM ID", "Asociación", "Configuración"],
+      resRows
+    );
+
+    var fin = snap.finops || {};
+    document.getElementById("finops-actual-cost").textContent = (fin.actual_cost === null || fin.actual_cost === undefined)
+      ? "No evaluado / Sin alcance de facturación"
+      : fin.actual_cost.toFixed(2) + " " + (fin.currency || "");
+    document.getElementById("finops-cost-note").textContent = (fin.notes || []).join(" ");
+    renderTable(document.getElementById("finops-candidates-table"),
+      ["ID", "Carga / Objeto", "Título", "Valor observado", "Base", "Recomendación"],
+      (fin.candidates || []).map(function (c) {
+        return [c.id, c.workload_name || c.resource_id, c.title, String(c.value) + " " + (c.unit || ""), c.basis, c.recommendation];
+      })
+    );
+    renderTable(document.getElementById("finops-cost-table"),
+      ["Resource ID", "Fecha", "Importe", "Moneda", "Base"],
+      (fin.cost_rows || []).map(function (r) {
+        return [r.resource_id, r.usage_date || "Periodo acumulado", r.amount, r.currency, r.basis];
+      })
+    );
+
+    renderTable(document.getElementById("actions-table"),
+      ["Horizonte", "Esfuerzo", "Severidad", "Regla", "Carga / Recurso", "Acción recomendada"],
+      (snap.actions || []).map(function (a) {
+        return [
+          a.horizon,
+          a.effort_label,
+          el("span", { className: "badge " + a.severity, text: a.severity_label || a.severity }),
+          a.rule_id,
+          a.workload_name || a.resource_id,
+          a.recommendation
+        ];
+      })
+    );
+
+    renderTable(document.getElementById("sources-table"),
+      ["Fuente ID", "Estado", "Páginas", "Registros", "Hora UTC", "Nota / Errores"],
+      (snap.sources || []).map(function (s) {
+        return [
+          s.id,
+          s.status,
+          s.pages,
+          s.records,
+          s.time,
+          (s.note || "") + (s.errors && s.errors.length ? " Errores: " + JSON.stringify(s.errors) : "")
+        ];
+      })
+    );
+
+    var limList = document.getElementById("methodology-limitations");
+    clear(limList);
+    ((snap.methodology && snap.methodology.limitations) || []).forEach(function (l) {
+      limList.appendChild(el("li", { text: l }));
+    });
+
+    applyDependencyFilters();
+    applyFindingFilters();
+    renderReferenceArchitecture();
+  }
+
+  if (isMulti) {
+    var selWrap = document.getElementById("workspace-selector-wrap");
+    var sel = document.getElementById("workspace-selector");
+    selWrap.hidden = false;
+    var runs = rootData.workspace_runs || [];
+    var multiBox = document.getElementById("multi-overview");
+    multiBox.hidden = false;
+    var agg = rootData.aggregate || {};
+    multiBox.appendChild(el("h2", { text: "Resumen agregado multi-workspace (" + runs.length + " workspaces seleccionados)" }));
+    multiBox.appendChild(el("p", {
+      className: "muted",
+      text: "Hallazgos totales: " + (agg.findings_total || 0) + " · Nodos de dependencia: " + ((agg.dependency_counts && agg.dependency_counts.nodes_total) || 0) + " · Workspaces con error: " + (agg.failed_workspace_count || 0)
+    }));
+    runs.forEach(function (r, idx) {
+      sel.appendChild(el("option", { value: String(idx), text: r.workspace_name + " (" + r.status + ")" }));
+    });
+    function selectRun(idx) {
+      var run = runs[idx];
+      if (!run) { return; }
+      if (run.snapshot) {
+        renderSnapshot(run.snapshot);
+      } else {
+        currentSnap = null;
+        document.getElementById("report-body").hidden = true;
+        var errView = document.getElementById("workspace-error-view");
+        errView.hidden = false;
+        clear(errView);
+        errView.appendChild(el("h2", { text: "Recolección fallida para el workspace " + run.workspace_name }));
+        errView.appendChild(el("p", { text: "No se sustituyen datos vacíos ni puntuaciones de otro workspace. Error: " + JSON.stringify(run.error || {}) }));
+      }
+    }
+    sel.addEventListener("change", function () { selectRun(Number(sel.value)); });
+    selectRun(0);
+  } else {
+    renderSnapshot(rootData);
+  }
+})();
+</script>
+</body>
+</html>

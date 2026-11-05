@@ -1,0 +1,11 @@
+id: 0032-extension-health-across-vms
+status: idea
+title: "Extension health across VMs"
+summary: "Monitors VM extension status to catch failed deployments or stuck provisioning that blocks updates and monitoring."
+domain: resource-organization
+trigger: [schedule]
+frequency: "Daily"
+timeSaved: Medium
+topPick: false
+samplePrompt: "Check all VM extensions across subscriptions. Identify: (1) extensions in 'Failed' provisioning state, (2) extensions in 'Transitioning' state for > 1 hour, (3) extensions with handler status errors, (4) VMs with conflicting extensions. Show VM name, extension, status, and error message."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

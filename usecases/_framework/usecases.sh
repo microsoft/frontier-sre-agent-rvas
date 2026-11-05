@@ -4,7 +4,7 @@
 #   usecases.sh [--root DIR] validate
 #   usecases.sh [--root DIR] index [-o FILE] [--readme]
 #   usecases.sh [--root DIR] portal-blocks <id|path> [-o FILE]
-#   usecases.sh [--root DIR] new <domain> <slug>
+#   usecases.sh [--root DIR] new <domain> <slug>   (creates the next NNNN-<slug> folder)
 #   usecases.sh [--root DIR] deploy <id|path> --endpoint URL [--subscription ID] [--dry-run]
 #   usecases.sh [--root DIR] diff <id|path> --endpoint URL [--subscription ID]
 #   usecases.sh [--root DIR] verify <id|path> --endpoint URL [--subscription ID]
@@ -53,26 +53,14 @@ PY
   fi
 }
 
-# Use cases live at ROOT/<domain>/<slug>. Names that start with "_" are skipped.
-domain_dirs() {
+# Use cases live at ROOT/<NNNN-slug>. Names that start with "_" are skipped.
+folders() {
   local d
   for d in "$ROOT"/*/; do
     d="${d%/}"
     case "$(basename "$d")" in _*) continue ;; esac
     echo "$d"
   done
-}
-
-folders() {
-  local dd d
-  while IFS= read -r dd; do
-    for d in "$dd"/*/; do
-      d="${d%/}"
-      [ -d "$d" ] || continue
-      case "$(basename "$d")" in _*) continue ;; esac
-      echo "$d"
-    done
-  done < <(domain_dirs)
 }
 
 has_glob() { compgen -G "$1" >/dev/null; }
@@ -128,8 +116,9 @@ maturity_of() {
 rule_fail() { echo "FAIL [$1] $2"; FAILS=$((FAILS + 1)); }
 rule_warn() { echo "WARN [$1] $2"; }
 
-rule_fields() { # folder, yaml-entry-json, taxonomy-json, components-json, parent-domain-folder
-  local f="$1" y="$2" t="$3" c="$4" pd="$5" msg m
+rule_fields() { # folder, yaml-entry-json, taxonomy-json, components-json
+  local f="$1" y="$2" t="$3" c="$4" msg m
+  [[ "$f" =~ ^[0-9]{4}-[a-z0-9][a-z0-9-]*$ ]] || rule_fail "$f" "folder name must be <NNNN>-<slug>, for example 0001-my-use-case"
   m="$(maturity_of "$c")"
   if jq -e 'has("error")' >/dev/null <<<"$y"; then
     rule_fail "$f" "usecase.yaml is not valid YAML: $(jq -r '.error' <<<"$y")"; return
@@ -137,13 +126,12 @@ rule_fields() { # folder, yaml-entry-json, taxonomy-json, components-json, paren
   local data; data="$(jq -c '.data // {}' <<<"$y")"
   if ! jq -e 'type == "object"' >/dev/null <<<"$data"; then rule_fail "$f" "usecase.yaml must be a mapping"; return; fi
   while IFS= read -r msg; do [ -n "$msg" ] && rule_fail "$f" "$msg"; done < <(
-    jq -r --arg f "$f" --argjson t "$t" --argjson c "$c" --arg m "$m" --arg pd "$pd" '
+    jq -r --arg f "$f" --argjson t "$t" --argjson c "$c" --arg m "$m" '
       def missing($k): (.[$k] == null or .[$k] == "" or .[$k] == []);
       (if missing("id") then "missing required field: id"
        elif .id != $f then "id \"\(.id)\" must equal the folder name \"\($f)\"" else empty end),
       (["title","summary","domain","trigger","status"][] as $k | select(missing($k)) | "missing required field: \($k)"),
-      (.domain as $v | if $v != null and (($t.domain | has($v)) | not) then "domain \"\($v)\" is not in taxonomy"
-         elif $v != null and $v != $pd then "domain \"\($v)\" must equal the parent folder \"\($pd)\"" else empty end),
+      (.domain as $v | if $v != null and (($t.domain | has($v)) | not) then "domain \"\($v)\" is not in taxonomy" else empty end),
       (if .trigger != null then
          (if (.trigger | type) != "array" then "trigger must be a list"
           else (.trigger[] | select(. as $v | ($t.trigger | index($v)) == null) | "trigger \"\(.)\" is not in taxonomy") end)
@@ -246,7 +234,7 @@ readme_block() { # reads index JSON on stdin
   jq -r '
     "| ID | Title | Domain | Status |",
     "|----|-------|--------|--------|",
-    (.usecases[] | "| [\(.id)](\(.domain)/\(.id)/) | \(.title) | \(.domain) | \(.status) |")'
+    (.usecases[] | "| [\(.id)](\(.id)/) | \(.title) | \(.domain) | \(.status) |")'
 }
 
 # Replaces the marker block in README with $2 (file with block text).
@@ -261,16 +249,12 @@ cmd_validate() {
   need jq
   FAILS=0
   build_records || exit 1
-  local count=0 line f d y c seen="" dd
-  while IFS= read -r dd; do
-    jq -e --arg k "$(basename "$dd")" '.domain | has($k)' >/dev/null <<<"$TAXONOMY_JSON" \
-      || rule_fail "$(basename "$dd")" "top-level folder is not a domain in taxonomy; use usecases/<domain>/<slug>"
-  done < <(domain_dirs)
+  local count=0 line f d y c seen=""
   while IFS= read -r line; do
     f="$(jq -r .folder <<<"$line")"; d="$(jq -r .dir <<<"$line")"
     y="$(jq -c .entry <<<"$line")"; c="$(jq -c .components <<<"$line")"
     count=$((count + 1))
-    rule_fields "$f" "$y" "$TAXONOMY_JSON" "$c" "$(basename "$(dirname "$d")")"
+    rule_fields "$f" "$y" "$TAXONOMY_JSON" "$c"
     rule_components "$f" "$d" "$c"
     rule_package "$f" "$d" "$y"
     rule_build "$f" "$d"
@@ -303,9 +287,9 @@ build_index_json() {
       domains: ($t.domain | to_entries | map({slug: .key, label: .value.label, color: .value.color})),
       usecases: (map(
         (.entry.data + {
-          path: "\($root)/\(.entry.data.domain)/\(.folder)",
+          path: "\($root)/\(.folder)",
           components: (.components | {skill, subagent, tool, task, permissions, tests, sampleReport, images}),
-          readme: (if .components.readme then "\($root)/\(.entry.data.domain)/\(.folder)/README.md" else null end)
+          readme: (if .components.readme then "\($root)/\(.folder)/README.md" else null end)
         })) | sort_by(.id))
     }' "$RECORDS_FILE"
 }
@@ -340,7 +324,7 @@ resolve_dir() {
   if [ -d "$arg" ]; then (cd "$arg" && pwd)
   elif [ -d "$ROOT/$arg" ] && [ -f "$ROOT/$arg/usecase.yaml" ]; then echo "$ROOT/$arg"
   else
-    local hit; hit="$(compgen -G "$ROOT/*/$arg/usecase.yaml" | head -n1)"
+    local hit; hit="$(compgen -G "$ROOT/[0-9][0-9][0-9][0-9]-$arg/usecase.yaml" | head -n1)"
     [ -n "$hit" ] || die "use case folder not found: $arg"
     dirname "$hit"
   fi
@@ -410,14 +394,20 @@ cmd_new() {
   jq -e --arg p "$TAXONOMY" --arg k "$domain" '.[$p].data.domain | has($k)' >/dev/null <<<"$tj" \
     || die "unknown domain \"$domain\"; choose one of: $(jq -r --arg p "$TAXONOMY" '.[$p].data.domain | keys | join(", ")' <<<"$tj")"
   [[ "$slug" =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "slug must be lowercase letters, digits and hyphens"
-  compgen -G "$ROOT/*/$slug" >/dev/null && die "id \"$slug\" already exists in another domain; ids must be unique"
-  local dest="$ROOT/$domain/$slug"
+  compgen -G "$ROOT/[0-9][0-9][0-9][0-9]-$slug" >/dev/null && die "slug \"$slug\" is already used; slugs must be unique"
+  local last=0 d n
+  for d in "$ROOT"/[0-9][0-9][0-9][0-9]-*/; do
+    [ -d "$d" ] || continue
+    n="$(basename "$d")"; n=$((10#${n:0:4})); [ "$n" -gt "$last" ] && last="$n"
+  done
+  local id; id="$(printf '%04d-%s' $((last + 1)) "$slug")"
+  local dest="$ROOT/$id"
   [ ! -e "$dest" ] || die "$dest already exists; refusing to overwrite"
   [ -d "$REPO_USECASES/_template" ] || die "template not found"
-  mkdir -p "$ROOT/$domain"
+  mkdir -p "$ROOT"
   cp -r "$REPO_USECASES/_template" "$dest"
   local title; title="$(echo "${slug//-/ }" | sed 's/^./\U&/')"
-  sed -i -e "s/^id: .*/id: $slug/" -e "s/^title: .*/title: $title/" -e "s/^domain: .*/domain: $domain/" "$dest/usecase.yaml"
+  sed -i -e "s/^id: .*/id: $id/" -e "s/^title: .*/title: $title/" -e "s/^domain: .*/domain: $domain/" "$dest/usecase.yaml"
   sed -i -e "1s/.*/# $title/" "$dest/README.md"
   echo "Created $dest. Fill in the files, then run: usecases.sh validate"
 }

@@ -1,0 +1,11 @@
+id: 0001-6-month-cost-summary-trends
+status: idea
+title: "6-month cost summary & trends"
+summary: "Review six months of costs for seasonal patterns and growth."
+domain: billing-entra-tenant
+trigger: [schedule]
+frequency: "Monthly"
+timeSaved: Medium
+topPick: false
+samplePrompt: "Show me a 6-month cost trend summary for subscription '{subscription_name}'. Break down by month, show total and per-service spend, and identify the top 3 services driving growth."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

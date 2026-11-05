@@ -1,0 +1,11 @@
+id: 0014-changes-in-last-24h-for-a-resource
+status: idea
+title: "Changes in last 24h for a resource"
+summary: "Shows all configuration changes to a specific resource during incident investigation, helping correlate changes with symptoms."
+domain: management
+trigger: [chat]
+frequency: "During incident"
+timeSaved: Medium
+topPick: false
+samplePrompt: "Show all changes detected by Change Analysis and Activity Log for resource '{resource_id}' in the last 24 hours. For each change, show timestamp, property changed, old value, new value, and who initiated it."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

@@ -1,0 +1,85 @@
+{
+  "observed_date_utc": "2026-10-16",
+  "canonical_source_commit": "9cd491266d71df981817b05b325e2bab7482ecc1",
+  "canonical_runtime_files_sha256": {
+    "generate-databricks-dependency-report.py": "dc2d82068e27286b14f9cc0bc8b05c887f92ba62f94cbfec6056aee816e799f8",
+    "tool-parameters.schema.json": "d538cd8e1a86b1c388c1e6821505d601fa78a15c870164e780f8a167db272f95",
+    "skills/databricks-dependency-live/SKILL.md": "84567687bb41484db594981466daf4eadd9c4b43a8e590a94e67538e841cad9a",
+    "subagent-instructions-and-prompts.md": "c54673596441a475db869c9ce083f5083ce02e6bb5b670f66db96f988909a79a"
+  },
+  "native_saved_components": {
+    "tool": "generate-databricks-dependency-report",
+    "skill": "databricks-dependency-live",
+    "specialist": "databricks-dependency-live"
+  },
+  "bootstrap_saved_and_independently_read_back": true,
+  "full_skill_and_instruction_block_matched_committed_bytes": true,
+  "native_model_override": null,
+  "native_model_meaning": "Platform-supported defaults, not the Copilot authoring-worker model",
+  "actual_saved_effective_specialist_policy": {
+    "tools": [
+      "generate-databricks-dependency-report"
+    ],
+    "allowedSkills": [
+      "databricks-dependency-live"
+    ],
+    "enableSkills": true,
+    "addSystemSkills": false,
+    "disableDocumentRetrieval": true,
+    "commonTools": [],
+    "mcpTools": [],
+    "connectors": [],
+    "handoffs": [],
+    "agentsAsTools": [],
+    "commonPrompts": [],
+    "allowParallelToolCalls": false,
+    "maxReflectionCount": 0,
+    "llmModelName": null,
+    "hooks": null
+  },
+  "actual_saved_tool_runtime": {
+    "timeoutSeconds": 900,
+    "dependencies": [],
+    "authEnabled": false,
+    "authScopes": null,
+    "toolMode": "Auto"
+  },
+  "native_parameters": 12,
+  "native_integer_parameters": [
+    "limit",
+    "offset"
+  ],
+  "native_python_tests": {
+    "direct_API_and_actual_UI_tests": 2,
+    "harness_returned_normally": true,
+    "actual_domain_result": {
+      "status": "error",
+      "error": {
+        "code": "configuration_required",
+        "message": "Configure the explicit SUBSCRIPTION_ID before authentication.",
+        "source_id": "configuration",
+        "http_status": null
+      },
+      "artifact_status": "not_written",
+      "provenance": "LIVE"
+    },
+    "stdout_empty": true,
+    "files_written": 0
+  },
+  "actual_selected_specialist_conversation": {
+    "status": "NATIVE_UNCONFIGURED_RESPONSE_NO_REPORT",
+    "source_data_read": false,
+    "reports_or_graphs_generated": false,
+    "internal_full_tool_trace_claimed": false
+  },
+  "customer_target_tenant_subscription_workspace_and_access": "UNKNOWN_NOT_CONFIGURED",
+  "real_Databricks_acceptance": "NOT_RUN",
+  "all_original_saved_components_and_12_tasks_preserved": true,
+  "new_IAM_apps_secrets_federation_compute_or_tasks": 0,
+  "media": {
+    "actual_annotated_photographs": 11,
+    "raw_private_identifiers_source_and_artwork_excluded": true,
+    "only_flattened_masked_red_callout_PNGs_are_approved": true,
+    "synthetic_or_fabricated_UI_or_customer_graphs": 0
+  }
+}

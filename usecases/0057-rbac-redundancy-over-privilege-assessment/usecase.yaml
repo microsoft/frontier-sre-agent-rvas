@@ -1,0 +1,11 @@
+id: 0057-rbac-redundancy-over-privilege-assessment
+status: idea
+title: "RBAC redundancy & over-privilege assessment"
+summary: "Compare role assignments across parent and child scopes. Identify duplicates and cases where a narrower role may cover observed operations."
+domain: identity-access
+trigger: [schedule]
+frequency: "Weekly"
+timeSaved: High
+topPick: true
+samplePrompt: "Analyze all RBAC role assignments across subscriptions. Identify: (1) redundant assignments — same principal with the same or higher role at a parent scope making child-scope assignments unnecessary, (2) principals with Owner or Contributor that could operate with a narrower built-in role based on their Activity Log operations in the last 30 days, (3) multiple role assignments to the same principal at the same scope that could be consolidated. For each finding, show principal name, type, assigned roles, scopes, and recommended action."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

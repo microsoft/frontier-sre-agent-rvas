@@ -1,0 +1,11 @@
+id: 0070-stale-rbac-assignments
+status: idea
+title: "Stale RBAC assignments"
+summary: "Find assignments to deleted or inactive principals for an access review."
+domain: identity-access
+trigger: [schedule]
+frequency: "Weekly"
+timeSaved: High
+topPick: true
+samplePrompt: "List all role assignments where: (1) the principal object no longer exists in Entra ID (orphaned SIDs), (2) the user principal hasn't signed in for > 90 days, (3) the service principal has no recent activity. Show assignment scope, role, principal display name/ID, and last sign-in date. Recommend removal."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

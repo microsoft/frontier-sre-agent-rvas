@@ -1,0 +1,11 @@
+id: 0003-ai-model-inventory-retirement-lifecycle
+status: idea
+title: "AI model inventory & retirement lifecycle"
+summary: "Inventory Azure OpenAI and AI Foundry model deployments. Compare versions with Microsoft's retirement schedule and identify retired models, upcoming retirements, and replacements."
+domain: resource-organization
+trigger: [schedule]
+frequency: "Weekly"
+timeSaved: High
+topPick: true
+samplePrompt: "List all Azure OpenAI and AI Foundry model deployments across all subscriptions. For each, show: resource name, resource group, model name, model version, deployment name, and deployment date. Cross-reference each model and version against the official retirement schedule at https://learn.microsoft.com/en-us/azure/foundry-classic/openai/concepts/model-retirement-schedule. Classify each deployment as: (1) 'Retired' — model version past its retirement date, (2) 'Retiring soon' — retirement date within the next 90 days, (3) 'Current' — no retirement date announced or retirement date > 90 days away. For retired and retiring-soon models, show the retirement date, recommended replacement model/version, and the number of days until retirement. Summarize total deployments by status."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

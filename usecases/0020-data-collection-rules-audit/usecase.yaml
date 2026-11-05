@@ -1,0 +1,11 @@
+id: 0020-data-collection-rules-audit
+status: idea
+title: "Data collection rules audit"
+summary: "Validates that Data Collection Rules (DCRs) are correctly configured and associated with target resources."
+domain: management
+trigger: [schedule]
+frequency: "Weekly"
+timeSaved: Medium
+topPick: false
+samplePrompt: "List all Data Collection Rules. For each, show: associated resources count, data sources configured, destinations, and transformation status. Flag DCRs with 0 associated resources, DCRs referencing deleted workspaces, or DCRs with no data flowing in the last 24h."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

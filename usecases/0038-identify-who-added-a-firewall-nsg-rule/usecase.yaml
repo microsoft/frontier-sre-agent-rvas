@@ -1,0 +1,11 @@
+id: 0038-identify-who-added-a-firewall-nsg-rule
+status: idea
+title: "Identify who added a firewall/NSG rule"
+summary: "Traces network security rule changes to the specific user and timestamp for security investigation."
+domain: management
+trigger: [alert]
+frequency: "On NSG change alert"
+timeSaved: High
+topPick: false
+samplePrompt: "Query the Activity Log for operations on NetworkSecurityGroups and AzureFirewall resources in the last 48 hours. For each rule addition or modification, show: timestamp, caller, resource name, rule name, source/destination configured, and ports."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

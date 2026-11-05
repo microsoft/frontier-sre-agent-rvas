@@ -1,0 +1,11 @@
+id: 0053-post-incident-review-automation
+status: idea
+title: "Post-incident review automation"
+summary: "Auto-generates a post-incident review document with timeline, changes, metrics, and impact data."
+domain: management
+trigger: [alert]
+frequency: "On incident closure"
+timeSaved: High
+topPick: false
+samplePrompt: "Incident on resource '{resource_id}' from {start_time} to {end_time} is now resolved. Generate a post-incident review: (1) timeline of events (first alert → detection → response → resolution), (2) changes made during and before incident, (3) metrics during impact window, (4) user/customer impact estimate, (5) action items to prevent recurrence."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

@@ -1,0 +1,11 @@
+id: 0061-resource-lock-compliance-audit
+status: idea
+title: "Resource lock compliance audit"
+summary: "Check production resource locks and identify missing coverage."
+domain: resource-organization
+trigger: [schedule]
+frequency: "Weekly"
+timeSaved: Medium
+topPick: false
+samplePrompt: "Check all resources in subscriptions tagged 'Environment=Production'. Identify resources of type VM, SQL Server, Storage Account, Key Vault, and AKS that do NOT have a CanNotDelete or ReadOnly lock. Show resource name, type, RG, and recommend lock type."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

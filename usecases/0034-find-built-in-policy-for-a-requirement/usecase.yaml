@@ -1,0 +1,11 @@
+id: 0034-find-built-in-policy-for-a-requirement
+status: idea
+title: "Find built-in policy for a requirement"
+summary: "Search built-in Azure policies for a matching compliance requirement before drafting a custom policy."
+domain: governance
+trigger: [chat]
+frequency: "During compliance planning"
+timeSaved: Medium
+topPick: false
+samplePrompt: "I need to enforce that: '{requirement}'. Search Azure built-in policies for matching definitions. Show the top 5 matches with: display name, policy ID, effect type, and description. Indicate which one best fits the requirement and whether parameters need customization."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

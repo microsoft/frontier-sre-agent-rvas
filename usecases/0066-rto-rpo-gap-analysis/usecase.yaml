@@ -1,0 +1,11 @@
+id: 0066-rto-rpo-gap-analysis
+status: idea
+title: "RTO/RPO gap analysis"
+summary: "Compare disaster recovery configuration and available drill evidence with each critical workload's RTO/RPO targets."
+domain: management
+trigger: [schedule]
+frequency: "Monthly"
+timeSaved: High
+topPick: false
+samplePrompt: "For all resources tagged 'Tier=Critical', assess DR posture: (1) is backup configured? frequency vs RPO target, (2) is geo-replication enabled? (3) replication lag vs RPO, (4) is there a failover plan? last DR drill date. Flag workloads where configured RPO > stated RPO target or no DR mechanism exists."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

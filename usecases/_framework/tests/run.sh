@@ -14,13 +14,13 @@ check() { # name, command...
 fails() { ! "$@"; }
 
 check "valid fixtures validate" "$SH" --root "$FX/valid" validate
-for c in id-mismatch unknown-domain built-no-products bad-tool-schema missing-status status-mismatch validated-no-tests idea-with-components tool-only domain-mismatch bad-package; do
+for c in id-mismatch unknown-domain built-no-products bad-tool-schema missing-status status-mismatch validated-no-tests idea-with-components tool-only bad-folder-name bad-package; do
   check "invalid: $c fails" fails "$SH" --root "$FX/invalid/$c" validate
 done
 
 # Failure messages name the folder and the rule.
 out="$("$SH" --root "$FX/invalid/id-mismatch" validate 2>&1)"
-check "id-mismatch message names folder and rule" grep -q 'FAIL \[some-folder\] id "other-id" must equal' <<<"$out"
+check "id-mismatch message names folder and rule" grep -q 'FAIL \[0001-some-folder\] id "other-id" must equal' <<<"$out"
 out="$("$SH" --root "$FX/invalid/built-no-products" validate 2>&1)"
 check "built-no-products message" grep -q 'built use case requires products' <<<"$out"
 
@@ -36,15 +36,15 @@ check "idea-with-components message" grep -q 'status "idea" does not match the f
 out="$("$SH" --root "$FX/invalid/tool-only" validate 2>&1)"
 check "tool-only message" grep -q 'a tool needs a skill or a subagent' <<<"$out"
 
-out="$("$SH" --root "$FX/invalid/domain-mismatch" validate 2>&1)"
-check "domain-mismatch message" grep -q 'domain "management" must equal the parent folder "security"' <<<"$out"
+out="$("$SH" --root "$FX/invalid/bad-folder-name" validate 2>&1)"
+check "bad-folder-name message" grep -q 'folder name must be <NNNN>-<slug>' <<<"$out"
 
 # Index: declared status and derived components.
 json="$("$SH" --root "$FX/valid" index)"
 check "index count is 3" jq -e '.count == 3' <<<"$json"
-check "validated status exposed" jq -e '.usecases[] | select(.id=="validated-fixture") | .status=="validated" and (has("maturity") | not)' <<<"$json"
-check "idea status exposed" jq -e '.usecases[] | select(.id=="idea-fixture") | .status=="idea"' <<<"$json"
-check "components detected" jq -e '.usecases[] | select(.id=="validated-fixture") | .components | .skill and .subagent and .task and .permissions and .tests and .sampleReport and (.tool=="generate-fixture.py")' <<<"$json"
+check "validated status exposed" jq -e '.usecases[] | select(.id=="0002-validated-fixture") | .status=="validated" and (has("maturity") | not)' <<<"$json"
+check "idea status exposed" jq -e '.usecases[] | select(.id=="0001-idea-fixture") | .status=="idea"' <<<"$json"
+check "components detected" jq -e '.usecases[] | select(.id=="0002-validated-fixture") | .components | .skill and .subagent and .task and .permissions and .tests and .sampleReport and (.tool=="generate-fixture.py")' <<<"$json"
 check "domains listed" jq -e '(.domains | length) == 8' <<<"$json"
 check "grant GUID is not a failure" "$SH" --root "$FX/valid" validate
 
@@ -52,12 +52,14 @@ check "grant GUID is not a failure" "$SH" --root "$FX/valid" validate
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
 check "new creates a folder" "$SH" --root "$tmp" new management my-case
 check "new rejects an unknown domain" fails "$SH" --root "$tmp" new nope other-case
-check "new rejects an id used in another domain" fails "$SH" --root "$tmp" new security my-case
+check "new rejects a slug already in use" fails "$SH" --root "$tmp" new security my-case
 check "new output validates" "$SH" --root "$tmp" validate
 check "new refuses overwrite" fails "$SH" --root "$tmp" new management my-case
-check "new sets domain" grep -q '^domain: management$' "$tmp/management/my-case/usecase.yaml"
-check "index path includes the domain" jq -e '.usecases[] | select(.id=="validated-fixture") | .path | endswith("/identity-access/validated-fixture")' <<<"$json"
-check "new sets id" grep -q '^id: my-case$' "$tmp/management/my-case/usecase.yaml"
+check "new sets domain" grep -q '^domain: management$' "$tmp/0001-my-case/usecase.yaml"
+check "index path is the numbered folder" jq -e '.usecases[] | select(.id=="0002-validated-fixture") | .path | endswith("/0002-validated-fixture")' <<<"$json"
+check "new numbers the next folder" "$SH" --root "$tmp" new security second-case
+check "second use case gets 0002" test -d "$tmp/0002-second-case"
+check "new sets id" grep -q '^id: 0001-my-case$' "$tmp/0001-my-case/usecase.yaml"
 
 # portal-blocks and deploy dry-run.
 out="$("$SH" --root "$FX/valid" portal-blocks validated-fixture 2>&1)"
@@ -92,9 +94,9 @@ STUB
 chmod +x "$bin/az" "$bin/curl"
 out="$(PATH="$bin:$PATH" "$SH" --root "$tmp" diff my-case --endpoint https://example.test 2>&1)"
 check "diff reports changed and new" bash -c "grep -q 'CHANGED skills/example' <<<\"\$1\" && grep -q 'NEW     tools/example' <<<\"\$1\"" _ "$out"
-sed -i 's/^skills: .*/skills: [example]/' "$tmp/management/my-case/tests/expected-config.yaml"
+sed -i 's/^skills: .*/skills: [example]/' "$tmp/0001-my-case/tests/expected-config.yaml"
 check "verify passes when resources exist" env PATH="$bin:$PATH" "$SH" --root "$tmp" verify my-case --endpoint https://example.test
-sed -i 's/^skills: .*/skills: [other]/' "$tmp/management/my-case/tests/expected-config.yaml"
+sed -i 's/^skills: .*/skills: [other]/' "$tmp/0001-my-case/tests/expected-config.yaml"
 check "verify fails when a resource is missing" fails env PATH="$bin:$PATH" "$SH" --root "$tmp" verify my-case --endpoint https://example.test
 
 out="$("$SH" deploy databricks-dependency-configuration-review --endpoint https://example.test --dry-run 2>&1)"

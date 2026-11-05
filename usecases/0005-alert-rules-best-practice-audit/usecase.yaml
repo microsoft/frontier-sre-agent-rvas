@@ -1,0 +1,11 @@
+id: 0005-alert-rules-best-practice-audit
+status: idea
+title: "Alert rules best-practice audit"
+summary: "Review alert coverage, disabled rules, repeated firings, notification wiring, and thresholds."
+domain: management
+trigger: [schedule]
+frequency: "Monthly"
+timeSaved: Medium
+topPick: false
+samplePrompt: "Audit all alert rules across subscriptions. Identify: (1) rules that fired > 20 times in 7 days (noisy), (2) rules in 'Disabled' state, (3) resources without any alert rule, (4) rules without an action group, (5) rules using static thresholds where dynamic would be better."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }

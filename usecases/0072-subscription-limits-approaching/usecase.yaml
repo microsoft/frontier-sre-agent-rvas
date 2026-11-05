@@ -1,0 +1,11 @@
+id: 0072-subscription-limits-approaching
+status: idea
+title: "Subscription limits approaching"
+summary: "Compare resource counts and quota usage with subscription limits to identify capacity constraints."
+domain: resource-organization
+trigger: [schedule]
+frequency: "Weekly"
+timeSaved: High
+topPick: false
+samplePrompt: "Check all subscriptions for resource quota usage. Show: (1) vCPU usage vs limit per family per region, (2) public IP count vs limit, (3) VNet count vs limit, (4) storage account count vs limit. Alert on any quota at > 80% utilization."
+source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }
