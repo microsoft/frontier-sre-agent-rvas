@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scenario Explorer — Azure SRE Agent — RVAS</title>
+    <meta name="description"
+        content="Browse and search Azure SRE Agent use cases, from customer ideas to built and validated agents, with sample prompts, organized by Azure Landing Zone design area.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/brand.css" />
+    <link rel="stylesheet" href="assets/css/shell.css" />
+    <link rel="stylesheet" href="assets/css/scenarios.css" />
+</head>
+
+<body>
+
+    <!-- ── Nav ───────────────────────────────────────────────────────── -->
+    <header class="nav" role="banner">
+        <div class="nav-inner">
+            <a class="brand" href="index.html" aria-label="RVAS — Azure SRE Agent">
+                <img src="assets/img/logo-full.png" alt="RVAP" class="rvap-nav-logo" height="32">
+            </a>
+            <nav class="nav-links" id="navLinks" aria-label="Primary">
+                <a href="index.html#challenges">Azure Operations Track</a>
+                <a href="index.html#sql-dba-track">SQL DBA Track</a>
+                <a href="scenarios.html" class="active" aria-current="page">Scenario Explorer</a>
+                <a href="jumpstart.html">SRE Agent Jumpstart</a>
+                <a class="gh" href="https://github.com/microsoft/frontier-sre-agent-rvas" target="_blank"
+                    rel="noopener">GitHub ↗</a>
+            </nav>
+            <div class="nav-actions">
+                <button class="icon-btn nav-toggle" type="button" aria-label="Open navigation menu"
+                    aria-expanded="false" aria-controls="navLinks">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round">
+                        <path d="M3 6h18M3 12h18M3 18h18" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Page hero -->
+        <section class="section-tight scenario-hero">
+            <div class="wrap">
+                <span class="eyebrow">RVAS — Azure SRE Agent</span>
+                <h1 class="reveal">Scenario Explorer</h1>
+                <p class="lede reveal">
+                    <span id="scenario-lede-count"></span> Azure SRE Agent use cases, organized by Azure Landing
+                    Zone design area. Customer ideas sit next to built and validated agents. Each use case shows
+                    what it contains and, where there is one, a ready-to-copy sample prompt.
+                </p>
+                <div class="stats stats-4 scenario-stats" aria-label="Use case library stats">
+                    <div class="stat"><span class="stat-num" id="scenario-stat-total"></span><span class="stat-lbl">Use
+                            cases</span>
+                    </div>
+                    <div class="stat"><span class="stat-num" id="scenario-stat-domains"></span><span
+                            class="stat-lbl">Landing zone areas</span></div>
+                    <div class="stat"><span class="stat-num" id="scenario-stat-quick"></span><span
+                            class="stat-lbl">Quick wins</span></div>
+                    <div class="stat"><span class="stat-num" id="scenario-stat-triggers"></span><span
+                            class="stat-lbl">Trigger types</span></div>
+                </div>
+                <p class="scenario-attribution reveal">
+                    Sourced from
+                    <a href="https://github.com/alsanch/azure-sre-agent-scenarios" target="_blank" rel="noopener">
+                        alsanch/azure-sre-agent-scenarios ↗</a>.
+                    Entries marked Idea have not been validated or tested against Azure SRE Agent capabilities.
+                    Adapt prompts to your environment before running them.
+                </p>
+            </div>
+        </section>
+
+        <!-- Explorer -->
+        <section id="explorer" class="section">
+            <div class="wrap">
+                <div class="scenario-toolbar">
+                    <div class="scenario-search">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                            <circle cx="11" cy="11" r="7" />
+                            <path d="m21 21-4.3-4.3" />
+                        </svg>
+                        <input type="search" id="scenario-search-input"
+                            placeholder="Search scenarios, descriptions, or prompts…" aria-label="Search scenarios">
+                    </div>
+                    <div class="scenario-select-group">
+                        <span class="scenario-select-wrap">
+                            <label for="scenario-trigger-filter" class="sr-only">Filter by trigger</label>
+                            <select id="scenario-trigger-filter">
+                                <option value="">All triggers</option>
+                            </select>
+                        </span>
+                        <span class="scenario-select-wrap">
+                            <label for="scenario-autonomy-filter" class="sr-only">Filter by autonomy</label>
+                            <select id="scenario-autonomy-filter">
+                                <option value="">All autonomy levels</option>
+                            </select>
+                        </span>
+                        <span class="scenario-select-wrap">
+                            <label for="scenario-status-filter" class="sr-only">Filter by status</label>
+                            <select id="scenario-status-filter">
+                                <option value="">All statuses</option>
+                            </select>
+                        </span>
+                        <button type="button" id="scenario-toppick-toggle" class="scenario-chip scenario-chip-star"
+                            aria-pressed="false">★ Quick wins only</button>
+                    </div>
+                </div>
+                <div class="scenario-chips" id="scenario-category-chips" role="group" aria-label="Filter by category">
+                    <button type="button" class="scenario-chip active" data-category="">All categories</button>
+                    <!-- category chips injected by JS -->
+                </div>
+                <div class="scenario-chips" id="scenario-product-chips" role="group" aria-label="Filter by product">
+                    <!-- product chips injected by JS -->
+                </div>
+                <div class="scenario-results-meta">
+                    <span id="scenario-results-count" class="mono"></span>
+                </div>
+                <div class="scenario-grid" id="scenario-grid" aria-live="polite">
+                    <!-- scenario cards injected by JS -->
+                </div>
+                <p id="scenario-empty" class="scenario-empty" hidden>No use cases match your filters. Try clearing
+                    the search or category filter.</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <p>Azure SRE Agent RVAS · Microsoft Real Value Acceleration Program</p>
+            <div class="footer-links">
+                <a href="https://github.com/microsoft/frontier-sre-agent-rvas" target="_blank" rel="noopener">GitHub
+                    ↗</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scenario detail drawer -->
+    <div id="scenario-drawer-overlay"></div>
+    <div id="scenario-drawer" role="dialog" aria-modal="true" aria-label="Scenario detail">
+        <div class="drawer-header">
+            <div class="drawer-breadcrumb">SCENARIO / <span id="scenario-drawer-category">–</span></div>
+            <button class="drawer-close" id="scenario-drawer-close" aria-label="Close">✕</button>
+        </div>
+        <div class="drawer-body">
+            <div class="scenario-drawer-head">
+                <h2 id="scenario-drawer-title" class="scenario-drawer-title"></h2>
+                <a id="scenario-drawer-github" class="scenario-github-btn" href="#" target="_blank" rel="noopener" aria-label="View this use case on GitHub">
+                    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+                    GitHub
+                </a>
+            </div>
+            <div class="scenario-drawer-badges" id="scenario-drawer-badges"></div>
+            <p id="scenario-drawer-desc" class="scenario-drawer-desc"></p>
+            <div class="scenario-prompt-block" id="scenario-prompt-block">
+                <div class="scenario-prompt-header">
+                    <span class="mono">Sample prompt</span>
+                    <button type="button" id="scenario-copy-btn" class="scenario-copy-btn">Copy prompt</button>
+                </div>
+                <pre id="scenario-drawer-prompt" class="scenario-prompt"></pre>
+            </div>
+            <dl class="scenario-meta-list">
+                <div><dt>Frequency</dt><dd id="scenario-drawer-frequency"></dd></div>
+                <div><dt>Products</dt><dd id="scenario-drawer-products"></dd></div>
+                <div><dt>Contains</dt><dd>
+                        <ul id="scenario-drawer-components"></ul>
+                    </dd></div>
+            </dl>
+        </div>
+    </div>
+
+    <script src="assets/js/shell.js"></script>
+    <script src="assets/js/scenario-explorer.js"></script>
+</body>
+
+</html>
