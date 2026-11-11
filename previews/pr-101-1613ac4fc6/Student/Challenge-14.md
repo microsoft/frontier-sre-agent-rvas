@@ -1,0 +1,96 @@
+[< Previous Challenge](./Challenge-13.md) — **[Home](../README.md)** — [Next Challenge >](./Challenge-15.md)
+
+# Challenge 14 — Application Root Cause Analysis
+
+> **Application focus:** Grubify (Sample Food) only
+
+> **Capability**: Incident Investigation · Telemetry Correlation · Source Code Analysis · GitHub MCP
+
+## Introduction
+
+Investigate a Grubify HTTP 5xx spike from alert to source code. The agent should correlate container logs and Application Insights with the code path that causes an out-of-memory crash, then open a GitHub issue linking the evidence to the code.
+
+## Description
+
+### Before you start
+
+Verify the Grubify app is healthy and the GitHub connector is authorized:
+
+```bash
+make validate-food
+```
+
+In the SRE Agent portal, confirm the **GitHub MCP** (`github-mcp` and `github-mcp-v1`) connectors and the **grubify** repository link are active.
+
+### Step 1 — Inject the OOM fault
+
+```bash
+make break-food
+```
+
+This issues ~200 `POST /api/cart/demo-user/items` requests against the Grubify API. The cart-write path is the out-of-memory fault path in the v1 backend: the container exhausts heap memory, restarts, and returns HTTP 5xx during the restart window.
+
+### Step 2 — Wait for the alert and autonomous response
+
+The `alert-food-http-5xx` Azure Monitor alert (Sev1, Container Apps HTTP 5xx rate) fires on a 1-minute evaluation window. The response plan `sample-food-http-errors` routes the incident to `aca-app-incident-handler` in **Autonomous** mode (up to 3 investigation attempts).
+
+Watch the portal — within **3–5 minutes** the incident should appear and the agent should begin its investigation.
+
+### Step 3 — Follow the investigation to source code
+
+The `aca-app-incident-handler` will:
+
+1. Query Container Apps HTTP logs and Application Insights for the 5xx spike pattern
+2. Identify the `/api/cart/{user}/items` endpoint as the fault path
+3. Correlate the restart events with OOM signals in container console logs
+4. Use the `source-fix-delivery` skill to fix the code in the Grubify repository
+5. Search the Grubify repository for the cart endpoint implementation (`search_code`)
+6. Retrieve the offending file (`get_file_contents`) and identify the OOM code path
+7. Open a GitHub issue with: the root cause, the offending file and line, the telemetry evidence, and recommended fix
+
+### Step 4 — Trigger interactively (if alert didn't fire)
+
+If the alert hasn't fired after 10 minutes, trigger the full investigation manually:
+
+```text
+For the current Grubify 5xx incident, analyze the API repository, identify the likely offending code path, and open a GitHub issue with your findings.
+```
+
+### Step 5 — Review the GitHub issue
+
+```bash
+gh issue list --repo <your-github-username>/frontier-sre-agent-rvas --state open
+```
+
+The issue should contain: alert trigger, telemetry evidence, container restart timeline, code path identified, and recommended remediation.
+
+### Step 6 — Restore
+
+```bash
+make validate-food
+# If not self-healed:
+
+make food-status
+```
+
+## Success Criteria
+
+- [ ] The `alert-food-http-5xx` alert fired and the incident appeared in the portal
+- [ ] The agent identified `/api/cart/{user}/items` as the fault path from telemetry
+- [ ] The subagent retrieved the cart endpoint source code from the Grubify repository
+- [ ] A GitHub issue was created with root cause, code evidence, and remediation steps
+- [ ] The agent demonstrated the agent `aca-app-incident-handler` using skill `source-fix-delivery`
+- [ ] **Explain to your coach** — what is the governance mechanism that ensures `aca-app-incident-handler` can *read* source code and *create issues* but cannot *push commits* or *merge pull requests* without human approval?
+
+## Learning Resources
+
+- [Azure SRE Agent — incident response](https://learn.microsoft.com/en-us/azure/sre-agent/incident-response)
+- [Application Insights — exception tracking](https://learn.microsoft.com/en-us/azure/azure-monitor/app/asp-net-exceptions)
+- [Azure Container Apps — container restart policies](https://learn.microsoft.com/en-us/azure/container-apps/containers)
+- [GitHub MCP server — code search](https://github.com/github/github-mcp-server)
+
+## Tips
+
+- The `aca-app-incident-handler → source-fix-delivery` handoff separates the incident investigation from the focused source-code work.
+- The scheduled task `triage-grubify-issues` (cron `0 */12 * * *`) runs independently of this challenge and continuously triages `[Customer Issue]` backlog items. You may see it interleave with your incident during the demo — that's expected behavior.
+- If the GitHub issue is created but missing the code reference, confirm the `grubify` repository link is active in the portal and the OAuth connector has `repo` scope.
