@@ -1,0 +1,2722 @@
+{
+  "generatedAt": "2026-11-11T17:56:08Z",
+  "count": 79,
+  "domains": [
+    {
+      "slug": "billing-entra-tenant",
+      "label": "Billing & Entra Tenant",
+      "color": "#1A77E3"
+    },
+    {
+      "slug": "identity-access",
+      "label": "Identity & Access",
+      "color": "#7c3aed"
+    },
+    {
+      "slug": "resource-organization",
+      "label": "Resource Organization",
+      "color": "#0F7B6C"
+    },
+    {
+      "slug": "network-topology",
+      "label": "Network Topology",
+      "color": "#f59e0b"
+    },
+    {
+      "slug": "security",
+      "label": "Security",
+      "color": "#f87171"
+    },
+    {
+      "slug": "management",
+      "label": "Management",
+      "color": "#0078D4"
+    },
+    {
+      "slug": "governance",
+      "label": "Governance",
+      "color": "#504092"
+    },
+    {
+      "slug": "platform-devops",
+      "label": "Platform & DevOps",
+      "color": "#38bdf8"
+    }
+  ],
+  "usecases": [
+    {
+      "id": "0001-6-month-cost-summary-trends",
+      "status": "idea",
+      "title": "6-month cost summary & trends",
+      "summary": "Review six months of costs for seasonal patterns and growth.",
+      "domain": "billing-entra-tenant",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Monthly",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Show me a 6-month cost trend summary for subscription '{subscription_name}'. Break down by month, show total and per-service spend, and identify the top 3 services driving growth.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0001-6-month-cost-summary-trends",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0001-six-month-cost-summary-trends",
+      "status": "idea",
+      "title": "six month cost summary & trends",
+      "summary": "Review six months of costs for seasonal patterns and growth.",
+      "domain": "billing-entra-tenant",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Monthly",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Show me a 6-month cost trend summary for subscription '{subscription_name}'. Break down by month, show total and per-service spend, and identify the top 3 services driving growth.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0001-six-month-cost-summary-trends",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0002-agent-health-monitoring",
+      "status": "idea",
+      "title": "Agent health monitoring",
+      "summary": "Check AMA health, recent heartbeats, and extension failures for gaps in telemetry collection.",
+      "domain": "management",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Daily",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Check all VMs and Arc machines for monitoring agent health. Identify: (1) machines with no heartbeat in the last 15 minutes, (2) agents in 'Not Ready' or 'Error' state, (3) extension provisioning failures. Show machine name, last heartbeat, agent version, and status.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0002-agent-health-monitoring",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0003-ai-model-inventory-retirement-lifecycle",
+      "status": "idea",
+      "title": "AI model inventory & retirement lifecycle",
+      "summary": "Inventory Azure OpenAI and AI Foundry model deployments. Compare versions with Microsoft's retirement schedule and identify retired models, upcoming retirements, and replacements.",
+      "domain": "resource-organization",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "High",
+      "topPick": true,
+      "samplePrompt": "List all Azure OpenAI and AI Foundry model deployments across all subscriptions. For each, show: resource name, resource group, model name, model version, deployment name, and deployment date. Cross-reference each model and version against the official retirement schedule at https://learn.microsoft.com/en-us/azure/foundry-classic/openai/concepts/model-retirement-schedule. Classify each deployment as: (1) 'Retired' — model version past its retirement date, (2) 'Retiring soon' — retirement date within the next 90 days, (3) 'Current' — no retirement date announced or retirement date > 90 days away. For retired and retiring-soon models, show the retirement date, recommended replacement model/version, and the number of days until retirement. Summarize total deployments by status.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0003-ai-model-inventory-retirement-lifecycle",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0004-alert-fatigue-analysis",
+      "status": "idea",
+      "title": "Alert fatigue analysis",
+      "summary": "Identifies noisy, low-value alerts that contribute to alert fatigue and reduce team responsiveness.",
+      "domain": "management",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "High",
+      "topPick": true,
+      "samplePrompt": "Analyze all alert rules that fired in the last 30 days. Identify: (1) alerts that fired > 50 times, (2) alerts that auto-resolved within 5 minutes > 80% of the time, (3) alerts where no action was taken (no comments, no state change). Recommend suppression, threshold adjustment, or consolidation.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0004-alert-fatigue-analysis",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0005-alert-rules-best-practice-audit",
+      "status": "idea",
+      "title": "Alert rules best-practice audit",
+      "summary": "Review alert coverage, disabled rules, repeated firings, notification wiring, and thresholds.",
+      "domain": "management",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Monthly",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Audit all alert rules across subscriptions. Identify: (1) rules that fired > 20 times in 7 days (noisy), (2) rules in 'Disabled' state, (3) resources without any alert rule, (4) rules without an action group, (5) rules using static thresholds where dynamic would be better.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0005-alert-rules-best-practice-audit",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0006-all-write-operations-across-subscription-24h",
+      "status": "idea",
+      "title": "All write operations across subscription (24h)",
+      "summary": "Provides a daily digest of all infrastructure changes for operational awareness and audit trail.",
+      "domain": "management",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Daily digest",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Summarize all write and delete operations in subscription '{subscription_name}' in the last 24 hours. Group by resource type, show total operations count, and flag any failed operations. Exclude read-only and diagnostic operations.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0006-all-write-operations-across-subscription-24h",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0007-automated-compliance-remediation-tasks",
+      "status": "idea",
+      "title": "Automated compliance remediation tasks",
+      "summary": "Triggers Azure Policy remediation tasks for resources that are non-compliant with 'DeployIfNotExists' or 'Modify' policies.",
+      "domain": "governance",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "List all non-compliant resources under policies with effect 'DeployIfNotExists' or 'Modify' that have a remediation task available. For each policy: (1) count of remediable resources, (2) create a remediation task if none exists or last task is > 7 days old, (3) check status of in-progress remediation tasks. Report: tasks created, in-progress, and completed.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0007-automated-compliance-remediation-tasks",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0008-azure-firewall-rule-generation",
+      "status": "idea",
+      "title": "Azure Firewall rule generation",
+      "summary": "Draft Azure Firewall rules from traffic requirements and naming conventions.",
+      "domain": "network-topology",
+      "trigger": [
+        "chat"
+      ],
+      "frequency": "During provisioning",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Generate an Azure Firewall network rule to allow traffic from subnet '{source_subnet}' to '{destination}' on ports {ports}. Follow naming convention '{prefix}-{direction}-{service}'. Include the az CLI command and Bicep snippet to deploy it.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0008-azure-firewall-rule-generation",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0009-azure-policy-assignment-assessment",
+      "status": "idea",
+      "title": "Azure Policy assignment assessment",
+      "summary": "Review policy assignments across management groups, subscriptions, and resource groups for duplicates, conflicting effects, exemptions, and ineffective parameters.",
+      "domain": "governance",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Monthly",
+      "timeSaved": "High",
+      "topPick": true,
+      "samplePrompt": "List all Azure Policy assignments across the full management group hierarchy. Analyze for: (1) redundant assignments — same policy definition assigned at both a management group and a child subscription/RG, (2) conflicting assignments — policies with contradictory effects (e.g., one enforces 'deny' on a resource type while another applies 'deployIfNotExists' for the same), (3) orphaned assignments referencing deleted or deprecated policy definitions, (4) assignments with parameters that override or negate the intended effect. For each finding, show policy name, assignment scope, effect, and recommended action (remove, consolidate, or fix). Summarize total assignments, redundancies found, and conflicts detected.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0009-azure-policy-assignment-assessment",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0010-backup-policy-compliance-gap-detection",
+      "status": "idea",
+      "title": "Backup policy compliance & gap detection",
+      "summary": "Verifies that all critical resources have backup configured and that backup jobs are completing successfully.",
+      "domain": "management",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Daily",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "Audit backup coverage: (1) VMs without Azure Backup enabled, (2) SQL databases without backup (PITR or long-term), (3) Cosmos DB accounts without continuous backup, (4) File shares without backup. Also check: failed backup jobs in last 7 days, backup items not backed up in > 24h. Show resource, backup status, last successful backup, and RPO gap.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0010-backup-policy-compliance-gap-detection",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0011-budget-alerts-configuration-audit",
+      "status": "idea",
+      "title": "Budget alerts configuration audit",
+      "summary": "Check budget and alert coverage across subscriptions and critical resource groups.",
+      "domain": "billing-entra-tenant",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Monthly",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Check all subscriptions and resource groups tagged 'CostCenter'. Identify those without a budget configured or where budget alerts are set above 100% only. Recommend budget amounts based on 3-month average spend + 20% buffer.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0011-budget-alerts-configuration-audit",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0012-certificate-renewal-automation",
+      "status": "idea",
+      "title": "Certificate renewal automation",
+      "summary": "Monitors certificate expiration in Key Vault and triggers renewal workflows before expiry causes outages.",
+      "domain": "security",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Daily",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "Check all certificates in Key Vault accounts across subscriptions. For each: show subject, issuer, expiration date, auto-renewal status, and days remaining. For certificates expiring in < 30 days without auto-renewal: trigger renewal workflow or alert the certificate owner. Show certificates that failed auto-renewal attempts.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0012-certificate-renewal-automation",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0013-changes-by-non-service-principal-users",
+      "status": "idea",
+      "title": "Changes by non-service-principal users",
+      "summary": "Review changes made by users rather than service principals or managed identities.",
+      "domain": "management",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Daily",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "Query the Activity Log for the last 24 hours across all subscriptions. Filter for write/delete operations where the caller is NOT a service principal or managed identity. Group by caller, show operation count, resources affected, and timestamps.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0013-changes-by-non-service-principal-users",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0014-changes-in-last-24h-for-a-resource",
+      "status": "idea",
+      "title": "Changes in last 24h for a resource",
+      "summary": "Shows all configuration changes to a specific resource during incident investigation, helping correlate changes with symptoms.",
+      "domain": "management",
+      "trigger": [
+        "chat"
+      ],
+      "frequency": "During incident",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Show all changes detected by Change Analysis and Activity Log for resource '{resource_id}' in the last 24 hours. For each change, show timestamp, property changed, old value, new value, and who initiated it.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0014-changes-in-last-24h-for-a-resource",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0015-consolidated-cost-reporting",
+      "status": "idea",
+      "title": "Consolidated cost reporting",
+      "summary": "Summarize spending across management groups, subscriptions, and services for a leadership review.",
+      "domain": "billing-entra-tenant",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Monthly",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Generate a consolidated monthly cost report for all subscriptions under management group 'Production'. Include total spend, month-over-month change, top 10 services by cost, and top 5 fastest-growing resources. Format as a summary suitable for leadership.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0015-consolidated-cost-reporting",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0016-cost-analysis-by-tag-environment",
+      "status": "idea",
+      "title": "Cost analysis by tag/environment",
+      "summary": "Compare dev, staging, and production spending by environment tag. Track each environment's share of costs and changes over time.",
+      "domain": "billing-entra-tenant",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Show me the cost breakdown for the last month grouped by the 'Environment' tag across all subscriptions. Show the ratio of each environment's cost to production. Highlight any environment where spend exceeds the previous month by more than 15% or where dev/test exceeds 30% of production cost.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0016-cost-analysis-by-tag-environment",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0017-cost-anomaly-detection",
+      "status": "idea",
+      "title": "Cost anomaly detection",
+      "summary": "Compare spending with its baseline to find spikes or drops that may indicate misconfiguration, runaway resources, or billing errors.",
+      "domain": "billing-entra-tenant",
+      "trigger": [
+        "schedule",
+        "alert"
+      ],
+      "frequency": "Daily + event >20% spike",
+      "timeSaved": "High",
+      "topPick": true,
+      "samplePrompt": "Analyze the cost data for the last 7 days across all subscriptions. Identify any resource or service where daily cost deviates more than 20% from the 30-day rolling average. Provide the resource ID, cost delta, and likely root cause.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0017-cost-anomaly-detection",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0018-cross-period-cost-comparison-mg-level",
+      "status": "idea",
+      "title": "Cross-period cost comparison (MG level)",
+      "summary": "Compares cost across billing periods at Management Group level for executive budget reviews.",
+      "domain": "billing-entra-tenant",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Monthly",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Compare total cost for management group 'Enterprise' between the current month and the same month last year. Break down by subscription, show absolute and percentage change, and highlight any subscription with >25% increase.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0018-cross-period-cost-comparison-mg-level",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0019-custom-policy-generation",
+      "status": "idea",
+      "title": "Custom Policy generation",
+      "summary": "Generates Azure Policy definitions for custom compliance requirements that aren't covered by built-in policies.",
+      "domain": "governance",
+      "trigger": [
+        "chat"
+      ],
+      "frequency": "During governance sprint",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "Generate an Azure Policy definition that: {requirement_description}. Include the policy rule, parameters, effect (audit/deny/modify), and the az CLI command to deploy it at subscription scope. Follow Microsoft naming conventions.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0019-custom-policy-generation",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0020-data-collection-rules-audit",
+      "status": "idea",
+      "title": "Data collection rules audit",
+      "summary": "Validates that Data Collection Rules (DCRs) are correctly configured and associated with target resources.",
+      "domain": "management",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "List all Data Collection Rules. For each, show: associated resources count, data sources configured, destinations, and transformation status. Flag DCRs with 0 associated resources, DCRs referencing deleted workspaces, or DCRs with no data flowing in the last 24h.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0020-data-collection-rules-audit",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0021-databricks-dependency-configuration-review",
+      "status": "built",
+      "title": "Azure Databricks dependency and configuration review",
+      "summary": "Read-only review of a fixed Azure Databricks scope: dependency map (observed, inferred, unknown), security, FinOps and optimization findings, delivered as HTML, JSON and two CSVs.",
+      "domain": "platform-devops",
+      "trigger": [
+        "chat"
+      ],
+      "frequency": "On demand",
+      "timeSaved": "High",
+      "topPick": false,
+      "products": [
+        "azure-databricks",
+        "azure-sre-agent",
+        "azure-resource-manager",
+        "unity-catalog"
+      ],
+      "autonomy": "read-only",
+      "samplePrompt": "Run the complete Azure Databricks dependency map and configuration review for <APPROVED_DATABRICKS_WORKSPACE_NAME> using operation=report and deliver all four files.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/08-databricks-dependency-configuration-review"
+      },
+      "package": {
+        "version": "0.1.0",
+        "apiVersion": "azuresre.ai/v1",
+        "requires": {
+          "connectors": [],
+          "roles": [
+            "Reader on the Databricks resource group (ARM)",
+            "CAN VIEW on in-scope jobs, pipelines, SQL warehouses and compute (Databricks)",
+            "BROWSE, USE CATALOG, USE SCHEMA on in-scope Unity Catalog objects"
+          ]
+        },
+        "parameters": {
+          "SUBSCRIPTION_ID": "Subscription of the Databricks workspace",
+          "SRE_TENANT_ID": "Tenant of the SRE Agent",
+          "TARGET_TENANT_ID": "Tenant of the Databricks workspace",
+          "MANAGED_IDENTITY_CLIENT_ID": "Client ID of the agent user-assigned managed identity",
+          "FEDERATED_APP_CLIENT_ID": "App registration used for cross-tenant federation, if any",
+          "APPROVED_WORKSPACES": "Allowlist of workspace names, resource groups and hosts"
+        },
+        "contents": {
+          "tools": [
+            "manifests/tools/generate-databricks-dependency-report.yaml"
+          ],
+          "skills": [
+            "manifests/skills/databricks-dependency-live/SKILL.md"
+          ],
+          "subagents": [
+            "manifests/subagents/databricks-dependency-live.yaml"
+          ],
+          "permissions": [
+            "permissions/grant-databricks-reader.ps1"
+          ]
+        }
+      },
+      "path": "usecases/0021-databricks-dependency-configuration-review",
+      "components": {
+        "skill": true,
+        "subagent": true,
+        "tool": "generate-databricks-dependency-report.yaml",
+        "task": false,
+        "permissions": true,
+        "tests": true,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": "usecases/0021-databricks-dependency-configuration-review/README.md",
+      "images": [
+        "docs/images/01-saved-tool-and-12-parameters.png",
+        "docs/images/02-private-code-and-timeout.png",
+        "docs/images/03-identity-access-off.png",
+        "docs/images/04-native-unconfigured-test.png",
+        "docs/images/05-saved-runtime-skill.png",
+        "docs/images/06-saved-restricted-specialist.png",
+        "docs/images/07-saved-explicit-allowlists.png",
+        "docs/images/08-create-drop-down-arrow.png",
+        "docs/images/09-native-no-source-no-files.png",
+        "docs/images/10-select-registered-specialist.png",
+        "docs/images/11-selected-specialist-composer.png",
+        "docs/images/12-live-chat-four-files.png",
+        "docs/images/13-report-overview-and-pillars.png",
+        "docs/images/14-report-dependency-graph.png",
+        "docs/images/15-report-controls-and-reference.png",
+        "docs/images/16-report-source-coverage-ledger.png"
+      ],
+      "page": "usecases/0021-databricks-dependency-configuration-review/",
+      "download": {
+        "url": "downloads/0021-databricks-dependency-configuration-review.zip",
+        "sha256Url": "downloads/0021-databricks-dependency-configuration-review.zip.sha256",
+        "version": "0.1.0"
+      }
+    },
+    {
+      "id": "0022-ddos-protection-coverage-audit",
+      "status": "idea",
+      "title": "DDoS protection coverage audit",
+      "summary": "Identifies VNets hosting public-facing workloads without DDoS Protection Standard enabled.",
+      "domain": "network-topology",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Monthly",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "List all VNets containing subnets with public IP addresses or Application Gateways. Check whether DDoS Protection Standard is enabled on each VNet. Flag VNets with public-facing resources but no DDoS protection. Show VNet name, public resource count, and estimated DDoS plan cost.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0022-ddos-protection-coverage-audit",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0023-defender-for-cloud-assessment",
+      "status": "idea",
+      "title": "Defender for Cloud assessment",
+      "summary": "Provides a security posture snapshot from Defender for Cloud, highlighting critical findings and score trends.",
+      "domain": "security",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "Pull Defender for Cloud assessment for all subscriptions: (1) secure score current and 30-day trend, (2) unhealthy resources by severity (high/medium/low), (3) top 10 recommendations by impacted resource count, (4) new recommendations in last 7 days. Prioritize by exploitability and blast radius.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0023-defender-for-cloud-assessment",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0024-diagnostic-settings-coverage-audit",
+      "status": "idea",
+      "title": "Diagnostic settings coverage audit",
+      "summary": "Finds resources that lack diagnostic settings, leaving operational blind spots in monitoring.",
+      "domain": "management",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "Query all resources across subscriptions that support diagnostic settings. Identify those with no diagnostic settings configured, or where settings don't include all available log categories. Group by resource type and show coverage percentage.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0024-diagnostic-settings-coverage-audit",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0025-disk-tier-down-opportunities",
+      "status": "idea",
+      "title": "Disk tier-down opportunities",
+      "summary": "Identifies managed disks provisioned at a higher tier than their actual IOPS/throughput demands.",
+      "domain": "billing-entra-tenant",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Bi-weekly",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "List all Premium SSD and Ultra Disk managed disks. Compare their actual P95 IOPS and throughput over the last 14 days against provisioned tier limits. Recommend tier-down to Standard SSD where actual usage is below Standard SSD limits. Show savings estimate.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0025-disk-tier-down-opportunities",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0026-dns-vpn-troubleshooting",
+      "status": "idea",
+      "title": "DNS/VPN troubleshooting",
+      "summary": "Investigate DNS resolution failures and VPN connection issues, then recommend recovery steps.",
+      "domain": "network-topology",
+      "trigger": [
+        "chat"
+      ],
+      "frequency": "During connectivity issues",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Diagnose DNS and VPN issues: (1) check DNS resolution failures — which queries are returning NXDOMAIN or SERVFAIL, from which clients, for which domains, (2) check VPN tunnel status — which tunnels are down, disconnect reason, BGP peer state, and last successful connection time. Provide remediation steps.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0026-dns-vpn-troubleshooting",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0027-dns-zone-record-hygiene",
+      "status": "idea",
+      "title": "DNS zone record hygiene",
+      "summary": "Identifies dangling DNS records pointing to deleted Azure resources, which could be hijacked by attackers.",
+      "domain": "network-topology",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "Query all Azure DNS zones and Private DNS zones. For each A, AAAA, and CNAME record, verify the target resource still exists in the subscription. Flag records where: (1) target IP is not assigned to any resource, (2) CNAME target domain is not resolving, (3) alias records referencing deleted resources.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0027-dns-zone-record-hygiene",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0028-effective-policies-per-scope",
+      "status": "idea",
+      "title": "Effective policies per scope",
+      "summary": "List effective policies, inherited assignments, parameters, and exemptions at a scope. Identify potential conflicts.",
+      "domain": "governance",
+      "trigger": [
+        "chat"
+      ],
+      "frequency": "During audit",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "List all effective policies at scope '{scope}' (subscription/RG/resource). Show: policy name, assignment scope (inherited from where), effect, parameters, and exemptions if any. Identify conflicting policies (e.g., one audits and another denies the same condition).",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0028-effective-policies-per-scope",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0029-executive-operational-report-generation-pdf",
+      "status": "idea",
+      "title": "Executive operational report generation (PDF)",
+      "summary": "Draft a PDF- or HTML-ready report on cost, security, compliance, and availability. Combine Cost Management, Defender for Cloud, Resource Health, alerts, and policy evidence for leadership review.",
+      "domain": "management",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Monthly",
+      "timeSaved": "High",
+      "topPick": true,
+      "samplePrompt": "Generate a monthly executive operational report for management group 'Production' covering the last 30 days. Include sections for: (1) Cost summary — total spend, MoM change, top 5 cost drivers, anomalies detected, (2) Security posture — Defender secure score trend, new high-severity findings, (3) Availability — resource health summary, SLA breaches, top 5 incidents by duration, (4) Compliance — policy compliance %, top non-compliant policies, (5) Operational hygiene — orphaned resources count and cost, stale RBAC assignments found, alert noise ratio. Format as a structured PDF-ready report with an executive summary, key metrics dashboard table, and per-section details with recommendations.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0029-executive-operational-report-generation-pdf",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0030-export-existing-resources-to-arm-bicep",
+      "status": "idea",
+      "title": "Export existing resources to ARM/Bicep",
+      "summary": "Exports running infrastructure to IaC templates for adopting infrastructure-as-code on existing environments.",
+      "domain": "platform-devops",
+      "trigger": [
+        "chat"
+      ],
+      "frequency": "During IaC adoption",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "Export resource group '{rg_name}' to {Bicep/ARM}. Clean up the export: (1) remove read-only and auto-generated properties, (2) parameterize names, SKUs, and locations, (3) add missing dependencies between resources, (4) organize into modules by resource type. Generate the parameter file with current values.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0030-export-existing-resources-to-arm-bicep",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0031-expressroute-vpn-gateway-health",
+      "status": "idea",
+      "title": "ExpressRoute / VPN Gateway health",
+      "summary": "Check ExpressRoute and VPN gateway health, tunnel status, BGP peers, and throughput.",
+      "domain": "network-topology",
+      "trigger": [
+        "schedule",
+        "alert"
+      ],
+      "frequency": "Every 5 min + alert",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "Check all ExpressRoute circuits and VPN Gateways. Show: (1) circuit/gateway provisioning state, (2) peering state (for ER), (3) tunnel connection status (for VPN), (4) BGP peer state, (5) ingress/egress throughput last 1h vs capacity. Alert on any tunnel down or BGP not established.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0031-expressroute-vpn-gateway-health",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0032-extension-health-across-vms",
+      "status": "idea",
+      "title": "Extension health across VMs",
+      "summary": "Monitors VM extension status to catch failed deployments or stuck provisioning that blocks updates and monitoring.",
+      "domain": "resource-organization",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Daily",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Check all VM extensions across subscriptions. Identify: (1) extensions in 'Failed' provisioning state, (2) extensions in 'Transitioning' state for > 1 hour, (3) extensions with handler status errors, (4) VMs with conflicting extensions. Show VM name, extension, status, and error message.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0032-extension-health-across-vms",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0033-failed-deployments-in-last-24h",
+      "status": "idea",
+      "title": "Failed deployments in last 24h",
+      "summary": "List failed ARM deployments with error details and correlation IDs. Group errors to find recurring patterns.",
+      "domain": "platform-devops",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Daily",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "List all ARM deployments in 'Failed' state across all subscriptions in the last 24 hours. For each, show: resource group, deployment name, timestamp, error code, error message, and correlation ID. Group by error code to identify patterns.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0033-failed-deployments-in-last-24h",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0034-find-built-in-policy-for-a-requirement",
+      "status": "idea",
+      "title": "Find built-in policy for a requirement",
+      "summary": "Search built-in Azure policies for a matching compliance requirement before drafting a custom policy.",
+      "domain": "governance",
+      "trigger": [
+        "chat"
+      ],
+      "frequency": "During compliance planning",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "I need to enforce that: '{requirement}'. Search Azure built-in policies for matching definitions. Show the top 5 matches with: display name, policy ID, effect type, and description. Indicate which one best fits the requirement and whether parameters need customization.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0034-find-built-in-policy-for-a-requirement",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0035-fired-alerts-summary-last-24h",
+      "status": "idea",
+      "title": "Fired alerts summary (last 24h)",
+      "summary": "Provides a daily operational summary of all alerts that fired, grouped by severity and resolution status.",
+      "domain": "management",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Daily morning",
+      "timeSaved": "Low",
+      "topPick": false,
+      "samplePrompt": "List all alerts that fired in the last 24 hours across all subscriptions. Group by severity (Sev0-Sev4), show count per severity, average time to resolution, and list unresolved alerts with resource name, alert rule, and time fired.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0035-fired-alerts-summary-last-24h",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0036-firewall-log-analysis-kql",
+      "status": "idea",
+      "title": "Firewall log analysis (KQL)",
+      "summary": "Analyzes Azure Firewall logs to identify blocked traffic patterns, top talkers, and potential misconfigurations.",
+      "domain": "network-topology",
+      "trigger": [
+        "schedule",
+        "chat"
+      ],
+      "frequency": "Daily + on-demand",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "Query Azure Firewall diagnostic logs for the last 24 hours. Show: (1) top 20 denied flows by count, (2) denied flows where source is an internal subnet (potential misconfiguration), (3) allowed flows to suspicious destinations, (4) traffic volume by rule collection.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0036-firewall-log-analysis-kql",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0037-high-privilege-operation-tracking",
+      "status": "idea",
+      "title": "High-privilege operation tracking",
+      "summary": "Monitors sensitive operations (role assignments, policy changes, key vault access) that could indicate security issues or excessive privilege use.",
+      "domain": "identity-access",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Daily",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "Query Activity Log for the last 24 hours. Filter for high-privilege operations: role assignment create/delete, policy assignment create/delete, key vault secret access, subscription-level deployments, management group changes. Show caller, operation, target, and timestamp.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0037-high-privilege-operation-tracking",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0038-identify-who-added-a-firewall-nsg-rule",
+      "status": "idea",
+      "title": "Identify who added a firewall/NSG rule",
+      "summary": "Traces network security rule changes to the specific user and timestamp for security investigation.",
+      "domain": "management",
+      "trigger": [
+        "alert"
+      ],
+      "frequency": "On NSG change alert",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "Query the Activity Log for operations on NetworkSecurityGroups and AzureFirewall resources in the last 48 hours. For each rule addition or modification, show: timestamp, caller, resource name, rule name, source/destination configured, and ports.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0038-identify-who-added-a-firewall-nsg-rule",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0039-kql-log-queries-common-patterns",
+      "status": "idea",
+      "title": "KQL log queries (common patterns)",
+      "summary": "Generates or executes KQL queries for common operational scenarios to speed up log investigations.",
+      "domain": "management",
+      "trigger": [
+        "chat"
+      ],
+      "frequency": "During troubleshooting",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Run the following investigation on Log Analytics workspace '{workspace}': show all errors (severity >= 3) in the last 2 hours, grouped by source resource, error code, and count. Include sample error messages for the top 5 patterns.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0039-kql-log-queries-common-patterns",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0040-log-analytics-workspace-ingestion-cost-analysis",
+      "status": "idea",
+      "title": "Log Analytics workspace ingestion cost analysis",
+      "summary": "Analyzes which data tables and solutions drive the highest log ingestion volume and cost.",
+      "domain": "billing-entra-tenant",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "For each Log Analytics workspace, show ingestion volume by table for the last 30 days. Identify top 5 tables by GB ingested. Show daily trend, cost per table, and recommend tables that could be moved to Basic tier or have shorter retention.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0040-log-analytics-workspace-ingestion-cost-analysis",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0041-logic-apps-code-definition-inspection",
+      "status": "idea",
+      "title": "Logic Apps code/definition inspection",
+      "summary": "Examines the Logic App workflow definition to identify structural issues, deprecated connectors, or error-prone patterns.",
+      "domain": "management",
+      "trigger": [
+        "chat"
+      ],
+      "frequency": "During debugging",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Retrieve the workflow definition for Logic App '{logic_app_name}'. Analyze for: (1) actions without error handling (no 'runAfter' failure paths), (2) deprecated connector versions, (3) hardcoded values that should be parameters, (4) loops without concurrency limits, (5) missing retry policies on HTTP actions.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0041-logic-apps-code-definition-inspection",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0042-management-group-hierarchy-audit",
+      "status": "idea",
+      "title": "Management Group hierarchy audit",
+      "summary": "Validates the MG hierarchy structure, finding misplaced subscriptions or empty management groups.",
+      "domain": "resource-organization",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Monthly",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Show the full Management Group hierarchy tree. For each MG, show: child subscription count, policies assigned, and RBAC roles. Flag: (1) empty MGs with no children, (2) subscriptions directly under root MG, (3) MGs with conflicting policies compared to parent.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0042-management-group-hierarchy-audit",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0043-move-resources-between-subscriptions",
+      "status": "idea",
+      "title": "Move resources between subscriptions",
+      "summary": "Validates and plans resource moves between subscriptions, checking for blockers and dependencies.",
+      "domain": "resource-organization",
+      "trigger": [
+        "chat"
+      ],
+      "frequency": "During reorg",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "Evaluate moving resources from resource group '{source_rg}' to subscription '{target_subscription}'. Run validation: (1) check resource types that support move, (2) identify resources that cannot be moved (locks, dependencies), (3) check quota in target subscription, (4) identify impacted RBAC and policies. Generate the move command with --validate-only first.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0043-move-resources-between-subscriptions",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0044-naming-tagging-convention-compliance",
+      "status": "idea",
+      "title": "Naming & tagging convention compliance",
+      "summary": "Detects resources that violate organizational naming standards and required tag policies, impacting automation, cost allocation, and operational clarity.",
+      "domain": "governance",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Check all resources against: (1) naming convention regex per resource type: VMs='{vm_pattern}', RGs='{rg_pattern}', Storage='{storage_pattern}'; (2) required tags: 'Environment', 'CostCenter', 'Owner', 'Application'. Show resources not matching patterns and those missing required tags. Prioritize production resources and sort by monthly cost.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0044-naming-tagging-convention-compliance",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0045-network-topology-diagram",
+      "status": "idea",
+      "title": "Network topology diagram",
+      "summary": "Auto-generates a visual network topology showing VNets, peerings, subnets, gateways, and connected resources.",
+      "domain": "network-topology",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "Generate a Mermaid diagram showing the network topology for subscription '{subscription_name}'. Include all VNets, their subnets, peering connections, VPN/ExpressRoute gateways, private endpoints, and key resources in each subnet. Show address spaces and peering status.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0045-network-topology-diagram",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0046-operations-dashboard-generation",
+      "status": "idea",
+      "title": "Operations dashboard generation",
+      "summary": "Auto-generates Azure Monitor dashboards for new workloads with standard SRE metrics panels.",
+      "domain": "management",
+      "trigger": [
+        "chat"
+      ],
+      "frequency": "On workload onboarding",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "Generate an Azure Monitor dashboard JSON for resource group '{rg_name}'. Include panels for: VM CPU/memory/disk, App Service requests/errors/response time, SQL DTU/connections, and a service health tile. Use best-practice layout.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0046-operations-dashboard-generation",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0047-orphaned-resources-cost-impact-analysis",
+      "status": "idea",
+      "title": "Orphaned resources & cost impact analysis",
+      "summary": "Review unattached disks, public IPs and NICs, empty NSGs, idle load balancers, old snapshots, unused gateway backends, and empty App Service Plans. Estimate their costs.",
+      "domain": "billing-entra-tenant",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Daily",
+      "timeSaved": "High",
+      "topPick": true,
+      "samplePrompt": "Query all subscriptions for orphaned resources: (1) managed disks not attached to any VM, (2) public IPs not associated with any resource, (3) NICs not attached to a VM, (4) NSGs not associated with any subnet or NIC, (5) Load Balancers with 0 healthy backend instances or 0 bytes processed in 7 days, (6) disk snapshots older than 90 days whose source disk no longer exists, (7) App Gateway/Front Door backend pools with 0 requests in 14 days, (8) App Service Plans hosting 0 apps or only stopped apps. For each, show resource name, type, RG, age, and monthly cost. Summarize total waste.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0047-orphaned-resources-cost-impact-analysis",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0048-overly-permissive-nsg-rules-audit",
+      "status": "idea",
+      "title": "Overly permissive NSG rules audit",
+      "summary": "Identifies network security rules that are too broad, exposing resources to unnecessary risk.",
+      "domain": "network-topology",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Daily",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "Scan all NSGs across subscriptions. Flag rules where: (1) source = 'Any' or '0.0.0.0/0' on non-load-balancer ports, (2) destination port = '*' (any), (3) priority allows wide port ranges (>100 ports). Show NSG name, rule name, direction, access, source, destination, and port range. Recommend tighter scoping.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0048-overly-permissive-nsg-rules-audit",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0049-permissions-required-for-an-action",
+      "status": "idea",
+      "title": "Permissions required for an action",
+      "summary": "Determines the minimum RBAC permissions required to perform a specific Azure operation, supporting least-privilege design.",
+      "domain": "identity-access",
+      "trigger": [
+        "chat"
+      ],
+      "frequency": "During access request",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "What is the minimum RBAC role or specific permissions needed to perform: '{operation_description}'? Show: (1) required resource provider operations (e.g., Microsoft.Compute/virtualMachines/start/action), (2) matching built-in role(s), (3) if no exact match, a custom role definition JSON with minimum permissions.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0049-permissions-required-for-an-action",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0050-planned-maintenance-awareness",
+      "status": "idea",
+      "title": "Planned maintenance awareness",
+      "summary": "List upcoming Azure maintenance events and affected resources to support failover planning.",
+      "domain": "management",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Daily",
+      "timeSaved": "Low",
+      "topPick": true,
+      "samplePrompt": "List all planned maintenance events from Azure Service Health for the next 7 days affecting my subscriptions. Show event name, affected service, scheduled window, impacted region, and my resources in that region.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0050-planned-maintenance-awareness",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0051-policy-compliance-state-monitoring",
+      "status": "idea",
+      "title": "Policy compliance state monitoring",
+      "summary": "Tracks compliance state trends and identifies resources falling out of compliance over time.",
+      "domain": "governance",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Daily",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Show policy compliance summary for subscription '{subscription_name}'. Include: (1) total policies assigned, (2) compliant vs non-compliant resource count, (3) top 10 policies by non-compliance count, (4) resources that became non-compliant in the last 7 days. Show trend vs previous week.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0051-policy-compliance-state-monitoring",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0052-policy-exemptions-review",
+      "status": "idea",
+      "title": "Policy exemptions review",
+      "summary": "Audits policy exemptions to find expired ones and those without proper justification that may be covering non-compliance.",
+      "domain": "governance",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "List all policy exemptions across subscriptions. Show: exemption name, scope, exempted policy, category (waiver/mitigated), expiration date, and description. Flag: (1) exemptions past their expiration date, (2) exemptions without an expiration date, (3) exemptions with no description/justification.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0052-policy-exemptions-review",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0053-post-incident-review-automation",
+      "status": "idea",
+      "title": "Post-incident review automation",
+      "summary": "Auto-generates a post-incident review document with timeline, changes, metrics, and impact data.",
+      "domain": "management",
+      "trigger": [
+        "alert"
+      ],
+      "frequency": "On incident closure",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "Incident on resource '{resource_id}' from {start_time} to {end_time} is now resolved. Generate a post-incident review: (1) timeline of events (first alert → detection → response → resolution), (2) changes made during and before incident, (3) metrics during impact window, (4) user/customer impact estimate, (5) action items to prevent recurrence.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0053-post-incident-review-automation",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0054-private-endpoint-public-exposure-audit",
+      "status": "idea",
+      "title": "Private endpoint & public exposure audit",
+      "summary": "Inventory public PaaS endpoints and private endpoint coverage. Identify public access that needs review.",
+      "domain": "network-topology",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "List all Storage Accounts, SQL Servers, Key Vaults, Cosmos DB, App Services, and other PaaS resources across subscriptions. For each, check: (1) is public network access enabled? (2) are there private endpoints configured? (3) what is the public FQDN/IP? Flag resources with public access enabled but no private endpoint. Show resource, public endpoint, and recommendation.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0054-private-endpoint-public-exposure-audit",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0055-public-ip-inventory-justification",
+      "status": "idea",
+      "title": "Public IP inventory & justification",
+      "summary": "List public IPs and their associated resources. Flag unattached IPs and attachments that need justification.",
+      "domain": "network-topology",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "List all Public IP addresses across subscriptions. For each, show: resource name, IP address, SKU, associated resource (or 'unattached'), allocation method, and creation date. Flag PIPs that are: unattached, attached to stopped VMs, or attached to non-production resources.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0055-public-ip-inventory-justification",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0056-rbac-access-audit-who-has-what",
+      "status": "idea",
+      "title": "RBAC access audit (who has what)",
+      "summary": "Review who has access, at which scope, and through which role. Flag broad or stale assignments.",
+      "domain": "identity-access",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "List all role assignments across subscription '{subscription_name}'. For each, show: principal name, principal type (user/group/SP), role, scope, assignment source (direct/inherited). Flag: (1) Owner/Contributor at subscription scope, (2) assignments to individual users (should be groups), (3) assignments where principal no longer exists in Entra ID.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0056-rbac-access-audit-who-has-what",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0057-rbac-redundancy-over-privilege-assessment",
+      "status": "idea",
+      "title": "RBAC redundancy & over-privilege assessment",
+      "summary": "Compare role assignments across parent and child scopes. Identify duplicates and cases where a narrower role may cover observed operations.",
+      "domain": "identity-access",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "High",
+      "topPick": true,
+      "samplePrompt": "Analyze all RBAC role assignments across subscriptions. Identify: (1) redundant assignments — same principal with the same or higher role at a parent scope making child-scope assignments unnecessary, (2) principals with Owner or Contributor that could operate with a narrower built-in role based on their Activity Log operations in the last 30 days, (3) multiple role assignments to the same principal at the same scope that could be consolidated. For each finding, show principal name, type, assigned roles, scopes, and recommended action.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0057-rbac-redundancy-over-privilege-assessment",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0058-resource-age-tracking",
+      "status": "idea",
+      "title": "Resource age tracking",
+      "summary": "Identifies long-running resources that may be forgotten, orphaned, or candidates for modernization.",
+      "domain": "resource-organization",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Find all resources older than {X} months (default 12) that have had no write operations in their Activity Log in the last 90 days. Show resource name, type, creation date, last activity date, and monthly cost. Flag as potential candidates for decommission review.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0058-resource-age-tracking",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0059-resource-group-sprawl-detection",
+      "status": "idea",
+      "title": "Resource group sprawl detection",
+      "summary": "Find empty, single-resource, temporary, or untagged resource groups for an ownership and consolidation review.",
+      "domain": "resource-organization",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Analyze all resource groups across subscriptions. Flag: (1) empty RGs with 0 resources, (2) RGs with only 1 resource (consolidation candidate), (3) RGs with names suggesting temporary/test purpose in production, (4) RGs without required tags. Show RG name, resource count, total cost, and creation date.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0059-resource-group-sprawl-detection",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0060-resource-health-status-summary",
+      "status": "idea",
+      "title": "Resource health status summary",
+      "summary": "Summarize current Resource Health states and list degraded or unavailable resources.",
+      "domain": "management",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Every 1h",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Query Azure Resource Health for all resources in subscriptions. Show summary: count by health status (Available, Degraded, Unavailable, Unknown). List all resources currently in 'Degraded' or 'Unavailable' state with reason and since-when timestamp.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0060-resource-health-status-summary",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0061-resource-lock-compliance-audit",
+      "status": "idea",
+      "title": "Resource lock compliance audit",
+      "summary": "Check production resource locks and identify missing coverage.",
+      "domain": "resource-organization",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Check all resources in subscriptions tagged 'Environment=Production'. Identify resources of type VM, SQL Server, Storage Account, Key Vault, and AKS that do NOT have a CanNotDelete or ReadOnly lock. Show resource name, type, RG, and recommend lock type.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0061-resource-lock-compliance-audit",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0062-resource-metrics-analysis",
+      "status": "idea",
+      "title": "Resource metrics analysis",
+      "summary": "Review a resource's performance metrics for troubleshooting or capacity planning.",
+      "domain": "management",
+      "trigger": [
+        "chat"
+      ],
+      "frequency": "During incident",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Pull the key metrics for resource '{resource_id}' over the last 4 hours with 5-minute granularity. Include CPU, memory, disk IOPS, network in/out, and any resource-specific metrics. Highlight any values exceeding 80% of the resource limit.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0062-resource-metrics-analysis",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0063-resources-created-yesterday",
+      "status": "idea",
+      "title": "Resources created yesterday",
+      "summary": "List resources created in the last 24 hours, their creators, and deployment methods for review.",
+      "domain": "resource-organization",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Daily",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "List all resources created in the last 24 hours across all subscriptions. Show: resource name, type, resource group, subscription, who created it (from Activity Log), and whether it was created via ARM template/pipeline or manual portal action. Flag resources not matching naming conventions.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0063-resources-created-yesterday",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0064-resources-with-highest-cost-increase",
+      "status": "idea",
+      "title": "Resources with highest cost increase",
+      "summary": "Rank resources by cost growth to identify spending that needs investigation.",
+      "domain": "billing-entra-tenant",
+      "trigger": [
+        "schedule",
+        "alert"
+      ],
+      "frequency": "Daily + alert >30% WoW",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "Identify the top 20 resources with the highest absolute cost increase week-over-week across all subscriptions. For each, show resource name, type, previous week cost, current week cost, delta, and percentage increase.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0064-resources-with-highest-cost-increase",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0065-rollback-command-generation-for-bad-changes",
+      "status": "idea",
+      "title": "Rollback command generation for bad changes",
+      "summary": "Draft commands to revert a problematic resource change, with a safety check where supported.",
+      "domain": "management",
+      "trigger": [
+        "alert"
+      ],
+      "frequency": "On failed change",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "A problematic change was detected on resource '{resource_id}' at {timestamp}. Based on Change Analysis, identify what was modified. Generate the az CLI or ARM API command to revert the change to its previous value. Include a safety check (--what-if where available).",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0065-rollback-command-generation-for-bad-changes",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0066-rto-rpo-gap-analysis",
+      "status": "idea",
+      "title": "RTO/RPO gap analysis",
+      "summary": "Compare disaster recovery configuration and available drill evidence with each critical workload's RTO/RPO targets.",
+      "domain": "management",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Monthly",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "For all resources tagged 'Tier=Critical', assess DR posture: (1) is backup configured? frequency vs RPO target, (2) is geo-replication enabled? (3) replication lag vs RPO, (4) is there a failover plan? last DR drill date. Flag workloads where configured RPO > stated RPO target or no DR mechanism exists.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0066-rto-rpo-gap-analysis",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0067-service-health-incidents-resource-impact",
+      "status": "idea",
+      "title": "Service Health incidents & resource impact",
+      "summary": "Detects Azure platform incidents and maps them to specific customer resources to quantify blast radius during outages.",
+      "domain": "management",
+      "trigger": [
+        "alert"
+      ],
+      "frequency": "On new incident",
+      "timeSaved": "High",
+      "topPick": true,
+      "samplePrompt": "Check Azure Service Health for any active incidents affecting resources in my subscriptions. Show incident title, affected services, impacted regions, status, and list my specific resources in those regions. For each impacted resource, show current health status and dependent workloads affected. Suggest mitigation actions if available.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0067-service-health-incidents-resource-impact",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0068-sku-reliability-assessment",
+      "status": "idea",
+      "title": "SKU reliability assessment",
+      "summary": "Evaluates resource SKUs against availability requirements, identifying single points of failure or SLA gaps.",
+      "domain": "management",
+      "trigger": [
+        "chat"
+      ],
+      "frequency": "Architecture review",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "For resources in production tagged 'SLA=99.99%', check: (1) VM — is it using Availability Zones or VMSS? (2) SQL — is it Zone-redundant? (3) Storage — is it GRS/GZRS? (4) App Service — is it Premium or in ASE? Flag any resource where SKU SLA is below the stated target.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0068-sku-reliability-assessment",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0069-ssl-tls-certificate-expiration-tracking",
+      "status": "idea",
+      "title": "SSL/TLS certificate expiration tracking",
+      "summary": "Track certificate expiry across Azure services and flag upcoming renewals.",
+      "domain": "network-topology",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Daily",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "Scan all certificates in: Key Vaults, App Service certificates, Application Gateway SSL certs, Front Door custom domains, and API Management. Show certificate subject, issuer, expiration date, and days remaining. Alert on any certificate expiring within 30 days.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0069-ssl-tls-certificate-expiration-tracking",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0070-stale-rbac-assignments",
+      "status": "idea",
+      "title": "Stale RBAC assignments",
+      "summary": "Find assignments to deleted or inactive principals for an access review.",
+      "domain": "identity-access",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "High",
+      "topPick": true,
+      "samplePrompt": "List all role assignments where: (1) the principal object no longer exists in Entra ID (orphaned SIDs), (2) the user principal hasn't signed in for > 90 days, (3) the service principal has no recent activity. Show assignment scope, role, principal display name/ID, and last sign-in date. Recommend removal.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0070-stale-rbac-assignments",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0071-subscription-hygiene-score",
+      "status": "idea",
+      "title": "Subscription hygiene score",
+      "summary": "Score subscriptions against tag, lock, alert, diagnostic, policy, and Defender for Cloud coverage.",
+      "domain": "resource-organization",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "Calculate a hygiene score (0-100) for each subscription based on: (1) tag compliance (20%), (2) resource lock coverage (15%), (3) alert rule coverage (20%), (4) diagnostic settings coverage (15%), (5) policy compliance (15%), (6) Defender for Cloud score (15%). Show score breakdown and improvement recommendations for subscriptions scoring < 70.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0071-subscription-hygiene-score",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0072-subscription-limits-approaching",
+      "status": "idea",
+      "title": "Subscription limits approaching",
+      "summary": "Compare resource counts and quota usage with subscription limits to identify capacity constraints.",
+      "domain": "resource-organization",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "Check all subscriptions for resource quota usage. Show: (1) vCPU usage vs limit per family per region, (2) public IP count vs limit, (3) VNet count vs limit, (4) storage account count vs limit. Alert on any quota at > 80% utilization.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0072-subscription-limits-approaching",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0073-support-ticket-creation-pre-populated",
+      "status": "idea",
+      "title": "Support ticket creation (pre-populated)",
+      "summary": "Draft a support ticket with resource configuration, metrics, errors, recent changes, and health evidence.",
+      "domain": "management",
+      "trigger": [
+        "chat"
+      ],
+      "frequency": "After auto-resolve fails",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Prepare a support ticket for resource '{resource_id}' issue: '{issue_description}'. Collect and include: (1) resource config and SKU, (2) relevant metrics last 4h, (3) related errors in logs, (4) recent changes from Activity Log, (5) Resource Health status. Format as a support request with severity, category, and collected evidence.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0073-support-ticket-creation-pre-populated",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0074-top-consumer-services-identification",
+      "status": "idea",
+      "title": "Top consumer services identification",
+      "summary": "Identify the Azure services with the highest costs and compare their spending over time.",
+      "domain": "billing-entra-tenant",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "Low",
+      "topPick": false,
+      "samplePrompt": "List the top 10 Azure services by cost in the last 30 days across all subscriptions. For each, show current month cost, previous month cost, percentage change, and number of instances.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0074-top-consumer-services-identification",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0075-underutilized-resources-detection",
+      "status": "idea",
+      "title": "Underutilized resources detection",
+      "summary": "Find low-utilization resources and report their costs for review.",
+      "domain": "billing-entra-tenant",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Weekly",
+      "timeSaved": "High",
+      "topPick": true,
+      "samplePrompt": "Scan all VMs, App Services, SQL Databases, and Redis Caches across subscriptions. Flag resources where average CPU < 5%, average connections < 10, or average requests < 100/hour over the last 7 days. Show monthly cost of each underutilized resource.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0075-underutilized-resources-detection",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0076-vm-performance-anomaly-detection",
+      "status": "idea",
+      "title": "VM performance anomaly detection",
+      "summary": "Continuously baselines VM performance metrics and alerts when behavior deviates from historical normal.",
+      "domain": "management",
+      "trigger": [
+        "schedule",
+        "alert"
+      ],
+      "frequency": "Every 15 min + alert",
+      "timeSaved": "High",
+      "topPick": false,
+      "samplePrompt": "For all production VMs, compare current 15-minute CPU, memory, disk queue length, and network metrics against the 7-day baseline for the same time window. Flag any VM where current values exceed 2 standard deviations from baseline.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0076-vm-performance-anomaly-detection",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0077-vnet-peering-health-check",
+      "status": "idea",
+      "title": "VNet peering health check",
+      "summary": "Monitors VNet peering connections for status issues, disconnected peerings, or asymmetric configurations.",
+      "domain": "network-topology",
+      "trigger": [
+        "schedule"
+      ],
+      "frequency": "Daily",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "List all VNet peerings across subscriptions. Check: (1) peering status (Connected/Disconnected/Initiated), (2) both sides exist and are connected, (3) gateway transit settings are symmetric, (4) address space overlaps. Flag any peering not in 'Connected' state or with misconfigured transit.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0077-vnet-peering-health-check",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    },
+    {
+      "id": "0078-workbook-auto-generation",
+      "status": "idea",
+      "title": "Workbook auto-generation",
+      "summary": "Draft an Azure Workbook with monitoring panels for the workload's resource types.",
+      "domain": "management",
+      "trigger": [
+        "chat"
+      ],
+      "frequency": "On workload onboarding",
+      "timeSaved": "Medium",
+      "topPick": false,
+      "samplePrompt": "Generate an Azure Workbook for workload in resource group '{rg_name}'. Auto-detect resource types and include relevant panels: (1) resource health overview, (2) key performance metrics per resource type, (3) error/exception trends, (4) cost trend, (5) recent changes. Export as ARM template for deployment.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+      },
+      "path": "usecases/0078-workbook-auto-generation",
+      "components": {
+        "skill": false,
+        "subagent": false,
+        "tool": false,
+        "task": false,
+        "permissions": false,
+        "tests": false,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": null,
+      "images": [],
+      "page": null,
+      "download": null
+    }
+  ]
+}

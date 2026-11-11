@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Use case — Azure SRE Agent — RVAS</title>
+    <meta name="description" content="Documentation, requirements and a download package for a built Azure SRE Agent use case.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/brand.css" />
+    <link rel="stylesheet" href="assets/css/shell.css" />
+    <link rel="stylesheet" href="assets/css/scenarios.css" />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+
+<body>
+
+    <!-- ── Nav ───────────────────────────────────────────────────────── -->
+    <header class="nav" role="banner">
+        <div class="nav-inner">
+            <a class="brand" href="index.html" aria-label="RVAS — Azure SRE Agent">
+                <img src="assets/img/logo-full.png" alt="RVAP" class="rvap-nav-logo" height="32">
+            </a>
+            <nav class="nav-links" id="navLinks" aria-label="Primary">
+                <a href="index.html" class="active" aria-current="page">Scenario Explorer</a>
+                <a href="jumpstart.html">SRE Agent Jumpstart</a>
+                <div class="nav-menu">
+                    <button type="button" class="nav-menu-btn" aria-haspopup="true" aria-expanded="false">Labs
+                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 4l4 4 4-4" /></svg></button>
+                    <div class="nav-menu-list">
+                        <a href="labs.html#requirements">Before you start</a>
+                        <a href="labs.html#challenges">Azure Operations Track</a>
+                        <a href="labs.html#sql-dba-track">SQL DBA Track</a>
+                    </div>
+                </div>
+                <a class="gh" href="https://github.com/microsoft/frontier-sre-agent-rvas" target="_blank"
+                    rel="noopener">GitHub ↗</a>
+            </nav>
+            <div class="nav-actions">
+                <button class="icon-btn nav-toggle" type="button" aria-label="Open navigation menu"
+                    aria-expanded="false" aria-controls="navLinks">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round">
+                        <path d="M3 6h18M3 12h18M3 18h18" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="section-tight uc-hero">
+            <div class="wrap">
+                <a class="uc-back" href="index.html#explorer">← Azure SRE Agent Scenario Explorer</a>
+                <div id="uc-error" class="scenario-empty" hidden></div>
+                <div id="uc-head" hidden>
+                    <span class="eyebrow" id="uc-category"></span>
+                    <h1 id="uc-title"></h1>
+                    <p class="lede" id="uc-summary"></p>
+                    <div class="scenario-drawer-badges" id="uc-badges"></div>
+                    <div class="uc-actions">
+                        <a id="uc-download" class="uc-btn uc-btn-primary" href="#" hidden download>Download package</a>
+                        <a id="uc-github" class="uc-btn" href="#" target="_blank" rel="noopener">View on GitHub ↗</a>
+                    </div>
+                    <p class="uc-version mono" id="uc-version" hidden></p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="uc-body" hidden>
+            <div class="wrap uc-layout">
+                <article class="uc-doc">
+                    <div class="uc-install" id="uc-install" hidden>
+                        <h2>Use it without cloning the repo</h2>
+                        <ol>
+                            <li>Download the package and unzip it.</li>
+                            <li>Check the archive: <code id="uc-sha-cmd"></code></li>
+                            <li>Follow <strong>Setup</strong> in the guide below. Run commands from the unzipped folder.</li>
+                        </ol>
+                    </div>
+                    <div class="uc-markdown" id="uc-markdown" aria-live="polite">Loading guide…</div>
+                </article>
+                <aside class="uc-side">
+                    <div class="uc-card" id="uc-prompt-card" hidden>
+                        <h3>Sample prompt</h3>
+                        <pre class="scenario-prompt" id="uc-prompt"></pre>
+                        <button type="button" id="uc-copy" class="scenario-copy-btn">Copy prompt</button>
+                    </div>
+                    <div class="uc-card">
+                        <h3>What is inside</h3>
+                        <ul id="uc-contents"></ul>
+                    </div>
+                    <div class="uc-card" id="uc-requires-card" hidden>
+                        <h3>Requirements</h3>
+                        <ul id="uc-requires"></ul>
+                    </div>
+                    <div class="uc-card" id="uc-params-card" hidden>
+                        <h3>Parameters</h3>
+                        <dl id="uc-params"></dl>
+                    </div>
+                    <div class="uc-card">
+                        <h3>Details</h3>
+                        <dl class="scenario-meta-list" id="uc-meta"></dl>
+                    </div>
+                </aside>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <p>Azure SRE Agent RVAS · Microsoft Real Value Acceleration Program</p>
+            <div class="footer-links">
+                <a href="https://github.com/microsoft/frontier-sre-agent-rvas" target="_blank" rel="noopener">GitHub
+                    ↗</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="assets/js/shell.js"></script>
+    <script src="assets/js/usecase.js"></script>
+</body>
+
+</html>
