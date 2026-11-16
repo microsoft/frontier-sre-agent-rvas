@@ -1,0 +1,550 @@
+/* =====================================================================
+   SCENARIO EXPLORER — page-specific styles for index.html
+   Builds on shell.css tokens (--c-line, --c-fg, --c-dim, --c-accent, …).
+   ===================================================================== */
+
+.scenario-hero {
+    border-bottom: 1px solid var(--c-line);
+    background: var(--c-700);
+    padding-bottom: 24px;
+}
+
+/* Explorer sits directly under the hero — trim the default .section top
+   padding so the two sections don't stack into one large empty gap. */
+#explorer {
+    padding-top: 24px;
+}
+
+.scenario-hero .lede {
+    max-width: 760px;
+    color: var(--c-dim);
+    margin-top: 14px;
+}
+
+.scenario-stats {
+    max-width: 640px;
+    margin-top: 2rem;
+    background: #fff;
+    border: 1px solid var(--c-line);
+    border-radius: var(--r);
+    box-shadow: var(--shadow-card);
+}
+
+.scenario-stats .stat-num,
+.scenario-stats .stat-lbl {
+    color: var(--c-heading);
+}
+
+.scenario-stats .stat-lbl {
+    color: var(--c-faint);
+}
+
+.scenario-stats .stat + .stat {
+    border-left: 1px solid var(--c-line);
+}
+
+/* ─── Toolbar ────────────────────────────────────────────────────── */
+.scenario-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+}
+
+.scenario-search {
+    position: relative;
+    flex: 1 1 320px;
+    min-width: 240px;
+    display: flex;
+    align-items: center;
+}
+
+.scenario-search svg {
+    position: absolute;
+    left: 14px;
+    color: var(--c-faint);
+    pointer-events: none;
+}
+
+.scenario-search input {
+    width: 100%;
+    padding: .65rem .9rem .65rem 2.4rem;
+    border: 1px solid var(--c-line);
+    border-radius: var(--r-sm);
+    font-family: var(--font-body);
+    font-size: .85rem;
+    color: var(--c-fg);
+    background: #fff;
+    transition: border-color .2s, box-shadow .2s;
+}
+
+.scenario-search input:focus {
+    outline: none;
+    border-color: var(--c-accent);
+    box-shadow: 0 0 0 3px var(--c-accent-glow);
+}
+
+.scenario-select-group {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    flex-wrap: wrap;
+}
+
+.scenario-select-group select {
+    padding: .6rem .8rem;
+    border: 1px solid var(--c-line);
+    border-radius: var(--r-sm);
+    background: #fff;
+    font-family: var(--font-body);
+    font-size: .8rem;
+    color: var(--c-fg);
+}
+
+/* ─── Chips ──────────────────────────────────────────────────────── */
+.scenario-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin-bottom: 1.5rem;
+}
+
+.scenario-chip {
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    font-weight: 500;
+    letter-spacing: .03em;
+    color: var(--c-dim);
+    background: #fff;
+    border: 1px solid var(--c-line);
+    padding: .4rem .8rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background .18s, color .18s, border-color .18s;
+    white-space: nowrap;
+}
+
+.scenario-chip:hover {
+    border-color: var(--c-accent);
+    color: var(--c-accent);
+}
+
+.scenario-chip.active {
+    background: var(--c-accent);
+    border-color: var(--c-accent);
+    color: #fff;
+}
+
+.scenario-chip-star.active {
+    background: #b45309;
+    border-color: #b45309;
+    color: #fff;
+}
+
+.scenario-results-meta {
+    margin-bottom: 1rem;
+    font-size: .7rem;
+    color: var(--c-faint);
+    letter-spacing: .04em;
+}
+
+/* ─── Card grid ──────────────────────────────────────────────────── */
+.scenario-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.scenario-card {
+    background: #fff;
+    border: 1px solid var(--c-line);
+    border-left: 3px solid var(--card-color, var(--c-accent));
+    border-radius: var(--r-sm);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    transition: box-shadow .2s, transform .2s, border-color .2s;
+}
+
+.scenario-card:hover,
+.scenario-card:focus-visible {
+    box-shadow: var(--shadow-card);
+    transform: translateY(-2px);
+    outline: none;
+}
+
+.scenario-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: .5rem;
+}
+
+.scenario-card-category {
+    font-family: var(--font-mono);
+    font-size: .6rem;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--card-color, var(--c-accent));
+    font-weight: 600;
+}
+
+.scenario-card-star {
+    color: #b45309;
+    font-size: .8rem;
+    flex-shrink: 0;
+}
+
+.scenario-card-title {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--c-heading);
+    line-height: 1.3;
+}
+
+.scenario-card-desc {
+    font-size: .8rem;
+    color: var(--c-dim);
+    line-height: 1.55;
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.scenario-card-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem;
+    align-items: center;
+}
+
+.scenario-badge {
+    font-family: var(--font-mono);
+    font-size: .58rem;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: .18rem .5rem;
+    border-radius: 3px;
+    background: var(--c-700);
+    color: var(--c-dim);
+    border: 1px solid var(--c-line);
+}
+
+.scenario-badge-mode {
+    background: rgba(26, 119, 227, .08);
+    color: var(--c-accent);
+    border-color: rgba(26, 119, 227, .2);
+}
+
+.scenario-badge-time-high {
+    background: rgba(22, 163, 74, .1);
+    color: #16a34a;
+    border-color: rgba(22, 163, 74, .22);
+}
+
+.scenario-badge-time-medium {
+    background: rgba(202, 138, 4, .1);
+    color: #ca8a04;
+    border-color: rgba(202, 138, 4, .22);
+}
+
+.scenario-badge-time-low {
+    background: rgba(107, 114, 128, .1);
+    color: #6B7280;
+    border-color: rgba(107, 114, 128, .22);
+}
+
+.scenario-empty {
+    text-align: center;
+    color: var(--c-faint);
+    font-size: .9rem;
+    padding: 3rem 0;
+}
+
+/* ─── Detail drawer (centered modal) ────────────────────────────── */
+#scenario-drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(3, 34, 84, .5);
+    backdrop-filter: blur(4px);
+    z-index: var(--z-modal, 400);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s ease;
+}
+
+#scenario-drawer-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+}
+
+#scenario-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(640px, 100vw);
+    background: #fff;
+    border-left: 1px solid var(--c-line);
+    z-index: calc(var(--z-modal, 400) + 1);
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform .35s cubic-bezier(.4, 0, .2, 1);
+    overflow: hidden;
+}
+
+#scenario-drawer.open {
+    transform: translateX(0);
+}
+
+#scenario-drawer .drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--c-line);
+    background: var(--c-700);
+    gap: 1rem;
+    flex-shrink: 0;
+}
+
+#scenario-drawer .drawer-breadcrumb {
+    font-family: var(--font-body);
+    font-size: .65rem;
+    font-weight: 500;
+    color: var(--c-faint);
+    letter-spacing: .1em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#scenario-drawer .drawer-breadcrumb span {
+    color: var(--c-accent);
+}
+
+#scenario-drawer .drawer-close {
+    background: none;
+    border: 1px solid var(--c-line);
+    color: var(--c-dim);
+    font-size: 1.2rem;
+    line-height: 1;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background .2s, color .2s, border-color .2s;
+    flex-shrink: 0;
+}
+
+#scenario-drawer .drawer-close:hover {
+    background: rgba(244, 63, 94, .12);
+    color: #f43f5e;
+    border-color: #f43f5e;
+}
+
+#scenario-drawer .drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-line) transparent;
+}
+
+.scenario-drawer-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: .75rem;
+}
+
+.scenario-drawer-title {
+    margin: 0;
+}
+
+.scenario-github-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    flex-shrink: 0;
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--c-accent);
+    background: #fff;
+    border: 1px solid var(--c-line);
+    padding: .4rem .8rem;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: background .2s, border-color .2s;
+}
+
+.scenario-github-btn:hover {
+    border-color: var(--c-accent);
+    background: var(--c-accent-glow);
+}
+
+.scenario-drawer-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    margin-bottom: 1.25rem;
+}
+
+.scenario-drawer-desc {
+    font-size: .9rem;
+    color: var(--c-dim);
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+}
+
+.scenario-prompt-block {
+    background: var(--c-700);
+    border: 1px solid var(--c-line);
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.scenario-prompt-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .6rem .9rem;
+    border-bottom: 1px solid var(--c-line);
+    font-size: .68rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--c-faint);
+}
+
+.scenario-copy-btn {
+    font-family: var(--font-body);
+    font-size: .72rem;
+    font-weight: 600;
+    color: var(--c-accent);
+    background: #fff;
+    border: 1px solid var(--c-line);
+    padding: .3rem .7rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background .2s, border-color .2s;
+}
+
+.scenario-copy-btn:hover {
+    border-color: var(--c-accent);
+    background: var(--c-accent-glow);
+}
+
+.scenario-copy-btn.copied {
+    color: #16a34a;
+    border-color: #16a34a;
+}
+
+.scenario-prompt {
+    margin: 0;
+    padding: 1rem;
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    line-height: 1.6;
+    color: var(--c-fg);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.scenario-meta-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin: 0;
+}
+
+.scenario-meta-list dt {
+    font-family: var(--font-mono);
+    font-size: .62rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--c-faint);
+    margin-bottom: .2rem;
+}
+
+.scenario-meta-list dd {
+    margin: 0;
+    font-size: .85rem;
+    color: var(--c-fg);
+    font-weight: 600;
+}
+
+@media (max-width: 640px) {
+    .scenario-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .scenario-select-group {
+        justify-content: space-between;
+    }
+}
+
+#scenario-drawer-components.is-empty {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* ── Use case page and drawer actions ─────────────────────────────── */
+.uc-hero { background: var(--color-bg-surface); border-bottom: 1px solid var(--color-light-neutral); }
+.uc-hero h1 { margin: 8px 0 12px; }
+.uc-back { display: inline-block; margin-bottom: 16px; font-size: 14px; color: var(--color-text-muted); text-decoration: none; }
+.uc-back:hover { color: var(--color-primary); }
+.uc-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+.uc-btn {
+  display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px;
+  border: 1px solid var(--color-light-neutral); border-radius: var(--radius-md);
+  background: var(--color-white); color: var(--color-deep-navy);
+  font-weight: 600; font-size: 14px; text-decoration: none; cursor: pointer;
+}
+.uc-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.uc-btn-primary { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-white); }
+.uc-btn-primary:hover { background: var(--color-ms-blue); color: var(--color-white); }
+.uc-version { margin-top: 12px; font-size: 12px; color: var(--color-text-muted); }
+.uc-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 40px; align-items: start; }
+.uc-doc { min-width: 0; }
+.uc-install, .uc-card {
+  background: var(--color-white); border: 1px solid var(--color-light-neutral);
+  border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-card);
+}
+.uc-install { margin-bottom: 32px; }
+.uc-install h2, .uc-install ol { margin: 0; padding-left: 20px; line-height: 1.8; }
+.uc-install code { font-family: var(--font-mono); font-size: 13px; background: var(--color-navy-light); padding: 2px 6px; border-radius: var(--radius-sm); }
+.uc-side { display: grid; gap: 16px; position: sticky; top: 88px; }
+.uc-card h3 { margin: 0 0 12px; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--color-text-muted); }
+.uc-card ul { margin: 0; padding-left: 18px; line-height: 1.7; }
+.uc-card dt { font-size: 12px; margin-top: 10px; color: var(--color-deep-navy); }
+.uc-card dd { margin: 2px 0 0; font-size: 13px; color: var(--color-text-secondary); }
+.uc-markdown { line-height: 1.7; }
+.uc-markdown h2 { margin-top: 40px; padding-top: 8px; border-top: 1px solid var(--color-light-neutral); }
+.uc-markdown img { max-width: 100%; height: auto; border: 1px solid var(--color-light-neutral); border-radius: var(--radius-md); }
+.uc-markdown pre { overflow-x: auto; padding: 14px; background: var(--color-deep-navy); color: #fff; border-radius: var(--radius-md); }
+.uc-markdown code { font-family: var(--font-mono); font-size: .9em; }
+.uc-markdown table { display: block; overflow-x: auto; border-collapse: collapse; }
+.uc-markdown th, .uc-markdown td { padding: 8px 12px; border: 1px solid var(--color-light-neutral); }
+.scenario-drawer-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 20px; }
+@media (max-width: 960px) {
+  .uc-layout { grid-template-columns: minmax(0, 1fr); }
+  .uc-side { position: static; }
+}
+.scenario-drawer-actions[hidden], .uc-btn[hidden], .uc-version[hidden] { display: none; }
