@@ -1,0 +1,20 @@
+# Code Access repository that the agent clones for source correlation. GitHub issue, branch,
+# file, and pull-request operations are provided separately by the ConnectorV2 github-mcp
+# connector. It must be the copy you actually own, because you have to review
+# and merge proposed fixes against this same code.
+#
+# The address is resolved automatically from the `origin` remote of the working copy, so no
+# manual configuration is needed. Set GRUBIFY_REPO_URL to override it.
+#
+# Scope note: the Azure SRE Agent repository resource has no field that restricts the agent to a
+# subdirectory, so the whole repository is cloned. Confining the agent to the Grubify folder is a
+# behavioural rule expressed in the skill, the subagent prompt and the agent-global instructions,
+# not a boundary enforced by the platform.
+api_version: azuresre.ai/v1
+kind: Repository
+metadata:
+  name: grubify
+spec:
+  url: ${GRUBIFY_REPO_URL}
+  type: GitHub
+  description: Workshop Code Access repository containing the Grubify source under labs/01-azure-operations/resources/grubify, mounted for source search, file reads, and incident correlation.

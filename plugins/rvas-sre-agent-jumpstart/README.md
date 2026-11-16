@@ -13,8 +13,8 @@ directory.
 
 The packaged copy does not bundle the `grilling` or `azure-sre-agent`
 dependency skills. Install those separately with `gh skill install` (see the
-install guidance in `Student/Challenge-19.md`,
-`Student/sql-server-dba/Challenge-09.md`, and `web/jumpstart.html`).
+install guidance in `labs/01-azure-operations/challenges/19-build-your-own-production-ready-sre-agent.md`,
+`labs/02-sql-server-dba/challenges/09-build-your-own-sql-server-dba-agent.md`, and `web/jumpstart.html`).
 
 ## MCP servers
 

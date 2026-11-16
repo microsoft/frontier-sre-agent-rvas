@@ -36,19 +36,11 @@ build-web: clean-web
 		[ -d "usecases/$$id/docs" ] && cp -r "usecases/$$id/docs" "_site/usecases/$$id/"; \
 		true; \
 	done
-	@# Student challenge markdown files, preserving nested track directories
-	@mkdir -p _site/Student
-	@find Student -type f -name "Challenge-*.md" | while IFS= read -r file; do \
-		dest="_site/$$(dirname "$$file")"; \
-		mkdir -p "$$dest"; \
-		cp "$$file" "$$dest/"; \
-	done
-	@# Coach indexes and solutions, preserving nested track directories
-	@mkdir -p _site/Coach
-	@find Coach -type f \( -name "Solution-*.md" -o -name "README.md" \) | while IFS= read -r file; do \
-		dest="_site/$$(dirname "$$file")"; \
-		mkdir -p "$$dest"; \
-		cp "$$file" "$$dest/"; \
+	@# Lab data and markdown (docs and images only; deployment assets stay out of the site)
+	@labs/_framework/labs.py index -o _site/labs.json
+	@find labs -path labs/_template -prune -o -type f \( -name "*.md" -o -name "*.png" -o -name "*.jpg" -o -name "*.svg" \) -print | while IFS= read -r file; do \
+		mkdir -p "_site/$$(dirname "$$file")"; \
+		cp "$$file" "_site/$$file"; \
 	done
 	@echo "Done → _site/"
 

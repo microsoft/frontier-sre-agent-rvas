@@ -7,8 +7,7 @@ on:
       - 'web/**'
       - 'Makefile'
       - 'README.md'
-      - 'Student/**'
-      - 'Coach/**'
+      - 'labs/**'
       - 'usecases/**'
       - '.github/workflows/gh-pages.yml'
 
@@ -42,6 +41,7 @@ jobs:
         run: |
           usecases/_framework/tests/run.sh
           usecases/_framework/usecases.sh validate
+          labs/_framework/labs.py validate
 
       - name: Assemble site
         run: |

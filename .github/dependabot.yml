@@ -3,7 +3,7 @@ updates:
   # --- npm: Grubify ---
   - package-ecosystem: "npm"
     directories:
-      - "/Student/Resources/grubify/grubify-frontend"
+      - "/labs/01-azure-operations/resources/grubify/grubify-frontend"
     schedule:
       interval: "weekly"
     labels:
@@ -18,13 +18,13 @@ updates:
   # --- npm: Parking Manager ---
   - package-ecosystem: "npm"
     directories:
-      - "/Student/Resources/parking-manager/frontend/parking-manager"
-      - "/Student/Resources/parking-manager/backend/berlin-parking-api"
-      - "/Student/Resources/parking-manager/backend/chaos-control"
-      - "/Student/Resources/parking-manager/backend/lisbon-parking-api"
-      - "/Student/Resources/parking-manager/backend/madrid-parking-api"
-      - "/Student/Resources/parking-manager/backend/paris-parking-api"
-      - "/Student/Resources/parking-manager/backend/vm-health-control"
+      - "/labs/01-azure-operations/resources/parking-manager/frontend/parking-manager"
+      - "/labs/01-azure-operations/resources/parking-manager/backend/berlin-parking-api"
+      - "/labs/01-azure-operations/resources/parking-manager/backend/chaos-control"
+      - "/labs/01-azure-operations/resources/parking-manager/backend/lisbon-parking-api"
+      - "/labs/01-azure-operations/resources/parking-manager/backend/madrid-parking-api"
+      - "/labs/01-azure-operations/resources/parking-manager/backend/paris-parking-api"
+      - "/labs/01-azure-operations/resources/parking-manager/backend/vm-health-control"
     schedule:
       interval: "weekly"
     labels:
@@ -39,7 +39,7 @@ updates:
   # --- pip: Parking Manager ---
   - package-ecosystem: "pip"
     directories:
-      - "/Student/Resources/parking-manager/backend/berlin-mcp-server"
+      - "/labs/01-azure-operations/resources/parking-manager/backend/berlin-mcp-server"
     schedule:
       interval: "weekly"
     labels:
@@ -54,7 +54,7 @@ updates:
   # --- nuget: Grubify ---
   - package-ecosystem: "nuget"
     directories:
-      - "/Student/Resources/grubify/GrubifyApi"
+      - "/labs/01-azure-operations/resources/grubify/GrubifyApi"
     schedule:
       interval: "weekly"
     labels:
@@ -68,7 +68,7 @@ updates:
 
   # --- nuget: SQL Server MCP ---
   - package-ecosystem: "nuget"
-    directory: "/Student/Resources/sql-server-mcp"
+    directory: "/labs/02-sql-server-dba/resources/sql-server-mcp"
     schedule:
       interval: "weekly"
     labels:
@@ -83,8 +83,8 @@ updates:
   # --- docker: Grubify ---
   - package-ecosystem: "docker"
     directories:
-      - "/Student/Resources/grubify/grubify-frontend"
-      - "/Student/Resources/grubify/GrubifyApi"
+      - "/labs/01-azure-operations/resources/grubify/grubify-frontend"
+      - "/labs/01-azure-operations/resources/grubify/GrubifyApi"
     schedule:
       interval: "weekly"
     labels:
@@ -98,7 +98,7 @@ updates:
 
   # --- docker: SQL Server MCP ---
   - package-ecosystem: "docker"
-    directory: "/Student/Resources/sql-server-mcp"
+    directory: "/labs/02-sql-server-dba/resources/sql-server-mcp"
     schedule:
       interval: "weekly"
     labels:
@@ -113,11 +113,11 @@ updates:
   # --- docker: Parking Manager ---
   - package-ecosystem: "docker"
     directories:
-      - "/Student/Resources/parking-manager/backend/berlin-mcp-server"
-      - "/Student/Resources/parking-manager/backend/berlin-parking-api"
-      - "/Student/Resources/parking-manager/backend/chaos-control"
-      - "/Student/Resources/parking-manager/backend/lisbon-parking-api"
-      - "/Student/Resources/parking-manager/backend/vm-health-control"
+      - "/labs/01-azure-operations/resources/parking-manager/backend/berlin-mcp-server"
+      - "/labs/01-azure-operations/resources/parking-manager/backend/berlin-parking-api"
+      - "/labs/01-azure-operations/resources/parking-manager/backend/chaos-control"
+      - "/labs/01-azure-operations/resources/parking-manager/backend/lisbon-parking-api"
+      - "/labs/01-azure-operations/resources/parking-manager/backend/vm-health-control"
     schedule:
       interval: "weekly"
     labels:

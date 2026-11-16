@@ -1,0 +1,11 @@
+id: 02-sql-server-dba
+title: SQL Server DBA
+summary: Connect a read-only SQL Server specialist through a hardened MCP server and investigate Query Store, waits, blocking and query performance without changing the database.
+accent: '#f59e0b'
+order: 2
+prefix: DBA
+highlights:
+- Managed identity
+- SELECT only
+- Estimated plans
+- No auto-tuning

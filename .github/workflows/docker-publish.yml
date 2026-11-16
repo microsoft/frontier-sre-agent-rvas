@@ -23,32 +23,32 @@ jobs:
       matrix:
         include:
           - name: lisbon-parking-api
-            context: Student/Resources/parking-manager/backend
-            dockerfile: Student/Resources/parking-manager/backend/lisbon-parking-api/Dockerfile
+            context: labs/01-azure-operations/resources/parking-manager/backend
+            dockerfile: labs/01-azure-operations/resources/parking-manager/backend/lisbon-parking-api/Dockerfile
           - name: berlin-parking-api
-            context: Student/Resources/parking-manager/backend
-            dockerfile: Student/Resources/parking-manager/backend/berlin-parking-api/Dockerfile
+            context: labs/01-azure-operations/resources/parking-manager/backend
+            dockerfile: labs/01-azure-operations/resources/parking-manager/backend/berlin-parking-api/Dockerfile
           - name: berlin-mcp-server
-            context: Student/Resources/parking-manager/backend/berlin-mcp-server
-            dockerfile: Student/Resources/parking-manager/backend/berlin-mcp-server/Dockerfile
+            context: labs/01-azure-operations/resources/parking-manager/backend/berlin-mcp-server
+            dockerfile: labs/01-azure-operations/resources/parking-manager/backend/berlin-mcp-server/Dockerfile
           - name: chaos-control
-            context: Student/Resources/parking-manager/backend/chaos-control
-            dockerfile: Student/Resources/parking-manager/backend/chaos-control/Dockerfile
+            context: labs/01-azure-operations/resources/parking-manager/backend/chaos-control
+            dockerfile: labs/01-azure-operations/resources/parking-manager/backend/chaos-control/Dockerfile
           - name: vm-health-control
-            context: Student/Resources/parking-manager/backend/vm-health-control
-            dockerfile: Student/Resources/parking-manager/backend/vm-health-control/Dockerfile
+            context: labs/01-azure-operations/resources/parking-manager/backend/vm-health-control
+            dockerfile: labs/01-azure-operations/resources/parking-manager/backend/vm-health-control/Dockerfile
           - name: parking-manager-frontend
-            context: Student/Resources/parking-manager/frontend/parking-manager
-            dockerfile: Student/Resources/parking-manager/frontend/parking-manager/Dockerfile
+            context: labs/01-azure-operations/resources/parking-manager/frontend/parking-manager
+            dockerfile: labs/01-azure-operations/resources/parking-manager/frontend/parking-manager/Dockerfile
           - name: grubify-api
-            context: Student/Resources/grubify/GrubifyApi
-            dockerfile: Student/Resources/grubify/GrubifyApi/Dockerfile
+            context: labs/01-azure-operations/resources/grubify/GrubifyApi
+            dockerfile: labs/01-azure-operations/resources/grubify/GrubifyApi/Dockerfile
           - name: grubify-frontend
-            context: Student/Resources/grubify/grubify-frontend
-            dockerfile: Student/Resources/grubify/grubify-frontend/Dockerfile
+            context: labs/01-azure-operations/resources/grubify/grubify-frontend
+            dockerfile: labs/01-azure-operations/resources/grubify/grubify-frontend/Dockerfile
           - name: sql-server-mcp
-            context: Student/Resources/sql-server-mcp
-            dockerfile: Student/Resources/sql-server-mcp/Dockerfile
+            context: labs/02-sql-server-dba/resources/sql-server-mcp
+            dockerfile: labs/02-sql-server-dba/resources/sql-server-mcp/Dockerfile
     steps:
       - name: Lower case REPO
         run: |

@@ -1,0 +1,6 @@
+id: 01-azure-operations
+title: Azure Operations
+summary: 'Build an Azure operations agent: connect code and knowledge, investigate telemetry and incidents, remediate autonomously and review cost.'
+accent: '#1A77E3'
+order: 1
+prefix: CH

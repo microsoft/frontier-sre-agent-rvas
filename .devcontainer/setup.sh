@@ -18,5 +18,5 @@ fi
 az extension add --name containerapp --upgrade
 
 export PATH="/opt/workshop-python/bin:/opt/mssql-tools18/bin:$PATH"
-bash Student/Resources/infra/scripts/preflight.sh --local
-bash Student/Resources/infra/scripts/preflight.sh --local --track sql-dba
+bash labs/01-azure-operations/resources/infra/scripts/preflight.sh --local
+bash labs/02-sql-server-dba/resources/infra/scripts/preflight.sh --local --track sql-dba
