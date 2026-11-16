@@ -1,0 +1,476 @@
+{
+  "labs": [
+    {
+      "id": "01-azure-operations",
+      "title": "Azure Operations",
+      "summary": "Build an Azure operations agent: connect code and knowledge, investigate telemetry and incidents, remediate autonomously and review cost.",
+      "accent": "#1A77E3",
+      "order": 1,
+      "prefix": "CH",
+      "highlights": [],
+      "readme": "labs/01-azure-operations/README.md",
+      "challenges": [
+        {
+          "n": 0,
+          "id": "00-prerequisites-and-lab-setup",
+          "title": "Prerequisites & Lab Setup",
+          "summary": "Deploy the workloads with Terraform, create your Azure SRE Agent, and generate baseline traffic. Add the agent's capabilities in Challenges 01–06.",
+          "phase": "Setup",
+          "group": "Setup",
+          "tags": [
+            "terraform",
+            "az sre-agent create",
+            "VNet Flow Logs"
+          ],
+          "highlight": true,
+          "file": "labs/01-azure-operations/challenges/00-prerequisites-and-lab-setup.md"
+        },
+        {
+          "n": 1,
+          "id": "01-connect-your-codebase",
+          "title": "Connect Your Codebase",
+          "summary": "Connect GitHub and link your repository. Verify that the agent can read source code and use GitHub actions within the configured scope.",
+          "phase": "Config",
+          "group": "Agent configuration",
+          "tags": [
+            "GitHub OAuth",
+            "repository",
+            "oauth-connector"
+          ],
+          "highlight": false,
+          "file": "labs/01-azure-operations/challenges/01-connect-your-codebase.md"
+        },
+        {
+          "n": 2,
+          "id": "02-explore-the-knowledge-base",
+          "title": "Explore the Knowledge Base",
+          "summary": "Add lab knowledge documents, then compare the agent's answers before and after upload. Check resource details and citations.",
+          "phase": "Config",
+          "group": "Agent configuration",
+          "tags": [
+            "knowledge docs",
+            "grounded responses",
+            "sre-agent-config"
+          ],
+          "highlight": false,
+          "file": "labs/01-azure-operations/challenges/02-explore-the-knowledge-base.md"
+        },
+        {
+          "n": 3,
+          "id": "03-discover-operational-skills",
+          "title": "Discover Operational Skills",
+          "summary": "Add the supplied skills so the agent can run KQL queries, inspect Container App health, and follow operational runbooks. Test its tool and approval boundaries.",
+          "phase": "Config",
+          "group": "Agent configuration",
+          "tags": [
+            "skill YAML",
+            "runbooks",
+            "KQL"
+          ],
+          "highlight": false,
+          "file": "labs/01-azure-operations/challenges/03-discover-operational-skills.md"
+        },
+        {
+          "n": 4,
+          "id": "04-discover-connected-systems",
+          "title": "Discover Connected Systems",
+          "summary": "Connect Microsoft Learn through MCP so the agent can retrieve current Azure documentation. Verify its citations.",
+          "phase": "Config",
+          "group": "Agent configuration",
+          "tags": [
+            "MCP connectors",
+            "tool discovery",
+            "live docs"
+          ],
+          "highlight": false,
+          "file": "labs/01-azure-operations/challenges/04-discover-connected-systems.md"
+        },
+        {
+          "n": 5,
+          "id": "05-discover-specialist-agents",
+          "title": "Discover Specialist Agents",
+          "summary": "Add domain-specific subagents with their own instructions, tools, and runbooks. Compare their investigation plans with the main agent's.",
+          "phase": "Config",
+          "group": "Agent configuration",
+          "tags": [
+            "subagents",
+            "agent routing",
+            "specialist"
+          ],
+          "highlight": false,
+          "file": "labs/01-azure-operations/challenges/05-discover-specialist-agents.md"
+        },
+        {
+          "n": 6,
+          "id": "06-understand-response-plans",
+          "title": "Understand Response Plans",
+          "summary": "Connect Azure Monitor and configure response plans. Compare an unmatched alert with one that starts an investigation, then inspect Review and Autonomous modes.",
+          "phase": "Config",
+          "group": "Agent configuration",
+          "tags": [
+            "response plans",
+            "incident filters",
+            "automation"
+          ],
+          "highlight": false,
+          "file": "labs/01-azure-operations/challenges/06-understand-response-plans.md"
+        },
+        {
+          "n": 7,
+          "id": "07-hybrid-ecosystem-telemetry",
+          "title": "Hybrid Ecosystem Telemetry",
+          "summary": "The Parking Manager spans Container Apps, VMs, and a third-party OpenTelemetry API. Use the agent to query all three platforms and produce a unified cross-system view.",
+          "phase": "Autonomous",
+          "group": "Observability and health reporting",
+          "tags": [
+            "Log Analytics",
+            "Syslog",
+            "OpenTelemetry"
+          ],
+          "highlight": false,
+          "file": "labs/01-azure-operations/challenges/07-hybrid-ecosystem-telemetry.md"
+        },
+        {
+          "n": 8,
+          "id": "08-application-dependency-mapping",
+          "title": "Application Dependency Mapping",
+          "summary": "Map Grubify dependencies from Application Insights, including call counts and response times. Add Berlin Parking API metrics as a separate telemetry source.",
+          "phase": "Autonomous",
+          "group": "Observability and health reporting",
+          "tags": [
+            "App Insights",
+            "service topology",
+            "dependency analysis"
+          ],
+          "highlight": false,
+          "file": "labs/01-azure-operations/challenges/08-application-dependency-mapping.md"
+        },
+        {
+          "n": 9,
+          "id": "09-daily-application-health-report",
+          "title": "Daily Application Health Report",
+          "summary": "Ask the agent to generate a structured health report for all four Parking Manager APIs — CPU, memory, error rate, response time — with a health score and recommended remediation for any service falling below threshold.",
+          "phase": "Autonomous",
+          "group": "Observability and health reporting",
+          "tags": [
+            "SLI/SLO",
+            "health scoring",
+            "operational reporting"
+          ],
+          "highlight": false,
+          "file": "labs/01-azure-operations/challenges/09-daily-application-health-report.md"
+        },
+        {
+          "n": 10,
+          "id": "10-incident-to-github-issue",
+          "title": "Incident to GitHub Issue",
+          "summary": "Trigger a Parking Manager incident and have the agent create or update a GitHub issue with evidence, a timeline, and next steps. This workflow reports the incident; it does not restart a VM.",
+          "phase": "Autonomous",
+          "group": "Autonomous incident response",
+          "tags": [
+            "incident lifecycle",
+            "GitHub integration",
+            "Parking Manager"
+          ],
+          "highlight": false,
+          "file": "labs/01-azure-operations/challenges/10-incident-to-github-issue.md"
+        },
+        {
+          "n": 11,
+          "id": "11-guest-os-failure-investigation",
+          "title": "Guest OS Failure Investigation",
+          "summary": "Stop NGINX on the web-tier VMs. Watch the agent find the failure in Syslog, assess the blast radius across both VMs, and restore the service on every affected instance.",
+          "phase": "Autonomous",
+          "group": "Autonomous incident response",
+          "tags": [
+            "AMA / Syslog",
+            "VM run-command",
+            "blast radius"
+          ],
+          "highlight": false,
+          "file": "labs/01-azure-operations/challenges/11-guest-os-failure-investigation.md"
+        },
+        {
+          "n": 12,
+          "id": "12-network-security-investigation",
+          "title": "Network Security Investigation",
+          "summary": "Inject an NSG rule that blocks database traffic. Check whether the agent traces denied flows to the rule, removes it, and verifies recovery.",
+          "phase": "Autonomous",
+          "group": "Autonomous incident response",
+          "tags": [
+            "NSG",
+            "Flow Logs",
+            "Traffic Analytics"
+          ],
+          "highlight": false,
+          "file": "labs/01-azure-operations/challenges/12-network-security-investigation.md"
+        },
+        {
+          "n": 13,
+          "id": "13-routing-failure-investigation",
+          "title": "Routing Failure Investigation",
+          "summary": "Introduce an asymmetric routing black hole where return packets never arrive. Work with the network-traffic-analyst over effective routes and next-hop analysis to find and fix the return path.",
+          "phase": "Autonomous",
+          "group": "Autonomous incident response",
+          "tags": [
+            "UDR",
+            "Effective Routes",
+            "Next Hop Analysis"
+          ],
+          "highlight": false,
+          "file": "labs/01-azure-operations/challenges/13-routing-failure-investigation.md"
+        },
+        {
+          "n": 14,
+          "id": "14-application-root-cause-analysis",
+          "title": "Application Root Cause Analysis",
+          "summary": "Trace a Grubify 5xx spike through container logs, Application Insights, and source code to the OOM fault path. Review the GitHub issue linking evidence to code.",
+          "phase": "Autonomous",
+          "group": "Autonomous incident response",
+          "tags": [
+            "App Insights",
+            "source code analysis",
+            "GitHub MCP"
+          ],
+          "highlight": false,
+          "file": "labs/01-azure-operations/challenges/14-application-root-cause-analysis.md"
+        },
+        {
+          "n": 15,
+          "id": "15-autonomous-remediation",
+          "title": "Autonomous Remediation",
+          "summary": "Stop the Paris Parking API service. Check whether the agent restarts the VM, validates service and API health, and retries or escalates if recovery fails.",
+          "phase": "Autonomous",
+          "group": "Autonomous incident response",
+          "tags": [
+            "Response Plans",
+            "auto-remediation",
+            "validation loops"
+          ],
+          "highlight": false,
+          "file": "labs/01-azure-operations/challenges/15-autonomous-remediation.md"
+        },
+        {
+          "n": 16,
+          "id": "16-daily-network-health-report",
+          "title": "Daily Network Health Report",
+          "summary": "Create a scheduled task that reviews 24 hours of network telemetry every morning and produces a decision-ready summary: denied flows, top talkers, missing VNet coverage, and unusual ports.",
+          "phase": "Scheduled",
+          "group": "Proactive and scheduled operations",
+          "tags": [
+            "scheduled task",
+            "Traffic Analytics",
+            "proactive ops"
+          ],
+          "highlight": false,
+          "file": "labs/01-azure-operations/challenges/16-daily-network-health-report.md"
+        },
+        {
+          "n": 17,
+          "id": "17-observability-freshness-verification",
+          "title": "Observability Freshness Verification",
+          "summary": "Check VNet Flow Log freshness in Storage and Traffic Analytics. Compare expected VNet coverage with recent records to find missing or stale telemetry.",
+          "phase": "Scheduled",
+          "group": "Proactive and scheduled operations",
+          "tags": [
+            "telemetry validation",
+            "VNet Flow Logs",
+            "coverage analysis"
+          ],
+          "highlight": false,
+          "file": "labs/01-azure-operations/challenges/17-observability-freshness-verification.md"
+        },
+        {
+          "n": 18,
+          "id": "18-subscription-cost-optimization-review",
+          "title": "Subscription Cost Optimization Review",
+          "summary": "Review inventory, spend, utilization, and Azure Advisor findings. Rank savings opportunities against workload criticality and SLAs without changing resources.",
+          "phase": "Scheduled",
+          "group": "Proactive and scheduled operations",
+          "tags": [
+            "FinOps",
+            "Azure Advisor",
+            "cost governance"
+          ],
+          "highlight": false,
+          "file": "labs/01-azure-operations/challenges/18-subscription-cost-optimization-review.md"
+        },
+        {
+          "n": 19,
+          "id": "19-build-your-own-production-ready-sre-agent",
+          "title": "Build Your Own Production-Ready SRE Agent",
+          "summary": "Bring a real reliability problem, build a focused agent configuration, and demonstrate an end-to-end test. Explain the controls and validation needed before production use.",
+          "phase": "Capstone",
+          "group": "Capstone",
+          "tags": [
+            "Capstone",
+            "Custom subagent",
+            "Your use case"
+          ],
+          "highlight": true,
+          "file": "labs/01-azure-operations/challenges/19-build-your-own-production-ready-sre-agent.md"
+        }
+      ]
+    },
+    {
+      "id": "02-sql-server-dba",
+      "title": "SQL Server DBA",
+      "summary": "Connect a read-only SQL Server specialist through a hardened MCP server and investigate Query Store, waits, blocking and query performance without changing the database.",
+      "accent": "#f59e0b",
+      "order": 2,
+      "prefix": "DBA",
+      "highlights": [
+        "Managed identity",
+        "SELECT only",
+        "Estimated plans",
+        "No auto-tuning"
+      ],
+      "readme": "labs/02-sql-server-dba/README.md",
+      "challenges": [
+        {
+          "n": 0,
+          "id": "00-deploy-the-read-only-dba-path",
+          "title": "Deploy the Read-Only DBA Path",
+          "summary": "Deploy the supplied .NET MCP container, map its managed identity into the least-privilege observer role, secure the Streamable HTTP endpoint, and prove that Azure SRE Agent can inspect SQL without receiving a write path.",
+          "phase": "Trust boundary",
+          "group": "Foundation",
+          "tags": [
+            "Azure Container Apps",
+            "managed identity",
+            "MCP"
+          ],
+          "highlight": true,
+          "file": "labs/02-sql-server-dba/challenges/00-deploy-the-read-only-dba-path.md"
+        },
+        {
+          "n": 1,
+          "id": "01-orient-to-the-database",
+          "title": "Orient to the Database",
+          "summary": "Turn catalog metadata into a business map while keeping declared relationships separate from inferred domain meaning.",
+          "phase": "Discover",
+          "group": "Investigations",
+          "tags": [
+            "schema",
+            "relationships"
+          ],
+          "highlight": false,
+          "file": "labs/02-sql-server-dba/challenges/01-orient-to-the-database.md"
+        },
+        {
+          "n": 2,
+          "id": "02-establish-a-query-store-baseline",
+          "title": "Establish a Query Store Baseline",
+          "summary": "Seed repeatable activity and define a trustworthy historical observation window before diagnosing regressions.",
+          "phase": "Baseline",
+          "group": "Investigations",
+          "tags": [
+            "Query Store",
+            "time windows"
+          ],
+          "highlight": false,
+          "file": "labs/02-sql-server-dba/challenges/02-establish-a-query-store-baseline.md"
+        },
+        {
+          "n": 3,
+          "id": "03-separate-duration-from-pressure",
+          "title": "Separate Duration from Pressure",
+          "summary": "Observe a long-running wait and prevent elapsed time from becoming a false performance diagnosis.",
+          "phase": "Interpret",
+          "group": "Investigations",
+          "tags": [
+            "waits",
+            "active requests"
+          ],
+          "highlight": false,
+          "file": "labs/02-sql-server-dba/challenges/03-separate-duration-from-pressure.md"
+        },
+        {
+          "n": 4,
+          "id": "04-trace-a-blocking-chain",
+          "title": "Trace a Blocking Chain",
+          "summary": "Identify the head blocker, blocked request, wait resource, and transaction age without terminating either session.",
+          "phase": "Concurrency",
+          "group": "Investigations",
+          "tags": [
+            "locks",
+            "transactions"
+          ],
+          "highlight": false,
+          "file": "labs/02-sql-server-dba/challenges/04-trace-a-blocking-chain.md"
+        },
+        {
+          "n": 5,
+          "id": "05-build-an-evidence-based-index-case",
+          "title": "Build an Evidence-Based Index Case",
+          "summary": "Correlate Query Store, the existing index set, and an estimated plan before recommending a change.",
+          "phase": "Tune",
+          "group": "Investigations",
+          "tags": [
+            "indexes",
+            "estimated plan"
+          ],
+          "highlight": false,
+          "file": "labs/02-sql-server-dba/challenges/05-build-an-evidence-based-index-case.md"
+        },
+        {
+          "n": 6,
+          "id": "06-diagnose-query-shape-problems",
+          "title": "Diagnose Query Shape Problems",
+          "summary": "Find non-SARGable predicates and implicit conversions, then explain their access-path impact without rewriting production code.",
+          "phase": "Query shape",
+          "group": "Investigations",
+          "tags": [
+            "SARGability",
+            "conversions"
+          ],
+          "highlight": false,
+          "file": "labs/02-sql-server-dba/challenges/06-diagnose-query-shape-problems.md"
+        },
+        {
+          "n": 7,
+          "id": "07-investigate-parameter-sensitivity",
+          "title": "Investigate Parameter Sensitivity",
+          "summary": "Compare skewed parameter populations, plan history, and runtime distributions before claiming parameter sensitivity.",
+          "phase": "Plan behavior",
+          "group": "Investigations",
+          "tags": [
+            "data skew",
+            "plan variation"
+          ],
+          "highlight": false,
+          "file": "labs/02-sql-server-dba/challenges/07-investigate-parameter-sensitivity.md"
+        },
+        {
+          "n": 8,
+          "id": "08-triage-a-combined-database-incident",
+          "title": "Triage a Combined Database Incident",
+          "summary": "Correlate concurrent signals, rank findings by demonstrated impact, preserve alternative explanations, and deliver a decision-ready read-only handoff.",
+          "phase": "Incident room",
+          "group": "Investigations",
+          "tags": [
+            "evidence ranking",
+            "handoff",
+            "safety"
+          ],
+          "highlight": false,
+          "file": "labs/02-sql-server-dba/challenges/08-triage-a-combined-database-incident.md"
+        },
+        {
+          "n": 9,
+          "id": "09-build-your-own-sql-server-dba-agent",
+          "title": "Build Your Own SQL Server DBA Agent",
+          "summary": "Design and validate a focused read-only investigation workflow for a database reliability question of your choosing.",
+          "phase": "Capstone",
+          "group": "Capstone",
+          "tags": [
+            "custom agent",
+            "evidence",
+            "read-only"
+          ],
+          "highlight": true,
+          "file": "labs/02-sql-server-dba/challenges/09-build-your-own-sql-server-dba-agent.md"
+        }
+      ]
+    }
+  ]
+}
