@@ -12,7 +12,7 @@ spec:
   mode: Autonomous
   prompt: |-
     Use aks-waf-live and ONLY generate-aks-waf-report. Make exactly one complete
-    call with operation=report and cluster_name="<APPROVED_AKS_NAME>"; keep all
+    call with operation=report and cluster_names="all"; keep all
     other report defaults. Do not add query filters, period parameters, paging,
     fresh follow-up calls, narrower retries or changes.
     If status=error, stop with the sanitized code/source and invent no files,

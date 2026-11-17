@@ -10,6 +10,7 @@ helper is not an engine.
 import copy
 import base64
 import csv
+import gzip
 import hashlib
 import io
 import json
@@ -401,6 +402,62 @@ def multi_fixture(primary_error=False):
     }
 
 
+FLEET_SECOND_SUBSCRIPTION = "22222222-2222-4222-8222-222222222222"
+FLEET_NAMES = ("aks-ui-synthetic", "aks-ui-second", "aks-ui-third", "aks-ui-fourth")
+
+
+def fleet_fixture(error_cluster=None):
+    """SIMULATED fleet: four clusters in two subscriptions with display names and regions."""
+    first = architecture_fixture()
+    snapshots = [first]
+    for index, name in enumerate(FLEET_NAMES[1:], start=1):
+        text = json.dumps(first).replace("aks-ui-synthetic", name)
+        if index >= 2:
+            text = text.replace("11111111-1111-4111-8111-111111111111", FLEET_SECOND_SUBSCRIPTION)
+        value = json.loads(text)
+        value["checks"][0]["title"] = f"SIMULATED check of {name}"
+        snapshots.append(refresh_fixture(value))
+    roster = []
+    for value in snapshots:
+        row = dict(value["available_clusters"][0])
+        subscription = value["cluster"]["id"].split("/")[2]
+        row.update(subscription_id=subscription, location="westeurope",
+                   subscription_name="Contoso Non-Production" if subscription == FLEET_SECOND_SUBSCRIPTION else "Contoso Production")
+        roster.append(row)
+    for value in snapshots:
+        value["available_clusters"] = copy.deepcopy(roster)
+    runs, successful = [], []
+    for value, name in zip(snapshots, FLEET_NAMES):
+        run = {"cluster_id": value["cluster"]["id"], "cluster_name": name, "reference_utc": REFERENCE,
+               "status": "partial", "error": None, "snapshot": value}
+        if name == error_cluster:
+            run.update(status="error", snapshot=None, error={
+                "code": "synthetic_arm_denied", "source_id": "arm_cluster", "http_status": 403,
+                "message": "No primary snapshot was collected in this SIMULATED test."})
+        else:
+            successful.append(value)
+        runs.append(run)
+    checks = [check for value in successful for check in value["checks"]]
+    counts = {}
+    for value in successful:
+        for key, records in value["inventory"].items():
+            counts[key] = counts.get(key, 0) + len(records or [])
+    return {
+        "schema_version": "aks-waf-multi-cluster-v1", "reference_utc": REFERENCE, "provenance": "SIMULATED",
+        "client": copy.deepcopy(first["client"]), "available_clusters": roster,
+        "selected_cluster_names": list(FLEET_NAMES), "cluster_runs": runs,
+        "aggregate": {
+            "scores": {
+                "global": score_fixture(checks), "coverage": score_fixture(checks),
+                "areas": {area: score_fixture([row for row in checks if row["area"] == area]) for area in AREAS},
+                "pillars": {pillar: score_fixture([row for row in checks if row["pillar"] == pillar]) for pillar in PILLARS},
+            },
+            "inventory_counts": counts, "findings_total": sum(row["status"] == "failed" for row in checks),
+            "critical_total": sum(row["status"] == "failed" and row["severity"] == "critical" for row in checks),
+            "cluster_status_counts": {"ok": 0, "partial": len(successful), "error": len(runs) - len(successful)},
+        },
+    }
+
 def embed_fixture(snapshot):
     template = TEMPLATE.read_text(encoding="utf-8")
     if template.count(TOKEN) != 1:
@@ -753,6 +810,9 @@ class ReportBrowserTests(unittest.TestCase):
         snapshot = multi_fixture()
         self.open_report(snapshot)
         self.assertTrue(self.page.locator("#cluster-overview").is_visible())
+        # Fleet build: a multi-cluster report opens on the fleet overview; pick a cluster for its detailed view.
+        self.assertTrue(self.page.locator("#fleet-view").is_visible())
+        self.page.locator("#cluster-selector").select_option(snapshot["cluster_runs"][0]["cluster_name"])
         self.page.locator("#filter-namespace").select_option("team-a")
         self.page.locator("#cluster-selector").select_option("aks-ui-second")
         self.assertEqual(self.page.locator("#filter-namespace").input_value(), "")
@@ -769,6 +829,60 @@ class ReportBrowserTests(unittest.TestCase):
         self.assertEqual(selected["architecture"], snapshot["cluster_runs"][1]["snapshot"]["architecture"])
         self.assertIn("All other results", scoped["scope_note"])
         self.assertEqual(scoped["filter_context"]["cluster_name"], "aks-ui-second")
+
+    def open_fleet(self, snapshot, compress=False):
+        self.file_index += 1
+        path = Path(self.folder.name) / f"report-{self.file_index}.html"
+        payload = safe_fixture_json(snapshot)
+        if compress:
+            payload = "gzip-base64:" + base64.b64encode(gzip.compress(payload.encode("utf-8"), mtime=0)).decode("ascii")
+        path.write_text(TEMPLATE.read_text(encoding="utf-8").replace(TOKEN, payload, 1), encoding="utf-8")
+        self.page.goto(path.as_uri())
+        self.page.wait_for_function("() => document.body.dataset.status !== 'loading'", timeout=20000)
+        self.assertEqual(self.page.locator("body").get_attribute("data-status"), "ready")
+
+    def fleet_kpi(self, label):
+        return self.page.locator(f'#fleet-kpis .fleet-kpi[data-kpi="{label}"]')
+
+    def test_fleet_overview_filters_by_subscription_cluster_and_search(self):
+        self.open_fleet(fleet_fixture())
+        self.assertTrue(self.page.locator("#fleet-view").is_visible())
+        self.assertFalse(self.page.locator("#cover").is_visible())
+        self.assertEqual(self.page.locator("#fleet-subscription option").count(), 3)
+        self.assertEqual(self.page.locator("#cluster-selector option").count(), 5)
+        self.assertEqual(self.fleet_kpi("Visible clusters").locator("b").inner_text(), "4")
+        self.assertEqual(self.fleet_kpi("Subscriptions").locator("b").inner_text(), "2")
+        self.page.locator("#fleet-subscription").select_option(FLEET_SECOND_SUBSCRIPTION)
+        self.assertEqual(self.fleet_kpi("Visible clusters").locator("b").inner_text(), "2")
+        self.assertEqual(self.fleet_kpi("Subscriptions").locator("b").inner_text(), "1")
+        self.assertEqual(self.page.locator("#cluster-selector option").count(), 3)
+        self.assertIn("2 matching records", self.page.locator("#cluster-runs-table caption").inner_text())
+        rows = self.page.locator("#cluster-runs-table tbody tr").all_inner_texts()
+        self.assertTrue(rows and all("Contoso Non-Production" in row for row in rows))
+        self.assertNotIn("aks-ui-synthetic", self.page.locator("#fleet-findings").inner_text())
+        self.page.locator("#cluster-selector").select_option("aks-ui-third")
+        self.assertTrue(self.page.locator("#cover").is_visible())
+        self.assertFalse(self.page.locator("#fleet-view").is_visible())
+        self.assertIn("aks-ui-third", self.page.locator("#cover-facts").inner_text())
+        self.page.locator("#cluster-selector").select_option("")
+        self.assertTrue(self.page.locator("#fleet-view").is_visible())
+        self.assertFalse(self.page.locator("#cover").is_visible())
+        self.page.locator("#fleet-subscription").select_option("")
+        self.page.locator("#fleet-search").fill("fourth")
+        self.assertEqual(self.fleet_kpi("Visible clusters").locator("b").inner_text(), "1")
+        self.page.locator("#fleet-search").fill("")
+        self.assertEqual(self.fleet_kpi("Visible clusters").locator("b").inner_text(), "4")
+
+    def test_fleet_failed_cluster_stays_an_error_and_compressed_json_opens_offline(self):
+        snapshot = fleet_fixture(error_cluster="aks-ui-second")
+        self.open_fleet(snapshot, compress=True)
+        self.assertIn("1 with errors", self.fleet_kpi("Visible clusters").inner_text())
+        self.assertIn("Collection error (synthetic_arm_denied)", self.page.locator("#cluster-runs-table").inner_text())
+        self.assertEqual(json.loads(self.download("#export-json")), snapshot)
+        self.page.locator("#cluster-selector").select_option("aks-ui-second")
+        self.assertTrue(self.page.locator("#cluster-error").is_visible())
+        self.assertIn("Not evaluated", self.page.locator("#cluster-error").inner_text())
+        self.assertFalse(self.page.locator("#cover").is_visible())
 
     def test_multi_cluster_arm_case_equivalence_preserves_original_ids_and_independent_dates(self):
         snapshot = multi_fixture()

@@ -473,7 +473,12 @@ class EngineTests(unittest.TestCase):
             self.assertFalse(result["http_verified"])
 
     def test_actual_4800000_byte_threshold_and_no_partial_write(self):
+        # Fleet build: the bounds are ARTIFACT_BYTES/HTML_ARTIFACT_BYTES (raised for 100-cluster reports); the mechanism is
+        # exercised at the historical 4,800,000-byte value.
         snapshot = self.snapshot()
+        bounds = patch.multiple(self.e, ARTIFACT_BYTES=4_800_000, HTML_ARTIFACT_BYTES=4_800_000)
+        bounds.start()
+        self.addCleanup(bounds.stop)
         with tempfile.TemporaryDirectory() as directory, cwd(directory):
             with patch.object(self.e, "render_html", return_value="a" * 4_800_000):
                 result = self.e.write_report(snapshot)
@@ -487,7 +492,8 @@ class EngineTests(unittest.TestCase):
     def test_large_full_json_rejects_before_writing_never_drops_source(self):
         snapshot = self.snapshot()
         snapshot["source_data"]["regional_versions"][0]["long_observation"] = "a" * 4_800_001
-        with tempfile.TemporaryDirectory() as directory, cwd(directory), self.assertRaises(self.e.EvidenceError) as raised:
+        with tempfile.TemporaryDirectory() as directory, cwd(directory), patch.multiple(self.e, ARTIFACT_BYTES=4_800_000), \
+                self.assertRaises(self.e.EvidenceError) as raised:
             self.e.write_report(snapshot)
         self.assertEqual(raised.exception.code, "artifact_size_exceeded")
         self.assertEqual(len(snapshot["source_data"]["regional_versions"][0]["long_observation"]), 4_800_001)

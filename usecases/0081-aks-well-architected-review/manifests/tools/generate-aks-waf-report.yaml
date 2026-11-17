@@ -4,19 +4,23 @@ metadata:
   name: generate-aks-waf-report
 spec:
   type: PythonFunctionTool
-  description: Read-only AKS single or multi-cluster configuration and Well-Architected review for a fixed
-    approved cluster allowlist. operation=report writes four files (HTML, snapshot JSON, findings CSV,
-    inventory CSV); query filters a fresh collection; list_clusters returns the configured roster without
-    network calls.
+  description: Read-only AKS configuration and Well-Architected review of the clusters the agent identity
+    can read, auto-discovered with one fixed Azure Resource Graph query (all, one subscription or named
+    clusters, up to 100 per report), and their associated resources. operation=report writes four files
+    (HTML with a fleet overview and Subscription and Cluster filters, snapshot JSON, findings CSV, inventory
+    CSV); query filters a fresh collection of one cluster (or up to five); list_clusters lists the discovered
+    clusters with their subscriptions. No remediation.
   timeoutSeconds: 900
   code_file: ./generate-aks-waf-report.py
   parameters:
   - name: operation
     type: string
     required: false
-    description: 'report writes four complete files for selected fixed cluster(s); query filters a fresh
-      collection; list_clusters returns one page (limit/offset) of the configured multi-subscription roster
-      without authentication/network, not observed health. Default: report. Allowed: report, query, list_clusters.'
+    description: 'report writes one report (HTML + JSON + 2 CSV) for the selection; no selection = every
+      visible cluster (at most 100). query filters a fresh collection of 1 cluster (or up to 5 in cluster_names).
+      list_clusters returns one page (limit/offset) of the inventory discovered with Azure Resource Graph
+      across every readable subscription (optionally filtered by subscription); inventory, not observed
+      health. Default: report. Allowed: report, query, list_clusters.'
   - name: view
     type: string
     required: false
@@ -27,15 +31,21 @@ spec:
   - name: cluster_name
     type: string
     required: false
-    description: Exact key of the fixed operator allowlist (APPROVED_CLUSTERS, up to 500 clusters across
-      subscriptions). Empty selects the first configured cluster. The code rejects any name outside the
-      allowlist; do not add an enum for large fleets.
+    description: One cluster by exact name (case-insensitive) as returned by list_clusters. If the same
+      AKS name exists in several subscriptions, add subscription or use the prefixed list_clusters name.
+      Mutually exclusive with cluster_names.
   - name: cluster_names
     type: string
     required: false
-    description: One to five distinct, exact comma-separated fixed allowlist names, without spaces. Mutually
-      exclusive with cluster_name. Every selected snapshot is preserved; a failed cluster never substitutes
-      empty/healthy data.
+    description: '"all" = every visible cluster (after the subscription filter), or 1 to 100 exact comma-separated
+      names without spaces. Empty in report means "all". A failed cluster is reported as an error, never
+      as healthy.'
+  - name: subscription
+    type: string
+    required: false
+    description: 'Optional subscription filter: subscription ID (GUID) or exact display name (case-insensitive).
+      Compared locally with the discovered inventory, never sent to Azure. Valid for report, query and
+      list_clusters.'
   - name: namespace
     type: string
     required: false
@@ -64,8 +74,8 @@ spec:
   - name: limit
     type: int
     required: false
-    description: 'Requested row count; 3500-byte default-JSON budget may return fewer whole rows with
-      exact paging disclosure. Default: 25.'
+    description: 'Rows requested for query/list_clusters; the 3500-byte budget may return fewer whole
+      rows (use next_offset). Default: 25.'
   - name: offset
     type: int
     required: false

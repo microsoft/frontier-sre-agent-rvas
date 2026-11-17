@@ -29,7 +29,7 @@ class MultiSubscriptionTests(unittest.TestCase):
         config = self.e.validate_config("aks-fleet-001")
         self.assertEqual(config["subscription_id"], OTHER)
         self.assertEqual(config["environment"], "PRODUCTION")
-        self.assertTrue(config["kubernetes_enabled"])
+        self.assertEqual(config["kubernetes_enabled"], self.e.CLUSTER_DEFAULTS["kubernetes_enabled"])
         self.assertEqual(config["id"], "/subscriptions/" + OTHER + "/resourceGroups/rg-fleet-001/providers/"
                          "Microsoft.ContainerService/managedClusters/aks-fleet-001")
         self.assertEqual(self.e.validate_config("aks-fleet-000")["subscription_id"], SUBSCRIPTION)
@@ -94,7 +94,7 @@ class MultiSubscriptionTests(unittest.TestCase):
         self.assertEqual(observed[0][0], OTHER)
         self.assertIsNotNone(observed[0][1])
         self.assertIsNone(observed[0][2])
-        self.assertIsNone(self.e.ACTIVE_SUBSCRIPTION_ID)
+        self.assertIsNone(getattr(self.e.COLLECTION_SCOPE, "subscription_id", None))  # thread-local scope restored
 
     def test_large_fleet_report_roster_contains_only_selected_clusters(self):
         fleet(self.e, 40)

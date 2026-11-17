@@ -3,6 +3,8 @@
 import base64
 import binascii
 import csv
+import difflib
+import gzip
 import hashlib
 import io
 import json
@@ -11,9 +13,11 @@ import os
 import re
 import ssl
 import tempfile
+import threading
 import time
 import warnings
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, wait
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -23,41 +27,39 @@ from urllib.request import HTTPRedirectHandler, HTTPSHandler, Request, build_ope
 from uuid import UUID, uuid4
 
 
-SUBSCRIPTION_ID = "<YOUR_SUBSCRIPTION_ID>"
-TENANT_ID = "<YOUR_TENANT_ID>"
-MANAGED_IDENTITY_CLIENT_ID = "<YOUR_AGENT_CLIENT_ID>"
+# ============================ OPERATOR CONFIGURATION (edit only this block) ============================
+# Only the two values marked (*) are required: TENANT_ID and MANAGED_IDENTITY_CLIENT_ID. There is no cluster list to
+# paste: with AUTO_DISCOVERY = True the tool discovers, on every run, ALL AKS clusters the SRE Agent identity can read
+# (grant Reader once, for example at management-group scope), across every subscription of the tenant.
+# Which clusters go into a report (all, one subscription, one or several clusters) is chosen from chat.
+SUBSCRIPTION_ID = "<YOUR_SUBSCRIPTION_ID>"             # optional: only for APPROVED_CLUSTERS entries without "subscription_id"
+TENANT_ID = "<YOUR_TENANT_ID>"                         # (*) tenant; every subscription must belong to this tenant
+MANAGED_IDENTITY_CLIENT_ID = "<YOUR_AGENT_CLIENT_ID>"  # (*) client ID (not object ID) of the SRE Agent managed identity
 CLIENT_NAME = "Customer"
 CLIENT_LOGO_DATA_URI = ""
 CLIENT_LOGO_ALT = "Authorized customer logo"
-# Multi-subscription fleet: every APPROVED_CLUSTERS entry inherits CLUSTER_DEFAULTS, so an entry only needs
-# "resource_group" plus "subscription_id" when the cluster is outside SUBSCRIPTION_ID. Use "aks_name" when the
-# allowlist key is an alias (for example two clusters with the same name in different subscriptions).
+# Defaults for EVERY cluster (normally unchanged).
 CLUSTER_DEFAULTS = {
-    "environment": "UNSPECIFIED",
-    "kubernetes_enabled": True,
-    "include_node_resource_group": True,
-    "advisor_enabled": True,
+    "environment": "UNSPECIFIED",          # LAB / PRODUCTION / UNSPECIFIED (exactly)
+    "kubernetes_enabled": False,           # True = read workloads (needs Entra ID + Azure RBAC AKS and network reach to the API server)
+    "include_node_resource_group": True,   # inventory of the node resource group (MC_...)
+    "advisor_enabled": True,               # cached Azure Advisor recommendations
     "approved_related_resource_ids": [],
     "approved_cost_resource_ids": [],
-    "cost_scope": "disabled",
+    "cost_scope": "node_resource_group",   # actual cost of the node resource group (Cost Management Reader); "disabled" to skip costs
     "cost_timeframe": "month_to_date",
     "requirements": {},
 }
+# OPTIONAL (may stay empty): per-cluster overrides, for example to mark one cluster as production.
+#     "<aks-name>": {"resource_group": "<resource-group>", "subscription_id": "<subscription-id>", "environment": "PRODUCTION"},
+#     Keys that start with "<" are ignored.
 APPROVED_CLUSTERS = {
-    "<APPROVED_AKS_NAME>": {
-        "resource_group": "<APPROVED_AKS_RESOURCE_GROUP>",
-        "environment": "UNSPECIFIED",
-        "kubernetes_enabled": True,
-        "include_node_resource_group": True,
-        "advisor_enabled": True,
-        "approved_related_resource_ids": [],
-        "approved_cost_resource_ids": [],
-        "cost_scope": "disabled",
-        "cost_timeframe": "month_to_date",
-        "requirements": {},
-    }
 }
-
+# Auto-discovery (recommended): one fixed read-only Azure Resource Graph query on every run.
+AUTO_DISCOVERY = True
+# Optional: restrict discovery to these subscription IDs. Empty = every subscription the identity can read.
+DISCOVERY_SUBSCRIPTION_IDS = []
+# =======================================================================================================
 
 SIDECAR_TOKEN_ISSUER = "adc-msi-sidecar"
 
@@ -131,12 +133,17 @@ def ensure_response(value):
 def collection_disclosure(snapshot):
     if snapshot.get("schema_version") == "aks-waf-multi-cluster-v1":
         sources = [source for run in snapshot["cluster_runs"] for source in run_sources(run)]
-        return {"reference_utc": snapshot["reference_utc"], "fresh_collection": True,
-                "provenance": snapshot["provenance"], "selected_cluster_names": snapshot["selected_cluster_names"],
-                "cluster_run_status_counts": snapshot["aggregate"]["cluster_status_counts"],
-                "source_status_counts": dict(Counter(source["status"] for source in sources)),
-                "source_total": len(sources), "source_details_view": "coverage",
-                "paging_basis": "Local offset in this collection; later calls recollect, not a stable cross-call cursor."}
+        names = snapshot["selected_cluster_names"]
+        result = {"reference_utc": snapshot["reference_utc"], "fresh_collection": True,
+                  "provenance": snapshot["provenance"], "selected_cluster_count": len(names),
+                  "subscription_count": len({row.get("subscription_id") for row in snapshot["available_clusters"]}),
+                  "cluster_run_status_counts": snapshot["aggregate"]["cluster_status_counts"],
+                  "source_status_counts": dict(Counter(source["status"] for source in sources)),
+                  "source_total": len(sources), "source_details_view": "coverage",
+                  "paging_basis": "Local offset in this collection; later calls recollect, not a stable cross-call cursor."}
+        if len(names) <= 5:
+            result["selected_cluster_names"] = names
+        return result
     return {"reference_utc": snapshot["reference_utc"], "fresh_collection": True, "provenance": snapshot["provenance"],
             "environment": snapshot["environment"], "source_status_counts": dict(Counter(s["status"] for s in snapshot["sources"])),
             "source_total": len(snapshot["sources"]), "source_details_view": "coverage",
@@ -241,7 +248,15 @@ def render_html(snapshot):
     if HTML_TEMPLATE.count("__REPORT_DATA_JSON__") != 1:
         raise EvidenceError("template_missing", "Build the approved template into the canonical standalone tool.", "renderer")
     validate_logo(snapshot["client"]["logo_data_uri"], snapshot["client"].get("logo_alt", CLIENT_LOGO_ALT))
-    return HTML_TEMPLATE.replace("__REPORT_DATA_JSON__", safe_json(snapshot))
+    payload = safe_json(snapshot)
+    if len(payload) > HTML_INLINE_JSON_BYTES:
+        # Large fleet reports: the same complete JSON, gzip+base64, decompressed locally by the browser (no network).
+        raw = payload.encode("utf-8")
+        packed = gzip.compress(raw, compresslevel=9, mtime=0)
+        if gzip.decompress(packed) != raw:
+            raise EvidenceError("round_trip_failed", "Compressed embedded JSON did not round-trip.", "renderer")
+        payload = "gzip-base64:" + base64.b64encode(packed).decode("ascii")
+    return HTML_TEMPLATE.replace("__REPORT_DATA_JSON__", payload)
 
 
 def csv_cell(value):
@@ -265,7 +280,7 @@ def inventory_csv_rows(snapshot):
         rows = [row for item in successful_snapshots(snapshot) for row in inventory_csv_rows(item)]
         rows.extend({"collection": "cluster_collection_error", "cluster_id": run["cluster_id"],
                      "cluster_name": run["cluster_name"], "resource_id": run["cluster_id"],
-                     "source_id": run["error"]["source"], "observed_at": run["reference_utc"], "details_json": run}
+                     "source_id": run["error"].get("source_id") or run["error"].get("source"), "observed_at": run["reference_utc"], "details_json": run}
                     for run in snapshot["cluster_runs"] if run["snapshot"] is None)
         return rows
     rows = [{"collection": "cluster", **snapshot["cluster"], "details_json": snapshot["cluster"]}]
@@ -337,10 +352,34 @@ def report_envelope(snapshot, paths, root):
               "operation": "report", "artifact_status": "written", **sharing_fields(root, paths),
               "collection": collection_disclosure(snapshot),
               "global": aggregate["scores"]["global"] if multi else snapshot["scores"]["global"], "findings_total": len(findings),
+              "findings_by_severity": {key: sum(row["severity"] == key for row in findings) for key in SEVERITIES},
               "inventory_counts": aggregate["inventory_counts"] if multi else {
                   key: len(snapshot["inventory"].get(key) or []) for key in ("node_pools", "namespaces", "workloads", "related_resources")},
               "critical_total": sum(row["severity"] == "critical" for row in findings),
               "estimated_savings": None, **{key: str(path) for key, path in paths.items()}}
+    if not multi:
+        row = (snapshot.get("available_clusters") or [{}])[0]
+        result["selection"] = {"cluster_name": snapshot["cluster"]["name"], "subscription_name": row.get("subscription_name"),
+                               "subscription_id": row.get("subscription_id")}
+        result["actual_cost"] = {"amount": snapshot["finops"]["actual_cost"], "currency": snapshot["finops"]["currency"]}
+        return ensure_response(result)
+    costs, with_cost = {}, 0
+    for item in items:
+        if item["finops"]["actual_cost"] is not None and item["finops"]["currency"]:
+            with_cost += 1
+            costs[item["finops"]["currency"]] = costs.get(item["finops"]["currency"], Decimal(0)) + Decimal(str(item["finops"]["actual_cost"]))
+    result["actual_cost_by_currency"] = {key: round(float(value), 2) for key, value in sorted(costs.items())}
+    result["clusters_with_cost"] = with_cost
+    rank = {key: index for index, key in enumerate(SEVERITIES)}
+    top = sorted((row for row in findings if row["severity"] in ("critical", "high")),
+                 key=lambda row: (rank[row["severity"]], row["cluster_name"], row["title"]))
+    result["top_findings"] = [{"cluster": row["cluster_name"], "severity": row["severity"], "title": row["title"][:90]} for row in top[:6]]
+    result["cluster_errors"] = [{"cluster": run["cluster_name"], "code": run["error"].get("code")}
+                                for run in snapshot["cluster_runs"] if run["status"] == "error"][:6]
+    result["cluster_errors_total"] = sum(run["status"] == "error" for run in snapshot["cluster_runs"])
+    for key in ("top_findings", "cluster_errors"):
+        while result[key] and response_bytes(result) > TRANSPORT_BYTES:
+            result[key] = result[key][:-1]
     return ensure_response(result)
 
 
@@ -355,17 +394,27 @@ def write_report(snapshot):
     snapshot_document = json.dumps(snapshot, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
     if json.loads(snapshot_document) != snapshot:
         raise EvidenceError("round_trip_failed", "Full normalized export does not round-trip.", "artifact_storage")
+    names = {str(row.get("subscription_id") or "").lower(): row.get("subscription_name") for row in snapshot.get("available_clusters") or []}
+
+    def scoped(row, details=None):
+        parts = str(row.get("cluster_id") or row.get("resource_id") or row.get("id") or "").split("/")
+        subscription = parts[2].lower() if len(parts) > 2 and parts[1].lower() == "subscriptions" else ""
+        return {**row, "subscription_id": subscription or None, "subscription_name": names.get(subscription),
+                "details_json": row if details is None else details}
     documents = {
         "report_path": render_html(snapshot), "snapshot_path": snapshot_document,
-        "findings_csv_path": csv_document([{**row, "details_json": row} for item in successful_snapshots(snapshot) for row in item["findings"]],
+        "findings_csv_path": csv_document([scoped(row) for item in successful_snapshots(snapshot) for row in item["findings"]],
             ("check_id", "checklist_id", "title", "status", "level", "area", "pillar", "severity", "resource_id",
-             "cluster_id", "cluster_name", "namespace", "workload_name", "effort", "reason", "recommendation", "learn_url", "details_json")),
-        "inventory_csv_path": csv_document(inventory_csv_rows(snapshot),
-            ("collection", "resource_id", "cluster_id", "cluster_name", "name", "namespace", "kind", "source_id", "observed_at", "details_json")),
+             "subscription_id", "subscription_name", "cluster_id", "cluster_name", "namespace", "workload_name", "effort", "reason",
+             "recommendation", "learn_url", "details_json")),
+        "inventory_csv_path": csv_document([scoped(row, row["details_json"]) for row in inventory_csv_rows(snapshot)],
+            ("collection", "resource_id", "subscription_id", "subscription_name", "cluster_id", "cluster_name", "name", "namespace", "kind",
+             "source_id", "observed_at", "details_json")),
     }
     encoded = {key: value.encode("utf-8-sig" if key.endswith("csv_path") else "utf-8") for key, value in documents.items()}
-    if any(len(value) > ARTIFACT_BYTES for value in encoded.values()):
-        raise EvidenceError("artifact_size_exceeded", "Complete artifacts exceed 4800000 bytes; no records, sources or time windows were dropped and no files were written.", "artifact_storage")
+    if any(len(value) > ARTIFACT_BYTES for value in encoded.values()) or len(encoded["report_path"]) > HTML_ARTIFACT_BYTES:
+        raise EvidenceError("artifact_size_exceeded", "Complete artifacts exceed " + str(ARTIFACT_BYTES) + " bytes (HTML " + str(HTML_ARTIFACT_BYTES)
+                            + "); no records were dropped and no files were written. Select fewer clusters (subscription or cluster_names).", "artifact_storage")
     temporary, written = [], []
     try:
         directory.mkdir(exist_ok=True)
@@ -406,15 +455,20 @@ def write_report(snapshot):
 
 def main(operation: str = "report", view: str = "summary", cluster_name: str = "", namespace: str = "",
          workload_name: str = "", area: str = "all", level: str = "all", severity: str = "all",
-         status: str = "all", limit: int = 25, offset: int = 0, cluster_names: str = "") -> dict:
-    """Collect one or several fixed approved clusters; never change source scope or identity."""
+         status: str = "all", limit: int = 25, offset: int = 0, cluster_names: str = "", subscription: str = "") -> dict:
+    """Collect one, several or all auto-discovered clusters (any subscription); never change source scope or identity."""
+    global ROSTER
     try:
-        params = validate_parameters(operation, view, cluster_name, namespace, workload_name, area, level, severity, status, limit, offset, cluster_names)
-        configs, configured = selection_configs(cluster_name, cluster_names)
+        params = validate_parameters(operation, view, cluster_name, namespace, workload_name, area, level, severity, status, limit, offset,
+                                     cluster_names, subscription)
+        ROSTER = None
+        DISCOVERY_INFO.clear()
+        ROSTER = effective_roster()
+        configs, configured = selection_configs(cluster_name, cluster_names, subscription, operation)
         if operation == "list_clusters":
-            return list_clusters_page(configured, limit, offset)
-        selected = {config["name"] for config in configs}
-        roster = [roster_row(config) for config in configured if len(configured) <= 5 or config["name"] in selected]
+            return list_clusters_page(configured, limit, offset, subscription)
+        validate_branding()
+        roster = [roster_row(config) for config in configs]
         if not CATALOG.get("rules"):
             raise EvidenceError("catalog_missing", "Use the build-generated whole-file tool, not unbuilt engine.py.", "rule_catalog")
         reference = utc_now()
@@ -424,31 +478,17 @@ def main(operation: str = "report", view: str = "summary", cluster_name: str = "
             snapshot = finish_snapshot(raw, reference, environment=config["environment"])
             snapshot.update(available_clusters=roster, selected_cluster_names=[config["name"]])
         else:
-            runs = []
-            deadline = time.monotonic() + MAX_COLLECTION_SECONDS
-            for config in configs:
-                run_reference = utc_now()
-                run = {"cluster_id": config["id"], "cluster_name": config["name"], "reference_utc": run_reference,
-                       "snapshot": None, "error": None, "status": "error"}
-                try:
-                    if time.monotonic() >= deadline:
-                        raise EvidenceError("collection_deadline", "Shared multi-cluster time bound reached; this cluster was not collected, not empty/healthy.", "collection")
-                    raw = collect_live(config, run_reference, deadline=deadline)
-                    run["snapshot"] = finish_snapshot(raw, run_reference, environment=config["environment"])
-                    run["status"] = "partial" if any(
-                        source["status"] not in ("complete", "not_applicable") for source in run["snapshot"]["sources"]) else "ok"
-                except EvidenceError as exc:
-                    run["error"] = exc.public()
-                runs.append(run)
+            runs = collect_fleet(configs)
             snapshot = multi_snapshot(runs, reference, roster)
             if not successful_snapshots(snapshot):
+                errors = Counter(str(run["error"].get("code")) for run in runs)
                 return ensure_response({"status": "error", "error": {
                     "code": "all_clusters_failed", "source": "arm_cluster",
                     "message": "No selected cluster produced a snapshot; no empty/healthy report or files.",
-                }, "artifact_status": "not_written", "cluster_errors": [
-                    {"cluster_name": run["cluster_name"], "error": {
-                        key: run["error"].get(key) for key in ("code", "source", "http_status")
-                    }} for run in runs], "provenance": "LIVE"})
+                }, "artifact_status": "not_written", "selected": len(runs), "error_codes": dict(errors.most_common(8)),
+                    "cluster_errors": [{"cluster_name": run["cluster_name"], "error": {
+                        key: run["error"].get(key) for key in ("code", "source_id", "http_status")}} for run in runs[:8]],
+                    "provenance": "LIVE"})
         return query_snapshot(snapshot, params) if operation == "query" else write_report(snapshot)
     except EvidenceError as exc:
         return ensure_response({"status": "error", "error": exc.public(),
@@ -456,19 +496,76 @@ def main(operation: str = "report", view: str = "summary", cluster_name: str = "
                                 "provenance": "LIVE"})
 
 
+def collect_one(config, deadline):
+    """One cluster run: explicit snapshot (ok/partial) or a structured error; never a healthy-looking empty result."""
+    run_reference = utc_now()
+    run = {"cluster_id": config["id"], "cluster_name": config["name"], "reference_utc": run_reference,
+           "snapshot": None, "error": None, "status": "error"}
+    try:
+        if time.monotonic() >= deadline:
+            raise EvidenceError("collection_deadline", "Shared fleet time bound reached before this cluster started; not collected, not empty/healthy.", "collection")
+        raw = collect_live(config, run_reference, deadline=deadline)
+        run["snapshot"] = finish_snapshot(raw, run_reference, environment=config["environment"])
+        run["status"] = "partial" if any(
+            source["status"] not in ("complete", "not_applicable") for source in run["snapshot"]["sources"]) else "ok"
+    except EvidenceError as exc:
+        run["error"] = exc.public()
+    except Exception as exc:  # one malformed cluster must not hide the others; it is reported, never healthy
+        run["error"] = {"code": "unexpected_error", "message": "Unexpected " + type(exc).__name__ + " while collecting this cluster; not evaluated.",
+                        "source_id": "collection", "http_status": None}
+    return run
+
+
+def collect_fleet(configs):
+    """Bounded parallel collection with one shared deadline below the tool timeout; results keep the selection order."""
+    deadline = time.monotonic() + FLEET_DEADLINE_SECONDS
+    executor = ThreadPoolExecutor(max_workers=max(1, min(COLLECTION_WORKERS, len(configs))), thread_name_prefix="aks-collect")
+    try:
+        futures = [executor.submit(collect_one, config, deadline) for config in configs]
+        done, _ = wait(futures, timeout=max(0.0, deadline - time.monotonic()) + FLEET_GRACE_SECONDS)
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
+    runs = []
+    for config, future in zip(configs, futures):
+        if future in done and not future.cancelled():
+            runs.append(future.result())
+            continue
+        future.cancel()
+        runs.append({"cluster_id": config["id"], "cluster_name": config["name"], "reference_utc": utc_now(), "snapshot": None,
+                     "status": "error", "error": {"code": "collection_timeout", "source_id": "collection", "http_status": None,
+                                                  "message": "Not collected within the shared " + str(FLEET_DEADLINE_SECONDS)
+                                                  + " s fleet bound; unknown, not empty/healthy. Repeat with fewer clusters."}})
+    return runs
+
+
 ARM_ORIGIN = "https://management.azure.com"
 AKS_AUDIENCE = "6dae42f8-4368-4678-94ff-3960e28e3630"
 AKS_API = "2025-05-01"
 TRANSPORT_BYTES = 3500
-ARTIFACT_BYTES = 4_800_000
+ARTIFACT_BYTES = 64_000_000
+HTML_ARTIFACT_BYTES = 16_000_000
+HTML_INLINE_JSON_BYTES = 4_000_000
 HTTP_BYTES = 8_000_000
 MAX_PAGES = 100
 MAX_ROWS = 20000
 MAX_RELATED_RESOURCES = 200
 MAX_APPROVED_CLUSTERS = 500
-MAX_REPORT_CLUSTERS = 5
-ACTIVE_SUBSCRIPTION_ID = None
+ARG_API = "2022-10-01"
+MAX_DISCOVERY_PAGES = 5
+ROSTER = None
+DISCOVERY_INFO = {}
+MAX_REPORT_CLUSTERS = 100
+MAX_QUERY_CLUSTERS = 5
+COLLECTION_SCOPE = threading.local()
 MAX_COLLECTION_SECONDS = 240
+FLEET_DEADLINE_SECONDS = 750
+FLEET_GRACE_SECONDS = 40
+COLLECTION_WORKERS = 8
+COST_CONCURRENCY = 2
+COST_SLOTS = threading.BoundedSemaphore(COST_CONCURRENCY)
+COST_RETRY_ATTEMPTS = 4
+COST_MAX_RETRY_WAIT_SECONDS = 60
+COST_SLOT_WAIT_SECONDS = 600
 MAX_HTTP_ATTEMPTS = 300
 KUBE_PAGE_SIZE = 500
 OUTPUT_DIRECTORY = "aks-waf-reports"
@@ -614,8 +711,9 @@ def arm_id(value, subscription=None):
 
 
 def scope_subscription(config=None):
-    """Subscription of the cluster being collected: per-cluster config, the active collection, then the default."""
-    return (config or {}).get("subscription_id") or ACTIVE_SUBSCRIPTION_ID or SUBSCRIPTION_ID
+    """Subscription of the cluster being collected: per-cluster config, this thread's active collection, then the optional default."""
+    value = (config or {}).get("subscription_id") or getattr(COLLECTION_SCOPE, "subscription_id", None) or SUBSCRIPTION_ID
+    return guid_setting("subscription scope", value)
 
 
 def same_subscription_id(value):
@@ -638,19 +736,39 @@ def guid_setting(key, value):
     return value.lower()
 
 
+def plain_label(value, maximum=128):
+    """Bounded display text from Azure (subscription name, region); never used in a URL or query."""
+    if not isinstance(value, str):
+        return None
+    value = re.sub(r"[\x00-\x1f\x7f<>]", "", value).strip()[:maximum]
+    return value or None
+
+
+def validate_branding():
+    validate_logo(CLIENT_LOGO_DATA_URI, CLIENT_LOGO_ALT)
+    if not isinstance(CLIENT_NAME, str) or not 1 <= len(CLIENT_NAME) <= 120 or any(ord(c) < 32 for c in CLIENT_NAME):
+        raise EvidenceError("configuration_required", "Client label must be bounded plain text.", "configuration")
+
+
 def validate_config(cluster_name):
-    for key, value in (
-        ("SUBSCRIPTION_ID", SUBSCRIPTION_ID), ("TENANT_ID", TENANT_ID),
-        ("MANAGED_IDENTITY_CLIENT_ID", MANAGED_IDENTITY_CLIENT_ID),
-    ):
+    for key, value in (("TENANT_ID", TENANT_ID), ("MANAGED_IDENTITY_CLIENT_ID", MANAGED_IDENTITY_CLIENT_ID)):
         guid_setting(key, value)
-    if not isinstance(APPROVED_CLUSTERS, dict) or not 1 <= len(APPROVED_CLUSTERS) <= MAX_APPROVED_CLUSTERS:
+    roster = active_roster()
+    if not isinstance(roster, dict) or not 1 <= len(roster) <= MAX_APPROVED_CLUSTERS:
         raise EvidenceError("configuration_required", "Configure one to " + str(MAX_APPROVED_CLUSTERS) + " fixed approved clusters.", "configuration")
-    name = cluster_name or next(iter(APPROVED_CLUSTERS))
-    if name not in APPROVED_CLUSTERS:
-        raise EvidenceError("invalid_parameter", "cluster_name must exactly match the fixed operator allowlist.", "parameters")
+    name = cluster_name or next(iter(roster))
+    if name not in roster:
+        raise EvidenceError("invalid_parameter", "cluster_name must exactly match a cluster_name returned by list_clusters "
+                            "(auto-discovered inventory plus operator entries)." if ROSTER is not None and auto_discovery_enabled()
+                            else "cluster_name must exactly match the fixed operator allowlist.", "parameters")
     defaults = globals().get("CLUSTER_DEFAULTS") or {}
-    config = {**json.loads(json.dumps(obj(defaults, "configuration"))), **obj(APPROVED_CLUSTERS[name], "configuration")}
+    config = {**json.loads(json.dumps(obj(defaults, "configuration"))), **obj(roster[name], "configuration")}
+    if not config.get("subscription_id"):
+        try:
+            guid_setting("SUBSCRIPTION_ID", SUBSCRIPTION_ID)
+        except EvidenceError as exc:
+            raise EvidenceError("configuration_required", "APPROVED_CLUSTERS entry " + name + " has no subscription_id; add it "
+                                "(or set the optional SUBSCRIPTION_ID).", "configuration") from exc
     subscription = guid_setting("subscription_id of " + name, config.get("subscription_id") or SUBSCRIPTION_ID)
     aks_name = config.get("aks_name") or name
     for field, value, maximum in (("name", name, 63), ("aks_name", aks_name, 63), ("resource_group", config.get("resource_group"), 90)):
@@ -690,45 +808,236 @@ def validate_config(cluster_name):
             raise EvidenceError("configuration_required", "Unknown per-workload requirement.", "configuration")
         if any(value is not None and not isinstance(value, bool) for value in values.values()):
             raise EvidenceError("configuration_required", "Per-workload requirements must be boolean or unknown.", "configuration")
-    validate_logo(CLIENT_LOGO_DATA_URI, CLIENT_LOGO_ALT)
-    if not isinstance(CLIENT_NAME, str) or not 1 <= len(CLIENT_NAME) <= 120 or any(ord(c) < 32 for c in CLIENT_NAME):
-        raise EvidenceError("configuration_required", "Client label must be bounded plain text.", "configuration")
     return {**config, "name": name, "aks_name": aks_name, "subscription_id": subscription,
+            "subscription_name": plain_label(config.get("subscription_name")), "location": plain_label(config.get("location"), 64),
             "id": "/subscriptions/" + subscription + "/resourceGroups/"
             + config["resource_group"] + "/providers/Microsoft.ContainerService/managedClusters/" + aks_name}
 
 
+def auto_discovery_enabled():
+    value = globals().get("AUTO_DISCOVERY", False)
+    if not isinstance(value, bool):
+        raise EvidenceError("configuration_required", "AUTO_DISCOVERY must be True or False.", "configuration")
+    return value
+
+
+def active_roster():
+    return ROSTER if ROSTER is not None else APPROVED_CLUSTERS
+
+
+DISCOVERY_QUERY = (
+    "resources | where type =~ 'microsoft.containerservice/managedclusters' "
+    "| project id, name, resourceGroup, subscriptionId, tenantId, location "
+    "| join kind=leftouter (resourcecontainers | where type =~ 'microsoft.resources/subscriptions' "
+    "| project subscriptionId, subscriptionName=name) on subscriptionId "
+    "| project id, name, resourceGroup, subscriptionId, tenantId, location, subscriptionName "
+    "| order by subscriptionId asc, name asc"
+)
+
+
+def discover_clusters():
+    """Observed inventory: every AKS cluster the agent identity can read, from one fixed read-only Resource Graph query."""
+    guid_setting("TENANT_ID", TENANT_ID)
+    guid_setting("MANAGED_IDENTITY_CLIENT_ID", MANAGED_IDENTITY_CLIENT_ID)
+    scope = globals().get("DISCOVERY_SUBSCRIPTION_IDS") or []
+    if not isinstance(scope, list) or len(scope) > 1000:
+        raise EvidenceError("configuration_required", "DISCOVERY_SUBSCRIPTION_IDS must be a list of up to 1000 subscription IDs.", "configuration")
+    subscriptions = [guid_setting("DISCOVERY_SUBSCRIPTION_IDS", value) for value in scope]
+    identity = Identity()
+    try:
+        reader = HttpReader(identity)
+        url = reader.allow(ARM_ORIGIN + "/providers/Microsoft.ResourceGraph/resources?api-version=" + ARG_API, "POST")
+        rows, skip_token = [], None
+        for _ in range(MAX_DISCOVERY_PAGES):
+            options = {"resultFormat": "objectArray", "$top": 1000}
+            if skip_token:
+                options["$skipToken"] = skip_token
+            body = {"query": DISCOVERY_QUERY, "options": options}
+            if subscriptions:
+                body["subscriptions"] = subscriptions
+            page = reader.request("POST", url, "arm_discovery", body=body)
+            rows.extend(array(page.get("data"), "arm_discovery"))
+            skip_token = page.get("$skipToken")
+            if not isinstance(skip_token, str) or not skip_token or len(rows) > MAX_APPROVED_CLUSTERS:
+                break
+        return rows
+    finally:
+        identity.close()
+
+
+def effective_roster():
+    """Operator entries first (overrides), then every discovered AKS not already listed; bounded and deterministic."""
+    if not auto_discovery_enabled():
+        return APPROVED_CLUSTERS
+    if not isinstance(APPROVED_CLUSTERS, dict):
+        raise EvidenceError("configuration_required", "APPROVED_CLUSTERS must be a dictionary (it can be empty).", "configuration")
+    rows = discover_clusters()
+    names, locations = {}, {}
+    for row in rows:
+        cluster_id, subscription = str(row.get("id") or "").lower(), str(row.get("subscriptionId") or "").lower()
+        if plain_label(row.get("subscriptionName")):
+            names.setdefault(subscription, plain_label(row.get("subscriptionName")))
+        locations[cluster_id] = plain_label(row.get("location"), 64)
+    roster, known = {}, set()
+    for key, entry in APPROVED_CLUSTERS.items():
+        if isinstance(key, str) and key.startswith("<"):
+            continue
+        entry = dict(obj(entry, "configuration"))
+        if not entry.get("subscription_id"):
+            try:
+                guid_setting("SUBSCRIPTION_ID", SUBSCRIPTION_ID)
+            except EvidenceError as exc:
+                raise EvidenceError("configuration_required", "APPROVED_CLUSTERS entry " + str(key)[:63] + " has no subscription_id; add it "
+                                    "(or set the optional SUBSCRIPTION_ID).", "configuration") from exc
+        subscription = str(entry.get("subscription_id") or SUBSCRIPTION_ID).lower()
+        cluster_id = ("/subscriptions/" + subscription + "/resourcegroups/" + str(entry.get("resource_group", ""))
+                      + "/providers/microsoft.containerservice/managedclusters/" + str(entry.get("aks_name") or key)).lower()
+        known.add(cluster_id)
+        entry.setdefault("subscription_name", names.get(subscription))
+        entry.setdefault("location", locations.get(cluster_id))
+        roster[key] = entry
+    operator_entries, discovered, skipped = len(roster), 0, 0
+    local = re.compile(r"[A-Za-z0-9_.()-]+")
+    for row in rows:
+        cluster_id = str(row.get("id") or "")
+        parts = cluster_id.split("/")
+        if cluster_id.lower() in known:
+            continue
+        if len(parts) != 9 or parts[1].lower() != "subscriptions" or parts[3].lower() != "resourcegroups" \
+                or parts[6].lower() != "microsoft.containerservice" or parts[7].lower() != "managedclusters":
+            skipped += 1
+            continue
+        subscription, group, name = parts[2].lower(), parts[4], parts[8]
+        tenant = str(row.get("tenantId") or "").lower()
+        if (tenant and tenant != TENANT_ID.lower()) or not re.fullmatch(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}", subscription) \
+                or not (1 <= len(name) <= 63 and local.fullmatch(name)) or not (1 <= len(group) <= 90 and local.fullmatch(group)):
+            skipped += 1
+            continue
+        key = name if name not in roster else (subscription[:8] + "-" + name)[:63]
+        if key in roster:
+            skipped += 1
+            continue
+        entry = {"resource_group": group, "subscription_id": subscription,
+                 "subscription_name": names.get(subscription), "location": locations.get(cluster_id.lower())}
+        if key != name:
+            entry["aks_name"] = name
+        roster[key] = entry
+        known.add(cluster_id.lower())
+        discovered += 1
+    DISCOVERY_INFO.clear()
+    DISCOVERY_INFO.update({"mode": "auto", "source": "azure_resource_graph", "discovered": discovered,
+                           "operator_entries": operator_entries, "skipped": skipped,
+                           "subscription_scope": "configured_list" if globals().get("DISCOVERY_SUBSCRIPTION_IDS") else "all_readable"})
+    if not roster:
+        raise EvidenceError("no_clusters_visible", "Auto-discovery found no AKS cluster the agent identity can read; grant Reader "
+                            "with grant-aks-permissions.ps1 and wait 5-10 minutes.", "arm_discovery")
+    if len(roster) > MAX_APPROVED_CLUSTERS:
+        raise EvidenceError("configuration_required", "Auto-discovery found more than " + str(MAX_APPROVED_CLUSTERS)
+                            + " AKS clusters; limit DISCOVERY_SUBSCRIPTION_IDS.", "configuration")
+    return roster
+
+
 def roster_row(config):
-    return {"cluster_id": config["id"], "cluster_name": config["name"],
-            "resource_group": config["resource_group"], "environment": config["environment"]}
+    return {"cluster_id": config["id"], "cluster_name": config["name"], "resource_group": config["resource_group"],
+            "environment": config["environment"], "subscription_id": config["subscription_id"],
+            "subscription_name": config.get("subscription_name"), "location": config.get("location")}
 
 
-def selection_configs(cluster_name, cluster_names):
-    first = validate_config(cluster_name)
-    configured = [validate_config(name) for name in APPROVED_CLUSTERS]
+def subscription_filter(configured, subscription):
+    """Exact subscription ID or exact display name (case-insensitive); compared locally, never sent to Azure."""
+    if not subscription:
+        return configured
+    wanted = subscription.strip().casefold()
+    matched = [config for config in configured if config["subscription_id"] == wanted
+               or (config.get("subscription_name") or "").casefold() == wanted]
+    ids = {config["subscription_id"] for config in matched}
+    if not matched:
+        known = sorted({config.get("subscription_name") or config["subscription_id"] for config in configured})
+        close = difflib.get_close_matches(subscription.strip(), known, n=3, cutoff=0.5)
+        raise EvidenceError("unknown_subscription", "No visible AKS cluster in subscription '" + subscription.strip()[:64] + "'. Use an exact "
+                            "subscription ID or display name from list_clusters" + (" (similar: " + ", ".join(close) + ")." if close else "."), "parameters")
+    if len(ids) > 1:
+        raise EvidenceError("ambiguous_subscription", "Several subscriptions share that display name; use the subscription ID: "
+                            + ", ".join(sorted(ids)[:5]) + ".", "parameters")
+    return matched
+
+
+def resolve_names(names, candidates, scoped=False):
+    """Exact names (case-insensitive): the list_clusters key or the AKS resource name when it is unique in the candidates."""
+    selected, seen = [], set()
+    for name in names:
+        wanted = name.casefold()
+        matches = {config["id"].lower(): config for config in candidates
+                   if config["name"].casefold() == wanted or config["aks_name"].casefold() == wanted}
+        if len(matches) > 1:
+            raise EvidenceError("ambiguous_cluster_name", "Cluster name '" + name + "' exists in several subscriptions: "
+                                + ", ".join(sorted(config["name"] + " (" + (config.get("subscription_name") or config["subscription_id"]) + ")"
+                                                   for config in matches.values())[:4])
+                                + ". Add subscription=<name or ID> or use the list_clusters cluster_name.", "parameters")
+        if not matches:
+            close = difflib.get_close_matches(name, sorted({config["name"] for config in candidates}), n=3, cutoff=0.6)
+            raise EvidenceError("unknown_cluster", "Cluster '" + name + "' is not visible" + (" in that subscription" if scoped else "")
+                                + "; use exact names from list_clusters" + (" (similar: " + ", ".join(close) + ")." if close else "."), "parameters")
+        config = next(iter(matches.values()))
+        if config["id"].lower() in seen:
+            raise EvidenceError("invalid_parameter", "Select distinct clusters only; '" + name + "' is repeated.", "parameters")
+        seen.add(config["id"].lower())
+        selected.append(config)
+    return selected
+
+
+def selection_configs(cluster_name, cluster_names, subscription="", operation="report"):
+    """Returns (selected configs, visible configs after the subscription filter). Selection is local and exact."""
+    roster = active_roster()
+    if not isinstance(roster, dict) or not 1 <= len(roster) <= MAX_APPROVED_CLUSTERS:
+        raise EvidenceError("configuration_required", "Configure one to " + str(MAX_APPROVED_CLUSTERS) + " fixed approved clusters.", "configuration")
+    configured = [validate_config(name) for name in roster]
     if len({config["id"].lower() for config in configured}) != len(configured):
         raise EvidenceError("configuration_required", "Two allowlist entries point to the same AKS resource ID.", "configuration")
-    names = cluster_names.split(",") if cluster_names else [first["name"]]
-    if len(set(names)) != len(names) or any(name not in APPROVED_CLUSTERS for name in names):
-        raise EvidenceError("invalid_parameter", "Select distinct exact fixed allowlisted cluster names only.", "parameters")
-    by_name = {config["name"]: config for config in configured}
-    return [by_name[name] for name in names], configured
+    visible = subscription_filter(configured, subscription)
+    if operation == "list_clusters":
+        return visible, visible
+    if cluster_name:
+        selected = resolve_names([cluster_name], visible, bool(subscription))
+    elif cluster_names and cluster_names.lower() != "all":
+        selected = resolve_names(cluster_names.split(","), visible, bool(subscription))
+    elif operation == "query" and len(visible) > 1:
+        raise EvidenceError("selection_required", "query reads one cluster (or up to " + str(MAX_QUERY_CLUSTERS) + " in cluster_names); "
+                            + str(len(visible)) + " are visible. Use cluster_name, or operation=report for all of them.", "parameters")
+    else:
+        selected = visible
+    limit = MAX_QUERY_CLUSTERS if operation == "query" else MAX_REPORT_CLUSTERS
+    if len(selected) > limit:
+        counts = Counter(config.get("subscription_name") or config["subscription_id"] for config in selected)
+        raise EvidenceError("too_many_clusters", str(len(selected)) + " clusters selected; " + operation + " accepts at most " + str(limit)
+                            + ". Narrow it with subscription=<name or ID> or cluster_names (largest subscriptions: "
+                            + ", ".join(name[:40] + " " + str(count) for name, count in counts.most_common(4)) + ").", "parameters")
+    return selected, visible
 
 
-def list_clusters_page(configured, limit, offset):
-    """Paged fixed roster (configuration, not observed health) that always fits the 3500-byte transport budget."""
-    rows = [{"cluster_name": config["name"], "resource_group": config["resource_group"],
-             "subscription_id": config["subscription_id"], "environment": config["environment"]}
-            for config in configured]
-    if len(configured) <= MAX_REPORT_CLUSTERS:
-        for row, config in zip(rows, configured):
+def list_clusters_page(configured, limit, offset, subscription=""):
+    """Paged discovered roster (inventory, not observed health) that always fits the 3500-byte transport budget."""
+    rows = []
+    for config in configured:
+        row = {"cluster_name": config["name"], "resource_group": config["resource_group"],
+               "subscription_id": config["subscription_id"], "subscription_name": config.get("subscription_name"),
+               "location": config.get("location"), "environment": config["environment"]}
+        if config["aks_name"] != config["name"]:
+            row["aks_name"] = config["aks_name"]
+        if len(configured) <= 5:
             row["cluster_id"] = config["id"]
+        rows.append(row)
     page = rows[offset:offset + limit]
     response = {"status": "ok", "operation": "list_clusters", "fresh_collection": False,
-                "roster_basis": "fixed_operator_configuration_not_observed_inventory",
+                "roster_basis": "observed_inventory_azure_resource_graph_plus_operator_entries" if DISCOVERY_INFO
+                else "fixed_operator_configuration_not_observed_inventory",
                 "total": len(rows), "subscription_count": len({row["subscription_id"] for row in rows}),
                 "offset": offset, "returned": 0, "next_offset": None,
                 "report_batch_limit": MAX_REPORT_CLUSTERS, "available_clusters": page}
+    if subscription:
+        response["subscription_filter"] = subscription.strip()[:128]
+    if DISCOVERY_INFO:
+        response["discovery"] = dict(DISCOVERY_INFO)
     while True:
         response["returned"] = len(response["available_clusters"])
         end = offset + response["returned"]
@@ -738,7 +1047,11 @@ def list_clusters_page(configured, limit, offset):
         response["available_clusters"] = response["available_clusters"][:-1]
 
 
-def validate_parameters(operation, view, cluster_name, namespace, workload_name, area, level, severity, status, limit, offset, cluster_names=""):
+CLUSTER_NAMES_PATTERN = re.compile(r"[A-Za-z0-9_.()-]{1,63}(?:,[A-Za-z0-9_.()-]{1,63}){0,99}")
+
+
+def validate_parameters(operation, view, cluster_name, namespace, workload_name, area, level, severity, status, limit, offset, cluster_names="",
+                        subscription=""):
     for key, value, choices in (
         ("operation", operation, ("report", "query", "list_clusters")), ("view", view, VIEWS),
         ("area", area, ("all",) + AREAS), ("level", level, ("all",) + LEVELS),
@@ -753,19 +1066,24 @@ def validate_parameters(operation, view, cluster_name, namespace, workload_name,
     for key, value, maximum in (("cluster_name", cluster_name, 63), ("namespace", namespace, 63), ("workload_name", workload_name, 253)):
         if not isinstance(value, str) or len(value) > maximum or (value and not re.fullmatch(r"[A-Za-z0-9_.()-]+", value)):
             raise EvidenceError("invalid_parameter", key + " is a bounded exact local name, not a path, URL or command.", "parameters")
-    if not isinstance(cluster_names, str) or len(cluster_names) > 319 or (
-        cluster_names and not re.fullmatch(r"[A-Za-z0-9_.()-]{1,63}(?:,[A-Za-z0-9_.()-]{1,63}){0,4}", cluster_names)
+    if not isinstance(cluster_names, str) or len(cluster_names) > 6400 or (
+        cluster_names and cluster_names.lower() != "all" and not CLUSTER_NAMES_PATTERN.fullmatch(cluster_names)
     ):
-        raise EvidenceError("invalid_parameter", "cluster_names is an exact comma-separated allowlist selection of one to five names, without spaces.", "parameters")
+        raise EvidenceError("invalid_parameter", "cluster_names is 'all' or 1 to " + str(MAX_REPORT_CLUSTERS)
+                            + " exact comma-separated cluster names, without spaces.", "parameters")
+    if not isinstance(subscription, str) or len(subscription) > 128 or re.search(r"[\x00-\x1f\x7f<>]", subscription) or (
+        subscription and not subscription.strip()
+    ):
+        raise EvidenceError("invalid_parameter", "subscription is an exact subscription ID or display name (up to 128 plain characters).", "parameters")
     if cluster_name and cluster_names:
         raise EvidenceError("invalid_combination", "Use cluster_name or cluster_names, not both.", "parameters")
     filters = any((namespace, workload_name, area != "all", level != "all", severity != "all", status != "all"))
     if operation == "report" and (view != "summary" or filters or limit != 25 or offset != 0):
         raise EvidenceError("invalid_combination", "report cannot be narrowed by query filters or paging.", "parameters")
     if operation == "list_clusters" and (view != "summary" or filters):
-        raise EvidenceError("invalid_combination", "list_clusters accepts only limit/offset roster paging, not query filters.", "parameters")
+        raise EvidenceError("invalid_combination", "list_clusters accepts only subscription and limit/offset paging, not query filters.", "parameters")
     if operation == "list_clusters" and (cluster_name or cluster_names):
-        raise EvidenceError("invalid_combination", "list_clusters lists the complete fixed roster; do not select a cluster.", "parameters")
+        raise EvidenceError("invalid_combination", "list_clusters lists the visible roster; filter with subscription, not cluster names.", "parameters")
     if operation == "query":
         if view in ("summary", "cluster", "node_pools", "coverage", "architecture") and (namespace or workload_name):
             raise EvidenceError("invalid_combination", "Namespace/workload filters do not apply to this view.", "parameters")
@@ -778,7 +1096,8 @@ def validate_parameters(operation, view, cluster_name, namespace, workload_name,
         ):
             raise EvidenceError("invalid_combination", "Status does not belong to the selected view.", "parameters")
     return dict(operation=operation, view=view, cluster_name=cluster_name, namespace=namespace, workload_name=workload_name,
-                area=area, level=level, severity=severity, status=status, limit=limit, offset=offset, cluster_names=cluster_names)
+                area=area, level=level, severity=severity, status=status, limit=limit, offset=offset, cluster_names=cluster_names,
+                subscription=subscription)
 
 
 def quantity(value, unit):
@@ -878,11 +1197,11 @@ class HttpReader:
         if parsed.scheme != "https" or (parsed.scheme + "://" + parsed.netloc) != self.origin or parsed.fragment or parsed.username:
             raise EvidenceError("unsafe_endpoint", "Read URL changed the fixed HTTPS origin.", "scope")
         if method not in ("GET", "POST"):
-            raise EvidenceError("unsafe_method", "Only enumerated reads and two fixed read-only POST operations are permitted.", "scope")
+            raise EvidenceError("unsafe_method", "Only enumerated reads and three fixed read-only POST operations are permitted.", "scope")
         self.allowed.add((method, parsed.path))
         return url
 
-    def request(self, method, url, source, body=None, allow_empty=False):
+    def request(self, method, url, source, body=None, allow_empty=False, attempts=None, max_wait=None):
         parsed = urlsplit(url)
         if (
             parsed.scheme + "://" + parsed.netloc != self.origin or parsed.fragment or parsed.username or parsed.password
@@ -892,10 +1211,14 @@ class HttpReader:
         if method == "POST" and not (
             parsed.path.lower().endswith("/listclusterusercredential")
             or parsed.path.lower().endswith("/providers/microsoft.costmanagement/query")
+            or parsed.path.lower() == "/providers/microsoft.resourcegraph/resources"
         ):
             raise EvidenceError("unsafe_method", "This POST is not an enumerated read-only operation.", source)
         payload = None if body is None else json.dumps(body, allow_nan=False).encode("utf-8")
-        for attempt in range(3):
+        cost_query = parsed.path.lower().endswith("/providers/microsoft.costmanagement/query")
+        attempts = attempts or (COST_RETRY_ATTEMPTS if cost_query else 3)
+        max_wait = max_wait or (COST_MAX_RETRY_WAIT_SECONDS if cost_query else 5)
+        for attempt in range(attempts):
             request = Request(url, data=payload, method=method, headers={
                 "Authorization": "Bearer " + self.identity.token(self.audience),
                 "Accept": "application/json", "Content-Type": "application/json",
@@ -910,9 +1233,13 @@ class HttpReader:
                     if len(raw) > HTTP_BYTES:
                         raise EvidenceError("response_cap", "Source response exceeded the disclosed byte safety bound.", source)
             except HTTPError as exc:
-                if exc.code in (429, 500, 502, 503, 504) and attempt < 2:
-                    retry = exc.headers.get("Retry-After", "") if exc.headers else ""
-                    time.sleep(min(int(retry), 5) if re.fullmatch(r"[0-9]{1,4}", retry) else attempt + 1)
+                if exc.code in (429, 500, 502, 503, 504) and attempt < attempts - 1:
+                    delay = min(retry_delay(exc.headers, attempt), max_wait)
+                    deadline = getattr(self.identity, "deadline", None)
+                    if isinstance(deadline, (int, float)) and time.monotonic() + delay >= deadline:
+                        raise EvidenceError("throttled" if exc.code == 429 else "http_error", "Read returned HTTP " + str(exc.code)
+                                            + "; waiting " + str(delay) + " s would pass the time bound. Not collected, not zero.", source, exc.code) from exc
+                    time.sleep(delay)
                     continue
                 raise EvidenceError("access_denied" if exc.code in (401, 403) else "http_error",
                                     "Read returned HTTP " + str(exc.code) + "; response bodies are excluded.", source, exc.code) from exc
@@ -925,6 +1252,16 @@ class HttpReader:
             except (ValueError, UnicodeDecodeError) as exc:
                 raise EvidenceError("invalid_json", "Source returned invalid JSON; no raw body is exported.", source) from exc
         raise EvidenceError("http_error", "Bounded retries exhausted.", source)
+
+
+def retry_delay(headers, attempt):
+    """Largest Retry-After style hint (Cost Management sends x-ms-ratelimit-microsoft.costmanagement-*-retry-after)."""
+    hints = []
+    for key, value in (headers.items() if headers else []):
+        if key.lower() == "retry-after" or (key.lower().startswith("x-ms-ratelimit-") and key.lower().endswith("retry-after")):
+            if re.fullmatch(r"\s*[0-9]{1,5}\s*", str(value)):
+                hints.append(int(value))
+    return max(hints) if hints else attempt + 1
 
 
 def next_arm_link(link, initial):
@@ -1088,6 +1425,8 @@ def normalize_cluster(raw, source_id, reference, config):
     if row["id"].lower() != config["id"].lower():
         raise EvidenceError("scope_mismatch", "ARM returned a different cluster ID.", source_id)
     properties = obj(raw.get("properties"), source_id)
+    # The report identity is the unique selection name (prefixed when the same AKS name exists in several subscriptions).
+    row.update(aks_name=row["name"], name=config["name"], subscription_name=config.get("subscription_name"), location=config.get("location"))
     row.update(resource_group=config["resource_group"], subscription_id=scope_subscription(config),
                version=text(properties.get("currentKubernetesVersion") or properties.get("kubernetesVersion"), source_id),
                power_state=text(pick(properties, "powerState", "code"), source_id),
@@ -1592,12 +1931,13 @@ def kube_reader(arm, identity, cluster, config):
 
 
 def collect_live(config, reference, deadline=None):
-    global ACTIVE_SUBSCRIPTION_ID
-    previous, ACTIVE_SUBSCRIPTION_ID = ACTIVE_SUBSCRIPTION_ID, scope_subscription(config)
+    """The collected cluster's subscription is thread-local, so parallel clusters in different subscriptions never mix scopes."""
+    previous = getattr(COLLECTION_SCOPE, "subscription_id", None)
+    COLLECTION_SCOPE.subscription_id = scope_subscription(config)
     try:
         return _collect_live(config, reference, deadline)
     finally:
-        ACTIVE_SUBSCRIPTION_ID = previous
+        COLLECTION_SCOPE.subscription_id = previous
 
 
 def _collect_live(config, reference, deadline=None):
@@ -1858,7 +2198,13 @@ def collect_cost(reader, config, reference, related, cluster=None):
         body["dataset"]["filter"] = {"dimensions": {"name": "ResourceId", "operator": "In", "values": ids}}
     rows, seen = [], set()
     current = url
+    acquired = False
     try:
+        deadline = getattr(getattr(reader, "identity", None), "deadline", None)
+        remaining = deadline - time.monotonic() if isinstance(deadline, (int, float)) else COST_SLOT_WAIT_SECONDS
+        if remaining <= 0 or not COST_SLOTS.acquire(timeout=min(remaining, COST_SLOT_WAIT_SECONDS)):
+            raise EvidenceError("collection_deadline", "No Cost Management query slot before the time bound; cost not collected, not zero.", "azure_cost")
+        acquired = True
         for page_number in range(MAX_PAGES):
             if current in seen:
                 raise EvidenceError("pagination_loop", "Cost query repeated a continuation.", "azure_cost")
@@ -1921,6 +2267,9 @@ def collect_cost(reader, config, reference, related, cluster=None):
         receipt.update(status="partial" if rows else "denied" if error.http_status in (401, 403) else "error",
                        records=len(rows), errors=[error.public()])
         return rows, receipt
+    finally:
+        if acquired:
+            COST_SLOTS.release()
 
 
 def selector_matches(selector, actual_labels):
@@ -2806,7 +3155,7 @@ def architecture_for(raw, reference, provenance):
 
 
 def multi_snapshot(runs, reference, roster):
-    if not 1 <= len(runs) <= 5 or len({run["cluster_id"].lower() for run in runs}) != len(runs):
+    if not 1 <= len(runs) <= MAX_REPORT_CLUSTERS or len({run["cluster_id"].lower() for run in runs}) != len(runs):
         raise EvidenceError("invalid_cluster_runs", "Multi-cluster runs require distinct fixed cluster IDs.", "assessment")
     if any(run["status"] not in ("ok", "partial", "error") or (
         (run["snapshot"] is None) != (run["status"] == "error")
@@ -2820,6 +3169,9 @@ def multi_snapshot(runs, reference, roster):
     for run in runs:
         if run["snapshot"] is not None and run["snapshot"]["cluster"]["id"].lower() != run["cluster_id"].lower():
             raise EvidenceError("scope_mismatch", "A cluster run cannot contain another cluster's snapshot.", "assessment")
+    # The client block (logo) is stored once at document level; the report re-attaches it to each cluster on load.
+    runs = [{**run, "snapshot": {key: value for key, value in run["snapshot"].items() if key != "client"}}
+            if run["snapshot"] is not None else run for run in runs]
     checks = [check for snapshot in snapshots for check in snapshot["checks"]]
     scores = {"global": score(checks), "areas": {area: score([row for row in checks if row["area"] == area]) for area in AREAS},
               "pillars": {pillar: score([row for row in checks if row["pillar"] == pillar]) for pillar in PILLARS}}
@@ -2838,7 +3190,8 @@ def multi_snapshot(runs, reference, roster):
                 "score_basis": "Unique cluster/rule/resource checks from available snapshots only; failed clusters are not scored.",
                 "failed_cluster_count": sum(run["snapshot"] is None for run in runs),
                 "official_waf_score": False,
-                "collection_seconds_bound": MAX_COLLECTION_SECONDS,
+                "collection_seconds_bound": MAX_COLLECTION_SECONDS, "fleet_seconds_bound": FLEET_DEADLINE_SECONDS,
+                "subscription_count": len({row.get("subscription_id") for row in roster}),
                 "estimated_savings": None, "actual_cost": None,
                 "cost_basis": "Per-cluster billing currency, time window and scope remain separate; no cross-cluster currency/scope sum."}}
 

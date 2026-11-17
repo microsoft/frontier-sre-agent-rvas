@@ -249,6 +249,19 @@ dd { margin: 0; overflow-wrap: anywhere; }
 .executive-messages li:first-child { border-top: 0; padding-top: 0; }
 .cluster-overview h2, .cluster-error h2 { font-size: 20px; }
 .cluster-picker { max-width: 540px; margin: 16px 0; }
+.fleet-filters { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; margin: 20px 0 8px; }
+.fleet-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 20px 0; }
+.fleet-kpi { padding: 14px 16px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); min-width: 0; }
+.fleet-kpi b { display: block; font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.fleet-kpi span { display: block; font-size: 13px; font-weight: 600; margin-top: 4px; }
+.fleet-kpi small { display: block; font-size: 12px; color: var(--muted); margin-top: 4px; }
+.fleet-kpi.critical b { color: var(--critical); }
+.fleet-section-head { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; justify-content: space-between; margin-top: 28px; }
+.fleet-section-head .field { min-width: 180px; }
+table[data-collection="fleet-runs"] { min-width: 1180px; }
+table[data-collection="fleet-findings"] { min-width: 1000px; }
+.link-button { border: 0; padding: 0; min-height: 0; background: transparent; color: var(--accent); text-decoration: underline; cursor: pointer; font: inherit; text-align: left; }
+@media (max-width: 760px) { .fleet-filters { grid-template-columns: 1fr; } }
 .cluster-error { padding: 20px 24px; border: 1px solid var(--critical); border-radius: var(--radius-card); background: var(--critical-wash); }
 .cluster-error h2 { color: var(--critical); }
 .filter-section { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); box-shadow: var(--shadow); padding: 20px 24px; }
@@ -689,11 +702,24 @@ details.method-block > summary { font-size: 16px; color: var(--heading); }
     <div class="page">
     <section id="cluster-error" class="cluster-error" role="alert" hidden></section>
     <section id="cluster-overview" class="cluster-overview card" aria-labelledby="cluster-overview-title" hidden>
-      <h2 id="cluster-overview-title">Clusters in this snapshot</h2>
-      <p class="qualification">The selection changes only the local view; it does not authenticate, collect or deploy another cluster. A failed run keeps its error and never inherits data from another cluster.</p>
-      <div id="cluster-aggregate"></div>
-      <div class="field cluster-picker no-print"><label for="cluster-selector">Cluster for the detailed view</label><select id="cluster-selector"></select></div>
-      <div id="cluster-runs-table"></div>
+      <h2 id="cluster-overview-title">AKS fleet in this snapshot</h2>
+      <div class="fleet-filters no-print" role="group" aria-label="Fleet filters">
+        <div class="field"><label for="fleet-subscription">Subscription</label><select id="fleet-subscription"></select></div>
+        <div class="field"><label for="cluster-selector">Cluster (All = fleet overview; one = detailed view)</label><select id="cluster-selector"></select></div>
+        <div class="field"><label for="fleet-search">Search cluster, resource group or region</label><input id="fleet-search" type="search" autocomplete="off" spellcheck="false"></div>
+      </div>
+      <p id="fleet-scope" class="filter-count" aria-live="polite"></p>
+      <p class="qualification">Filters change only the local view; they do not authenticate, collect or deploy anything. A failed run keeps its error, counts as not evaluated and never inherits data from another cluster.</p>
+      <div id="fleet-view">
+        <div id="fleet-kpis" class="fleet-kpis" aria-label="Indicators for the visible clusters"></div>
+        <div id="cluster-aggregate"></div>
+        <h3>Visible clusters</h3>
+        <div id="cluster-runs-table"></div>
+        <div class="fleet-section-head"><h3>Findings in the visible clusters</h3>
+          <div class="field no-print"><label for="fleet-severity">Severity</label><select id="fleet-severity"><option value="">All</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div>
+        </div>
+        <div id="fleet-findings"></div>
+      </div>
     </section>
     <section id="executive" class="chapter" aria-labelledby="executive-title">
       <div class="chapter-head">
@@ -851,7 +877,7 @@ details.method-block > summary { font-size: 16px; color: var(--heading); }
 <script type="application/json" id="report-data">__REPORT_DATA_JSON__</script>
 <script>
 "use strict";
-(() => {
+(async () => {
   const AREA = new Map([["best_practices", "Best practices"], ["security", "Security"], ["finops", "FinOps"], ["optimization", "Optimization"]]);
   const PILLAR = new Map([["reliability", "Reliability"], ["security", "Security"], ["cost", "Cost Optimization"], ["operations", "Operational Excellence"], ["performance", "Performance Efficiency"]]);
   const LEVEL = new Map([["cluster", "Cluster"], ["workload", "Workload"], ["resource", "Associated resource"]]);
@@ -862,7 +888,17 @@ details.method-block > summary { font-size: 16px; color: var(--heading); }
   const COLLECTION = new Map([["node_pools", "Node pools"], ["namespaces", "Namespaces"], ["workloads", "Workloads"], ["related_resources", "Associated resources"], ["nodes", "Nodes"], ["pods", "Pods"], ["services", "Services"], ["storage_classes", "Storage classes"], ["pvcs", "Persistent volume claims (PVC)"], ["pvs", "Persistent volumes (PV)"], ["pdbs", "Pod disruption budgets (PDB)"], ["hpas", "Horizontal pod autoscalers (HPA)"], ["network_policies", "Network policies"], ["resource_quotas", "Resource quotas"], ["metrics", "Metrics"]]);
   const BUCKET = new Map([["quick_win", ["Quick wins / less than a week", "Indicative planning priority; the timeline is not guaranteed."]], ["short_term", ["Short term / one to three months", "Coordinate dependencies, owners and change windows."]], ["medium_term", ["Medium term / horizon to agree", "Confirm the design, business need and sequence with the owner."]]]);
   const PAGE_SIZE = 25;
-  const MAX_BYTES = 4800000;
+  const MAX_BYTES = 64000000;
+  const MAX_CLUSTERS = 100;
+  const readEmbedded = async () => {
+    const raw = document.getElementById("report-data").textContent;
+    if (!raw.startsWith("gzip-base64:")) return raw;
+    if (typeof DecompressionStream !== "function") throw new Error("This browser cannot decompress the report locally; use a current Microsoft Edge, Chrome, Firefox or Safari.");
+    const binary = atob(raw.slice(12));
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+    return await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+  };
   const RUN_STATUS = new Map([["ok", "Collected"], ["partial", "Partial"], ["error", "Collection error"]]);
   const GRAPH_KINDS = new Map([["aks", "Azure Kubernetes Service (AKS)"], ["cluster", "Azure Kubernetes Service (AKS)"],
     ["node_pool", "Node pool"], ["namespace", "Namespace"], ["workload", "Workload"], ["service", "Kubernetes Service"],
@@ -1143,7 +1179,7 @@ details.method-block > summary { font-size: 16px; color: var(--heading); }
   };
   const validateRoster = roster => {
     array(roster, "available_clusters");
-    assert(roster.length >= 1 && roster.length <= 5, "available_clusters: a fixed roster of one to five clusters is required.");
+    assert(roster.length >= 1 && roster.length <= MAX_CLUSTERS, `available_clusters: a roster of one to ${MAX_CLUSTERS} clusters is required.`);
     const names = new Set(), ids = new Set();
     for (const row of roster) {
       object(row, "available_clusters.record");
@@ -1151,6 +1187,11 @@ details.method-block > summary { font-size: 16px; color: var(--heading); }
       const identity = armIdentity(row.cluster_id, "available_clusters.cluster_id");
       assert(["LAB", "PRODUCTION", "UNSPECIFIED"].includes(row.environment), "available_clusters: unsupported environment.");
       assert(!names.has(row.cluster_name) && !ids.has(identity), "available_clusters: duplicate identity.");
+      if (row.subscription_id !== undefined) {
+        string(row.subscription_id, "available_clusters.subscription_id");
+        assert(identity.split("/")[2] === row.subscription_id.toLowerCase(), "available_clusters: the subscription does not match the cluster ID.");
+      }
+      for (const key of ["subscription_name", "location"]) string(row[key], `available_clusters.${key}`, true);
       names.add(row.cluster_name); ids.add(identity);
     }
   };
@@ -1168,7 +1209,7 @@ details.method-block > summary { font-size: 16px; color: var(--heading); }
     array(documentModel.selected_cluster_names, "selected_cluster_names"); array(documentModel.cluster_runs, "cluster_runs");
     const roster = new Map(documentModel.available_clusters.map(row => [row.cluster_name, row]));
     const selected = new Set(documentModel.selected_cluster_names);
-    assert(selected.size >= 1 && selected.size <= 5 && selected.size === documentModel.selected_cluster_names.length && [...selected].every(name => roster.has(name)), "The combined selection does not match the fixed roster.");
+    assert(selected.size >= 1 && selected.size <= MAX_CLUSTERS && selected.size === documentModel.selected_cluster_names.length && [...selected].every(name => roster.has(name)), "The combined selection does not match the fixed roster.");
     assert(documentModel.cluster_runs.length === selected.size, "Results for selected clusters are missing.");
     const seen = new Set();
     for (const run of documentModel.cluster_runs) {
@@ -1181,6 +1222,7 @@ details.method-block > summary { font-size: 16px; color: var(--heading); }
       if (run.snapshot === null) {
         assert(run.status === "error" && isObject(run.error), "cluster_run: a result without a snapshot must keep its error.");
       } else {
+        if (isObject(run.snapshot) && run.snapshot.client === undefined) run.snapshot.client = documentModel.client;
         validate(run.snapshot);
         assert(run.status !== "error" && armIdentity(run.snapshot.cluster.id, "cluster.id") === identity && run.snapshot.cluster.name === run.cluster_name &&
           run.snapshot.reference_utc === run.reference_utc && run.snapshot.provenance === documentModel.provenance &&
@@ -1233,8 +1275,8 @@ details.method-block > summary { font-size: 16px; color: var(--heading); }
   mediaTheme.addEventListener("change", () => { if (byId("theme-mode").value === "auto") applyTheme(); });
   let model, documentModel, embeddedJson, clusterRuns;
   try {
-    embeddedJson = byId("report-data").textContent;
-    assert(new TextEncoder().encode(embeddedJson).length <= MAX_BYTES, "The full JSON exceeds the 4,800,000-byte limit.");
+    embeddedJson = await readEmbedded();
+    assert(new TextEncoder().encode(embeddedJson).length <= MAX_BYTES, "The full JSON exceeds the 64,000,000-byte limit.");
     documentModel = validateDocument(JSON.parse(embeddedJson));
     clusterRuns = documentModel.schema_version === "1.0" ? [{cluster_id: documentModel.cluster.id, cluster_name: documentModel.cluster.name,
       reference_utc: documentModel.reference_utc, status: "ok", error: null, snapshot: documentModel}] : documentModel.cluster_runs;
@@ -2182,9 +2224,138 @@ details.method-block > summary { font-size: 16px; color: var(--heading); }
   byId("architecture-kind").addEventListener("change", () => { state.graphKind = byId("architecture-kind").value; state.graphNode = ""; renderArchitecture(currentScope()); });
   byId("architecture-node").addEventListener("change", () => { state.graphNode = byId("architecture-node").value; renderArchitecture(currentScope()); });
   byId("findings-order").addEventListener("change", () => { state.findingsOrder = byId("findings-order").value; state.pages.delete("findings"); renderFiltered(); });
+  const fleetMode = documentModel.schema_version !== "1.0";
+  const rosterByName = new Map((documentModel.available_clusters || []).map(row => [row.cluster_name, row]));
+  const runMeta = run => rosterByName.get(run.cluster_name) || {};
+  const subscriptionLabel = row => row.subscription_name || row.subscription_id || "Subscription not reported";
+  const fleet = {subscription: "", search: "", severity: ""};
+  const SEVERITY_RANK = new Map([["critical", 0], ["high", 1], ["medium", 2], ["low", 3]]);
+  const fleetVisible = () => {
+    const query = fleet.search.trim().toLocaleLowerCase("en-US");
+    return clusterRuns.filter(run => {
+      const meta = runMeta(run);
+      if (fleet.subscription && meta.subscription_id !== fleet.subscription) return false;
+      return !query || [run.cluster_name, meta.resource_group, meta.subscription_name, meta.subscription_id, meta.location]
+        .some(value => typeof value === "string" && value.toLocaleLowerCase("en-US").includes(query));
+    });
+  };
+  const fleetSeverityCounts = run => {
+    const result = {critical: 0, high: 0, medium: 0, low: 0};
+    if (run.snapshot) for (const finding of run.snapshot.findings) if (Object.hasOwn(result, finding.severity)) result[finding.severity] += 1;
+    return result;
+  };
+  const incompleteSources = run => run.snapshot ? run.snapshot.sources.filter(source => !["complete", "not_applicable"].includes(source.status)).length : null;
+  const fleetMoney = (amount, currency) => amount === null || amount === undefined || !currency ? "Not evaluated" : `${amount.toLocaleString("en-US", {maximumFractionDigits: 2})} ${currency}`;
+  const fillClusterOptions = visible => {
+    const selector = byId("cluster-selector"); selector.replaceChildren();
+    const all = node("option", `All visible clusters (${visible.length})`); all.value = ""; selector.append(all);
+    for (const run of [...visible].sort((left, right) => left.cluster_name.localeCompare(right.cluster_name, "en"))) {
+      const option = node("option", `${run.cluster_name} / ${subscriptionLabel(runMeta(run))} / ${RUN_STATUS.get(run.status)}`);
+      option.value = run.cluster_name; selector.append(option);
+    }
+    selector.value = visible.some(run => run.cluster_name === state.activeCluster) ? state.activeCluster : "";
+  };
+  const selectCluster = name => { byId("cluster-selector").value = name; initializeCluster(name); byId("cluster-overview").scrollIntoView(); };
+  const renderFleet = () => {
+    const visible = fleetVisible();
+    fillClusterOptions(visible);
+    byId("fleet-scope").textContent = `${visible.length} of ${clusterRuns.length} clusters visible with the current filters.`;
+    if (byId("fleet-view").hidden) return;
+    const status = {ok: 0, partial: 0, error: 0}, severities = {critical: 0, high: 0, medium: 0, low: 0}, costs = new Map();
+    let passed = 0, failed = 0, evaluated = 0, notEvaluated = 0, withCost = 0;
+    for (const run of visible) {
+      status[run.status] += 1;
+      if (!run.snapshot) continue;
+      const counts = fleetSeverityCounts(run); for (const key of Object.keys(severities)) severities[key] += counts[key];
+      const global = run.snapshot.scores.global;
+      passed += global.passed; failed += global.failed; evaluated += global.evaluated; notEvaluated += global.not_evaluated;
+      if (run.snapshot.finops.actual_cost !== null && run.snapshot.finops.currency) {
+        withCost += 1; costs.set(run.snapshot.finops.currency, (costs.get(run.snapshot.finops.currency) || 0) + run.snapshot.finops.actual_cost);
+      }
+    }
+    const kpis = byId("fleet-kpis"); kpis.replaceChildren();
+    const fleetKpi = (value, label, detailText, className = "") => {
+      const box = node("div", undefined, `fleet-kpi ${className}`.trim()); box.dataset.kpi = label;
+      add(box, node("b", String(value)), node("span", label)); if (detailText) box.append(node("small", detailText)); kpis.append(box);
+    };
+    const findings = Object.values(severities).reduce((total, value) => total + value, 0);
+    fleetKpi(visible.length, "Visible clusters", `${status.ok} collected / ${status.partial} partial / ${status.error} with errors`);
+    fleetKpi(new Set(visible.map(run => runMeta(run).subscription_id || "")).size, "Subscriptions");
+    fleetKpi(findings, "Findings", `${severities.critical} critical / ${severities.high} high / ${severities.medium} medium / ${severities.low} low`);
+    fleetKpi(severities.critical, "Critical", "Critical-severity findings", "critical");
+    fleetKpi(evaluated ? `${(100 * passed / evaluated).toLocaleString("en-US", {maximumFractionDigits: 1})} / 100` : "Not evaluated", "Combined local index", `${passed} passed of ${evaluated} evaluated`);
+    fleetKpi(evaluated + notEvaluated ? `${(100 * evaluated / (evaluated + notEvaluated)).toLocaleString("en-US", {maximumFractionDigits: 1})}%` : "Not evaluated", "Combined coverage", `${notEvaluated} indicators not evaluated`);
+    fleetKpi(costs.size ? [...costs].map(([currency, amount]) => fleetMoney(amount, currency)).join(" + ") : "Not evaluated", "Actual cost for the period",
+      `${withCost} of ${plural(visible.length, "cluster", "clusters")} with cost read (node resource group); different currencies are never added`);
+    fleetKpi("Not calculated", "Estimated savings", "The report promises no savings; see FinOps candidates per cluster");
+    if (status.error) kpis.append(node("p", `${plural(status.error, "cluster", "clusters")} with collection errors: not evaluated, not healthy. Check their status in the table.`, "qualification"));
+    const ordered = [...visible].sort((left, right) => {
+      const a = fleetSeverityCounts(left), b = fleetSeverityCounts(right);
+      return (right.status === "error") - (left.status === "error") || b.critical - a.critical || b.high - a.high || left.cluster_name.localeCompare(right.cluster_name, "en");
+    });
+    renderTable(byId("cluster-runs-table"), "fleet-runs", "Visible clusters", [
+      ["Cluster", run => { if (!run.snapshot) return run.cluster_name; const button = node("button", run.cluster_name, "link-button"); button.type = "button"; button.addEventListener("click", () => selectCluster(run.cluster_name)); return button; }],
+      ["Subscription", run => subscriptionLabel(runMeta(run))],
+      ["Resource group / region", run => `${text(runMeta(run).resource_group)} / ${text(runMeta(run).location)}`],
+      ["Collection status", run => run.status === "error" ? `${RUN_STATUS.get(run.status)} (${text(run.error && run.error.code)})` : RUN_STATUS.get(run.status)],
+      ["Coverage", run => run.snapshot && run.snapshot.scores.global.coverage_percent !== null ? `${run.snapshot.scores.global.coverage_percent.toLocaleString("en-US", {maximumFractionDigits: 1})}%` : "Not evaluated"],
+      ["Local index", run => run.snapshot ? percentage(run.snapshot.scores.global.score) : "Not evaluated"],
+      ["Findings crit. / high / medium / low", run => { if (!run.snapshot) return "Not evaluated"; const c = fleetSeverityCounts(run); return `${c.critical} / ${c.high} / ${c.medium} / ${c.low}`; }],
+      ["Critical", run => run.snapshot ? String(fleetSeverityCounts(run).critical) : "Not evaluated"],
+      ["Actual cost for the period", run => run.snapshot ? fleetMoney(run.snapshot.finops.actual_cost, run.snapshot.finops.currency) : "Not evaluated"],
+      ["Estimated savings", () => "Not calculated"],
+      ["Incomplete sources", run => run.snapshot ? String(incompleteSources(run)) : "All (no snapshot)"]
+    ], ordered, renderFleet);
+    const rows = [];
+    for (const run of visible) if (run.snapshot) for (const finding of run.snapshot.findings) if (!fleet.severity || finding.severity === fleet.severity) rows.push({run, finding});
+    rows.sort((left, right) => SEVERITY_RANK.get(left.finding.severity) - SEVERITY_RANK.get(right.finding.severity) || left.run.cluster_name.localeCompare(right.run.cluster_name, "en") || left.finding.title.localeCompare(right.finding.title, "en"));
+    renderTable(byId("fleet-findings"), "fleet-findings", "Findings in the visible clusters", [
+      ["Severity", row => severity(row.finding.severity)], ["Cluster", row => row.run.cluster_name], ["Subscription", row => subscriptionLabel(runMeta(row.run))],
+      ["Finding", row => row.finding.title], ["Area", row => AREA.get(row.finding.area) || row.finding.area],
+      ["Resource", row => row.finding.resource_name || row.finding.resource_id], ["Recommendation", row => row.finding.recommendation]
+    ], rows, renderFleet);
+  };
+  const showFleet = () => {
+    state.activeCluster = ""; model = undefined; state.graphNode = ""; state.graphKind = "";
+    byId("fleet-view").hidden = false; byId("cluster-error").hidden = true;
+    for (const id of ["cover", "executive", "scope-filters", "inventory", "architecture", "findings", "finops", "actions", "methodology"]) byId(id).hidden = true;
+    byId("jump-section").disabled = true; document.querySelector(".toolbar-nav").hidden = true; document.querySelector(".report-footer").hidden = true;
+    for (const id of ["export-filtered-json", "export-inventory", "export-findings", "export-checks", "export-finops", "export-actions"]) byId(id).disabled = true;
+    byId("print-report").disabled = false;
+    renderFleet();
+  };
+  const onFleetFilter = () => {
+    fleet.subscription = byId("fleet-subscription").value; fleet.search = byId("fleet-search").value; fleet.severity = byId("fleet-severity").value;
+    state.pages.delete("fleet-runs"); state.pages.delete("fleet-findings");
+    if (state.activeCluster && !fleetVisible().some(run => run.cluster_name === state.activeCluster)) showFleet(); else renderFleet();
+  };
   const renderClusterOverview = () => {
     const multi = documentModel.schema_version !== "1.0", roster = documentModel.available_clusters || [];
     byId("cluster-overview").hidden = !multi && roster.length <= 1;
+    if (multi) {
+      const subscriptions = new Map();
+      for (const run of clusterRuns) {
+        const meta = runMeta(run), key = meta.subscription_id || "";
+        const entry = subscriptions.get(key) || {label: subscriptionLabel(meta), count: 0}; entry.count += 1; subscriptions.set(key, entry);
+      }
+      const choice = byId("fleet-subscription"); choice.replaceChildren();
+      const all = node("option", `All (${subscriptions.size} subscriptions, ${clusterRuns.length} clusters)`); all.value = ""; choice.append(all);
+      for (const [key, entry] of [...subscriptions].sort((left, right) => left[1].label.localeCompare(right[1].label, "en"))) {
+        const option = node("option", `${entry.label} (${entry.count})`); option.value = key; choice.append(option);
+      }
+      choice.value = fleet.subscription;
+      const supplied = documentModel.aggregate, score = supplied.scores.global, aggregate = byId("cluster-aggregate"); aggregate.replaceChildren();
+      add(aggregate, facts([["Combined local index supplied", percentage(score.score)], ["Combined coverage supplied", supplied.scores.coverage.coverage_percent === null ? "Not evaluated" : `${supplied.scores.coverage.coverage_percent.toLocaleString("en-US", {maximumFractionDigits: 1})}%`],
+        ["Checks supplied", scoreCaption(score)], ["Findings / critical", `${supplied.findings_total} / ${supplied.critical_total}`],
+        ["Runs collected / partial / failed", `${supplied.cluster_status_counts.ok ?? 0} / ${supplied.cluster_status_counts.partial ?? 0} / ${supplied.cluster_status_counts.error ?? 0}`],
+        ["Combined UTC reference", utc(documentModel.reference_utc)]]),
+        node("p", "Whole-selection aggregate received from the engine (the cards above follow the filters); a cluster with a primary read error has no evaluated configuration. Currencies, billing periods and node resource group scopes are never mixed.", "qualification"),
+        detail("Full aggregate supplied by the engine (every selected cluster)", "multi-aggregate", node("pre", jsonText(supplied), "json")));
+      byId("export-json").textContent = "Full JSON";
+      byId("export-json").title = "Downloads the full original document with every cluster";
+      return;
+    }
+    byId("fleet-view").hidden = true; byId("fleet-scope").hidden = true; document.querySelector(".fleet-filters").hidden = true;
     const selector = byId("cluster-selector"); selector.replaceChildren();
     for (const run of clusterRuns) { const option = node("option", `${run.cluster_name} / ${RUN_STATUS.get(run.status)}`); option.value = run.cluster_name; selector.append(option); }
     for (const row of roster) if (!clusterRuns.some(run => run.cluster_name === row.cluster_name)) {
@@ -2212,6 +2383,7 @@ details.method-block > summary { font-size: 16px; color: var(--heading); }
     const run = clusterRuns.find(item => item.cluster_name === name);
     assert(run, "Cluster not included in the document.");
     state.activeCluster = name; model = run.snapshot; state.pages.clear(); state.graphNode = ""; state.graphKind = "";
+    if (fleetMode) { byId("fleet-view").hidden = true; fillClusterOptions(fleetVisible()); }
     for (const key of Object.keys(state.filters)) state.filters[key] = "";
     for (const item of document.querySelectorAll("details")) item.open = false;
     for (const id of ["cover", "executive", "scope-filters", "inventory", "architecture", "findings", "finops", "actions", "methodology"]) byId(id).hidden = !model;
@@ -2239,10 +2411,13 @@ details.method-block > summary { font-size: 16px; color: var(--heading); }
     synchronizeFilters(); setArchitectureTab("observed");
     renderCover(); renderExecutive(); renderFiltered(); renderMethod();
   };
-  byId("cluster-selector").addEventListener("change", () => initializeCluster(byId("cluster-selector").value));
-  renderClusterOverview(); initializeCluster(state.activeCluster);
+  byId("cluster-selector").addEventListener("change", () => { const name = byId("cluster-selector").value; if (name) initializeCluster(name); else showFleet(); });
+  for (const id of ["fleet-subscription", "fleet-severity"]) byId(id).addEventListener("change", onFleetFilter);
+  byId("fleet-search").addEventListener("input", onFleetFilter);
+  renderClusterOverview();
+  if (fleetMode) showFleet(); else initializeCluster(state.activeCluster);
   byId("opening-state").hidden = true; byId("report-shell").hidden = false;
-  byId("export-json").disabled = false; byId("print-report").disabled = !model; document.body.dataset.status = "ready";
+  byId("export-json").disabled = false; byId("print-report").disabled = !model && !fleetMode; document.body.dataset.status = "ready";
 })();
 </script>
 </body>

@@ -26,6 +26,7 @@ def load_engine(standalone=False):
     module.SUBSCRIPTION_ID = SUBSCRIPTION
     module.TENANT_ID = "22222222-2222-4222-8222-222222222222"
     module.MANAGED_IDENTITY_CLIENT_ID = "33333333-3333-4333-8333-333333333333"
+    module.AUTO_DISCOVERY = False  # legacy fixed-allowlist fixtures; discovery is covered by test_fleet.py
     module.APPROVED_CLUSTERS = {"aks-client-lab": {"resource_group": "rg-client-lab", "environment": "LAB",
                                                 "kubernetes_enabled": True, "include_node_resource_group": True, "advisor_enabled": True,
                                                 "approved_related_resource_ids": [], "approved_cost_resource_ids": [],

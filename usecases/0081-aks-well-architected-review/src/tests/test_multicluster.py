@@ -75,11 +75,16 @@ class MultiClusterTests(unittest.TestCase):
         writer.assert_not_called()
 
     def test_shared_deadline_preserves_first_cluster_and_marks_unattempted_second(self):
-        with patch.object(self.e.time, "monotonic", side_effect=[0, 1, 241]), patch.object(
-            self.e, "collect_live", return_value=fixture(self.e)) as collect:
+        # Fleet build: clusters are collected in parallel under one shared deadline (FLEET_DEADLINE_SECONDS).
+        def collect(config, reference, deadline=None):
+            if config["name"] == SECOND_NAME:
+                raise self.e.EvidenceError("collection_deadline", "SIMULATED shared fleet bound reached.", "collection")
+            return fixture(self.e)
+        started = self.e.time.monotonic()
+        with patch.object(self.e, "FLEET_DEADLINE_SECONDS", 240), patch.object(self.e, "collect_live", side_effect=collect) as collect_mock:
             result = self.e.main(operation="query", view="coverage", cluster_names="aks-client-lab," + SECOND_NAME, status="error")
-        collect.assert_called_once()
-        self.assertEqual(collect.call_args.kwargs["deadline"], 240)
+        self.assertEqual(collect_mock.call_count, 2)
+        self.assertTrue(all(abs(call.kwargs["deadline"] - (started + 240)) < 30 for call in collect_mock.call_args_list))
         self.assertEqual(result["status"], "partial")
         self.assertEqual(result["rows"][0]["cluster_id"], SECOND_ID)
         self.assertEqual(result["rows"][0]["errors"][0]["code"], "collection_deadline")
