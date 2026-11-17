@@ -8,7 +8,7 @@
       "type": "string",
       "enum": ["report", "query", "list_workspaces", "self_test"],
       "default": "report",
-      "description": "report writes four complete files for selected fixed workspace(s); query filters a fresh collection; list_workspaces returns the configured roster without authentication/network, not observed health; self_test writes the same four files from a built-in SIMULATED workspace without authentication or network (demos only, labelled SIMULATED)."
+      "description": "report writes one report (HTML, JSON and two CSVs) for the selected workspaces; with no selection it reviews every visible workspace (at most 50 per report, after the subscription filter). list_workspaces returns the inventory discovered live with Azure Resource Graph (plus APPROVED_WORKSPACES entries), paged with limit/offset. query returns filtered rows of a fresh collection of 1 to 5 workspaces. self_test writes the same four files from a built-in SIMULATED workspace without authentication or network (demos only, labelled SIMULATED)."
     },
     "view": {
       "type": "string",
@@ -29,28 +29,28 @@
         "dependencies"
       ],
       "default": "summary",
-      "description": "findings exposes all checks; report findings contains failed checks only. costs exposes the Databricks cost model (headline, DBU vs infrastructure, attribution rows and optimisation signals). coverage exposes scoped source receipts. dependencies exposes OBSERVED, INFERRED and UNKNOWN nodes, edges and blind spots."
+      "description": "Only for operation=query. findings exposes all checks; report findings contains failed checks only. costs exposes the Databricks cost model (headline, DBU vs infrastructure, attribution rows and optimisation signals). coverage exposes scoped source receipts. dependencies exposes OBSERVED, INFERRED and UNKNOWN nodes, edges and blind spots."
     },
     "workspace_name": {
       "type": "string",
-      "enum": ["", "<APPROVED_DATABRICKS_WORKSPACE_NAME>"],
-      "maxLength": 64,
+      "maxLength": 80,
+      "pattern": "^[A-Za-z0-9_.:()-]*$",
       "default": "",
-      "description": "Exact fixed operator allowlist. Empty selects the first configured workspace; replace enum privately with the same approved names as code."
+      "description": "Exactly one workspace_name as returned by list_workspaces (detailed single-workspace report). When the same name exists in several subscriptions, use the prefixed key (first 8 characters of the subscription ID + '-' + name) or add subscription. \"all\" means every visible workspace. Mutually exclusive with workspace_names."
     },
     "workspace_names": {
       "type": "string",
-      "maxLength": 324,
-      "pattern": "^(?:[A-Za-z0-9_.()-]{1,64}(?:,[A-Za-z0-9_.()-]{1,64}){0,4})?$",
+      "maxLength": 4100,
+      "pattern": "^(?:all|[A-Za-z0-9_.()-]{1,80}(?:,[A-Za-z0-9_.()-]{1,80}){0,49})?$",
       "default": "",
-      "description": "One to five distinct, exact comma-separated fixed allowlist names, without spaces. Mutually exclusive with workspace_name."
+      "description": "\"all\" (every visible workspace) or 1 to 50 distinct exact workspace names from list_workspaces, comma-separated without spaces, e.g. dbw-a,dbw-b,dbw-c. Mutually exclusive with workspace_name."
     },
     "workload_name": {
       "type": "string",
       "maxLength": 253,
       "pattern": "^[A-Za-z0-9_.:()-]*$",
       "default": "",
-      "description": "Exact local filter for cluster, job, pipeline, SQL warehouse, Unity Catalog object or resource name; no URL/path/query/command."
+      "description": "Only for operation=query: exact local filter for cluster, job, pipeline, SQL warehouse, Unity Catalog object or resource name; no URL/path/query/command."
     },
     "classification": {
       "type": "string",
@@ -94,19 +94,25 @@
       "minimum": 1,
       "maximum": 100,
       "default": 25,
-      "description": "Requested row count; 3500-byte default-JSON budget may return fewer whole rows with exact paging disclosure."
+      "description": "Requested row count for query and list_workspaces; the 3500-byte default-JSON budget may return fewer whole rows with exact paging disclosure (next_offset)."
     },
     "offset": {
       "type": "integer",
       "minimum": 0,
       "maximum": 500000,
       "default": 0,
-      "description": "Local offset in this fresh collection; not a persistent cursor."
+      "description": "Local offset for query and list_workspaces (use the returned next_offset); not a persistent cursor."
+    },
+    "subscription": {
+      "type": "string",
+      "maxLength": 128,
+      "default": "",
+      "description": "Optional subscription filter: a subscription ID or exact display name (case-insensitive) as shown by list_workspaces. Filters list_workspaces and the report/query selection. Empty = every visible subscription. Not used by self_test."
     }
   },
   "allOf": [
     {
-      "if": { "properties": { "operation": { "enum": ["report", "list_workspaces", "self_test"] } } },
+      "if": { "properties": { "operation": { "enum": ["report", "self_test"] } } },
       "then": {
         "properties": {
           "view": { "const": "summary" },
@@ -122,6 +128,20 @@
       }
     },
     {
+      "if": { "properties": { "operation": { "const": "list_workspaces" } } },
+      "then": {
+        "properties": {
+          "view": { "const": "summary" },
+          "workload_name": { "const": "" },
+          "classification": { "const": "all" },
+          "area": { "const": "all" },
+          "level": { "const": "all" },
+          "severity": { "const": "all" },
+          "status": { "const": "all" }
+        }
+      }
+    },
+    {
       "if": { "properties": { "workspace_name": { "minLength": 1 } }, "required": ["workspace_name"] },
       "then": { "properties": { "workspace_names": { "const": "" } } }
     },
@@ -132,6 +152,10 @@
     {
       "if": { "properties": { "operation": { "enum": ["list_workspaces", "self_test"] } } },
       "then": { "properties": { "workspace_name": { "const": "" }, "workspace_names": { "const": "" } } }
+    },
+    {
+      "if": { "properties": { "operation": { "const": "self_test" } } },
+      "then": { "properties": { "subscription": { "const": "" } } }
     }
   ]
 }

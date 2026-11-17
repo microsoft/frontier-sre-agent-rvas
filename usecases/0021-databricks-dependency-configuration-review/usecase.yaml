@@ -1,38 +1,39 @@
 id: 0021-databricks-dependency-configuration-review
 status: validated
 title: "Azure Databricks dependency and configuration review"
-summary: "Read-only map of what an Azure Databricks workspace depends on, where its cost comes from, and 36 best-practice checks."
+summary: "Read-only review of every Azure Databricks workspace the agent can read: dependency map, where the cost comes from, and 36 best-practice checks."
 domain: platform-devops
 trigger: [chat]
 frequency: "On demand"
 timeSaved: High
 topPick: false
-products: [azure-databricks, unity-catalog, azure-cost-management, azure-resource-manager, azure-sre-agent]
+products: [azure-databricks, unity-catalog, azure-resource-graph, azure-cost-management, azure-resource-manager, azure-sre-agent]
 autonomy: read-only
-samplePrompt: "Run the complete Azure Databricks dependency map and configuration review for <APPROVED_DATABRICKS_WORKSPACE_NAME> using operation=report and deliver all four files."
+samplePrompt: "Generate the complete dependency and configuration report for every Azure Databricks workspace in every subscription (operation=report, workspace_names=all) and deliver all four files."
 source: { type: community, url: "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/08-databricks-dependency-configuration-review" }
 package:
-  version: 1.0.0
+  version: 1.1.0
   apiVersion: azuresre.ai/v1
   requires:
     connectors: []
     roles:
-      - "Reader on the Databricks resource group and its managed resource group (ARM)"
-      - "Cost Management Reader on the subscription, for the cost section (optional)"
-      - "CAN VIEW on in-scope jobs, pipelines, SQL warehouses and compute (Databricks workspace)"
-      - "BROWSE, USE CATALOG and USE SCHEMA on in-scope Unity Catalog objects"
+      - "Reader on the management group (recommended) or on each subscription with Databricks workspaces (Resource Graph discovery and the ARM reads of each workspace and its managed resource group)"
+      - "Cost Management Reader on the same scope, for the cost section"
+      - "Inside each workspace, the identity as a service principal with workspace-access and databricks-sql-access (never admin) and CAN VIEW on jobs, pipelines and SQL warehouses"
+      - "BROWSE, USE CATALOG and USE SCHEMA on the Unity Catalog catalogs (metadata only)"
   parameters:
-    SUBSCRIPTION_ID: "Subscription of the Databricks workspace"
-    SRE_TENANT_ID: "Tenant of the SRE Agent"
-    TARGET_TENANT_ID: "Tenant of the Databricks workspace (equal to SRE_TENANT_ID when it is the same tenant)"
-    MANAGED_IDENTITY_CLIENT_ID: "Client ID of the agent user-assigned managed identity"
-    FEDERATED_APP_CLIENT_ID: "Multi-tenant app registration used for cross-tenant access, if any"
+    SRE_TENANT_ID: "Tenant of the SRE Agent (required)"
+    TARGET_TENANT_ID: "Tenant of the workspaces (required): the same value as SRE_TENANT_ID in the same tenant, which turns on auto-discovery"
+    MANAGED_IDENTITY_CLIENT_ID: "Client ID of the agent user-assigned managed identity (required)"
+    SUBSCRIPTION_ID: "Optional: subscription for APPROVED_WORKSPACES entries without their own subscription_id"
+    APPROVED_WORKSPACES: "Optional per-workspace overrides (environment, cost scope, requirements); the list of workspaces only for cross-tenant access"
+    DISCOVERY_SUBSCRIPTION_IDS: "Optional: limit discovery to these subscription IDs (empty: every subscription the identity can read)"
+    FEDERATED_APP_CLIENT_ID: "Multi-tenant app registration used for cross-tenant access (cross-tenant only)"
     CROSS_TENANT_CERT_KEYVAULT_URL: "Key Vault that holds the cross-tenant app certificate (cross-tenant only)"
     CROSS_TENANT_CERT_NAME: "Name of that certificate in Key Vault (cross-tenant only)"
-    APPROVED_WORKSPACES: "Allowlist of workspace names, resource groups and hosts"
     CLIENT_NAME: "Optional organization name on the report cover"
   contents:
     tools: [manifests/tools/databricks-dependency-report.yaml]
     skills: [manifests/skills/databricks-dependency-live/SKILL.md]
     subagents: [manifests/subagents/databricks-dependency-live.yaml]
-    permissions: [permissions/grant-databricks-reader.ps1]
+    permissions: [permissions/grant-databricks-permissions.ps1, permissions/grant-databricks-reader.ps1]

@@ -10,7 +10,9 @@ import math
 import os
 import re
 import ssl
+import queue
 import tempfile
+import threading
 import time
 import warnings
 from collections import Counter
@@ -23,6 +25,10 @@ from urllib.request import HTTPRedirectHandler, HTTPSHandler, Request, build_ope
 from uuid import UUID, uuid4
 
 
+# Required: SRE_TENANT_ID, TARGET_TENANT_ID and MANAGED_IDENTITY_CLIENT_ID. With AUTO_DISCOVERY = True (below) and the same
+# tenant for the agent and Databricks, every workspace the agent identity can read (Reader on a management group or on
+# subscriptions) is discovered on each run: no workspace list to maintain. SUBSCRIPTION_ID is only needed by an
+# APPROVED_WORKSPACES entry that has no "subscription_id" of its own.
 SUBSCRIPTION_ID = "<YOUR_TARGET_SUBSCRIPTION_ID>"
 SRE_TENANT_ID = "<YOUR_SRE_AGENT_TENANT_ID>"
 TARGET_TENANT_ID = "<YOUR_TARGET_DATABRICKS_TENANT_ID>"
@@ -41,9 +47,13 @@ CLIENT_NAME = "Customer"
 # data URI. Keep generic Git source empty. Use adjacent strings <10K per line.
 CLIENT_LOGO_DATA_URI = ""
 CLIENT_LOGO_ALT = "Authorized customer logo"
+# Optional per-workspace overrides (and the only list when AUTO_DISCOVERY is False or the tenants differ). Key = exact
+# workspace name; entries whose key starts with "<" are ignored. Missing fields come from WORKSPACE_DEFAULTS; an entry
+# wins over the discovered workspace with the same resource ID. Add "subscription_id" when it is not SUBSCRIPTION_ID.
 APPROVED_WORKSPACES = {
     "<APPROVED_DATABRICKS_WORKSPACE_NAME>": {
         "resource_group": "<APPROVED_DATABRICKS_RESOURCE_GROUP>",
+        "subscription_id": "<WORKSPACE_SUBSCRIPTION_ID>",
         "workspace_host": "<APPROVED_WORKSPACE_HOST_ADB_NET>",
         "environment": "UNSPECIFIED",
         "auth_mode": "same_tenant_uami",
@@ -65,6 +75,27 @@ APPROVED_WORKSPACES = {
         "requirements": {},
     }
 }
+# Settings used for every discovered workspace (and for APPROVED_WORKSPACES entries that omit a field).
+WORKSPACE_DEFAULTS = {
+    "environment": "UNSPECIFIED",              # LAB / PRODUCTION / UNSPECIFIED
+    "auth_mode": "same_tenant_uami",           # the agent's managed identity, same tenant
+    "workspace_api_enabled": True,             # read the workspace REST APIs (clusters, jobs, pipelines, warehouses...)
+    "unity_catalog_enabled": True,             # read Unity Catalog metadata (catalogs, schemas, credentials, locations)
+    "include_managed_resource_group": True,    # review the managed resource group (VNet, NSG, DBFS storage)
+    "advisor_enabled": True,                   # cached Azure Advisor recommendations (read-only)
+    "approved_related_resource_ids": [],
+    "approved_cost_resource_ids": [],
+    "cost_scope": "workspace_and_managed_resource_group",  # period cost: workspace DBUs + managed resource group infrastructure
+    "cost_timeframe": "month_to_date",         # month_to_date / last_30_days
+    "cost_analysis_enabled": True,             # report section 6 (skipped automatically in fleet reports above 5 workspaces)
+    "system_tables_warehouse_id": "",          # OFF; see APPROVED_WORKSPACES
+    "requirements": {},
+}
+# Automatic discovery: one fixed read-only Azure Resource Graph query per run lists every Databricks workspace the agent
+# identity can read. Applies when SRE_TENANT_ID == TARGET_TENANT_ID; cross-tenant setups keep using APPROVED_WORKSPACES.
+AUTO_DISCOVERY = True
+# Optional: limit discovery to these subscription IDs. Empty = every subscription the identity can read.
+DISCOVERY_SUBSCRIPTION_IDS = []
 # Databricks cost analysis settings (shared by all approved workspaces).
 COST_METRIC = "AmortizedCost"  # AmortizedCost spreads Databricks commit units and reservations; ActualCost is the invoice view
 COST_ALLOCATION_TAGS = ["team", "project", "cost_center"]  # your own cluster, job, pool and warehouse tags (up to 3 keys)
@@ -93,7 +124,7 @@ ENTRA_TOKEN_EXCHANGE_AUDIENCES = (
 )
 DATABRICKS_ARM_API = "2024-05-01"
 TRANSPORT_BYTES = 3500
-ARTIFACT_BYTES = 4_800_000
+ARTIFACT_BYTES = 40_000_000
 HTTP_BYTES = 8_000_000
 MAX_PAGES = 50
 MAX_ROWS = 15000
@@ -102,6 +133,33 @@ MAX_DETAIL_GETS = 100
 MAX_COLLECTION_SECONDS = 420
 MAX_HTTP_ATTEMPTS = 360
 OUTPUT_DIRECTORY = "databricks-dependency-reports"
+ARG_API = "2022-10-01"
+MAX_DISCOVERED_WORKSPACES = 500
+MAX_DISCOVERY_PAGES = 5
+MAX_REPORT_WORKSPACES = 50
+MAX_QUERY_WORKSPACES = 5
+FLEET_WORKERS = 6
+FLEET_COLLECTION_SECONDS = 720
+FLEET_HARD_STOP_SECONDS = 800
+FLEET_COST_ANALYSIS_MAX_WORKSPACES = 5
+COST_CONCURRENCY = 2
+COST_SEMAPHORE = threading.BoundedSemaphore(COST_CONCURRENCY)
+ROSTER = None
+DISCOVERY_INFO = {}
+BRANDING_CHECKED = set()
+SAFE_LOCAL_NAME = re.compile(r"[A-Za-z0-9_.()-]+")
+GUID_TEXT = re.compile(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}")
+DISCOVERY_QUERY = (
+    "resources | where type =~ 'microsoft.databricks/workspaces' "
+    "| extend workspaceUrl = tostring(properties.workspaceUrl), managedResourceGroupId = tostring(properties.managedResourceGroupId), "
+    "publicNetworkAccess = tostring(properties.publicNetworkAccess), customVnet = tostring(properties.parameters.customVirtualNetworkId.value), "
+    "skuName = tostring(sku.name) "
+    "| join kind=leftouter (resourcecontainers | where type =~ 'microsoft.resources/subscriptions' "
+    "| project subscriptionId, subscriptionName = name) on subscriptionId "
+    "| project id, name, resourceGroup, subscriptionId, subscriptionName, tenantId, location, skuName, workspaceUrl, "
+    "managedResourceGroupId, publicNetworkAccess, customVnet "
+    "| order by subscriptionId asc, name asc"
+)
 COST_API_VERSION = "2025-03-01"
 COST_QUERY_RESERVE_SECONDS = 20
 MAX_COST_ROWS = 20000
@@ -414,18 +472,75 @@ def validate_workspace_host(host, required=True):
     return host.lower()
 
 
+def plain(value, maximum):
+    if not isinstance(value, str):
+        return None
+    value = value.strip()
+    if not value or len(value) > maximum or re.search(r"[\x00-\x1f\x7f]", value):
+        return None
+    return value
+
+
+def auto_discovery_enabled():
+    value = globals().get("AUTO_DISCOVERY", False)
+    if not isinstance(value, bool):
+        raise EvidenceError("configuration_required", "AUTO_DISCOVERY must be True or False.", "configuration")
+    return value
+
+
+def operator_entries():
+    if not isinstance(APPROVED_WORKSPACES, dict):
+        raise EvidenceError("configuration_required", "APPROVED_WORKSPACES must be a dictionary (it can be empty).", "configuration")
+    return {key: value for key, value in APPROVED_WORKSPACES.items() if not (isinstance(key, str) and key.startswith("<"))}
+
+
+def active_roster():
+    return ROSTER if ROSTER is not None else operator_entries()
+
+
+def validate_branding_once():
+    key = (CLIENT_LOGO_DATA_URI, CLIENT_LOGO_ALT, CLIENT_NAME)
+    if key in BRANDING_CHECKED:
+        return
+    validate_logo(CLIENT_LOGO_DATA_URI, CLIENT_LOGO_ALT)
+    if not isinstance(CLIENT_NAME, str) or not 1 <= len(CLIENT_NAME) <= 120 or any(ord(c) < 32 for c in CLIENT_NAME):
+        raise EvidenceError("configuration_required", "Client label must be bounded plain text.", "configuration")
+    BRANDING_CHECKED.add(key)
+
+
+def preflight_configuration():
+    """Everything that can be checked offline, before any token request or Resource Graph read."""
+    validate_guid(SRE_TENANT_ID, "SRE_TENANT_ID")
+    validate_guid(TARGET_TENANT_ID, "TARGET_TENANT_ID")
+    validate_guid(MANAGED_IDENTITY_CLIENT_ID, "MANAGED_IDENTITY_CLIENT_ID")
+    if not isinstance(globals().get("WORKSPACE_DEFAULTS", {}), dict):
+        raise EvidenceError("configuration_required", "WORKSPACE_DEFAULTS must be a dictionary.", "configuration")
+    entries = operator_entries()
+    if not auto_discovery_enabled() and not entries:
+        raise EvidenceError("configuration_required", "Enable AUTO_DISCOVERY or configure at least one approved Databricks workspace.", "configuration")
+    for entry in entries.values():
+        validate_guid(obj(entry, "configuration").get("subscription_id") or SUBSCRIPTION_ID, "SUBSCRIPTION_ID")
+    validate_cost_settings()
+    presentation_settings()
+    validate_branding_once()
+
+
 def validate_config(workspace_name):
-    validate_guid(SUBSCRIPTION_ID, "SUBSCRIPTION_ID")
     sre_tid = validate_guid(SRE_TENANT_ID, "SRE_TENANT_ID")
     target_tid = validate_guid(TARGET_TENANT_ID, "TARGET_TENANT_ID")
     validate_guid(MANAGED_IDENTITY_CLIENT_ID, "MANAGED_IDENTITY_CLIENT_ID")
-    if not isinstance(APPROVED_WORKSPACES, dict) or not 1 <= len(APPROVED_WORKSPACES) <= 5:
-        raise EvidenceError("configuration_required", "Configure one to five fixed approved Databricks workspaces.", "configuration")
-    name = workspace_name or next(iter(APPROVED_WORKSPACES))
-    if name not in APPROVED_WORKSPACES:
-        raise EvidenceError("invalid_parameter", "workspace_name must exactly match the fixed operator allowlist.", "parameters")
-    config = obj(APPROVED_WORKSPACES[name], "configuration")
-    for field, value, maximum in (("name", name, 64), ("resource_group", config.get("resource_group"), 90)):
+    roster = active_roster()
+    if not isinstance(roster, dict) or not 1 <= len(roster) <= MAX_DISCOVERED_WORKSPACES:
+        raise EvidenceError("configuration_required", "Enable AUTO_DISCOVERY or configure one to " + str(MAX_DISCOVERED_WORKSPACES)
+                            + " approved Databricks workspaces.", "configuration")
+    name = workspace_name or next(iter(roster))
+    if name not in roster:
+        raise EvidenceError("invalid_parameter", "workspace_name must exactly match a workspace_name returned by list_workspaces.", "parameters")
+    defaults = globals().get("WORKSPACE_DEFAULTS") or {}
+    config = {**json.loads(json.dumps(obj(defaults, "configuration"))), **obj(roster[name], "configuration")}
+    subscription = validate_guid(config.get("subscription_id") or SUBSCRIPTION_ID, "SUBSCRIPTION_ID")
+    arm_name = config.get("arm_name") or name
+    for field, value, maximum in (("name", name, 80), ("arm_name", arm_name, 64), ("resource_group", config.get("resource_group"), 90)):
         if not isinstance(value, str) or not 1 <= len(value) <= maximum or not re.fullmatch(r"[A-Za-z0-9_.()-]+", value):
             raise EvidenceError("configuration_required", "Configure a bounded approved " + field + ".", "configuration")
     if config.get("environment") not in ("LAB", "PRODUCTION", "UNSPECIFIED"):
@@ -470,8 +585,8 @@ def validate_config(workspace_name):
                 "configuration",
             )
     host = validate_workspace_host(config.get("workspace_host", ""), required=dbx_plane_enabled)
-    if config.get("cost_scope") not in ("disabled", "resource_ids", "managed_resource_group"):
-        raise EvidenceError("configuration_required", "Configure disabled/resource_ids/managed_resource_group cost scope.", "configuration")
+    if config.get("cost_scope") not in ("disabled", "resource_ids", "managed_resource_group", "workspace_and_managed_resource_group"):
+        raise EvidenceError("configuration_required", "Configure disabled/resource_ids/managed_resource_group/workspace_and_managed_resource_group cost scope.", "configuration")
     if config.get("cost_timeframe") not in ("month_to_date", "last_30_days"):
         raise EvidenceError("configuration_required", "Configure month_to_date/last_30_days billing timeframe.", "configuration")
     cost_analysis = config.get("cost_analysis_enabled", True)
@@ -487,7 +602,7 @@ def validate_config(workspace_name):
         if not isinstance(ids, list) or len(ids) > MAX_RELATED_RESOURCES or len({str(i).lower() for i in ids}) != len(ids):
             raise EvidenceError("configuration_required", "Configure distinct bounded fixed resource IDs.", "configuration")
         for value in ids:
-            arm_id(value, SUBSCRIPTION_ID)
+            arm_id(value, subscription)
     requirements = obj(config.get("requirements"), "configuration")
     allowed = {
         "premium_required",
@@ -511,48 +626,221 @@ def validate_config(workspace_name):
     for key, value in requirements.items():
         if value is not None and not isinstance(value, bool):
             raise EvidenceError("configuration_required", "Requirement values must be boolean or unknown.", "configuration")
-    validate_logo(CLIENT_LOGO_DATA_URI, CLIENT_LOGO_ALT)
-    if not isinstance(CLIENT_NAME, str) or not 1 <= len(CLIENT_NAME) <= 120 or any(ord(c) < 32 for c in CLIENT_NAME):
-        raise EvidenceError("configuration_required", "Client label must be bounded plain text.", "configuration")
+    validate_branding_once()
     return {
         **config,
         "name": name,
+        "arm_name": arm_name,
+        "subscription_id": subscription,
+        "subscription_name": plain(config.get("subscription_name"), 128) or subscription,
+        "location": plain(config.get("location"), 64),
+        "sku": plain(config.get("sku"), 32),
         "workspace_host": host,
         "cost_analysis_enabled": cost_analysis,
         "system_tables_warehouse_id": warehouse,
         "sre_tenant_id": sre_tid,
         "target_tenant_id": target_tid,
         "cross_tenant": sre_tid != target_tid,
-        "id": "/subscriptions/" + SUBSCRIPTION_ID + "/resourceGroups/" + config["resource_group"]
-        + "/providers/Microsoft.Databricks/workspaces/" + name,
+        "id": "/subscriptions/" + subscription + "/resourceGroups/" + config["resource_group"]
+        + "/providers/Microsoft.Databricks/workspaces/" + arm_name,
     }
 
 
-def selection_configs(workspace_name, workspace_names):
-    first = validate_config(workspace_name)
-    configured = [validate_config(name) for name in APPROVED_WORKSPACES]
-    names = workspace_names.split(",") if workspace_names else [first["name"]]
-    if len(set(names)) != len(names) or any(name not in APPROVED_WORKSPACES for name in names):
-        raise EvidenceError("invalid_parameter", "Select distinct exact fixed allowlisted workspace names only.", "parameters")
-    by_name = {config["name"]: config for config in configured}
-    roster = [
-        {
-            "workspace_id": config["id"],
-            "workspace_name": config["name"],
-            "resource_group": config["resource_group"],
-            "workspace_host": config["workspace_host"],
-            "environment": config["environment"],
-            "auth_mode": config["auth_mode"],
-            "cross_tenant": config["cross_tenant"],
+def discover_workspaces():
+    """Observed inventory: every Databricks workspace the agent identity can read, from one fixed read-only Resource Graph query."""
+    scope = globals().get("DISCOVERY_SUBSCRIPTION_IDS") or []
+    if not isinstance(scope, list) or len(scope) > 1000:
+        raise EvidenceError("configuration_required", "DISCOVERY_SUBSCRIPTION_IDS must be a list of up to 1000 subscription IDs.", "configuration")
+    subscriptions = [validate_guid(value, "DISCOVERY_SUBSCRIPTION_IDS") for value in scope]
+    identity = Identity({"auth_mode": "same_tenant_uami", "workspace_host": ""})
+    try:
+        reader = HttpReader(identity, ARM_ORIGIN, "arm")
+        url = reader.allow(ARM_ORIGIN + "/providers/Microsoft.ResourceGraph/resources?api-version=" + ARG_API, "POST")
+        rows, skip_token, seen_tokens = [], None, set()
+        for _ in range(MAX_DISCOVERY_PAGES):
+            options = {"resultFormat": "objectArray", "$top": 1000}
+            if skip_token:
+                options["$skipToken"] = skip_token
+            body = {"query": DISCOVERY_QUERY, "options": options}
+            if subscriptions:
+                body["subscriptions"] = subscriptions
+            page = obj(reader.request("POST", url, "arm_discovery", body=body), "arm_discovery")
+            rows.extend(array(page.get("data"), "arm_discovery"))
+            skip_token = page.get("$skipToken")
+            if not isinstance(skip_token, str) or not skip_token:
+                return rows, True
+            if skip_token in seen_tokens or len(rows) > MAX_DISCOVERED_WORKSPACES:
+                break
+            seen_tokens.add(skip_token)
+        return rows, False
+    finally:
+        identity.close()
+
+
+def effective_roster():
+    """Operator entries first (overrides), then every discovered workspace not already listed; bounded and deterministic."""
+    entries = operator_entries()
+    sre = validate_guid(SRE_TENANT_ID, "SRE_TENANT_ID")
+    target = validate_guid(TARGET_TENANT_ID, "TARGET_TENANT_ID")
+    if not auto_discovery_enabled() or sre != target:
+        DISCOVERY_INFO.clear()
+        DISCOVERY_INFO.update({"mode": "operator_only", "operator_entries": len(entries),
+                               "reason": "auto_discovery_disabled" if not auto_discovery_enabled() else "cross_tenant_configuration"})
+        return entries
+    default_subscription = SUBSCRIPTION_ID.lower() if isinstance(SUBSCRIPTION_ID, str) and GUID_TEXT.fullmatch(SUBSCRIPTION_ID.lower()) else ""
+    operator_ids = {}
+    for key, entry in entries.items():
+        entry = obj(entry, "configuration")
+        subscription = str(entry.get("subscription_id") or default_subscription).lower()
+        operator_ids[key] = ("/subscriptions/" + subscription + "/resourcegroups/" + str(entry.get("resource_group", ""))
+                             + "/providers/microsoft.databricks/workspaces/" + str(entry.get("arm_name") or key)).lower()
+    discovery_error = None
+    try:
+        rows, complete = discover_workspaces()
+    except EvidenceError as exc:
+        if not entries:
+            raise EvidenceError(exc.code, "Auto-discovery (Azure Resource Graph) failed and APPROVED_WORKSPACES is empty: " + str(exc), "arm_discovery", exc.http_status) from exc
+        rows, complete, discovery_error = [], True, exc.public()
+    discovered, skipped, other_tenant, without_url = {}, 0, 0, 0
+    for row in rows:
+        if not isinstance(row, dict):
+            skipped += 1
+            continue
+        workspace_id = str(row.get("id") or "")
+        parts = workspace_id.split("/")
+        if (len(parts) != 9 or parts[0] != "" or parts[1].lower() != "subscriptions" or parts[3].lower() != "resourcegroups"
+                or parts[5].lower() != "providers" or parts[6].lower() != "microsoft.databricks" or parts[7].lower() != "workspaces"):
+            skipped += 1
+            continue
+        subscription, group, name = parts[2].lower(), parts[4], parts[8]
+        tenant = str(row.get("tenantId") or "").lower()
+        if tenant and tenant != target:
+            other_tenant += 1
+            continue
+        if (not GUID_TEXT.fullmatch(subscription) or not (1 <= len(name) <= 64 and SAFE_LOCAL_NAME.fullmatch(name))
+                or not (1 <= len(group) <= 90 and SAFE_LOCAL_NAME.fullmatch(group)) or workspace_id.lower() in discovered):
+            skipped += 1
+            continue
+        host = str(row.get("workspaceUrl") or "").lower()
+        host_ok = bool(re.fullmatch(r"adb-[0-9]{10,24}\.[0-9]{1,4}\.azuredatabricks\.net", host))
+        info = {
+            "resource_group": group,
+            "subscription_id": subscription,
+            "subscription_name": plain(row.get("subscriptionName"), 128) or subscription,
+            "arm_name": name,
+            "location": plain(row.get("location"), 64),
+            "sku": plain(row.get("skuName"), 32),
+            "workspace_host": host if host_ok else "",
+            "public_network_access": plain(row.get("publicNetworkAccess"), 32),
+            "custom_vnet": bool(plain(row.get("customVnet"), 2048)),
+            "discovered": True,
         }
-        for config in configured
-    ]
-    return [by_name[name] for name in names], roster
+        if not host_ok:
+            without_url += 1
+            info.update(workspace_api_enabled=False, unity_catalog_enabled=False, host_unavailable=True)
+        discovered[workspace_id.lower()] = info
+    if not complete or len(discovered) > MAX_DISCOVERED_WORKSPACES:
+        raise EvidenceError("configuration_required", "Auto-discovery found more than " + str(MAX_DISCOVERED_WORKSPACES)
+                            + " Databricks workspaces; limit DISCOVERY_SUBSCRIPTION_IDS.", "configuration")
+    roster = {}
+    for key, entry in entries.items():
+        merged = dict(obj(entry, "configuration"))
+        seen = discovered.pop(operator_ids[key], None)
+        if seen:
+            for field in ("subscription_name", "location", "sku", "public_network_access", "custom_vnet"):
+                merged.setdefault(field, seen[field])
+            if not merged.get("workspace_host") and seen["workspace_host"]:
+                merged["workspace_host"] = seen["workspace_host"]
+            merged["discovered"] = True
+        merged["operator_entry"] = True
+        roster[key] = merged
+    operator_count, added = len(roster), 0
+    for info in discovered.values():
+        name = info["arm_name"]
+        key = name if name not in roster else info["subscription_id"][:8] + "-" + name
+        if key in roster:
+            skipped += 1
+            continue
+        roster[key] = info
+        added += 1
+    DISCOVERY_INFO.clear()
+    DISCOVERY_INFO.update({
+        "mode": "auto", "source": "azure_resource_graph", "discovered": added, "operator_entries": operator_count,
+        "skipped": skipped, "other_tenant_skipped": other_tenant, "without_workspace_url": without_url,
+        "subscriptions_visible": len({str(entry.get("subscription_id") or default_subscription).lower() for entry in roster.values()}),
+        "subscription_scope": "configured_list" if globals().get("DISCOVERY_SUBSCRIPTION_IDS") else "all_readable",
+    })
+    if discovery_error:
+        DISCOVERY_INFO["error"] = {key: discovery_error.get(key) for key in ("code", "http_status")}
+    if not roster:
+        raise EvidenceError("no_workspaces_visible", "Auto-discovery found no Azure Databricks workspace the agent identity can read; "
+                            "grant Reader at the management group (or subscriptions) and wait 5-10 minutes.", "arm_discovery")
+    return roster
+
+
+def roster_row(config):
+    return {
+        "workspace_name": config["name"],
+        "resource_group": config["resource_group"],
+        "subscription_id": config["subscription_id"],
+        "subscription_name": config["subscription_name"],
+        "location": config.get("location"),
+        "sku": config.get("sku"),
+        "workspace_host": config["workspace_host"] or None,
+        "environment": config["environment"],
+    }
+
+
+def document_roster_row(config):
+    return {
+        **roster_row(config),
+        "workspace_id": config["id"],
+        "arm_name": config["arm_name"],
+        "auth_mode": config["auth_mode"],
+        "cross_tenant": config["cross_tenant"],
+        "discovered": bool(config.get("discovered")),
+        "operator_entry": bool(config.get("operator_entry")),
+    }
+
+
+def selection_configs(workspace_name, workspace_names, subscription=""):
+    configured = [validate_config(key) for key in active_roster()]
+    configured.sort(key=lambda c: (str(c["subscription_name"]).lower(), c["name"].lower()))
+    roster = [document_roster_row(config) for config in configured]
+    scoped = configured
+    if subscription:
+        wanted = subscription.strip().lower()
+        scoped = [c for c in configured if c["subscription_id"] == wanted or str(c["subscription_name"]).lower() == wanted]
+        if not scoped:
+            raise EvidenceError("invalid_parameter", "subscription must be an exact subscription ID or display name returned by list_workspaces "
+                                "(no visible Databricks workspace matches it).", "parameters")
+    if workspace_name == "all" or workspace_names == "all" or (not workspace_name and not workspace_names):
+        return scoped, roster, "all"
+    requested = [workspace_name] if workspace_name else workspace_names.split(",")
+    if len(set(requested)) != len(requested):
+        raise EvidenceError("invalid_parameter", "Select distinct exact workspace names only.", "parameters")
+    selected, unknown = [], []
+    for name in requested:
+        matches = [c for c in scoped if c["name"] == name] or [c for c in scoped if c["arm_name"] == name]
+        if len(matches) > 1:
+            raise EvidenceError("ambiguous_workspace_name", "Workspace name " + name + " exists in several subscriptions; use one of: "
+                                + ", ".join(c["name"] for c in matches[:5]) + " or add subscription.", "parameters")
+        if not matches:
+            unknown.append(name)
+            continue
+        selected.append(matches[0])
+    if unknown:
+        raise EvidenceError("invalid_parameter", "Unknown workspace name(s) " + ", ".join(unknown[:5])
+                            + (" in the selected subscription" if subscription else "")
+                            + "; use exact workspace_name values returned by list_workspaces.", "parameters")
+    if len({c["id"].lower() for c in selected}) != len(selected):
+        raise EvidenceError("invalid_parameter", "Select distinct workspaces only.", "parameters")
+    return selected, roster, "names"
 
 
 def validate_parameters(
     operation, view, workspace_name, workspace_names, workload_name,
-    classification, area, level, severity, status, limit, offset,
+    classification, area, level, severity, status, limit, offset, subscription="",
 ):
     for key, value, choices in (
         ("operation", operation, OPERATIONS),
@@ -569,20 +857,27 @@ def validate_parameters(
         raise EvidenceError("invalid_parameter", "limit must be an integer from 1 to 100.", "parameters")
     if isinstance(offset, bool) or not isinstance(offset, int) or not 0 <= offset <= 500000:
         raise EvidenceError("invalid_parameter", "offset must be an integer from 0 to 500000.", "parameters")
-    for key, value, maximum in (("workspace_name", workspace_name, 64), ("workload_name", workload_name, 253)):
+    for key, value, maximum in (("workspace_name", workspace_name, 80), ("workload_name", workload_name, 253)):
         if not isinstance(value, str) or len(value) > maximum or (value and not re.fullmatch(r"[A-Za-z0-9_.:()-]+", value)):
             raise EvidenceError("invalid_parameter", key + " is a bounded exact local name, not a path, URL or command.", "parameters")
-    if not isinstance(workspace_names, str) or len(workspace_names) > 324 or (
-        workspace_names and not re.fullmatch(r"[A-Za-z0-9_.()-]{1,64}(?:,[A-Za-z0-9_.()-]{1,64}){0,4}", workspace_names)
+    if not isinstance(workspace_names, str) or len(workspace_names) > 4100 or (
+        workspace_names and workspace_names != "all"
+        and not re.fullmatch(r"[A-Za-z0-9_.()-]{1,80}(?:,[A-Za-z0-9_.()-]{1,80}){0,49}", workspace_names)
     ):
-        raise EvidenceError("invalid_parameter", "workspace_names is an exact comma-separated allowlist selection of one to five names, without spaces.", "parameters")
+        raise EvidenceError("invalid_parameter", "workspace_names is \"all\" or an exact comma-separated selection of 1 to 50 workspace names from list_workspaces, without spaces.", "parameters")
+    if not isinstance(subscription, str) or len(subscription) > 128 or re.search(r'[\x00-\x1f\x7f<>"`\\]', subscription):
+        raise EvidenceError("invalid_parameter", "subscription is an exact subscription ID or display name returned by list_workspaces.", "parameters")
     if workspace_name and workspace_names:
         raise EvidenceError("invalid_combination", "Use workspace_name or workspace_names, not both.", "parameters")
     filters = any((workload_name, classification != "all", area != "all", level != "all", severity != "all", status != "all"))
-    if operation in ("report", "list_workspaces", "self_test") and (view != "summary" or filters or limit != 25 or offset != 0):
-        raise EvidenceError("invalid_combination", "report/list_workspaces/self_test cannot be narrowed by query filters or paging.", "parameters")
+    if operation in ("report", "self_test") and (view != "summary" or filters or limit != 25 or offset != 0):
+        raise EvidenceError("invalid_combination", "report/self_test cannot be narrowed by query filters or paging; select with workspace_names or subscription.", "parameters")
+    if operation == "list_workspaces" and (view != "summary" or filters):
+        raise EvidenceError("invalid_combination", "list_workspaces accepts only subscription, limit and offset.", "parameters")
     if operation in ("list_workspaces", "self_test") and (workspace_name or workspace_names):
         raise EvidenceError("invalid_combination", "list_workspaces and self_test do not select a workspace.", "parameters")
+    if operation == "self_test" and subscription:
+        raise EvidenceError("invalid_combination", "self_test uses built-in SIMULATED data and takes no subscription.", "parameters")
     if operation == "query":
         if classification != "all" and view != "dependencies":
             raise EvidenceError("invalid_combination", "classification filter applies only to view=dependencies.", "parameters")
@@ -599,7 +894,7 @@ def validate_parameters(
     return dict(
         operation=operation, view=view, workspace_name=workspace_name, workspace_names=workspace_names,
         workload_name=workload_name, classification=classification, area=area, level=level,
-        severity=severity, status=status, limit=limit, offset=offset,
+        severity=severity, status=status, limit=limit, offset=offset, subscription=subscription.strip(),
     )
 
 
@@ -653,6 +948,7 @@ class Identity:
         self.credential = ManagedIdentityCredential(client_id=MANAGED_IDENTITY_CLIENT_ID)
         self.deadline = time.monotonic() + MAX_COLLECTION_SECONDS
         self.request_count = 0
+        self.dbx_gate = None
         self.context = ssl.create_default_context()
         if self.context.verify_mode != ssl.CERT_REQUIRED or not self.context.check_hostname:
             raise EvidenceError("unsafe_tls", "TLS peer and hostname validation are mandatory.", "tls")
@@ -840,7 +1136,7 @@ class HttpReader:
         if parsed.scheme != "https" or (parsed.scheme + "://" + parsed.netloc) != self.origin or parsed.fragment or parsed.username:
             raise EvidenceError("unsafe_endpoint", "Read URL changed the fixed HTTPS origin.", "scope")
         if method not in ("GET", "POST"):
-            raise EvidenceError("unsafe_method", "Only enumerated GET reads and one Cost Management read-only POST are permitted.", "scope")
+            raise EvidenceError("unsafe_method", "Only enumerated GET reads and fixed read-only POST queries (Cost Management, Resource Graph) are permitted.", "scope")
         if any(forbidden in parsed.path.lower() for forbidden in ("/secrets/get", "/secrets/put", "/secrets/delete", "/commands/", "/clusters/start", "/clusters/create", "/jobs/run-now", "/sql/statements")):
             raise EvidenceError("unsafe_endpoint", "Secret-value reads, compute starts, SQL statement execution and writes are forbidden.", "scope")
         self.allowed.add((method, parsed.path))
@@ -856,15 +1152,37 @@ class HttpReader:
             or len(url) > 16384 or (method, parsed.path) not in self.allowed
         ):
             raise EvidenceError("unsafe_endpoint", "Request was not one of the scoped allowlisted reads.", source)
+        cost_query = method == "POST" and parsed.path.lower().endswith("/providers/microsoft.costmanagement/query")
         if method == "POST" and not (
-            parsed.path.lower().endswith("/providers/microsoft.costmanagement/query")
+            cost_query
+            or parsed.path.lower() == "/providers/microsoft.resourcegraph/resources"
             or (self.statement_path is not None and parsed.path == self.statement_path)
         ):
             raise EvidenceError("unsafe_method", "This POST is not an enumerated read-only operation.", source)
+        gate = getattr(self.identity, "__dict__", {}).get("dbx_gate") if self.token_kind == "databricks" else None
+        if isinstance(gate, dict):
+            raise EvidenceError(gate.get("code"), "Skipped after the first in-workspace access failure: " + str(gate.get("message")), source, gate.get("http_status"))
         payload = None if body is None else json.dumps(body, allow_nan=False).encode("utf-8")
+        if not cost_query:
+            return self._send(method, url, source, payload, allow_empty)
+        # at most COST_CONCURRENCY Cost Management queries run at once across the whole fleet
+        if not COST_SEMAPHORE.acquire(timeout=max(0.0, getattr(self.identity, "deadline", time.monotonic()) - time.monotonic() - 5)):
+            raise EvidenceError("throttled", "Cost query not started: the time bound ended while waiting for one of the "
+                                + str(COST_CONCURRENCY) + " parallel cost-query slots; the cost is missing, not zero.", source)
+        try:
+            return self._send(method, url, source, payload, allow_empty)
+        finally:
+            COST_SEMAPHORE.release()
+
+    def _send(self, method, url, source, payload, allow_empty):
         attempts = 5 if self.patient else 3
         for attempt in range(attempts):
-            bearer = self._bearer()
+            try:
+                bearer = self._bearer()
+            except EvidenceError as exc:
+                if self.token_kind == "databricks" and exc.code not in ("collection_deadline", "request_cap"):
+                    self.identity.dbx_gate = exc.public()
+                raise
             self.identity._guard_budget()
             request = Request(url, data=payload, method=method, headers={
                 "Authorization": "Bearer " + bearer,
@@ -892,15 +1210,21 @@ class HttpReader:
                     else:
                         time.sleep(min(max(waits), 5) if waits else attempt + 1)
                         continue
-                raise EvidenceError(
+                error = EvidenceError(
                     "access_denied" if exc.code in (401, 403) else "throttled" if exc.code == 429 and self.patient else "http_error",
                     "Read returned HTTP " + str(exc.code) + "; response bodies are excluded.",
                     source, exc.code,
-                ) from exc
+                )
+                if self.token_kind == "databricks" and exc.code == 401:
+                    self.identity.dbx_gate = error.public()
+                raise error from exc
             except (URLError, TimeoutError, ssl.SSLError, OSError) as exc:
                 reason = getattr(exc, "reason", exc)
                 code = "tls_failed" if isinstance(reason, ssl.SSLError) else "transport_failed"
-                raise EvidenceError(code, "Read transport/TLS failed; no insecure retry or alternate identity.", source) from exc
+                error = EvidenceError(code, "Read transport/TLS failed; no insecure retry or alternate identity.", source)
+                if self.token_kind == "databricks":
+                    self.identity.dbx_gate = error.public()
+                raise error from exc
             try:
                 decoded = json.loads(raw)
                 return decoded if isinstance(decoded, (dict, list)) else obj(decoded, source)
@@ -1094,11 +1418,11 @@ def normalize_workspace(raw, source_id, reference, config):
         if len(arm_id_parts) >= 5 and arm_id_parts[1].lower() == "subscriptions" and arm_id_parts[3].lower() == "resourcegroups":
             managed_rg_name = text(arm_id_parts[4], source_id, 90)
     access_connector = obj(props.get("accessConnector", {}), source_id) if props.get("accessConnector") else {}
-    ac_id = arm_id(access_connector.get("id"), sub) if access_connector.get("id") else None
-    ac_uami = arm_id(access_connector.get("userAssignedIdentityId"), sub) if access_connector.get("userAssignedIdentityId") else None
+    ac_id = arm_id(access_connector.get("id")) if access_connector.get("id") else None
+    ac_uami = arm_id(access_connector.get("userAssignedIdentityId")) if access_connector.get("userAssignedIdentityId") else None
     custom_vnet_id = param_val(params, "customVirtualNetworkId", "str", source_id)
     if custom_vnet_id:
-        custom_vnet_id = arm_id(custom_vnet_id, sub)
+        custom_vnet_id = arm_id(custom_vnet_id)
     enc_entities = obj(pick(props, "encryption", "entities") or {}, source_id)
     managed_services_cmk = obj(enc_entities.get("managedServices", {}), source_id) if enc_entities.get("managedServices") else {}
     managed_disk_cmk = obj(enc_entities.get("managedDisk", {}), source_id) if enc_entities.get("managedDisk") else {}
@@ -1230,7 +1554,7 @@ def normalize_resource(raw, source_id, reference, config, association):
         row["identity_type"] = text(identity_block.get("type"), source_id, 64)
         row["principal_id"] = text(identity_block.get("principalId"), source_id, 64)
         row["user_assigned_identities"] = [
-            arm_id(k, sub) for k in obj(identity_block.get("userAssignedIdentities") or {}, source_id)
+            arm_id(k) for k in obj(identity_block.get("userAssignedIdentities") or {}, source_id)
         ]
     elif kind == "microsoft.storage/storageaccounts":
         for field in ("supportsHttpsTrafficOnly", "minimumTlsVersion", "allowBlobPublicAccess", "allowSharedKeyAccess", "publicNetworkAccess", "isHnsEnabled"):
@@ -1250,12 +1574,12 @@ def normalize_resource(raw, source_id, reference, config, association):
         row["vault_uri"] = text(props.get("vaultUri"), source_id, 512)
     elif kind == "microsoft.network/virtualnetworks":
         row["address_space"] = strings(pick(props, "addressSpace", "addressPrefixes"), source_id)
-        row["subnet_ids"] = [arm_id(s.get("id"), sub) for s in array(props.get("subnets", []), source_id) if s.get("id")]
+        row["subnet_ids"] = [arm_id(s.get("id")) for s in array(props.get("subnets", []), source_id) if s.get("id")]
     elif kind == "microsoft.network/virtualnetworks/subnets":
         row["address_prefix"] = text(props.get("addressPrefix"), source_id, 128)
-        row["nsg_id"] = arm_id(pick(props, "networkSecurityGroup", "id"), sub) if pick(props, "networkSecurityGroup", "id") else None
-        row["route_table_id"] = arm_id(pick(props, "routeTable", "id"), sub) if pick(props, "routeTable", "id") else None
-        row["nat_gateway_id"] = arm_id(pick(props, "natGateway", "id"), sub) if pick(props, "natGateway", "id") else None
+        row["nsg_id"] = arm_id(pick(props, "networkSecurityGroup", "id")) if pick(props, "networkSecurityGroup", "id") else None
+        row["route_table_id"] = arm_id(pick(props, "routeTable", "id")) if pick(props, "routeTable", "id") else None
+        row["nat_gateway_id"] = arm_id(pick(props, "natGateway", "id")) if pick(props, "natGateway", "id") else None
         row["delegations"] = [text(pick(d, "properties", "serviceName") or d.get("name"), source_id, 256) for d in array(props.get("delegations", []), source_id)]
     elif kind == "microsoft.network/routetables":
         row["disable_bgp_route_propagation"] = boolean(props.get("disableBgpRoutePropagation"), source_id)
@@ -1279,12 +1603,12 @@ def normalize_resource(raw, source_id, reference, config, association):
             for item in array(props.get("securityRules", []), source_id)
         ]
     elif kind == "microsoft.network/natgateways":
-        row["public_ip_ids"] = [arm_id(ip.get("id"), sub) for ip in array(props.get("publicIpAddresses", []), source_id) if ip.get("id")]
+        row["public_ip_ids"] = [arm_id(ip.get("id")) for ip in array(props.get("publicIpAddresses", []), source_id) if ip.get("id")]
     elif kind == "microsoft.network/publicipaddresses":
         row["configuration"]["ipAddress"] = text(props.get("ipAddress"), source_id, 128)
         row["configuration"]["publicIPAllocationMethod"] = text(props.get("publicIPAllocationMethod"), source_id, 64)
     elif kind == "microsoft.network/privateendpoints":
-        row["subnet_id"] = arm_id(pick(props, "subnet", "id"), sub) if pick(props, "subnet", "id") else None
+        row["subnet_id"] = arm_id(pick(props, "subnet", "id")) if pick(props, "subnet", "id") else None
         connections = array(props.get("privateLinkServiceConnections", []) or props.get("manualPrivateLinkServiceConnections", []), source_id)
         row["connections"] = [
             {
@@ -1310,7 +1634,7 @@ def referenced_resource_ids(row, subscription=None):
     if row.get("resource_kind") == "microsoft.network/virtualnetworks/subnets":
         refs.append((re.split(r"/subnets/", row["id"], flags=re.IGNORECASE)[0], "parent_virtual_network_id"))
     for val, field in refs:
-        val = arm_id(val, subscription or SUBSCRIPTION_ID)
+        val = arm_id(val)
         if resource_type(val) in RESOURCE_APIS:
             yield val, field
 
@@ -1613,8 +1937,8 @@ def normalize_secret_scope(raw, source_id, reference, config):
         raise EvidenceError("invalid_record", "Secret scope requires name.", source_id)
     kv = obj(raw.get("keyvault_metadata", {}), source_id) if raw.get("keyvault_metadata") else {}
     kv_resource_id = text(kv.get("resource_id"), source_id, 2048)
-    if kv_resource_id and kv_resource_id.lower().startswith("/subscriptions/" + SUBSCRIPTION_ID.lower() + "/"):
-        kv_resource_id = arm_id(kv_resource_id, SUBSCRIPTION_ID)
+    if kv_resource_id and kv_resource_id.lower().startswith("/subscriptions/" + (config.get("subscription_id") or SUBSCRIPTION_ID).lower() + "/"):
+        kv_resource_id = arm_id(kv_resource_id, (config.get("subscription_id") or SUBSCRIPTION_ID))
     return {
         "id": "scope:" + name,
         "name": name,
@@ -1852,6 +2176,7 @@ def read_runtime_catalog(reader, reference, inventory):
 
 def collect_live(config, reference, deadline=None):
     identity = Identity(config)
+    sub = config.get("subscription_id") or SUBSCRIPTION_ID
     try:
         if deadline is not None:
             identity.deadline = min(identity.deadline, deadline)
@@ -1899,7 +2224,7 @@ def collect_live(config, reference, deadline=None):
                 "workspace_id": config["id"],
                 "workspace_guid": None,
                 "workspace_url": config["workspace_host"],
-                "subscription_id": SUBSCRIPTION_ID,
+                "subscription_id": sub,
                 "sre_tenant_id": config["sre_tenant_id"],
                 "target_tenant_id": config["target_tenant_id"],
                 "auth_mode": config["auth_mode"],
@@ -1957,6 +2282,9 @@ def collect_live(config, reference, deadline=None):
             top_level_list=True,
         )
         raw["inventory"]["outbound_endpoints"] = outbound
+        if (workspace_arm_error is None and not workspace.get("custom_virtual_network_id") and out_receipt["status"] == "error"
+                and any(error.get("http_status") == 404 for error in out_receipt["errors"])):
+            out_receipt.update(status="not_applicable", errors=[], note="HTTP 404 expected: outbound dependency endpoints exist only for VNet-injected workspaces (no customVirtualNetworkId observed).")
         raw["sources"].append(out_receipt)
 
         def normalize_diag(item):
@@ -1989,9 +2317,9 @@ def collect_live(config, reference, deadline=None):
         related_cap_omitted = []
 
         def queue_related(rid, assoc):
-            if not rid or not isinstance(rid, str) or not rid.lower().startswith("/subscriptions/" + SUBSCRIPTION_ID.lower() + "/"):
+            if not rid or not isinstance(rid, str) or not rid.lower().startswith("/subscriptions/" + sub.lower() + "/"):
                 return
-            rid_clean = arm_id(rid, SUBSCRIPTION_ID)
+            rid_clean = arm_id(rid, sub)
             if resource_type(rid_clean) not in RESOURCE_APIS or rid_clean.lower() in seen_related:
                 return
             if len(seen_related) >= MAX_RELATED_RESOURCES:
@@ -2020,9 +2348,9 @@ def collect_live(config, reference, deadline=None):
                 queue_related(pe["private_endpoint_id"], {"type": "direct_reference", "source_id": "arm_workspace", "resource_id": workspace["id"], "field": "privateEndpointConnections"})
 
         if config["include_managed_resource_group"] and workspace.get("managed_resource_group"):
-            mrg_url = ARM_ORIGIN + "/subscriptions/" + SUBSCRIPTION_ID + "/resourceGroups/" + workspace["managed_resource_group"] + "/resources?api-version=2021-04-01"
+            mrg_url = ARM_ORIGIN + "/subscriptions/" + sub + "/resourceGroups/" + workspace["managed_resource_group"] + "/resources?api-version=2021-04-01"
             def mrg_item(item):
-                rid = arm_id(item.get("id"), SUBSCRIPTION_ID)
+                rid = arm_id(item.get("id"), sub)
                 return {"id": rid, "resource_id": rid, "type": text(item.get("type"), "arm_managed_rg_inventory", 256)}
             mrg_rows, mrg_receipt = read_arm_pages(arm, mrg_url, "arm_managed_rg_inventory", reference, mrg_item)
             raw["sources"].append(mrg_receipt)
@@ -2267,12 +2595,12 @@ def collect_live(config, reference, deadline=None):
 
         advisor_source = source_receipt("arm_advisor", reference, "not_configured", "Cached recommendations only; no generateRecommendations action.")
         if config["advisor_enabled"]:
-            adv_url = ARM_ORIGIN + "/subscriptions/" + SUBSCRIPTION_ID + "/providers/Microsoft.Advisor/recommendations?" + urlencode({
+            adv_url = ARM_ORIGIN + "/subscriptions/" + sub + "/providers/Microsoft.Advisor/recommendations?" + urlencode({
                 "api-version": "2025-01-01", "$filter": "ResourceId eq '" + config["id"] + "'", "$top": "100",
             })
             def advisor_row(item):
                 advisory_id = text(item.get("id"), "arm_advisor", 2048)
-                if not advisory_id or not advisory_id.lower().startswith("/subscriptions/" + SUBSCRIPTION_ID.lower() + "/"):
+                if not advisory_id or not advisory_id.lower().startswith("/subscriptions/" + sub.lower() + "/"):
                     raise EvidenceError("scope_mismatch", "Advisor ID changed subscription scope.", "arm_advisor")
                 target = pick(item, "properties", "resourceMetadata", "resourceId")
                 if not isinstance(target, str) or target.lower() != config["id"].lower():
@@ -2332,14 +2660,21 @@ def collect_cost(reader, config, reference, related, workspace=None):
     )
     if mode == "disabled":
         return [], receipt
-    scope = "/subscriptions/" + SUBSCRIPTION_ID
+    sub = config.get("subscription_id") or SUBSCRIPTION_ID
+    scope = "/subscriptions/" + sub
     managed_rg = pick(workspace, "managed_resource_group")
-    if mode == "managed_resource_group":
+    if mode in ("managed_resource_group", "workspace_and_managed_resource_group"):
         if not isinstance(managed_rg, str) or not re.fullmatch(r"[A-Za-z0-9_.()-]{1,90}", managed_rg):
             receipt.update(status="error", errors=[EvidenceError("unverified_cost_scope", "Billing managedResourceGroup must come from the exact observed ARM workspace.", "azure_cost").public()])
             return [], receipt
-        scope += "/resourceGroups/" + managed_rg
-        receipt["association"] = {"type": "managed_resource_group_billing_context", "source_id": "arm_workspace", "managed_resource_group": managed_rg}
+        if mode == "managed_resource_group":
+            scope += "/resourceGroups/" + managed_rg
+            receipt["association"] = {"type": "managed_resource_group_billing_context", "source_id": "arm_workspace", "managed_resource_group": managed_rg}
+        else:
+            receipt["association"] = {
+                "type": "workspace_and_managed_resource_group_billing_context", "source_id": "arm_workspace",
+                "managed_resource_group": managed_rg, "workspace_id": config["id"],
+            }
     else:
         observed_ids = {row["resource_id"].lower() for row in related} | {config["id"].lower()}
         if not ids or any(value.lower() not in observed_ids for value in ids):
@@ -2348,6 +2683,10 @@ def collect_cost(reader, config, reference, related, workspace=None):
         receipt["association"] = {"type": "approved_observed_resource_ids", "source_id": "configuration"}
     url = ARM_ORIGIN + scope + "/providers/Microsoft.CostManagement/query?api-version=2023-11-01"
     receipt.update(scope=scope, read_signature="POST " + url)
+    if isinstance(reader, HttpReader) and not reader.patient:
+        patient = HttpReader(reader.identity, ARM_ORIGIN, "arm", patient=True)
+        patient.opener = reader.opener
+        reader = patient
     reader.allow(url, "POST")
     body = {
         "type": "ActualCost",
@@ -2362,6 +2701,11 @@ def collect_cost(reader, config, reference, related, workspace=None):
         body["timePeriod"] = {"from": start, "to": reference}
     if mode == "resource_ids":
         body["dataset"]["filter"] = {"dimensions": {"name": "ResourceId", "operator": "In", "values": ids}}
+    if mode == "workspace_and_managed_resource_group":
+        body["dataset"]["filter"] = {"or": [
+            {"dimensions": {"name": "ResourceId", "operator": "In", "values": [config["id"].lower()]}},
+            {"dimensions": {"name": "ResourceGroupName", "operator": "In", "values": [managed_rg.lower()]}},
+        ]}
     rows, seen = [], set()
     current = url
     try:
@@ -2387,7 +2731,7 @@ def collect_cost(reader, config, reference, related, workspace=None):
                 if not isinstance(value, list) or len(value) != len(names):
                     raise EvidenceError("invalid_cost_shape", "Cost row/column lengths differ.", "azure_cost")
                 record = dict(zip(names, value))
-                resource_id = arm_id(record["ResourceId"], SUBSCRIPTION_ID)
+                resource_id = arm_id(record["ResourceId"], sub)
                 currency = text(record["Currency"], "azure_cost", 8)
                 if not currency or not re.fullmatch(r"[A-Z]{3}", currency):
                     raise EvidenceError("invalid_currency", "Cost currency is not an observed ISO currency code.", "azure_cost")
@@ -3596,7 +3940,13 @@ def collect_databricks_costs(identity, config, reference, workspace, inventory):
     )
     if not config.get("cost_analysis_enabled", True):
         return None, receipt
-    url = ARM_ORIGIN + "/subscriptions/" + SUBSCRIPTION_ID + "/providers/Microsoft.CostManagement/query?api-version=" + COST_API_VERSION
+    if config.get("fleet_cost_analysis_skipped"):
+        receipt["note"] = ("Detailed Databricks cost analysis is skipped in fleet reports of more than " + str(FLEET_COST_ANALYSIS_MAX_WORKSPACES)
+                           + " workspaces (Cost Management throttling); the period cost per workspace comes from cost_scope. Report up to "
+                           + str(FLEET_COST_ANALYSIS_MAX_WORKSPACES) + " workspaces to get this section.")
+        return None, receipt
+    sub = config.get("subscription_id") or SUBSCRIPTION_ID
+    url = ARM_ORIGIN + "/subscriptions/" + sub + "/providers/Microsoft.CostManagement/query?api-version=" + COST_API_VERSION
     reader = HttpReader(identity, ARM_ORIGIN, "arm", patient=True)
     reader.allow(url, "POST")
     resource_ids = [config["id"].lower()] + [rid.lower() for rid in config.get("approved_cost_resource_ids", []) if rid.lower() != config["id"].lower()]
@@ -3607,13 +3957,19 @@ def collect_databricks_costs(identity, config, reference, workspace, inventory):
     scope_filter = parts[0] if len(parts) == 1 else {"or": parts}
     data = {
         "metric": COST_METRIC, "periods": labels, "queries": {},
-        "scope": {"subscription_id": SUBSCRIPTION_ID, "resource_ids": resource_ids, "managed_resource_group": managed_rg},
+        "scope": {"subscription_id": sub, "resource_ids": resource_ids, "managed_resource_group": managed_rg},
     }
+    throttled_stop = False
     for qid, body in cost_query_plan(periods, scope_filter, inventory):
         started, rows, pages, error, status = time.monotonic(), [], 0, None, "complete"
         if identity.deadline - started < COST_QUERY_RESERVE_SECONDS:
             error = EvidenceError("collection_deadline", "Collection time bound reached before this cost query; it is missing, not zero.", "azure_cost_databricks").public()
             data["queries"][qid] = {"status": "skipped", "rows": [], "pages": 0, "seconds": 0.0, "error": error}
+            continue
+        if throttled_stop:
+            data["queries"][qid] = {"status": "skipped", "rows": [], "pages": 0, "seconds": 0.0, "error": EvidenceError(
+                "throttled", "Skipped: Cost Management throttled an earlier query for this workspace (HTTP 429); this part of the cost is missing, not zero.",
+                "azure_cost_databricks", 429).public()}
             continue
         current, seen = url, set()
         try:
@@ -3637,6 +3993,7 @@ def collect_databricks_costs(identity, config, reference, workspace, inventory):
             error = failure.public()
             status = "partial" if rows else "denied" if failure.http_status in (401, 403) else "error"
         data["queries"][qid] = {"status": status, "rows": rows, "pages": pages, "seconds": round(time.monotonic() - started, 1), "error": error}
+        throttled_stop = throttled_stop or bool(error and error.get("code") == "throttled")
     statuses = [q["status"] for q in data["queries"].values()]
     overall = (
         "complete" if all(s == "complete" for s in statuses)
@@ -3649,7 +4006,7 @@ def collect_databricks_costs(identity, config, reference, workspace, inventory):
         records=sum(len(q["rows"]) for q in data["queries"].values()),
         pages=sum(q["pages"] for q in data["queries"].values()),
         pagination_complete=overall == "complete",
-        scope="/subscriptions/" + SUBSCRIPTION_ID,
+        scope="/subscriptions/" + sub,
         read_signature="POST " + url,
         queries=[{"id": qid, "status": q["status"], "records": len(q["rows"]), "seconds": q["seconds"]} for qid, q in data["queries"].items()],
         errors=[q["error"] for q in data["queries"].values() if q["error"]][:3],
@@ -4703,9 +5060,190 @@ def finish_snapshot(raw, reference, provenance="LIVE", environment="UNSPECIFIED"
     }
 
 
-def multi_snapshot(runs, reference, roster):
-    if not 1 <= len(runs) <= 5 or len({run["workspace_id"].lower() for run in runs}) != len(runs):
-        raise EvidenceError("invalid_workspace_runs", "Multi-workspace runs require distinct fixed workspace IDs.", "assessment")
+def workspace_access(sources, config, public_network_access=None):
+    """Explicit in-workspace (Databricks REST plane) access status; never inferred healthy."""
+    if not (config["workspace_api_enabled"] or config["unity_catalog_enabled"]):
+        reason = ("The workspace URL is not available in Azure (workspace not provisioned or being deleted)."
+                  if config.get("host_unavailable") else
+                  "In-workspace reads are disabled in the configuration (workspace_api_enabled/unity_catalog_enabled).")
+        return {"status": "disabled", "in_workspace": False, "http_status": None, "code": None, "reason": reason}
+    plane = [
+        source for source in sources
+        if source["id"].startswith(("dbx_", "uc_")) and source["id"] not in ("uc_system_lineage", "dbx_system_billing")
+        and source["status"] not in ("not_configured", "not_applicable")
+    ]
+    readable = [source for source in plane if source["status"] in ("complete", "partial")]
+    failed = [source for source in plane if source["status"] in ("denied", "error")]
+    if readable:
+        return {
+            "status": "granted" if not failed else "partial", "in_workspace": True, "http_status": None, "code": None,
+            "reason": "In-workspace reads succeeded." if not failed else
+            str(len(failed)) + " of " + str(len(plane)) + " in-workspace reads were denied or failed (partial permissions).",
+        }
+    if not plane:
+        return {"status": "not_collected", "in_workspace": False, "http_status": None, "code": None,
+                "reason": "The workspace APIs were not reached (earlier failure or time bound)."}
+    error = next((source["errors"][0] for source in failed if source.get("errors")), {}) or {}
+    code, http_status = error.get("code"), error.get("http_status")
+    private = str(public_network_access or "").lower() == "disabled"
+    if http_status == 401:
+        status, reason = "denied", "The agent identity is not a user of this workspace (HTTP 401): add it with the workspace admin script."
+    elif http_status == 403:
+        status = "denied"
+        reason = ("Access denied inside the workspace (HTTP 403): identity not added or without permissions"
+                  + ("; public network access is also disabled (publicNetworkAccess=Disabled)." if private
+                     else ", or a network block (IP access list / public access disabled)."))
+    elif code in ("transport_failed", "tls_failed"):
+        status = "unreachable"
+        reason = ("The workspace is not reachable over the network" + (" (publicNetworkAccess=Disabled: private workspace)" if private else " (possibly a private / Private Link workspace)")
+                  + "; the agent has no route to its data plane.")
+    elif code in ("authentication_failed", "identity_mismatch", "cross_tenant_auth_failed", "databricks_oidc_failed",
+                  "databricks_oauth_m2m_failed", "keyvault_secret_read_failed"):
+        status, reason = "token_failed", "No valid Azure Databricks token could be obtained (" + str(code) + ")."
+    elif code in ("collection_deadline", "request_cap"):
+        status, reason = "not_collected", "The time or request budget ended before the in-workspace reads."
+    else:
+        status, reason = "error", "The workspace APIs failed (" + str(code) + (", HTTP " + str(http_status) if http_status else "") + ")."
+    return {"status": status, "in_workspace": False, "http_status": http_status, "code": code, "reason": reason}
+
+
+def run_cost_summary(snapshot, config):
+    if snapshot is None:
+        return {"status": "not_collected", "basis": None, "currency": None, "total": None, "dbu": None, "infra": None, "reason": None}
+    fin = snapshot["finops"]
+    source = next((item for item in snapshot["sources"] if item["id"] == "azure_cost"), None) or {}
+    errors = source.get("errors") or []
+    code = errors[0].get("code") if errors else None
+    http_status = errors[0].get("http_status") if errors else None
+    status = source.get("status") or "not_configured"
+    result = {
+        "status": "throttled" if code in ("throttled", "cost_deadline") or http_status == 429 else status,
+        "basis": "cost_scope " + str(config.get("cost_scope")) + " / " + str(config.get("cost_timeframe")),
+        "currency": fin["currency"], "total": fin["actual_cost"], "dbu": None, "infra": None,
+        "reason": (str(code) + (" (HTTP " + str(http_status) + ")" if http_status else "")) if code else None,
+    }
+    if fin["actual_cost"] is not None and fin["currency"]:
+        workspace_id = config["id"].lower()
+        dbu = sum((Decimal(str(row["amount"])) for row in fin["cost_rows"] if row["resource_id"].lower() == workspace_id), Decimal(0))
+        result["dbu"] = float(dbu)
+        result["infra"] = float(Decimal(str(fin["actual_cost"])) - dbu)
+    elif status == "complete" and not fin["cost_rows"]:
+        result.update(total=0.0, dbu=0.0, infra=0.0, reason="no charges in the period")
+    elif status == "not_configured":
+        head = ((snapshot.get("databricks_costs") or {}).get("headline") or {})
+        currency = (snapshot.get("databricks_costs") or {}).get("currency")
+        if isinstance(head.get("mtd_total"), (int, float)) and currency:
+            result.update(status="complete", basis="databricks_costs month to date", currency=currency, total=float(head["mtd_total"]))
+    return result
+
+
+def fleet_row(run, config):
+    snapshot = run["snapshot"]
+    workspace = snapshot["workspace"] if snapshot else {}
+    findings = Counter(row["severity"] for row in snapshot["findings"]) if snapshot else Counter()
+    global_score = snapshot["scores"]["global"] if snapshot else {}
+    public_access = workspace.get("public_network_access") or config.get("public_network_access")
+    return {
+        "workspace_name": config["name"],
+        "arm_name": config["arm_name"],
+        "subscription_id": config["subscription_id"],
+        "subscription_name": config["subscription_name"],
+        "resource_group": config["resource_group"],
+        "location": workspace.get("region") or config.get("location"),
+        "sku": workspace.get("sku_name") or config.get("sku"),
+        "workspace_host": config["workspace_host"] or None,
+        "environment": config["environment"],
+        "public_network_access": public_access,
+        "status": run["status"],
+        "duration_seconds": run.get("duration_seconds"),
+        "workspace_access": workspace_access(run_sources(run), config, public_access),
+        "score": global_score.get("score"),
+        "coverage_percent": global_score.get("coverage_percent"),
+        "findings": {severity: findings.get(severity, 0) for severity in SEVERITIES},
+        "cost": run_cost_summary(snapshot, config),
+        "error": {key: run["error"].get(key) for key in ("code", "http_status")} if run["error"] else None,
+    }
+
+
+def run_status(snapshot):
+    return "partial" if any(source["status"] not in ("complete", "not_applicable", "not_configured") for source in snapshot["sources"]) else "ok"
+
+
+def collect_fleet(configs):
+    """Collect several workspaces in parallel (bounded daemon workers, shared deadline); each run is ok, partial or a structured error."""
+    started = time.monotonic()
+    deadline = started + FLEET_COLLECTION_SECONDS
+    hard_stop = started + FLEET_HARD_STOP_SECONDS
+    light_costs = len(configs) > FLEET_COST_ANALYSIS_MAX_WORKSPACES
+    results = [None] * len(configs)
+    pending = queue.Queue()
+    for index in range(len(configs)):
+        pending.put(index)
+    lock = threading.Lock()
+
+    def base_run(config, run_reference):
+        return {
+            "workspace_id": config["id"],
+            "workspace_name": config["name"],
+            "subscription_id": config["subscription_id"],
+            "subscription_name": config["subscription_name"],
+            "reference_utc": run_reference,
+            "snapshot": None,
+            "error": None,
+            "status": "error",
+        }
+
+    def collect_one(config):
+        run = base_run(config, utc_now())
+        begun = time.monotonic()
+        try:
+            if time.monotonic() >= deadline:
+                raise EvidenceError("collection_deadline", "Shared fleet time bound reached before this workspace started; it was not collected, not empty/healthy.", "collection")
+            raw = collect_live({**config, "fleet_cost_analysis_skipped": True} if light_costs else config, run["reference_utc"], deadline=deadline)
+            snapshot = finish_snapshot(raw, run["reference_utc"], environment=config["environment"])
+            run["snapshot"] = snapshot
+            run["status"] = run_status(snapshot)
+        except EvidenceError as exc:
+            run.update(snapshot=None, status="error", error=exc.public())
+        except Exception as exc:  # one workspace must never abort the fleet report
+            run.update(snapshot=None, status="error", error=EvidenceError(
+                "collector_exception", "Unexpected " + type(exc).__name__ + " while collecting this workspace; no data is inferred.", "collection").public())
+        run["duration_seconds"] = round(time.monotonic() - begun, 1)
+        run["fleet_row"] = fleet_row(run, config)
+        if run["snapshot"] is not None:
+            run["snapshot"]["workspace_access"] = run["fleet_row"]["workspace_access"]
+        return run
+
+    def worker():
+        while True:
+            try:
+                index = pending.get_nowait()
+            except queue.Empty:
+                return
+            run = collect_one(configs[index])
+            with lock:
+                results[index] = run
+
+    threads = [threading.Thread(target=worker, name="dbx-fleet-" + str(n), daemon=True) for n in range(min(FLEET_WORKERS, len(configs)))]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(max(0.0, hard_stop - time.monotonic()))
+    with lock:
+        runs = list(results)
+    for index, config in enumerate(configs):
+        if runs[index] is None:
+            run = base_run(config, utc_now())
+            run["error"] = EvidenceError("collection_timeout", "This workspace did not finish before the fleet hard stop; it is not empty/healthy.", "collection").public()
+            run["duration_seconds"] = None
+            run["fleet_row"] = fleet_row(run, config)
+            runs[index] = run
+    return runs
+
+
+def multi_snapshot(runs, reference, roster, meta=None):
+    if not 1 <= len(runs) <= MAX_REPORT_WORKSPACES or len({run["workspace_id"].lower() for run in runs}) != len(runs):
+        raise EvidenceError("invalid_workspace_runs", "Multi-workspace runs require 1 to " + str(MAX_REPORT_WORKSPACES) + " distinct workspace IDs.", "assessment")
     if any(
         run["status"] not in ("ok", "partial", "error")
         or ((run["snapshot"] is None) != (run["status"] == "error"))
@@ -4715,6 +5253,11 @@ def multi_snapshot(runs, reference, roster):
     ):
         raise EvidenceError("invalid_workspace_runs", "Each run is an explicit snapshot success/partial or a structured error, never both.", "assessment")
     snapshots = [run["snapshot"] for run in runs if run["snapshot"] is not None]
+    for snapshot in snapshots:
+        # the logo and the heading font are embedded once, at document level
+        snapshot["client"] = {**(snapshot.get("client") or {}), "logo_data_uri": ""}
+        if isinstance(snapshot.get("presentation"), dict):
+            snapshot["presentation"] = {**snapshot["presentation"], "display_font": ""}
     provenances = {snapshot["provenance"] for snapshot in snapshots}
     if len(provenances) > 1:
         raise EvidenceError("mixed_provenance", "LIVE and SIMULATED snapshots cannot be combined.", "assessment")
@@ -4729,8 +5272,27 @@ def multi_snapshot(runs, reference, roster):
     heads = [((s.get("databricks_costs") or {}).get("headline") or {}, (s.get("databricks_costs") or {}).get("currency")) for s in snapshots]
     currencies = {cur for head, cur in heads if head.get("review_total") is not None}
     comparable = bool(heads) and len(currencies) == 1 and all(head.get("review_total") is not None for head, _ in heads)
+    rows = [run.get("fleet_row") or {} for run in runs]
+    subscriptions = {}
+    for run, row in zip(runs, rows):
+        key = row.get("subscription_id") or run.get("subscription_id")
+        entry = subscriptions.setdefault(key, {
+            "subscription_id": key, "subscription_name": row.get("subscription_name") or run.get("subscription_name") or key, "workspaces": 0,
+        })
+        entry["workspaces"] += 1
+    totals, dbu, infra = {}, {}, {}
+    for row in rows:
+        cost = row.get("cost") or {}
+        if cost.get("currency") and cost.get("total") is not None:
+            code = cost["currency"]
+            totals[code] = float(Decimal(str(totals.get(code, 0))) + Decimal(str(cost["total"])))
+            dbu[code] = float(Decimal(str(dbu.get(code, 0))) + Decimal(str(cost.get("dbu") or 0)))
+            infra[code] = float(Decimal(str(infra.get(code, 0))) + Decimal(str(cost.get("infra") or 0)))
+    severity_counts = Counter(finding["severity"] for snapshot in snapshots for finding in snapshot["findings"])
+    meta = dict(meta or {})
     return {
         "schema_version": "databricks-dep-multi-workspace-v1",
+        "fleet_version": "1",
         "reference_utc": reference,
         "provenance": next(iter(provenances)) if provenances else "LIVE",
         "client": {"name": CLIENT_NAME, "logo_data_uri": CLIENT_LOGO_DATA_URI, "logo_alt": CLIENT_LOGO_ALT},
@@ -4738,6 +5300,25 @@ def multi_snapshot(runs, reference, roster):
         "available_workspaces": roster,
         "selected_workspace_names": [run["workspace_name"] for run in runs],
         "workspace_runs": runs,
+        "fleet": {
+            "selection": meta.get("mode", "names"),
+            "subscription_filter": meta.get("subscription_filter"),
+            "duration_seconds": meta.get("duration_seconds"),
+            "discovery": meta.get("discovery") or {},
+            "workspaces": len(runs),
+            "subscriptions": sorted(subscriptions.values(), key=lambda item: (str(item["subscription_name"]).lower(), str(item["subscription_id"]))),
+            "access_counts": dict(Counter((row.get("workspace_access") or {}).get("status") for row in rows if row)),
+            "without_workspace_access": sum(run["snapshot"] is not None and not (row.get("workspace_access") or {}).get("in_workspace")
+                                            for run, row in zip(runs, rows)),
+            "cost_totals_by_currency": totals,
+            "dbu_totals_by_currency": dbu,
+            "infra_totals_by_currency": infra,
+            "cost_unavailable": sum(bool(row) and (row.get("cost") or {}).get("total") is None for row in rows),
+            "detailed_cost_analysis": "skipped_above_" + str(FLEET_COST_ANALYSIS_MAX_WORKSPACES) + "_workspaces"
+            if len(runs) > FLEET_COST_ANALYSIS_MAX_WORKSPACES else "per_workspace",
+            "limits": {"max_workspaces": MAX_REPORT_WORKSPACES, "workers": FLEET_WORKERS, "deadline_seconds": FLEET_COLLECTION_SECONDS,
+                       "parallel_cost_queries": COST_CONCURRENCY, "detailed_cost_analysis_max_workspaces": FLEET_COST_ANALYSIS_MAX_WORKSPACES},
+        },
         "aggregate": {
             "scores": scores,
             "inventory_counts": {
@@ -4750,6 +5331,7 @@ def multi_snapshot(runs, reference, roster):
             },
             "findings_total": sum(len(snapshot["findings"]) for snapshot in snapshots),
             "critical_total": sum(check["status"] == "failed" and check["severity"] == "critical" for check in checks),
+            "severity_counts": {severity: severity_counts.get(severity, 0) for severity in SEVERITIES},
             "workspace_status_counts": dict(Counter(run["status"] for run in runs)),
             "failed_workspace_count": sum(run["snapshot"] is None for run in runs),
             "official_waf_score": False,
@@ -5142,7 +5724,77 @@ def sharing_fields(root, paths):
     return {**result, "sharing_mode": "native_ui", **aliases}
 
 
+def fit_lists(result, keys):
+    """Drop whole trailing list items (never characters) until the default-serialized response fits TRANSPORT_BYTES."""
+    while response_bytes(result) > TRANSPORT_BYTES:
+        for key in keys:
+            if result.get(key):
+                result[key].pop()
+                result["lists_truncated"] = True
+                break
+        else:
+            return result
+    return result
+
+
+def fleet_envelope(snapshot, paths, root):
+    runs = snapshot["workspace_runs"]
+    fleet = snapshot["fleet"]
+    findings = [(run, row) for run in runs if run["snapshot"] for row in run["snapshot"]["findings"]]
+    severity = Counter(row["severity"] for _, row in findings)
+    without_access = [run for run in runs if run["snapshot"] is not None and not run["fleet_row"]["workspace_access"]["in_workspace"]]
+    errors = [run for run in runs if run["status"] == "error"]
+    critical = [(run, row) for run, row in findings if row["severity"] == "critical"]
+    global_score = snapshot["aggregate"]["scores"]["global"]
+    status_counts = Counter(run["status"] for run in runs)
+    result = {
+        "status": "partial" if any(run["status"] != "ok" for run in runs) else "ok",
+        "operation": "self_test" if snapshot.get("provenance") == "SIMULATED" else "report",
+        "artifact_status": "written",
+        **sharing_fields(root, paths),
+        "reference_utc": snapshot["reference_utc"],
+        "provenance": snapshot["provenance"],
+        "fleet": {
+            "selection": fleet["selection"],
+            "subscription_filter": fleet["subscription_filter"],
+            "workspaces": len(runs),
+            "subscriptions": len(fleet["subscriptions"]),
+            "status_counts": {key: status_counts.get(key, 0) for key in ("ok", "partial", "error")},
+            "without_workspace_access": len(without_access),
+            "findings_by_severity": {key: severity.get(key, 0) for key in SEVERITIES},
+            "cost_by_currency": fleet["cost_totals_by_currency"],
+            "cost_unavailable": fleet["cost_unavailable"],
+            "detailed_cost_analysis": fleet["detailed_cost_analysis"],
+            "duration_seconds": fleet["duration_seconds"],
+        },
+        "global": {"score": global_score.get("score"), "coverage_percent": global_score.get("coverage_percent")},
+        "findings_total": len(findings),
+        "critical_total": severity.get("critical", 0),
+        "estimated_savings": None,
+        "lists_truncated": len(without_access) > 5 or len(errors) > 5 or len(critical) > 5,
+        "without_workspace_access": [
+            {"workspace": run["workspace_name"], "access": run["fleet_row"]["workspace_access"]["status"],
+             "http_status": run["fleet_row"]["workspace_access"]["http_status"]}
+            for run in without_access[:5]
+        ],
+        "workspace_errors": [{"workspace": run["workspace_name"], "code": run["error"].get("code")} for run in errors[:5]],
+        "top_critical": [
+            {"workspace": run["workspace_name"], "rule_id": row.get("rule_id"), "title": str(row.get("title") or "")[:90]}
+            for run, row in critical[:5]
+        ],
+        **{key: str(path) for key, path in paths.items()},
+    }
+    fit_lists(result, ("top_critical", "workspace_errors", "without_workspace_access"))
+    if response_bytes(result) > TRANSPORT_BYTES and result.get("report_url"):
+        for key in paths:
+            result.pop(key, None)
+        result["local_paths_omitted"] = True
+    return ensure_response(result)
+
+
 def report_envelope(snapshot, paths, root):
+    if snapshot.get("schema_version") == "databricks-dep-multi-workspace-v1" and snapshot.get("fleet"):
+        return fleet_envelope(snapshot, paths, root)
     items = successful_snapshots(snapshot)
     findings = [row for item in items for row in item["findings"]]
     multi = snapshot.get("schema_version") == "databricks-dep-multi-workspace-v1"
@@ -5166,6 +5818,57 @@ def report_envelope(snapshot, paths, root):
         "databricks_costs": aggregate["databricks_costs"] if multi else cost_summary(snapshot.get("databricks_costs")),
         **{key: str(path) for key, path in paths.items()},
     }
+    access = snapshot.get("workspace_access") if not multi else None
+    if access:
+        for candidate in ({key: access.get(key) for key in ("status", "in_workspace", "http_status", "reason")},
+                          {key: access.get(key) for key in ("status", "in_workspace", "http_status")}):
+            if response_bytes({**result, "workspace_access": candidate}) <= TRANSPORT_BYTES:
+                result["workspace_access"] = candidate
+                break
+    return ensure_response(result)
+
+
+def list_workspaces_response(configs, params):
+    rows = [roster_row(config) for config in configs]
+    counts = Counter((row["subscription_id"], row["subscription_name"]) for row in rows)
+    subscriptions = [{"name": name, "id": sub, "workspaces": count}
+                     for (sub, name), count in sorted(counts.items(), key=lambda item: (str(item[0][1]).lower(), item[0][0]))]
+    offset, limit = params["offset"], params["limit"]
+    page = rows[offset:offset + limit]
+    auto = DISCOVERY_INFO.get("mode") == "auto"
+    result = {
+        "status": "ok",
+        "operation": "list_workspaces",
+        "fresh_collection": auto,
+        "roster_basis": "observed_inventory_azure_resource_graph_plus_operator_entries" if auto
+        else "fixed_operator_configuration_not_observed_inventory",
+        "discovery": dict(DISCOVERY_INFO),
+        "subscription_filter": params["subscription"] or None,
+        "total": len(rows),
+        "subscriptions_total": len(subscriptions),
+        "subscriptions": subscriptions,
+        "report_batch_limit": MAX_REPORT_WORKSPACES,
+        "offset": offset,
+        "requested_limit": limit,
+        "returned": len(page),
+        "has_more": offset + len(page) < len(rows),
+        "next_offset": offset + len(page) if offset + len(page) < len(rows) else None,
+        "transport_capped": False,
+        "available_workspaces": page,
+    }
+    while len(json.dumps(result["subscriptions"])) > 900:
+        result["subscriptions"].pop()
+        result["subscriptions_truncated"] = True
+    while page and response_bytes(result) > TRANSPORT_BYTES:
+        page = page[:-1]
+        result.update(
+            available_workspaces=page, returned=len(page), transport_capped=True,
+            has_more=offset + len(page) < len(rows),
+            next_offset=offset + len(page) if offset + len(page) < len(rows) else None,
+        )
+    while response_bytes(result) > TRANSPORT_BYTES and result["subscriptions"]:
+        result["subscriptions"].pop()
+        result["subscriptions_truncated"] = True
     return ensure_response(result)
 
 
@@ -5202,7 +5905,7 @@ def write_report(snapshot):
     }
     encoded = {key: value.encode("utf-8-sig" if key.endswith("csv_path") else "utf-8") for key, value in documents.items()}
     if any(len(value) > ARTIFACT_BYTES for value in encoded.values()):
-        raise EvidenceError("artifact_size_exceeded", "Complete artifacts exceed 4800000 bytes; no records, sources or time windows were dropped and no files were written.", "artifact_storage")
+        raise EvidenceError("artifact_size_exceeded", "Complete artifacts exceed " + str(ARTIFACT_BYTES) + " bytes; no records, sources or time windows were dropped and no files were written. For a fleet, filter with subscription or workspace_names.", "artifact_storage")
     temporary, written = [], []
     try:
         directory.mkdir(exist_ok=True)
@@ -5257,12 +5960,14 @@ def main(
     status: str = "all",
     limit: int = 25,
     offset: int = 0,
+    subscription: str = "",
 ) -> dict:
-    """Collect one or several fixed approved Azure Databricks workspaces; never change source scope or identity."""
+    """Review one, several or all auto-discovered (or approved) Azure Databricks workspaces, read-only; never changes source scope or identity."""
+    global ROSTER
     try:
         params = validate_parameters(
             operation, view, workspace_name, workspace_names, workload_name,
-            classification, area, level, severity, status, limit, offset,
+            classification, area, level, severity, status, limit, offset, subscription,
         )
         if operation == "self_test":
             validate_cost_settings()
@@ -5275,50 +5980,38 @@ def main(
             snapshot = finish_snapshot(raw, reference, provenance="SIMULATED", environment="PRODUCTION")
             snapshot.update(available_workspaces=raw["demo_roster"], selected_workspace_names=[raw["demo_roster"][0]["workspace_name"]])
             return write_report(snapshot)
-        configs, roster = selection_configs(workspace_name, workspace_names)
+        preflight_configuration()
+        ROSTER = None
+        DISCOVERY_INFO.clear()
+        ROSTER = effective_roster()
+        configs, roster, mode = selection_configs(params["workspace_name"], params["workspace_names"], params["subscription"])
         if operation == "list_workspaces":
-            return ensure_response({
-                "status": "ok",
-                "operation": operation,
-                "fresh_collection": False,
-                "roster_basis": "fixed_operator_configuration_not_observed_inventory",
-                "available_workspaces": roster,
-                "total": len(roster),
-            })
+            return list_workspaces_response(configs, params)
         if not CATALOG.get("rules"):
             raise EvidenceError("catalog_missing", "Use the build-generated whole-file tool, not unbuilt engine.py.", "rule_catalog")
+        if operation == "query" and len(configs) > MAX_QUERY_WORKSPACES:
+            raise EvidenceError("too_many_workspaces", "query reads at most " + str(MAX_QUERY_WORKSPACES) + " workspaces per call ("
+                                + str(len(configs)) + " selected); use operation=report for the fleet, or select workspace_name.", "parameters")
+        if len(configs) > MAX_REPORT_WORKSPACES:
+            raise EvidenceError("too_many_workspaces", "The selection has " + str(len(configs)) + " workspaces and one report covers at most "
+                                + str(MAX_REPORT_WORKSPACES) + "; filter with subscription or list exact workspace_names.", "parameters")
         reference = utc_now()
-        if len(configs) == 1:
+        if len(configs) == 1 and (mode == "names" or operation == "query"):
             config = configs[0]
             raw = collect_live(config, reference)
             snapshot = finish_snapshot(raw, reference, environment=config["environment"])
+            snapshot["workspace_access"] = workspace_access(
+                snapshot["sources"], config, snapshot["workspace"].get("public_network_access") or config.get("public_network_access"))
             snapshot.update(available_workspaces=roster, selected_workspace_names=[config["name"]])
         else:
-            runs = []
-            deadline = time.monotonic() + MAX_COLLECTION_SECONDS
-            for config in configs:
-                run_reference = utc_now()
-                run = {
-                    "workspace_id": config["id"],
-                    "workspace_name": config["name"],
-                    "reference_utc": run_reference,
-                    "snapshot": None,
-                    "error": None,
-                    "status": "error",
-                }
-                try:
-                    if time.monotonic() >= deadline:
-                        raise EvidenceError("collection_deadline", "Shared multi-workspace time bound reached; this workspace was not collected, not empty/healthy.", "collection")
-                    raw = collect_live(config, run_reference, deadline=deadline)
-                    run["snapshot"] = finish_snapshot(raw, run_reference, environment=config["environment"])
-                    run["status"] = "partial" if any(
-                        source["status"] not in ("complete", "not_applicable") for source in run["snapshot"]["sources"]
-                    ) else "ok"
-                except EvidenceError as exc:
-                    run["error"] = exc.public()
-                runs.append(run)
-            snapshot = multi_snapshot(runs, reference, roster)
+            started = time.monotonic()
+            runs = collect_fleet(configs)
+            snapshot = multi_snapshot(runs, reference, roster, {
+                "mode": mode, "subscription_filter": params["subscription"] or None,
+                "duration_seconds": round(time.monotonic() - started, 1), "discovery": dict(DISCOVERY_INFO),
+            })
             if not successful_snapshots(snapshot):
+                codes = Counter(run["error"].get("code") for run in runs)
                 return ensure_response({
                     "status": "error",
                     "error": {
@@ -5327,13 +6020,15 @@ def main(
                         "message": "No selected workspace produced a snapshot; no empty/healthy report or files.",
                     },
                     "artifact_status": "not_written",
+                    "error_codes": dict(codes.most_common(8)),
                     "workspace_errors": [
                         {
                             "workspace_name": run["workspace_name"],
                             "error": {key: run["error"].get(key) for key in ("code", "source_id", "http_status")},
                         }
-                        for run in runs
+                        for run in runs[:8]
                     ],
+                    "workspaces": len(runs),
                     "provenance": "LIVE",
                 })
         return query_snapshot(snapshot, params) if operation == "query" else write_report(snapshot)
