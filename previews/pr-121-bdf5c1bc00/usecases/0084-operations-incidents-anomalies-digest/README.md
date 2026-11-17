@@ -2,7 +2,7 @@
 
 ![Operations digest cover and executive synthesis with field marks 1 to 3](docs/images/report-preview.png)
 
-*Lab run, report in Spanish. 1 Report header · 2 Exports and sections · 3 Executive synthesis with the counts.*
+*Sample run with simulated data. 1 Sections with live counts, Read-only chip, dark mode and print · 2 Verdict-first header: window, summary, provenance and coverage chips, verdict and severity · 3 Counts by source, with the simulated-data and partial-coverage notices.*
 
 > **The problem.** Alerts, health events and Advisor tips live in five different places, and management wants one monthly picture with actions.
 
@@ -20,7 +20,7 @@ Five evidence streams, one picture for management: what fired, what Azure publis
 | **Delivers** | HTML report, incidents and anomalies CSV, recommended actions CSV and the JSON snapshot |
 | **Agent pieces** | Tool `generate-operations-digest-report` · skill `operations-digest-live` · subagent `operations-digest-live` · scheduled task `Monthly Operations Incidents and Anomalies Digest` |
 | **Access** | `Reader` on the target subscription and `Log Analytics Reader` on the approved workspaces |
-| **Report language** | Spanish |
+| **Report language** | English |
 
 **Compare with:** [Server health and capacity review](https://microsoft.github.io/frontier-sre-agent-rvas/usecase.html?id=0080-infrastructure-operations-health) · [Azure Service Health incidents and planned maintenance review](https://microsoft.github.io/frontier-sre-agent-rvas/usecase.html?id=0067-service-health-incidents-resource-impact) · [Fired alerts summary (idea)](https://github.com/microsoft/frontier-sre-agent-rvas/tree/main/usecases/0035-fired-alerts-summary-last-24h) · [Executive operational report generation (idea)](https://github.com/microsoft/frontier-sre-agent-rvas/tree/main/usecases/0029-executive-operational-report-generation-pdf)
 
@@ -87,7 +87,11 @@ More prompts, with the expected result of each, are in [`tests/prompts.md`](test
 
 ![Recommended actions and sources](docs/images/report-recommended-actions.png)
 
-*Prioritized recommended actions with their evidence, and the status of every source (report in Spanish).*
+*1 Prioritized recommended actions by horizon and severity, each linked to its evidence and to Microsoft Learn · 2 Source coverage: status, records, pages and read signature of every source.*
+
+## Sample report
+
+[`sample-report/`](sample-report/) holds the four files of a SIMULATED run that the tool wrote offline from a synthetic dataset, with no Azure call: the [HTML report](sample-report/ops-digest-20261101T083000Z-e61ef24b7c7b.html) (download it and open it in a browser), the JSON snapshot, the incidents and anomalies CSV and the recommended actions CSV. The customer is `Contoso` and every resource name and identifier is fictitious (`contoso-arc-srv-01`).
 
 ## Cadence
 
@@ -99,8 +103,8 @@ The tool in `manifests/tools/` is built from `src/`. Edit `src/engine.py` or the
 
 ## Status
 
-`built`. Upstream ran it live in a Microsoft lab; the sidecar-token identity fix of 16 November 2026 is covered by `src/tests/test_sidecar_tokens.py`. The report is in Spanish and there is no English sample report yet, so it is not `validated`.
+`validated`: built, with test prompts in `tests/` and a SIMULATED sample report. Upstream ran it live in a Microsoft lab; the sidecar-token identity fix of 16 November 2026 is covered by `src/tests/test_sidecar_tokens.py`. It has not been deployed from this repository with `usecases.sh deploy` yet.
 
 ## Credits
 
-Built and tested by Mario Aguilera ([@marioaguileraaa](https://github.com/marioaguileraaa)). Source: [`10-operations-incidents-anomalies-digest`](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/10-operations-incidents-anomalies-digest) in `marioaguileraaa/sre-agent-use-cases` (MIT), commit `5341edb`. The upstream guide has every step with a screenshot, troubleshooting and the acceptance checks. Field guide: [plate 10](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-10).
+Built and tested by Mario Aguilera ([@marioaguileraaa](https://github.com/marioaguileraaa)). Source: [`10-operations-incidents-anomalies-digest`](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/10-operations-incidents-anomalies-digest) in `marioaguileraaa/sre-agent-use-cases` (MIT), commit `4eb2e90`. The upstream guide has every step with a screenshot, troubleshooting and the acceptance checks. Field guide: [plate 10](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-10).

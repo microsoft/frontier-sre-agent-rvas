@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-16T19:23:46Z",
+  "generatedAt": "2026-11-17T02:44:22Z",
   "count": 81,
   "domains": [
     {
@@ -2919,7 +2919,7 @@
     },
     {
       "id": "0084-operations-incidents-anomalies-digest",
-      "status": "built",
+      "status": "validated",
       "title": "Monthly operations incidents and anomalies digest",
       "summary": "Monthly read-only digest of alerts, Service Health, failed extensions, telemetry anomalies and Advisor tips, with a prioritized action list.",
       "domain": "management",
@@ -2987,7 +2987,7 @@
         "task": true,
         "permissions": true,
         "tests": true,
-        "sampleReport": false,
+        "sampleReport": true,
         "images": false
       },
       "readme": "usecases/0084-operations-incidents-anomalies-digest/README.md",

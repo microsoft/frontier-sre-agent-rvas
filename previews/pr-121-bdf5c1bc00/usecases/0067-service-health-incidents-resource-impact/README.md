@@ -92,7 +92,7 @@ More prompts, with the expected result of each, are in [`tests/prompts.md`](test
 
 ## Sample report
 
-[`sample-report/`](sample-report/) holds the four files of a SIMULATED run, generated offline from mocked source pages with `tests/offline_demo.py` upstream: the [HTML report](sample-report/simulated-service-health-20261014T184000Z-d61d092bba3c.html) (download it and open it in a browser), the complete JSON and the two CSVs. No Azure call was made and there are no customer identifiers.
+[`sample-report/`](sample-report/) holds the four files of a SIMULATED run, generated offline from the upstream mocked source pages (as `tests/offline_demo.py` does) with the fictitious client name `Contoso`: the [HTML report](sample-report/simulated-service-health-20261014T184000Z-d61d092bba3c.html) (download it and open it in a browser), the complete JSON and the two CSVs. No Azure call was made and there are no customer identifiers.
 
 ## Cadence
 
@@ -108,4 +108,4 @@ The tool in `manifests/tools/` is built from `src/`. Edit `src/engine.py` or the
 
 ## Credits
 
-Built and tested by Mario Aguilera ([@marioaguileraaa](https://github.com/marioaguileraaa)). Source: [`05-service-health-events-review`](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/05-service-health-events-review) in `marioaguileraaa/sre-agent-use-cases` (MIT), commit `5341edb`. The upstream guide has every step with a screenshot, troubleshooting and the acceptance checks. Field guide: [plate 05](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-05). It implements the earlier idea *Service Health incidents & resource impact*, first listed from [alsanch/azure-sre-agent-scenarios](https://github.com/alsanch/azure-sre-agent-scenarios), and keeps its id.
+Built and tested by Mario Aguilera ([@marioaguileraaa](https://github.com/marioaguileraaa)). Source: [`05-service-health-events-review`](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/05-service-health-events-review) in `marioaguileraaa/sre-agent-use-cases` (MIT), commit `4eb2e90`. The upstream guide has every step with a screenshot, troubleshooting and the acceptance checks. Field guide: [plate 05](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-05). It implements the earlier idea *Service Health incidents & resource impact*, first listed from [alsanch/azure-sre-agent-scenarios](https://github.com/alsanch/azure-sre-agent-scenarios), and keeps its id.
