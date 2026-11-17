@@ -59,7 +59,7 @@ class NativeSharingTests(unittest.TestCase):
 
     def test_unsupported_roots_never_invent_aliases_or_change_actual_paths(self):
         for root in (
-            PureWindowsPath(r"C:\Users\test\dbx-reports"),
+            PureWindowsPath(r"C:\Reports\test\dbx-reports"),
             PurePosixPath("/tmp/ThreadFiles") / THREAD,
             PurePosixPath("/usr/terminalRoot/tmp/ThreadFiles") / "not-a-thread",
             PurePosixPath(SRE_ROOTS[0]) / THREAD / "extra",

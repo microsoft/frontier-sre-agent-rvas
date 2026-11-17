@@ -29,11 +29,18 @@ TARGET_TENANT_ID = "<YOUR_TARGET_DATABRICKS_TENANT_ID>"
 MANAGED_IDENTITY_CLIENT_ID = "<YOUR_SRE_UAMI_CLIENT_ID>"
 FEDERATED_APP_CLIENT_ID = ""
 KEYVAULT_OAUTH_SECRET_URI = ""
-CLIENT_NAME = "CLIENTE"
+# Optional cross-tenant certificate for auth_mode "cross_tenant_multitenant_fic". The Azure SRE Agent sandbox hands
+# Python tools sidecar-issued managed identity tokens that the platform proxy swaps at egress, so they cannot be sent
+# as a federated client assertion (Entra rejects them with AADSTS5002723). Store a certificate of the multi-tenant
+# app in a Key Vault the agent identity can read (Key Vault Secrets User) and set both values; leave them empty to
+# use the federated identity credential.
+CROSS_TENANT_CERT_KEYVAULT_URL = ""
+CROSS_TENANT_CERT_NAME = ""
+CLIENT_NAME = "Customer"
 # Here goes the customer's logo, privately configured as a validated PNG/JPEG
 # data URI. Keep generic Git source empty. Use adjacent strings <10K per line.
 CLIENT_LOGO_DATA_URI = ""
-CLIENT_LOGO_ALT = "Logotipo autorizado del cliente"
+CLIENT_LOGO_ALT = "Authorized customer logo"
 APPROVED_WORKSPACES = {
     "<APPROVED_DATABRICKS_WORKSPACE_NAME>": {
         "resource_group": "<APPROVED_DATABRICKS_RESOURCE_GROUP>",
@@ -48,9 +55,29 @@ APPROVED_WORKSPACES = {
         "approved_cost_resource_ids": [],
         "cost_scope": "disabled",
         "cost_timeframe": "month_to_date",
+        # Databricks costs (report section 6): Cost Management grouped by Databricks tags for the workspace resource,
+        # its managed resource group and approved_cost_resource_ids. Needs Reader or Cost Management Reader on the
+        # subscription; free reads that never start compute.
+        "cost_analysis_enabled": True,
+        # OFF by default because it costs DBUs: the ID of an EXISTING SQL warehouse enables per-run and per-user detail
+        # from system.billing.usage + system.billing.list_prices (Statement Execution API, one fixed read-only SELECT).
+        "system_tables_warehouse_id": "",
         "requirements": {},
     }
 }
+# Databricks cost analysis settings (shared by all approved workspaces).
+COST_METRIC = "AmortizedCost"  # AmortizedCost spreads Databricks commit units and reservations; ActualCost is the invoice view
+COST_ALLOCATION_TAGS = ["team", "project", "cost_center"]  # your own cluster, job, pool and warehouse tags (up to 3 keys)
+COST_AUTOTERMINATION_MAX_MINUTES = 60  # interactive clusters with a longer auto-termination are flagged
+COST_WAREHOUSE_AUTOSTOP_MAX_MINUTES = 30  # SQL warehouses with a longer auto-stop are flagged
+COST_JOBS_TO_ALL_PURPOSE_DBU_RATIO = 0.55  # Jobs compute DBU list price / All-purpose DBU list price (Premium 0.30 / 0.55)
+COST_SPOT_DISCOUNT = 0.6  # conservative Azure Spot discount used for worker VMs (Azure quotes up to 90 %)
+REPORT_FOCUS = "configuration"  # "costs" opens the report with the Databricks cost section (title, verdict and KPIs)
+# Optional private branding (keep empty in Git): CSS colour overrides from BRAND_THEME_KEYS, a WOFF2 heading font as a
+# data URI (<= 80 KB) and where the client logo goes ("hero" plaque or "bar" = white top bar, no plaque).
+BRAND_THEME = {}
+BRAND_DISPLAY_FONT_DATA_URI = ""
+BRAND_LOGO_PLACEMENT = "hero"
 
 ARM_ORIGIN = "https://management.azure.com"
 ARM_TOKEN_AUDIENCES = (
@@ -72,9 +99,26 @@ MAX_PAGES = 50
 MAX_ROWS = 15000
 MAX_RELATED_RESOURCES = 200
 MAX_DETAIL_GETS = 100
-MAX_COLLECTION_SECONDS = 240
-MAX_HTTP_ATTEMPTS = 300
+MAX_COLLECTION_SECONDS = 420
+MAX_HTTP_ATTEMPTS = 360
 OUTPUT_DIRECTORY = "databricks-dependency-reports"
+COST_API_VERSION = "2025-03-01"
+COST_QUERY_RESERVE_SECONDS = 20
+MAX_COST_ROWS = 20000
+MAX_COST_DAILY_KEYS = 100
+COST_MAX_RETRY_WAIT = 30
+COST_DIMENSIONS = (
+    ("cluster", "ClusterName"),
+    ("job", "JobId"),
+    ("warehouse", "SqlEndpointId"),
+    ("pool", "DatabricksInstancePoolId"),
+)
+BRAND_THEME_KEYS = (
+    "--paper", "--surface", "--soft", "--hover", "--ink", "--title", "--muted", "--line", "--line2", "--link", "--focus",
+    "--sel", "--chart", "--chart-2", "--edge", "--bar-bg", "--bar-hover", "--btn", "--btn-hover", "--btn-ink", "--hero-a",
+    "--hero-b", "--hero-muted", "--hero-line", "--brand-rule", "--brand-logo", "--foot-bg", "--foot-ink",
+)
+OPERATIONS = ("report", "query", "list_workspaces", "self_test")
 AUTH_MODES = (
     "same_tenant_uami",
     "cross_tenant_multitenant_fic",
@@ -102,6 +146,7 @@ VIEWS = (
     "coverage",
     "actions",
     "dependencies",
+    "costs",
 )
 SYSTEM_CATALOGS = ("system", "hive_metastore", "samples", "__databricks_internal")
 RESOURCE_APIS = {
@@ -132,6 +177,25 @@ WORKSPACE_CONF_KEYS = (
 CATALOG = {}
 HTML_TEMPLATE = ""
 # END BUILD-TIME ASSETS
+
+
+SIDECAR_TOKEN_ISSUER = "adc-msi-sidecar"
+
+
+def normalize_sidecar_claims(claims):
+    """Map Azure SRE Agent sandbox token claims onto the standard Entra names.
+
+    Python tools in the SRE Agent sandbox receive placeholder tokens issued by the identity sidecar
+    (iss "adc-msi-sidecar") that the platform proxy replaces with the real managed identity token at egress.
+    They carry tid, clientId and scp instead of aud/appid, so tenant, client and audience stay verifiable.
+    """
+    if not isinstance(claims, dict) or claims.get("iss") != SIDECAR_TOKEN_ISSUER:
+        return claims
+    scope = claims.get("scp") if isinstance(claims.get("scp"), str) else ""
+    audience = scope[:-len("/.default")] if scope.endswith("/.default") else scope
+    if audience.rstrip("/").lower() == "https://management.core.windows.net":
+        audience = "https://management.azure.com"
+    return dict(claims, appid=claims.get("clientId") or claims.get("cid") or None, aud=audience or None)
 
 
 class EvidenceError(RuntimeError):
@@ -251,6 +315,50 @@ def validate_logo(uri, alt=CLIENT_LOGO_ALT):
         raise EvidenceError("invalid_logo", "The optional logo is not a complete, valid single-frame PNG/JPEG raster.", "branding") from exc
 
 
+def validate_cost_settings():
+    if COST_METRIC not in ("AmortizedCost", "ActualCost"):
+        raise EvidenceError("configuration_required", "COST_METRIC must be AmortizedCost or ActualCost.", "configuration")
+    tags = COST_ALLOCATION_TAGS
+    if (
+        not isinstance(tags, list) or len(tags) > 3
+        or any(not isinstance(t, str) or not re.fullmatch(r"[A-Za-z0-9_.:/=+@-][A-Za-z0-9 _.:/=+@-]{0,127}", t) for t in tags)
+        or len({t.lower() for t in tags}) != len(tags)
+    ):
+        raise EvidenceError("configuration_required", "COST_ALLOCATION_TAGS holds up to 3 distinct tag keys.", "configuration")
+    for name, value, low, high in (
+        ("COST_AUTOTERMINATION_MAX_MINUTES", COST_AUTOTERMINATION_MAX_MINUTES, 10, 1440),
+        ("COST_WAREHOUSE_AUTOSTOP_MAX_MINUTES", COST_WAREHOUSE_AUTOSTOP_MAX_MINUTES, 1, 1440),
+        ("COST_JOBS_TO_ALL_PURPOSE_DBU_RATIO", COST_JOBS_TO_ALL_PURPOSE_DBU_RATIO, 0.05, 1),
+        ("COST_SPOT_DISCOUNT", COST_SPOT_DISCOUNT, 0, 0.95),
+    ):
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not low <= value <= high:
+            raise EvidenceError("configuration_required", name + " is outside its documented range.", "configuration")
+
+
+def presentation_settings():
+    """Validated presentation hooks embedded in the report: focus, colour overrides, heading font and logo placement."""
+    if REPORT_FOCUS not in ("configuration", "costs"):
+        raise EvidenceError("configuration_required", "REPORT_FOCUS must be configuration or costs.", "branding")
+    if BRAND_LOGO_PLACEMENT not in ("hero", "bar"):
+        raise EvidenceError("configuration_required", "BRAND_LOGO_PLACEMENT must be hero or bar.", "branding")
+    if not isinstance(BRAND_THEME, dict) or len(BRAND_THEME) > len(BRAND_THEME_KEYS):
+        raise EvidenceError("configuration_required", "BRAND_THEME maps documented CSS variables to colours.", "branding")
+    colour = r"#[0-9A-Fa-f]{6}|rgba\((?:\s*\d{1,3}\s*,){3}\s*(?:0|1|0?\.\d{1,3})\s*\)"
+    for key, value in BRAND_THEME.items():
+        if key not in BRAND_THEME_KEYS or not isinstance(value, str) or not re.fullmatch(colour, value):
+            raise EvidenceError("configuration_required", "BRAND_THEME accepts only " + ", ".join(BRAND_THEME_KEYS) + " with #RRGGBB or rgba() colours.", "branding")
+    font = BRAND_DISPLAY_FONT_DATA_URI
+    if font:
+        match = re.fullmatch(r"data:font/woff2;base64,([A-Za-z0-9+/=]+)", font) if isinstance(font, str) and len(font) <= 110000 else None
+        try:
+            data = base64.b64decode(match[1], validate=True) if match else b""
+        except binascii.Error:
+            data = b""
+        if not 1000 <= len(data) <= 80000 or not data.startswith(b"wOF2"):
+            raise EvidenceError("configuration_required", "BRAND_DISPLAY_FONT_DATA_URI must be an inline WOFF2 font of at most 80 KB.", "branding")
+    return {"focus": REPORT_FOCUS, "logo_placement": BRAND_LOGO_PLACEMENT, "theme": dict(BRAND_THEME), "display_font": font}
+
+
 def response_bytes(value):
     return len(json.dumps(value, allow_nan=False).encode("utf-8"))
 
@@ -339,6 +447,18 @@ def validate_config(workspace_name):
         dbx_plane_enabled and auth_mode in ("cross_tenant_lighthouse_plus_databricks_oidc", "cross_tenant_lighthouse_plus_keyvault_oauth_m2m")
     ):
         validate_guid(FEDERATED_APP_CLIENT_ID, "FEDERATED_APP_CLIENT_ID")
+    if auth_mode == "cross_tenant_multitenant_fic" and (CROSS_TENANT_CERT_KEYVAULT_URL or CROSS_TENANT_CERT_NAME):
+        if not (
+            isinstance(CROSS_TENANT_CERT_KEYVAULT_URL, str)
+            and re.fullmatch(r"https://[a-z0-9-]{3,24}\.vault\.azure\.net/?", CROSS_TENANT_CERT_KEYVAULT_URL)
+            and isinstance(CROSS_TENANT_CERT_NAME, str)
+            and re.fullmatch(r"[A-Za-z0-9-]{1,127}", CROSS_TENANT_CERT_NAME)
+        ):
+            raise EvidenceError(
+                "configuration_required",
+                "Configure CROSS_TENANT_CERT_KEYVAULT_URL as https://<vault>.vault.azure.net and CROSS_TENANT_CERT_NAME as the certificate name, or leave both empty.",
+                "configuration",
+            )
     if dbx_plane_enabled and auth_mode == "cross_tenant_lighthouse_plus_keyvault_oauth_m2m":
         if not isinstance(KEYVAULT_OAUTH_SECRET_URI, str) or not re.fullmatch(
             r"https://[a-z0-9-]{3,24}\.vault\.azure\.net/secrets/[A-Za-z0-9-]{1,127}(?:/[0-9a-f]{32})?",
@@ -354,6 +474,14 @@ def validate_config(workspace_name):
         raise EvidenceError("configuration_required", "Configure disabled/resource_ids/managed_resource_group cost scope.", "configuration")
     if config.get("cost_timeframe") not in ("month_to_date", "last_30_days"):
         raise EvidenceError("configuration_required", "Configure month_to_date/last_30_days billing timeframe.", "configuration")
+    cost_analysis = config.get("cost_analysis_enabled", True)
+    if not isinstance(cost_analysis, bool):
+        raise EvidenceError("configuration_required", "Configure the boolean cost_analysis_enabled.", "configuration")
+    warehouse = config.get("system_tables_warehouse_id", "")
+    if not isinstance(warehouse, str) or (warehouse and not re.fullmatch(r"[A-Za-z0-9]{8,64}", warehouse)):
+        raise EvidenceError("configuration_required", "system_tables_warehouse_id is empty (off) or the ID of an existing SQL warehouse.", "configuration")
+    validate_cost_settings()
+    presentation_settings()
     for field in ("approved_related_resource_ids", "approved_cost_resource_ids"):
         ids = config.get(field)
         if not isinstance(ids, list) or len(ids) > MAX_RELATED_RESOURCES or len({str(i).lower() for i in ids}) != len(ids):
@@ -390,6 +518,8 @@ def validate_config(workspace_name):
         **config,
         "name": name,
         "workspace_host": host,
+        "cost_analysis_enabled": cost_analysis,
+        "system_tables_warehouse_id": warehouse,
         "sre_tenant_id": sre_tid,
         "target_tenant_id": target_tid,
         "cross_tenant": sre_tid != target_tid,
@@ -425,7 +555,7 @@ def validate_parameters(
     classification, area, level, severity, status, limit, offset,
 ):
     for key, value, choices in (
-        ("operation", operation, ("report", "query", "list_workspaces")),
+        ("operation", operation, OPERATIONS),
         ("view", view, VIEWS),
         ("classification", classification, ("all",) + CLASSIFICATIONS),
         ("area", area, ("all",) + AREAS),
@@ -449,10 +579,10 @@ def validate_parameters(
     if workspace_name and workspace_names:
         raise EvidenceError("invalid_combination", "Use workspace_name or workspace_names, not both.", "parameters")
     filters = any((workload_name, classification != "all", area != "all", level != "all", severity != "all", status != "all"))
-    if operation in ("report", "list_workspaces") and (view != "summary" or filters or limit != 25 or offset != 0):
-        raise EvidenceError("invalid_combination", "report/list_workspaces cannot be narrowed by query filters or paging.", "parameters")
-    if operation == "list_workspaces" and (workspace_name or workspace_names):
-        raise EvidenceError("invalid_combination", "list_workspaces lists the complete fixed roster; do not select a workspace.", "parameters")
+    if operation in ("report", "list_workspaces", "self_test") and (view != "summary" or filters or limit != 25 or offset != 0):
+        raise EvidenceError("invalid_combination", "report/list_workspaces/self_test cannot be narrowed by query filters or paging.", "parameters")
+    if operation in ("list_workspaces", "self_test") and (workspace_name or workspace_names):
+        raise EvidenceError("invalid_combination", "list_workspaces and self_test do not select a workspace.", "parameters")
     if operation == "query":
         if classification != "all" and view != "dependencies":
             raise EvidenceError("invalid_combination", "classification filter applies only to view=dependencies.", "parameters")
@@ -489,6 +619,7 @@ def verify_jwt_claims(token_str, expected_tid, expected_client, expected_aud):
     try:
         encoded = token_str.split(".")[1]
         claims = json.loads(base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)))
+        claims = normalize_sidecar_claims(claims)
     except (AttributeError, IndexError, ValueError, binascii.Error) as exc:
         raise EvidenceError("authentication_failed", "Identity provider returned an unreadable JWT; token contents are excluded.", "identity") from exc
     tenant = pick(claims, "tid")
@@ -545,7 +676,34 @@ class Identity:
         verify_jwt_claims(token, SRE_TENANT_ID, MANAGED_IDENTITY_CLIENT_ID, audience)
         return token
 
+    def exchange_entra_certificate(self, target_resource):
+        kv_token = self.uami_token(KEYVAULT_AUDIENCE)
+        self._guard_budget()
+        kv_req = Request(CROSS_TENANT_CERT_KEYVAULT_URL.rstrip("/") + "/secrets/" + CROSS_TENANT_CERT_NAME + "?api-version=7.4",
+                         method="GET", headers={"Authorization": "Bearer " + kv_token, "Accept": "application/json"})
+        try:
+            with self.opener.open(kv_req, timeout=15) as response:
+                kv_payload = obj(json.loads(response.read(65536)), "identity")
+        except HTTPError as exc:
+            raise EvidenceError("keyvault_secret_read_failed", "Key Vault cross-tenant certificate read failed with HTTP " + str(exc.code) + ".", "identity", exc.code) from exc
+        except (URLError, TimeoutError, ssl.SSLError, OSError, ValueError) as exc:
+            raise EvidenceError("keyvault_secret_read_failed", "Key Vault cross-tenant certificate transport failed.", "identity") from exc
+        pem = kv_payload.get("value")
+        if not isinstance(pem, str) or len(pem) > 32768 or "-----BEGIN" not in pem:
+            raise EvidenceError("keyvault_secret_read_failed", "Key Vault returned no PEM certificate for the cross-tenant app.", "identity")
+        self._guard_budget()
+        try:
+            from azure.identity import CertificateCredential
+            access_token = CertificateCredential(TARGET_TENANT_ID.lower(), FEDERATED_APP_CLIENT_ID.lower(),
+                                                 certificate_data=pem.encode("utf-8")).get_token(target_resource.rstrip("/") + "/.default").token
+        except Exception as exc:
+            raise EvidenceError("cross_tenant_auth_failed", "Cross-tenant certificate sign-in failed: " + " ".join(str(exc).split())[:220], "identity") from exc
+        verify_jwt_claims(access_token, TARGET_TENANT_ID, FEDERATED_APP_CLIENT_ID, target_resource)
+        return access_token
+
     def exchange_entra_fic(self, target_resource):
+        if CROSS_TENANT_CERT_KEYVAULT_URL and CROSS_TENANT_CERT_NAME:
+            return self.exchange_entra_certificate(target_resource)
         assertion = self.uami_token(ENTRA_TOKEN_EXCHANGE_AUDIENCE)
         self._guard_budget()
         token_url = "https://login.microsoftonline.com/" + TARGET_TENANT_ID.lower() + "/oauth2/v2.0/token"
@@ -666,8 +824,11 @@ class Identity:
 
 
 class HttpReader:
-    def __init__(self, identity, origin=ARM_ORIGIN, token_kind="arm"):
+    def __init__(self, identity, origin=ARM_ORIGIN, token_kind="arm", patient=False):
         self.identity, self.origin, self.token_kind = identity, origin, token_kind
+        # patient readers (Cost Management) honour the *retry-after headers for longer; others keep the 3-attempt policy
+        self.patient = patient
+        self.statement_path = None
         self.context = ssl.create_default_context()
         if self.context.verify_mode != ssl.CERT_REQUIRED or not self.context.check_hostname:
             raise EvidenceError("unsafe_tls", "TLS peer and hostname validation are mandatory.", "tls")
@@ -695,10 +856,14 @@ class HttpReader:
             or len(url) > 16384 or (method, parsed.path) not in self.allowed
         ):
             raise EvidenceError("unsafe_endpoint", "Request was not one of the scoped allowlisted reads.", source)
-        if method == "POST" and not parsed.path.lower().endswith("/providers/microsoft.costmanagement/query"):
+        if method == "POST" and not (
+            parsed.path.lower().endswith("/providers/microsoft.costmanagement/query")
+            or (self.statement_path is not None and parsed.path == self.statement_path)
+        ):
             raise EvidenceError("unsafe_method", "This POST is not an enumerated read-only operation.", source)
         payload = None if body is None else json.dumps(body, allow_nan=False).encode("utf-8")
-        for attempt in range(3):
+        attempts = 5 if self.patient else 3
+        for attempt in range(attempts):
             bearer = self._bearer()
             self.identity._guard_budget()
             request = Request(url, data=payload, method=method, headers={
@@ -707,7 +872,7 @@ class HttpReader:
                 "Content-Type": "application/json",
             })
             try:
-                with self.opener.open(request, timeout=30) as response:
+                with self.opener.open(request, timeout=60 if self.patient else 30) as response:
                     if response.status == 204 and allow_empty:
                         return {}
                     if response.status != 200:
@@ -716,12 +881,19 @@ class HttpReader:
                     if len(raw) > HTTP_BYTES:
                         raise EvidenceError("response_cap", "Source response exceeded the disclosed byte safety bound.", source)
             except HTTPError as exc:
-                if exc.code in (429, 500, 502, 503, 504) and attempt < 2:
-                    retry = exc.headers.get("Retry-After", "") if exc.headers else ""
-                    time.sleep(min(int(retry), 5) if re.fullmatch(r"[0-9]{1,4}", retry) else attempt + 1)
-                    continue
+                if exc.code in (429, 500, 502, 503, 504) and attempt < attempts - 1:
+                    headers = exc.headers.items() if exc.headers else []
+                    waits = [int(v) for k, v in headers if k.lower().endswith("retry-after") and re.fullmatch(r"\s*[0-9]{1,4}\s*", str(v))]
+                    if self.patient:
+                        wait = min(COST_MAX_RETRY_WAIT, max(waits) + 1 if waits else 5 * (attempt + 1))
+                        if self.identity.deadline - time.monotonic() > wait + COST_QUERY_RESERVE_SECONDS / 2:
+                            time.sleep(wait)
+                            continue
+                    else:
+                        time.sleep(min(max(waits), 5) if waits else attempt + 1)
+                        continue
                 raise EvidenceError(
-                    "access_denied" if exc.code in (401, 403) else "http_error",
+                    "access_denied" if exc.code in (401, 403) else "throttled" if exc.code == 429 and self.patient else "http_error",
                     "Read returned HTTP " + str(exc.code) + "; response bodies are excluded.",
                     source, exc.code,
                 ) from exc
@@ -735,6 +907,31 @@ class HttpReader:
             except (ValueError, UnicodeDecodeError) as exc:
                 raise EvidenceError("invalid_json", "Source returned invalid JSON; no raw body is exported.", source) from exc
         raise EvidenceError("http_error", "Bounded retries exhausted.", source)
+
+
+class StatementReader(HttpReader):
+    """The only SQL path, OFF by default: POST /api/2.0/sql/statements with the fixed read-only billing SELECT."""
+
+    PATH = "/api/2.0/sql/statements"
+
+    def __init__(self, identity, origin):
+        super().__init__(identity, origin, "databricks")
+        self.statement_path = self.PATH
+
+    def allow(self, url, method="GET"):
+        parsed = urlsplit(url)
+        if (
+            method != "POST" or parsed.scheme != "https" or parsed.scheme + "://" + parsed.netloc != self.origin
+            or parsed.path != self.PATH or parsed.query or parsed.fragment or parsed.username
+        ):
+            raise EvidenceError("unsafe_endpoint", "Only the fixed system-table billing statement may be posted.", "dbx_system_billing")
+        self.allowed.add((method, parsed.path))
+        return url
+
+    def request(self, method, url, source, body=None, allow_empty=False):
+        if not isinstance(body, dict) or body.get("statement") != SYSTEM_BILLING_STATEMENT:
+            raise EvidenceError("unsafe_statement", "Only the fixed read-only billing statement is allowed.", source)
+        return super().request(method, url, source, body=body, allow_empty=allow_empty)
 
 
 def next_arm_link(link, initial):
@@ -881,7 +1078,8 @@ def param_val(params_obj, key, kind="str", source_id="arm_workspace"):
 
 
 def normalize_workspace(raw, source_id, reference, config):
-    resource_id = arm_id(raw.get("id"), SUBSCRIPTION_ID)
+    sub = config.get("subscription_id") or SUBSCRIPTION_ID
+    resource_id = arm_id(raw.get("id"), sub)
     if resource_id.lower() != config["id"].lower():
         raise EvidenceError("scope_mismatch", "ARM returned a different Databricks workspace ID.", source_id)
     props = obj(raw.get("properties", {}), source_id)
@@ -896,11 +1094,11 @@ def normalize_workspace(raw, source_id, reference, config):
         if len(arm_id_parts) >= 5 and arm_id_parts[1].lower() == "subscriptions" and arm_id_parts[3].lower() == "resourcegroups":
             managed_rg_name = text(arm_id_parts[4], source_id, 90)
     access_connector = obj(props.get("accessConnector", {}), source_id) if props.get("accessConnector") else {}
-    ac_id = arm_id(access_connector.get("id"), SUBSCRIPTION_ID) if access_connector.get("id") else None
-    ac_uami = arm_id(access_connector.get("userAssignedIdentityId"), SUBSCRIPTION_ID) if access_connector.get("userAssignedIdentityId") else None
+    ac_id = arm_id(access_connector.get("id"), sub) if access_connector.get("id") else None
+    ac_uami = arm_id(access_connector.get("userAssignedIdentityId"), sub) if access_connector.get("userAssignedIdentityId") else None
     custom_vnet_id = param_val(params, "customVirtualNetworkId", "str", source_id)
     if custom_vnet_id:
-        custom_vnet_id = arm_id(custom_vnet_id, SUBSCRIPTION_ID)
+        custom_vnet_id = arm_id(custom_vnet_id, sub)
     enc_entities = obj(pick(props, "encryption", "entities") or {}, source_id)
     managed_services_cmk = obj(enc_entities.get("managedServices", {}), source_id) if enc_entities.get("managedServices") else {}
     managed_disk_cmk = obj(enc_entities.get("managedDisk", {}), source_id) if enc_entities.get("managedDisk") else {}
@@ -924,7 +1122,7 @@ def normalize_workspace(raw, source_id, reference, config):
         "workspace_id": resource_id,
         "workspace_guid": text(props.get("workspaceId"), source_id, 128),
         "workspace_url": workspace_url or config["workspace_host"],
-        "subscription_id": SUBSCRIPTION_ID,
+        "subscription_id": sub,
         "sre_tenant_id": config["sre_tenant_id"],
         "target_tenant_id": config["target_tenant_id"],
         "auth_mode": config["auth_mode"],
@@ -1004,7 +1202,8 @@ def normalize_outbound_endpoint(raw, source_id, reference, config):
 
 
 def normalize_resource(raw, source_id, reference, config, association):
-    resource_id = arm_id(raw.get("id"), SUBSCRIPTION_ID)
+    sub = config.get("subscription_id") or SUBSCRIPTION_ID
+    resource_id = arm_id(raw.get("id"), sub)
     kind = resource_type(resource_id)
     if kind not in RESOURCE_APIS:
         raise EvidenceError("unsupported_resource_type", "Resource detail type is not in the fixed whitelist.", source_id)
@@ -1031,7 +1230,7 @@ def normalize_resource(raw, source_id, reference, config, association):
         row["identity_type"] = text(identity_block.get("type"), source_id, 64)
         row["principal_id"] = text(identity_block.get("principalId"), source_id, 64)
         row["user_assigned_identities"] = [
-            arm_id(k, SUBSCRIPTION_ID) for k in obj(identity_block.get("userAssignedIdentities") or {}, source_id)
+            arm_id(k, sub) for k in obj(identity_block.get("userAssignedIdentities") or {}, source_id)
         ]
     elif kind == "microsoft.storage/storageaccounts":
         for field in ("supportsHttpsTrafficOnly", "minimumTlsVersion", "allowBlobPublicAccess", "allowSharedKeyAccess", "publicNetworkAccess", "isHnsEnabled"):
@@ -1051,12 +1250,12 @@ def normalize_resource(raw, source_id, reference, config, association):
         row["vault_uri"] = text(props.get("vaultUri"), source_id, 512)
     elif kind == "microsoft.network/virtualnetworks":
         row["address_space"] = strings(pick(props, "addressSpace", "addressPrefixes"), source_id)
-        row["subnet_ids"] = [arm_id(s.get("id"), SUBSCRIPTION_ID) for s in array(props.get("subnets", []), source_id) if s.get("id")]
+        row["subnet_ids"] = [arm_id(s.get("id"), sub) for s in array(props.get("subnets", []), source_id) if s.get("id")]
     elif kind == "microsoft.network/virtualnetworks/subnets":
         row["address_prefix"] = text(props.get("addressPrefix"), source_id, 128)
-        row["nsg_id"] = arm_id(pick(props, "networkSecurityGroup", "id"), SUBSCRIPTION_ID) if pick(props, "networkSecurityGroup", "id") else None
-        row["route_table_id"] = arm_id(pick(props, "routeTable", "id"), SUBSCRIPTION_ID) if pick(props, "routeTable", "id") else None
-        row["nat_gateway_id"] = arm_id(pick(props, "natGateway", "id"), SUBSCRIPTION_ID) if pick(props, "natGateway", "id") else None
+        row["nsg_id"] = arm_id(pick(props, "networkSecurityGroup", "id"), sub) if pick(props, "networkSecurityGroup", "id") else None
+        row["route_table_id"] = arm_id(pick(props, "routeTable", "id"), sub) if pick(props, "routeTable", "id") else None
+        row["nat_gateway_id"] = arm_id(pick(props, "natGateway", "id"), sub) if pick(props, "natGateway", "id") else None
         row["delegations"] = [text(pick(d, "properties", "serviceName") or d.get("name"), source_id, 256) for d in array(props.get("delegations", []), source_id)]
     elif kind == "microsoft.network/routetables":
         row["disable_bgp_route_propagation"] = boolean(props.get("disableBgpRoutePropagation"), source_id)
@@ -1080,12 +1279,12 @@ def normalize_resource(raw, source_id, reference, config, association):
             for item in array(props.get("securityRules", []), source_id)
         ]
     elif kind == "microsoft.network/natgateways":
-        row["public_ip_ids"] = [arm_id(ip.get("id"), SUBSCRIPTION_ID) for ip in array(props.get("publicIpAddresses", []), source_id) if ip.get("id")]
+        row["public_ip_ids"] = [arm_id(ip.get("id"), sub) for ip in array(props.get("publicIpAddresses", []), source_id) if ip.get("id")]
     elif kind == "microsoft.network/publicipaddresses":
         row["configuration"]["ipAddress"] = text(props.get("ipAddress"), source_id, 128)
         row["configuration"]["publicIPAllocationMethod"] = text(props.get("publicIPAllocationMethod"), source_id, 64)
     elif kind == "microsoft.network/privateendpoints":
-        row["subnet_id"] = arm_id(pick(props, "subnet", "id"), SUBSCRIPTION_ID) if pick(props, "subnet", "id") else None
+        row["subnet_id"] = arm_id(pick(props, "subnet", "id"), sub) if pick(props, "subnet", "id") else None
         connections = array(props.get("privateLinkServiceConnections", []) or props.get("manualPrivateLinkServiceConnections", []), source_id)
         row["connections"] = [
             {
@@ -1101,7 +1300,7 @@ def normalize_resource(raw, source_id, reference, config, association):
     return row
 
 
-def referenced_resource_ids(row):
+def referenced_resource_ids(row, subscription=None):
     refs = []
     for field in ("subnet_ids", "public_ip_ids", "user_assigned_identities"):
         refs.extend((val, field) for val in row.get(field, []) if val)
@@ -1111,7 +1310,7 @@ def referenced_resource_ids(row):
     if row.get("resource_kind") == "microsoft.network/virtualnetworks/subnets":
         refs.append((re.split(r"/subnets/", row["id"], flags=re.IGNORECASE)[0], "parent_virtual_network_id"))
     for val, field in refs:
-        val = arm_id(val, SUBSCRIPTION_ID)
+        val = arm_id(val, subscription or SUBSCRIPTION_ID)
         if resource_type(val) in RESOURCE_APIS:
             yield val, field
 
@@ -1146,6 +1345,12 @@ def normalize_cluster(raw, source_id, reference, config):
         "driver_instance_pool_id": text(raw.get("driver_instance_pool_id"), source_id, 128),
         "runtime_engine": text(raw.get("runtime_engine"), source_id, 64),
         "custom_tags": tags_map(raw.get("custom_tags"), source_id),
+        "creator_user_name": text(raw.get("creator_user_name"), source_id, 256),
+        "azure_availability": text(pick(raw, "azure_attributes", "availability"), source_id, 64),
+        "first_on_demand": number(pick(raw, "azure_attributes", "first_on_demand"), source_id),
+        "start_time": number(raw.get("start_time"), source_id),
+        "last_restarted_time": number(raw.get("last_restarted_time"), source_id),
+        "terminated_time": number(raw.get("terminated_time"), source_id),
         "resource_id": config["id"],
         "workspace_name": config["name"],
         "workspace_id": config["id"],
@@ -1169,6 +1374,13 @@ def normalize_pool(raw, source_id, reference, config):
         "min_idle_instances": number(raw.get("min_idle_instances"), source_id),
         "max_capacity": number(raw.get("max_capacity"), source_id),
         "idle_instance_autotermination_minutes": number(raw.get("idle_instance_autotermination_minutes"), source_id),
+        "azure_availability": text(pick(raw, "azure_attributes", "availability"), source_id, 64),
+        "custom_tags": tags_map(raw.get("custom_tags"), source_id),
+        "state": text(raw.get("state"), source_id, 64),
+        "stats": {
+            key: number(pick(raw, "stats", key), source_id)
+            for key in ("used_count", "idle_count", "pending_used_count", "pending_idle_count")
+        },
         "resource_id": config["id"],
         "workspace_name": config["name"],
         "workspace_id": config["id"],
@@ -1182,6 +1394,22 @@ def normalize_policy(raw, source_id, reference, config):
     name = text(raw.get("name"), source_id, 256) or pol_id
     if not pol_id:
         raise EvidenceError("invalid_record", "Cluster policy requires policy_id.", source_id)
+    enforced_tags, autotermination = None, None
+    definition = raw.get("definition")
+    if isinstance(definition, str) and len(definition) <= 200000:
+        try:
+            rules = json.loads(definition)
+        except ValueError:
+            rules = None
+        if isinstance(rules, dict):
+            # only tag names and the auto-termination bound are kept; values such as Spark settings are never exported
+            enforced_tags = sorted({k[len("custom_tags."):][:128] for k in rules if isinstance(k, str) and k.startswith("custom_tags.")})
+            rule = rules.get("autotermination_minutes")
+            if isinstance(rule, dict):
+                autotermination = {
+                    key: rule.get(key) for key in ("type", "value", "maxValue", "defaultValue")
+                    if isinstance(rule.get(key), (int, float, str)) and not isinstance(rule.get(key), bool) and len(str(rule.get(key))) <= 32
+                }
     return {
         "id": pol_id,
         "policy_id": pol_id,
@@ -1190,6 +1418,8 @@ def normalize_policy(raw, source_id, reference, config):
         "kind": "ClusterPolicy",
         "policy_family_id": text(raw.get("policy_family_id"), source_id, 128),
         "is_default": boolean(raw.get("is_default"), source_id),
+        "enforced_tag_keys": enforced_tags,
+        "autotermination_rule": autotermination,
         "resource_id": config["id"],
         "workspace_name": config["name"],
         "workspace_id": config["id"],
@@ -1211,13 +1441,20 @@ def normalize_job(raw, source_id, reference, config, from_detail=False):
         key = text(jc.get("job_cluster_key"), source_id, 128)
         new_cluster = obj(jc.get("new_cluster", {}), source_id)
         if key:
+            autoscale = new_cluster.get("autoscale") if isinstance(new_cluster.get("autoscale"), dict) else {}
             job_clusters.append({
                 "job_cluster_key": key,
                 "spark_version": text(new_cluster.get("spark_version"), source_id, 128),
                 "node_type_id": text(new_cluster.get("node_type_id"), source_id, 128),
+                "driver_node_type_id": text(new_cluster.get("driver_node_type_id"), source_id, 128),
                 "policy_id": text(new_cluster.get("policy_id"), source_id, 128),
                 "instance_pool_id": text(new_cluster.get("instance_pool_id"), source_id, 128),
                 "data_security_mode": text(new_cluster.get("data_security_mode"), source_id, 64),
+                "num_workers": number(new_cluster.get("num_workers"), source_id),
+                "autoscale_max_workers": number(autoscale.get("max_workers"), source_id),
+                "azure_availability": text(pick(new_cluster, "azure_attributes", "availability"), source_id, 64),
+                "runtime_engine": text(new_cluster.get("runtime_engine"), source_id, 64),
+                "custom_tags": tags_map(new_cluster.get("custom_tags"), source_id),
             })
     tasks = []
     for t in array(settings.get("tasks", []), source_id):
@@ -1246,6 +1483,7 @@ def normalize_job(raw, source_id, reference, config, from_detail=False):
         or webhooks.get("on_failure") or settings.get("notification_settings")
     )
     schedule = settings.get("schedule") or settings.get("trigger") or settings.get("continuous")
+    pause_status = pick(schedule, "pause_status") if isinstance(schedule, dict) else None
     has_more_flag = boolean(raw.get("has_more"), source_id) is True
     next_token_present = bool(text(raw.get("next_page_token"), source_id, 4096))
     tasks_incomplete = has_more_flag or next_token_present or len(tasks) >= 100 or len(job_clusters) >= 100
@@ -1256,6 +1494,9 @@ def normalize_job(raw, source_id, reference, config, from_detail=False):
         "workload_name": name,
         "kind": "Job",
         "scheduled": bool(schedule),
+        "schedule_paused": pause_status == "PAUSED",
+        "continuous": bool(settings.get("continuous")),
+        "creator_user_name": text(raw.get("creator_user_name"), source_id, 256),
         "timeout_seconds": number(settings.get("timeout_seconds"), source_id),
         "max_concurrent_runs": number(settings.get("max_concurrent_runs"), source_id),
         "has_notifications": has_notifications,
@@ -1350,6 +1591,14 @@ def normalize_warehouse(raw, source_id, reference, config):
         "min_num_clusters": number(raw.get("min_num_clusters"), source_id),
         "max_num_clusters": number(raw.get("max_num_clusters"), source_id),
         "enable_photon": boolean(raw.get("enable_photon"), source_id),
+        "spot_instance_policy": text(raw.get("spot_instance_policy"), source_id, 64),
+        "num_clusters": number(raw.get("num_clusters"), source_id),
+        "num_active_sessions": number(raw.get("num_active_sessions"), source_id),
+        "creator_name": text(raw.get("creator_name"), source_id, 256),
+        "custom_tags": tags_map({
+            str(item.get("key")): item.get("value")
+            for item in (pick(raw, "tags", "custom_tags") or []) if isinstance(item, dict) and item.get("key")
+        } if isinstance(pick(raw, "tags", "custom_tags"), list) else None, source_id),
         "resource_id": config["id"],
         "workspace_name": config["name"],
         "workspace_id": config["id"],
@@ -1567,6 +1816,38 @@ def extract_vault_host(uri_str):
     if parsed.scheme == "https" and parsed.hostname and parsed.hostname.lower().endswith(".vault.azure.net"):
         return parsed.hostname.lower()
     return None
+
+
+def read_runtime_catalog(reader, reference, inventory):
+    """Supported runtime keys and metadata of the node types in use: end-of-support runtimes and deprecated VM families."""
+    used = {c.get(k) for c in inventory.get("clusters", []) for k in ("node_type_id", "driver_node_type_id")}
+    used |= {p.get("node_type_id") for p in inventory.get("instance_pools", [])}
+    used |= {jc.get(k) for j in inventory.get("jobs", []) for jc in j.get("job_clusters", []) for k in ("node_type_id", "driver_node_type_id")}
+    used.discard(None)
+
+    def versions(item):
+        rows = item.get("versions") if isinstance(item.get("versions"), list) else []
+        return sorted({v["key"] for v in rows if isinstance(v, dict) and isinstance(v.get("key"), str) and len(v["key"]) <= 128})
+
+    def node_types(item):
+        rows = item.get("node_types") if isinstance(item.get("node_types"), list) else []
+        out = {}
+        for row in rows:
+            node = row.get("node_type_id") if isinstance(row, dict) else None
+            if node in used:
+                cores = row.get("num_cores")
+                out[node] = {
+                    "is_deprecated": row.get("is_deprecated") is True,
+                    "num_cores": cores if isinstance(cores, (int, float)) and not isinstance(cores, bool) and math.isfinite(cores) else None,
+                    "photon_worker_capable": row.get("photon_worker_capable") is True,
+                }
+        return out
+
+    spark, spark_receipt = read_one(reader, reader.origin + "/api/2.0/clusters/spark-versions", "dbx_spark_versions", reference, versions)
+    nodes, node_receipt = read_one(reader, reader.origin + "/api/2.0/clusters/list-node-types", "dbx_node_types", reference, node_types)
+    spark_receipt["records"] = len(spark or [])
+    node_receipt["records"] = len(nodes or {})
+    return {"spark_versions": spark, "node_types": nodes}, [spark_receipt, node_receipt]
 
 
 def collect_live(config, reference, deadline=None):
@@ -1868,6 +2149,9 @@ def collect_live(config, reference, deadline=None):
             raw["inventory"]["sql_warehouses"] = warehouses
             raw["sources"].append(wh_receipt)
 
+            raw["dbx_runtime_catalog"], runtime_receipts = read_runtime_catalog(dbx, reference, raw["inventory"])
+            raw["sources"].extend(runtime_receipts)
+
             scopes, scope_receipt = read_dbx_pages(
                 dbx, dbx.origin + "/api/2.0/secrets/scopes/list", "dbx_secret_scopes", reference, "scopes",
                 lambda item: normalize_secret_scope(item, "dbx_secret_scopes", reference, config),
@@ -1885,7 +2169,7 @@ def collect_live(config, reference, deadline=None):
             raw["inventory"]["global_init_scripts"] = scripts
             raw["sources"].append(script_receipt)
         else:
-            for sid in ("dbx_workspace_conf", "dbx_clusters", "dbx_instance_pools", "dbx_cluster_policies", "dbx_jobs", "dbx_pipelines", "dbx_sql_warehouses", "dbx_secret_scopes", "dbx_init_scripts"):
+            for sid in ("dbx_workspace_conf", "dbx_clusters", "dbx_instance_pools", "dbx_cluster_policies", "dbx_jobs", "dbx_pipelines", "dbx_sql_warehouses", "dbx_spark_versions", "dbx_node_types", "dbx_secret_scopes", "dbx_init_scripts"):
                 raw["sources"].append(source_receipt(sid, reference, "not_configured", "Workspace REST API collection is disabled in configuration; no empty-workload inference."))
 
         if config["unity_catalog_enabled"] and config["workspace_api_enabled"]:
@@ -1959,7 +2243,7 @@ def collect_live(config, reference, deadline=None):
             "uc_system_lineage",
             reference,
             "not_configured",
-            "Runtime table/column lineage (system.access.table_lineage, system.access.column_lineage) and DBU billing (system.billing.usage) require SQL Warehouse query execution and are never auto-started by this control-plane collector.",
+            "Runtime table/column lineage (system.access.table_lineage, system.access.column_lineage) requires SQL Warehouse query execution and is never queried by this control-plane collector; DBU billing detail (system.billing.usage) is the separate opt-in source dbx_system_billing.",
         ))
 
         read_queued_related()
@@ -2013,6 +2297,10 @@ def collect_live(config, reference, deadline=None):
 
         raw["cost_rows"], cost_source = collect_cost(arm, config, reference, related, workspace)
         raw["sources"].append(cost_source)
+        raw["dbx_cost_data"], dbx_cost_source = collect_databricks_costs(identity, config, reference, workspace, raw["inventory"])
+        raw["sources"].append(dbx_cost_source)
+        raw["system_billing"], billing_source = collect_system_billing(identity, config, reference, workspace)
+        raw["sources"].append(billing_source)
         if workspace_arm_error is not None:
             plane2_ok = any(
                 s["id"].startswith(("dbx_", "uc_")) and s["id"] != "uc_system_lineage" and s["status"] == "complete"
@@ -2290,7 +2578,7 @@ def dependencies_for(raw, reference, provenance):
 
     for res in inv.get("related_resources", []):
         r_key = arm_map[res["id"].lower()]
-        for child_id, field in referenced_resource_ids(res):
+        for child_id, field in referenced_resource_ids(res, res["id"].split("/")[2]):
             relation_name = "associated_route_table" if field == "route_table_id" else "associated_nsg" if field == "nsg_id" else "references_arm_resource"
             if child_id.lower() in arm_map:
                 add_edge(r_key, arm_map[child_id.lower()], relation_name, "associated_resource", "OBSERVED", [res["source_id"]], [field], {"target_id": child_id})
@@ -2590,12 +2878,12 @@ def expected(raw, key):
 
 def conditional(value, requirement, reason, observed, sources=None):
     if requirement is False:
-        return outcome("not_applicable", "El requisito confirmado no aplica. " + reason, observed, sources)
+        return outcome("not_applicable", "The confirmed requirement doesn't apply. " + reason, observed, sources)
     if value is True:
-        return decision(True, reason + " Configuración observada; no prueba eficacia en tiempo de ejecución.", observed, sources)
+        return decision(True, reason + " Observed configuration; it doesn't prove runtime effectiveness.", observed, sources)
     if requirement is not True:
-        return outcome("not_evaluated", "Falta requisito confirmado del propietario o control compensatorio. " + reason, observed, sources)
-    return decision(value, reason + " Requisito confirmado por el propietario.", observed, sources)
+        return outcome("not_evaluated", "No owner-confirmed requirement or compensating control. " + reason, observed, sources)
+    return decision(value, reason + " Requirement confirmed by the owner.", observed, sources)
 
 
 def evaluate_workspace_rule(rule, raw, dep_graph):
@@ -2604,14 +2892,14 @@ def evaluate_workspace_rule(rule, raw, dep_graph):
         sku = (ws.get("sku_name") or ws.get("sku_tier") or "").lower()
         val = True if sku == "premium" else False if sku in ("standard", "trial") else None
         return conditional(val, expected(raw, "premium_required") if expected(raw, "premium_required") is not None else True,
-                           "SKU ARM observada del workspace.", {"sku_name": ws.get("sku_name"), "sku_tier": ws.get("sku_tier")}, ["arm_workspace"])
+                           "Observed ARM SKU of the workspace.", {"sku_name": ws.get("sku_name"), "sku_tier": ws.get("sku_tier")}, ["arm_workspace"])
     if test == "secure_cluster_connectivity":
-        return decision(ws.get("enable_no_public_ip"), "Parámetro enableNoPublicIp observado en ARM.", {"enable_no_public_ip": ws.get("enable_no_public_ip")}, ["arm_workspace"])
+        return decision(ws.get("enable_no_public_ip"), "enableNoPublicIp parameter observed in ARM.", {"enable_no_public_ip": ws.get("enable_no_public_ip")}, ["arm_workspace"])
     if test == "vnet_injection":
         vnet = ws.get("custom_virtual_network_id")
         vnet_val = True if vnet else (False if source_complete(raw, "arm_workspace") else None)
         return conditional(vnet_val, expected(raw, "vnet_injection_required") if expected(raw, "vnet_injection_required") is not None else True,
-                           "Parámetro customVirtualNetworkId e inyección de subredes host/container.", {
+                           "customVirtualNetworkId parameter and host/container subnet injection.", {
                                "custom_virtual_network_id": vnet,
                                "custom_public_subnet_name": ws.get("custom_public_subnet_name"),
                                "custom_private_subnet_name": ws.get("custom_private_subnet_name"),
@@ -2621,81 +2909,81 @@ def evaluate_workspace_rule(rule, raw, dep_graph):
         pes = ws.get("private_endpoint_connections", [])
         approved_pe = any(p.get("status") == "Approved" for p in pes)
         val = True if pna == "Disabled" or approved_pe else (False if pna == "Enabled" and not pes else None)
-        return conditional(val, expected(raw, "private_link_required"), "Configuración publicNetworkAccess, requiredNsgRules y Private Endpoints.", {
+        return conditional(val, expected(raw, "private_link_required"), "publicNetworkAccess, requiredNsgRules and private endpoint configuration.", {
             "public_network_access": pna, "required_nsg_rules": ws.get("required_nsg_rules"), "private_endpoint_connections": pes,
         }, ["arm_workspace"])
     if test == "access_connector_and_storage_firewall":
         ac = ws.get("access_connector", {})
         has_ac = bool(ac.get("id")) and ac.get("identity_type") in ("SystemAssigned", "UserAssigned", "SystemAssigned,UserAssigned")
         return decision(True if has_ac else False if source_complete(raw, "arm_workspace") else None,
-                        "Access Connector vinculado al workspace para identidad administrada.", {
+                        "Access connector linked to the workspace for managed identity.", {
                             "access_connector": ac, "default_storage_firewall": ws.get("default_storage_firewall"),
                         }, ["arm_workspace"])
     if test == "customer_managed_keys":
         cmk = ws.get("cmk", {})
         has_cmk = cmk.get("managed_services_key_source") == "Microsoft.Keyvault" and cmk.get("managed_disk_key_source") == "Microsoft.Keyvault"
-        return conditional(has_cmk, expected(raw, "cmk_required"), "Cifrado CMK de managedServices y managedDisk.", cmk, ["arm_workspace"])
+        return conditional(has_cmk, expected(raw, "cmk_required"), "CMK encryption of managedServices and managedDisk.", cmk, ["arm_workspace"])
     if test == "enhanced_security_compliance":
         esc = ws.get("enhanced_security_compliance", {})
         enabled = esc.get("enhanced_security_monitoring") == "Enabled" or esc.get("compliance_security_profile") == "Enabled"
-        return conditional(enabled, expected(raw, "enhanced_security_required"), "Perfil enhancedSecurityCompliance observado.", esc, ["arm_workspace"])
+        return conditional(enabled, expected(raw, "enhanced_security_required"), "Observed enhancedSecurityCompliance profile.", esc, ["arm_workspace"])
     if test == "diagnostics":
         rows = raw.get("arm_diagnostics", [])
         enabled = any(log.get("enabled") is True for r in rows for log in r.get("logs", []))
         val = True if enabled else False if source_complete(raw, "arm_diagnostics") else None
-        return decision(val, "Diagnostic settings habilitados en ARM; la ingesta efectiva requiere verificación separada.", {"diagnostic_settings": rows}, ["arm_diagnostics"])
+        return decision(val, "Diagnostic settings enabled in ARM; actual ingestion needs separate verification.", {"diagnostic_settings": rows}, ["arm_diagnostics"])
     if test == "pat_token_governance":
         if not source_complete(raw, "dbx_workspace_conf") or not isinstance(raw.get("workspace_conf"), dict):
-            return outcome("not_evaluated", "workspace-conf no disponible para revisar políticas de tokens PAT.", source_ids=["dbx_workspace_conf"])
+            return outcome("not_evaluated", "workspace-conf isn't available to review PAT token policies.", source_ids=["dbx_workspace_conf"])
         conf = raw["workspace_conf"]
         max_days = conf.get("maxTokenLifetimeDays")
         tokens_enabled = conf.get("enableTokensConfig")
         bounded = tokens_enabled == "false" or (max_days is not None and str(max_days).isdigit() and 0 < int(max_days) <= 90)
-        return decision(bounded, "Gobernanza de tokens PAT (enableTokensConfig y maxTokenLifetimeDays <= 90 días).", conf, ["dbx_workspace_conf"])
+        return decision(bounded, "PAT token governance (enableTokensConfig and maxTokenLifetimeDays <= 90 days).", conf, ["dbx_workspace_conf"])
     if test == "default_catalog_unity":
         dtype = ws.get("default_catalog_type")
         has_uc = bool(inv.get("uc_metastore"))
         val = True if dtype == "UnityCatalog" or has_uc else (False if dtype == "HiveMetastore" else None)
-        return decision(val, "Catálogo predeterminado UnityCatalog o metastore adjunto observado.", {
+        return decision(val, "Observed UnityCatalog default catalog or attached metastore.", {
             "default_catalog_type": dtype, "default_catalog_name": ws.get("default_catalog_name"),
             "uc_metastore_id": pick(inv.get("uc_metastore"), "id"),
         }, ["arm_workspace", "uc_metastore_summary"])
     if test == "global_init_scripts":
         if not source_complete(raw, "dbx_init_scripts"):
-            return outcome("not_evaluated", "Lista de global init scripts no disponible.", source_ids=["dbx_init_scripts"])
+            return outcome("not_evaluated", "The global init script list isn't available.", source_ids=["dbx_init_scripts"])
         enabled = [s for s in inv.get("global_init_scripts", []) if s.get("enabled") is True]
-        return decision(len(enabled) == 0, "Los global init scripts activos deben minimizarse y migrarse a políticas o volúmenes gobernados.", {
+        return decision(len(enabled) == 0, "Enabled global init scripts should be minimized and moved to policies or governed volumes.", {
             "total_scripts": len(inv.get("global_init_scripts", [])), "enabled_scripts": [s["name"] for s in enabled],
         }, ["dbx_init_scripts"])
     if test == "advisor":
         return decision(True if source_complete(raw, "arm_advisor") else None,
-                        "Recomendaciones cacheadas de Azure Advisor leídas para el workspace.", {"recommendations_count": len(raw.get("advisor", []))}, ["arm_advisor"])
+                        "Cached Azure Advisor recommendations read for the workspace.", {"recommendations_count": len(raw.get("advisor", []))}, ["arm_advisor"])
     if test == "uc_metastore_attached":
         if not source_complete(raw, "uc_metastore_summary"):
-            return outcome("not_evaluated", "Metastore summary de Unity Catalog no disponible.", source_ids=["uc_metastore_summary"])
+            return outcome("not_evaluated", "The Unity Catalog metastore summary isn't available.", source_ids=["uc_metastore_summary"])
         ms = inv.get("uc_metastore")
-        return decision(bool(ms and ms.get("metastore_id")), "Asignación de Metastore de Unity Catalog confirmada.", {"metastore": ms}, ["uc_metastore_summary"])
+        return decision(bool(ms and ms.get("metastore_id")), "Unity Catalog metastore assignment confirmed.", {"metastore": ms}, ["uc_metastore_summary"])
     if test == "uc_storage_credential_mi":
         if not source_complete(raw, "uc_storage_credentials"):
-            return outcome("not_evaluated", "Storage credentials de Unity Catalog no disponibles.", source_ids=["uc_storage_credentials"])
+            return outcome("not_evaluated", "Unity Catalog storage credentials aren't available.", source_ids=["uc_storage_credentials"])
         creds = inv.get("uc_storage_credentials", [])
         if not creds:
-            return outcome("not_evaluated", "No se observaron storage credentials registradas en Unity Catalog.", source_ids=["uc_storage_credentials"])
+            return outcome("not_evaluated", "No storage credentials registered in Unity Catalog were observed.", source_ids=["uc_storage_credentials"])
         sp_creds = [c["name"] for c in creds if c.get("uses_service_principal") or not c.get("uses_managed_identity")]
-        return decision(len(sp_creds) == 0, "Todas las storage credentials usan Azure Managed Identity vía Access Connector.", {
+        return decision(len(sp_creds) == 0, "All storage credentials use an Azure managed identity through an access connector.", {
             "total_credentials": len(creds), "non_managed_identity_credentials": sp_creds,
         }, ["uc_storage_credentials"])
     if test == "uc_external_locations_governed":
         if not source_complete(raw, "uc_external_locations", "uc_storage_credentials"):
-            return outcome("not_evaluated", "External locations o storage credentials incompletas.", source_ids=["uc_external_locations", "uc_storage_credentials"])
+            return outcome("not_evaluated", "External locations or storage credentials are incomplete.", source_ids=["uc_external_locations", "uc_storage_credentials"])
         locs = inv.get("uc_external_locations", [])
         if not locs:
-            return outcome("not_evaluated", "No se observaron external locations registradas.", source_ids=["uc_external_locations"])
+            return outcome("not_evaluated", "No registered external locations were observed.", source_ids=["uc_external_locations"])
         known_creds = {c["name"] for c in inv.get("uc_storage_credentials", [])}
         if all(str(l.get("url") or "").lower().startswith("abfss://") for l in locs) and any(not l.get("credential_name") for l in locs) and not known_creds:
             return outcome(
                 "not_evaluated",
-                "External locations observadas vía permiso mínimo BROWSE con URI abfss://, pero credential_name y uc_storage_credentials están filtrados por ACL de Unity Catalog.",
+                "External locations observed through the minimal BROWSE permission with abfss:// URIs, but credential_name and uc_storage_credentials are filtered by Unity Catalog ACLs.",
                 {"total_external_locations": len(locs), "browse_only_projection": True},
                 ["uc_external_locations", "uc_storage_credentials"],
             )
@@ -2704,17 +2992,17 @@ def evaluate_workspace_rule(rule, raw, dep_graph):
             if not l.get("credential_name") or l["credential_name"] not in known_creds
             or not str(l.get("url") or "").lower().startswith("abfss://")
         ]
-        return decision(len(ungoverned) == 0, "External locations vinculadas a Storage Credential existente y URI abfss://.", {
+        return decision(len(ungoverned) == 0, "External locations linked to an existing storage credential with an abfss:// URI.", {
             "total_external_locations": len(locs), "non_compliant_locations": ungoverned,
         }, ["uc_external_locations", "uc_storage_credentials"])
     if test == "secret_scopes_keyvault":
         if not source_complete(raw, "dbx_secret_scopes"):
-            return outcome("not_evaluated", "Secret scopes no disponibles.", source_ids=["dbx_secret_scopes"])
+            return outcome("not_evaluated", "Secret scopes aren't available.", source_ids=["dbx_secret_scopes"])
         scopes = inv.get("secret_scopes", [])
         if not scopes:
-            return outcome("not_evaluated", "No se observaron secret scopes en el workspace.", source_ids=["dbx_secret_scopes"])
+            return outcome("not_evaluated", "No secret scopes were observed in the workspace.", source_ids=["dbx_secret_scopes"])
         dbx_backed = [s["name"] for s in scopes if s.get("backend_type") != "AZURE_KEYVAULT"]
-        return decision(len(dbx_backed) == 0, "Secret scopes respaldados por Azure Key Vault (AZURE_KEYVAULT).", {
+        return decision(len(dbx_backed) == 0, "Secret scopes backed by Azure Key Vault (AZURE_KEYVAULT).", {
             "total_scopes": len(scopes), "databricks_backed_scopes": dbx_backed,
         }, ["dbx_secret_scopes"])
     if test == "dependency_integrity":
@@ -2735,7 +3023,7 @@ def evaluate_workspace_rule(rule, raw, dep_graph):
         if broken:
             return decision(
                 False,
-                "Se detectaron referencias internas rotas confirmadas dentro de definiciones completas de Jobs (job_cluster_key o depends_on inexistentes).",
+                "Confirmed broken internal references were found in complete job definitions (job_cluster_key or depends_on values that don't exist).",
                 {
                     "broken_references_count": len(broken),
                     "broken_references": broken,
@@ -2746,7 +3034,7 @@ def evaluate_workspace_rule(rule, raw, dep_graph):
         if not source_complete(raw, *dep_sources) or incomplete_jobs or incomplete_pipes or unverified:
             return outcome(
                 "not_evaluated",
-                "Existen fuentes de dependencias incompletas, detalles de jobs/pipelines truncados o referencias entre objetos no verificadas (las APIs list de Databricks filtran por ACL, por lo que la ausencia de un ID externo se mantiene UNKNOWN en lugar de declararse rota).",
+                "Some dependency sources are incomplete, job or pipeline details are truncated, or references between objects are unverified (Databricks list APIs filter by ACL, so a missing external ID stays UNKNOWN instead of being declared broken).",
                 {
                     "broken_references_count": 0,
                     "unverified_references_count": len(unverified),
@@ -2758,7 +3046,7 @@ def evaluate_workspace_rule(rule, raw, dep_graph):
             )
         return decision(
             True,
-            "Todas las fuentes de dependencia están completas y todas las referencias entre tareas de Jobs, clústeres, pools, políticas, pipelines, warehouses y credenciales resuelven en el mapa de dependencias.",
+            "All dependency sources are complete, and every reference between job tasks, clusters, pools, policies, pipelines, warehouses and credentials resolves in the dependency map.",
             {
                 "broken_references_count": 0,
                 "unverified_references_count": 0,
@@ -2768,32 +3056,41 @@ def evaluate_workspace_rule(rule, raw, dep_graph):
     if test == "runtime_table_lineage":
         return outcome(
             "not_evaluated",
-            "El linaje dinámico de tablas y columnas (system.access.table_lineage / column_lineage) requiere ejecutar consultas en un SQL Warehouse activo y no se ejecuta ni simula desde este colector de plano de control.",
+            "Runtime table and column lineage (system.access.table_lineage / column_lineage) needs queries on a running SQL warehouse; this control-plane collector neither runs nor simulates them.",
             {"system_tables_queried": False},
             ["uc_system_lineage"],
         )
     if test == "lakehouse_federation_connections":
         if not source_complete(raw, "uc_connections"):
-            return outcome("not_evaluated", "Conexiones de Lakehouse Federation no disponibles.", source_ids=["uc_connections"])
+            return outcome("not_evaluated", "Lakehouse Federation connections aren't available.", source_ids=["uc_connections"])
         conns = inv.get("uc_connections", [])
         if not conns:
-            return outcome("not_applicable", "No existen conexiones externas de Lakehouse Federation registradas en el metastore.", {"connections_count": 0}, ["uc_connections"])
-        return decision(True, "Conexiones externas de Lakehouse Federation inventariadas en el mapa de dependencias.", {
+            return outcome("not_applicable", "No external Lakehouse Federation connections are registered in the metastore.", {"connections_count": 0}, ["uc_connections"])
+        return decision(True, "External Lakehouse Federation connections inventoried in the dependency map.", {
             "connections": [{"name": c["name"], "type": c.get("connection_type"), "host": c.get("host")} for c in conns],
         }, ["uc_connections"])
     if test == "outbound_control_plane_endpoints":
         if not source_complete(raw, "arm_outbound_endpoints"):
-            return outcome("not_evaluated", "Lista oficial outboundNetworkDependenciesEndpoints no disponible.", source_ids=["arm_outbound_endpoints"])
+            return outcome("not_evaluated", "The official outboundNetworkDependenciesEndpoints list isn't available.", source_ids=["arm_outbound_endpoints"])
         eps = inv.get("outbound_endpoints", [])
-        return decision(bool(eps), "Dependencias de red saliente hacia el plano de control inventariadas desde ARM.", {
+        return decision(bool(eps), "Outbound network dependencies to the control plane inventoried from ARM.", {
             "categories": [e["category"] for e in eps], "count": len(eps),
         }, ["arm_outbound_endpoints"])
     if test == "cost_attribution":
+        head = (raw.get("databricks_cost_model") or {}).get("headline") or {}
+        gap, first = head.get("unattributed_share"), head.get("first_tag")
+        if gap is not None and first and first.get("tagged_share") is not None:
+            return decision(
+                gap <= 10 and first["tagged_share"] >= 80,
+                "Databricks cost attribution by tags in Cost Management: at most 10% without a compute tag and at least 80% with the main allocation tag.",
+                {"month": head.get("review_month"), "unattributed_share": gap, "allocation_tag": first["tag"], "tagged_share": first["tagged_share"]},
+                ["azure_cost_databricks"],
+            )
         return outcome(
             "not_evaluated",
-            "ActualCost de ARM refleja facturación por ResourceId de Azure; la atribución interna de DBU por job/clúster/usuario requiere system.billing.usage y políticas de etiquetado.",
-            {"cost_rows_collected": len(raw.get("cost_rows", []))},
-            ["azure_cost"],
+            "No Cost Management data for Databricks (cost analysis off, read denied or no usage): the share of cost that tags explain can't be measured.",
+            {"cost_status": (raw.get("databricks_cost_model") or {}).get("status")},
+            ["azure_cost_databricks"],
         )
     raise EvidenceError("unknown_rule", "Workspace rule has no implemented evaluator: " + str(test), "rule_catalog")
 
@@ -2806,26 +3103,26 @@ def evaluate_workload_rule(rule, row, raw):
             return None
         if test == "cluster_autotermination":
             if kind == "JobCluster":
-                return outcome("not_applicable", "Clúster efímero de Job: finaliza automáticamente al terminar la tarea.", {"cluster_source": row.get("cluster_source")}, [row["source_id"]])
+                return outcome("not_applicable", "Ephemeral job cluster: it ends automatically when the task finishes.", {"cluster_source": row.get("cluster_source")}, [row["source_id"]])
             mins = row.get("autotermination_minutes")
             val = True if isinstance(mins, (int, float)) and 0 < mins <= 60 else False
-            return decision(val, "Autoterminación configurada <= 60 minutos en clúster All-Purpose.", {"autotermination_minutes": mins}, [row["source_id"]])
+            return decision(val, "Auto-termination of 60 minutes or less on the all-purpose cluster.", {"autotermination_minutes": mins}, [row["source_id"]])
         if test == "cluster_policy_bound":
-            return decision(bool(row.get("policy_id")), "Asociación de policy_id observada en el clúster.", {"policy_id": row.get("policy_id")}, [row["source_id"]])
+            return decision(bool(row.get("policy_id")), "policy_id association observed on the cluster.", {"policy_id": row.get("policy_id")}, [row["source_id"]])
         if test == "cluster_access_mode":
             mode = (row.get("data_security_mode") or "").upper()
             val = True if mode in ("USER_ISOLATION", "SINGLE_USER", "SHARED") else False if mode in ("NONE", "LEGACY_PASSTHROUGH", "LEGACY_TABLE_ACL", "LEGACY_SINGLE_USER", "") else None
-            return decision(val, "Modo de acceso data_security_mode compatible con Unity Catalog y aislamiento.", {"data_security_mode": row.get("data_security_mode")}, [row["source_id"]])
+            return decision(val, "data_security_mode access mode compatible with Unity Catalog and isolation.", {"data_security_mode": row.get("data_security_mode")}, [row["source_id"]])
         if test == "cluster_runtime_lts":
             sv = row.get("spark_version") or ""
             match = re.match(r"^(\d+)\.(\d+)", sv)
             major = int(match.group(1)) if match else None
             is_lts = "lts" in sv.lower()
             val = True if major is not None and major >= 13 and is_lts else False if major is not None else None
-            return decision(val, "Versión de Databricks Runtime LTS >= 13.x observada.", {"spark_version": sv}, [row["source_id"]])
+            return decision(val, "Databricks Runtime LTS >= 13.x observed.", {"spark_version": sv}, [row["source_id"]])
         if test == "cluster_autoscaling_or_pool":
             has_auto = bool(row.get("autoscale")) or bool(row.get("instance_pool_id"))
-            return decision(has_auto, "Autoscale o vinculación a Instance Pool observada en el clúster.", {
+            return decision(has_auto, "Autoscale or instance pool binding observed on the cluster.", {
                 "autoscale": row.get("autoscale"), "instance_pool_id": row.get("instance_pool_id"), "num_workers": row.get("num_workers"),
             }, [row["source_id"]])
 
@@ -2835,20 +3132,20 @@ def evaluate_workload_rule(rule, row, raw):
         tasks = row.get("tasks", [])
         if test == "job_uses_job_compute":
             all_purpose_tasks = [t["task_key"] for t in tasks if t.get("existing_cluster_id")]
-            return decision(len(all_purpose_tasks) == 0, "Las tareas del Job usan Job Compute, Serverless, SQL Warehouse o Pipeline en lugar de existing_cluster_id All-Purpose.", {
+            return decision(len(all_purpose_tasks) == 0, "Job tasks use job compute, serverless, a SQL warehouse or a pipeline instead of an all-purpose existing_cluster_id.", {
                 "tasks_total": len(tasks), "tasks_on_all_purpose_cluster": all_purpose_tasks,
             }, [row["source_id"]])
         if test == "job_resilience_settings":
             has_timeout = bool(row.get("timeout_seconds")) or (bool(tasks) and all(bool(t.get("timeout_seconds")) for t in tasks))
             has_notif = row.get("has_notifications") is True
-            return decision(has_timeout and has_notif, "Job configurado con timeout_seconds y notificaciones de fallo/alerta.", {
+            return decision(has_timeout and has_notif, "Job configured with timeout_seconds and failure/alert notifications.", {
                 "job_timeout_seconds": row.get("timeout_seconds"), "has_notifications": has_notif,
             }, [row["source_id"]])
         if test == "job_service_principal_run_as":
             sp = row.get("run_as_service_principal")
             user = row.get("run_as_user_name")
             val = True if sp else False if user else None
-            return decision(val, "Identidad de ejecución run_as del Job asignada a un Service Principal.", {
+            return decision(val, "Job run_as identity assigned to a service principal.", {
                 "run_as_service_principal": sp, "run_as_user_name": user,
             }, [row["source_id"]])
 
@@ -2858,7 +3155,7 @@ def evaluate_workload_rule(rule, row, raw):
         mins = row.get("auto_stop_mins")
         serverless = row.get("enable_serverless_compute") is True or (row.get("warehouse_type") or "").upper() == "PRO"
         val = True if isinstance(mins, (int, float)) and 0 < mins <= 30 and serverless else False
-        return decision(val, "SQL Warehouse con auto_stop_mins <= 30 minutos y modo Serverless/Pro.", {
+        return decision(val, "SQL warehouse with auto_stop_mins <= 30 minutes and serverless/pro mode.", {
             "auto_stop_mins": mins, "enable_serverless_compute": row.get("enable_serverless_compute"), "warehouse_type": row.get("warehouse_type"),
         }, [row["source_id"]])
 
@@ -2868,13 +3165,13 @@ def evaluate_workload_rule(rule, row, raw):
         if row.get("detail_collected") is False:
             return outcome(
                 "not_evaluated",
-                "El detalle spec del pipeline (/api/2.0/pipelines/{id}) no estuvo disponible; el listado resumen no incluye catalog/schema.",
+                "The pipeline spec detail (/api/2.0/pipelines/{id}) wasn't available; the summary list doesn't include catalog/schema.",
                 {"pipeline_id": row.get("id"), "detail_collected": False},
                 [row.get("detail_source_id") or row["source_id"]],
             )
         cat = row.get("catalog")
         val = True if cat and cat.lower() not in ("hive_metastore", "") else False
-        return decision(val, "Pipeline declarativo configurado con catálogo destino en Unity Catalog.", {
+        return decision(val, "Declarative pipeline configured with a target catalog in Unity Catalog.", {
             "catalog": cat, "schema": row.get("schema") or row.get("target"), "target": row.get("target"), "serverless": row.get("serverless"),
         }, [row.get("detail_source_id") or row["source_id"]])
     return None
@@ -2893,24 +3190,24 @@ def evaluate_resource_rule(rule, row, raw):
         val = False if (https is False or tls in ("TLS1_0", "TLS1_1") or pub_blob is True) else (
             True if https is True and tls in ("TLS1_2", "TLS1_3") and pub_blob is False else None
         )
-        return decision(val, "HTTPS obligatorio, TLS >= 1.2 y allowBlobPublicAccess=false en cuenta de almacenamiento asociada.", cfg, [row["source_id"]])
+        return decision(val, "HTTPS required, TLS >= 1.2 and allowBlobPublicAccess=false on the associated storage account.", cfg, [row["source_id"]])
     if test == "storage_shared_key_and_network":
         if rkind != "microsoft.storage/storageaccounts":
             return None
         shared = cfg.get("allowSharedKeyAccess")
         pna = cfg.get("publicNetworkAccess")
         if row.get("name", "").lower() == (raw["workspace"].get("dbfs_storage_account_name") or "").lower():
-            return outcome("not_applicable", "Cuenta DBFS root administrada por la plataforma Azure Databricks.", cfg, [row["source_id"]])
+            return outcome("not_applicable", "DBFS root account managed by the Azure Databricks platform.", cfg, [row["source_id"]])
         val = True if shared is False and pna == "Disabled" else False if shared is True or pna == "Enabled" else None
         return conditional(val, expected(raw, "shared_key_disabled_required") if expected(raw, "shared_key_disabled_required") is not None else True,
-                           "Shared Key y acceso público en cuenta ADLS Gen2 asociada.", cfg, [row["source_id"]])
+                           "Shared key and public access on the associated ADLS Gen2 account.", cfg, [row["source_id"]])
     if test == "keyvault_rbac_and_purge":
         if rkind != "microsoft.keyvault/vaults":
             return None
         rbac = cfg.get("enableRbacAuthorization")
         purge = cfg.get("enablePurgeProtection")
         val = True if rbac is True and purge is True else False if rbac is False or purge is False else None
-        return decision(val, "Key Vault asociado con Azure RBAC y Purge Protection habilitados.", cfg, [row["source_id"]])
+        return decision(val, "Associated key vault with Azure RBAC and purge protection enabled.", cfg, [row["source_id"]])
     if test == "nsg_exposure":
         if rkind != "microsoft.network/networksecuritygroups":
             return None
@@ -2923,7 +3220,7 @@ def evaluate_resource_rule(rule, row, raw):
             ports = ([srule.get("destinationPortRange")] if srule.get("destinationPortRange") else []) + (srule.get("destinationPortRanges") or [])
             if any(s in ("*", "0.0.0.0/0", "::/0", "Internet") for s in srcs) and any(p in ("*", "22", "3389", "0-65535") for p in ports):
                 exposed.append(srule)
-        return decision(len(exposed) == 0, "Reglas Inbound Allow desde Internet hacia puertos administrativos en NSG asociado.", {
+        return decision(len(exposed) == 0, "Inbound Allow rules from the internet to administrative ports on the associated NSG.", {
             "exposed_rules": exposed, "total_rules": len(rules),
         }, [row["source_id"]])
     if test == "private_endpoint_approved":
@@ -2931,14 +3228,14 @@ def evaluate_resource_rule(rule, row, raw):
             return None
         conns = row.get("connections", [])
         val = True if conns and all(c.get("status") == "Approved" for c in conns) else False if conns else None
-        return decision(val, "Estado de aprobación de las conexiones Private Endpoint asociadas.", {"connections": conns}, [row["source_id"]])
+        return decision(val, "Approval state of the associated private endpoint connections.", {"connections": conns}, [row["source_id"]])
     return None
 
 
 def make_check(rule, target_id, target_name, workload_name, evaluation, reference, ws):
     status = evaluation["status"]
     cid = rule["rule_id"] + "-" + hashlib.sha256((ws["id"].lower() + "|" + rule["rule_id"] + "|" + str(target_id)).encode("utf-8")).hexdigest()[:10]
-    sev_labels = {"critical": "Crítica", "high": "Alta", "medium": "Media", "low": "Baja"}
+    sev_labels = {"critical": "Critical", "high": "High", "medium": "Medium", "low": "Low"}
     eff_labels = {"low": "L", "medium": "M", "high": "H"}
     return {
         "check_id": cid,
@@ -2998,7 +3295,7 @@ def evaluate(raw, reference, dep_graph):
             if not matched_any:
                 checks.append(make_check(rule, ws["id"], ws["name"], "", outcome(
                     "not_evaluated",
-                    "No se observaron objetos de carga aplicables o la fuente REST del workspace no estuvo disponible; ausencia no equivale a cumplimiento.",
+                    "No applicable workload objects were observed, or the workspace REST source wasn't available; absence isn't compliance.",
                     {}, ["dbx_clusters", "dbx_jobs", "dbx_pipelines", "dbx_sql_warehouses"],
                 ), reference, ws))
         elif rule["level"] == "resource":
@@ -3011,7 +3308,7 @@ def evaluate(raw, reference, dep_graph):
             if not matched_res:
                 checks.append(make_check(rule, ws["id"], ws["name"], "", outcome(
                     "not_evaluated",
-                    "No se recolectaron recursos ARM asociados de este tipo en el alcance aprobado; no se asume ausencia de riesgo.",
+                    "No associated ARM resources of this type were collected in the approved scope; no absence of risk is assumed.",
                     {}, ["arm_workspace"],
                 ), reference, ws))
     return checks
@@ -3074,16 +3371,16 @@ def finops_for(raw):
             if not isinstance(mins, (int, float)) or mins <= 0 or mins > 60:
                 candidates.append({
                     "id": "FINOPS-CL-" + hashlib.sha256(cl["id"].encode("utf-8")).hexdigest()[:10],
-                    "title": "Revisar autoterminación en clúster interactivo All-Purpose",
+                    "title": "Review auto-termination on the interactive all-purpose cluster",
                     "resource_id": ws["id"] + "/clusters/" + cl["id"],
                     "workload_name": cl["name"],
                     "source_id": cl["source_id"],
-                    "basis": "Configuración observada de autotermination_minutes en /api/2.0/clusters/list; sin estimar ahorro DBU.",
+                    "basis": "autotermination_minutes configuration observed in /api/2.0/clusters/list; DBU savings not estimated.",
                     "value": mins if mins is not None else "disabled",
                     "unit": "minutes",
                     "sample_count": 1,
                     "window": None,
-                    "recommendation": "Ajustar autotermination_minutes (<= 60 min) y aplicar Cluster Policy para contener consumo en inactividad.",
+                    "recommendation": "Set autotermination_minutes (<= 60 min) and apply a cluster policy to limit idle consumption.",
                     "estimated_savings": None,
                 })
     for job in inv.get("jobs", []):
@@ -3091,16 +3388,16 @@ def finops_for(raw):
         if ap_tasks:
             candidates.append({
                 "id": "FINOPS-JOB-" + hashlib.sha256(job["id"].encode("utf-8")).hexdigest()[:10],
-                "title": "Revisar tareas de Job ejecutando sobre clúster All-Purpose",
+                "title": "Review job tasks running on an all-purpose cluster",
                 "resource_id": ws["id"] + "/jobs/" + job["id"],
                 "workload_name": job["name"],
                 "source_id": job["source_id"],
-                "basis": "Tareas con existing_cluster_id observadas en /api/2.1/jobs/list; la tarifa DBU de Jobs Compute/Serverless es inferior a All-Purpose.",
+                "basis": "Tasks with existing_cluster_id observed in /api/2.1/jobs/list; the job compute/serverless DBU rate is lower than all-purpose.",
                 "value": len(ap_tasks),
                 "unit": "tasks_on_all_purpose",
                 "sample_count": 1,
                 "window": None,
-                "recommendation": "Evaluar migración de tareas a job_cluster_key o Jobs Serverless tras validar dependencias de librerías e init scripts.",
+                "recommendation": "Evaluate moving the tasks to job_cluster_key or serverless jobs after validating library and init script dependencies.",
                 "estimated_savings": None,
             })
     for wh in inv.get("sql_warehouses", []):
@@ -3108,16 +3405,16 @@ def finops_for(raw):
         if not isinstance(mins, (int, float)) or mins <= 0 or mins > 30:
             candidates.append({
                 "id": "FINOPS-WH-" + hashlib.sha256(wh["id"].encode("utf-8")).hexdigest()[:10],
-                "title": "Revisar auto_stop_mins en SQL Warehouse",
+                "title": "Review auto_stop_mins on the SQL warehouse",
                 "resource_id": ws["id"] + "/warehouses/" + wh["id"],
                 "workload_name": wh["name"],
                 "source_id": wh["source_id"],
-                "basis": "Configuración auto_stop_mins observada en /api/2.0/sql/warehouses; sin proyectar ahorro monetario.",
+                "basis": "auto_stop_mins configuration observed in /api/2.0/sql/warehouses; no monetary savings projected.",
                 "value": mins if mins is not None else "disabled",
                 "unit": "minutes",
                 "sample_count": 1,
                 "window": None,
-                "recommendation": "Redefinir auto_stop_mins <= 30 min o evaluar Serverless SQL Warehouse.",
+                "recommendation": "Set auto_stop_mins <= 30 min or evaluate a serverless SQL warehouse.",
                 "estimated_savings": None,
             })
     cost_rows = raw.get("cost_rows", [])
@@ -3141,10 +3438,1158 @@ def finops_for(raw):
         "cost_source_complete": pick(cost_source, "status") == "complete",
         "notes": [
             "Cluster, warehouse and job configurations are point-in-time control-plane observations, not historical DBU consumption.",
-            "ActualCost uses observed approved ARM ResourceIds and actual billing currency; it does not split DBU spend by job, notebook or user.",
-            "System table system.billing.usage is not queried automatically so no SQL Warehouse is started or billed by this review.",
-            "No fabricated DBU savings, reservation discounts or rightsizing returns are computed.",
+            "These ActualCost rows come only from cost_scope (approved ARM ResourceIds) and are not split by job, notebook or user; the Databricks cost section attributes DBU and infrastructure by Databricks tags.",
+            "System table system.billing.usage is queried only when system_tables_warehouse_id is configured (off by default, it consumes DBUs).",
+            "Savings on these legacy rows are not computed; the Databricks cost section estimates savings only from observed cost with documented rules.",
         ],
+    }
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# Databricks costs: where they come from (Cost Management grouped by Databricks tags) and how to optimise them
+# (Databricks REST configuration joined to the observed cost). Optional, off by default: system tables.
+# ---------------------------------------------------------------------------------------------------------------
+
+SYSTEM_BILLING_STATEMENT = (
+    "WITH u AS (SELECT u.billing_origin_product AS product, u.sku_name AS sku, u.usage_metadata.cluster_id AS cluster_id, "
+    "u.usage_metadata.job_id AS job_id, u.usage_metadata.job_run_id AS job_run_id, u.usage_metadata.warehouse_id AS warehouse_id, "
+    "u.usage_metadata.dlt_pipeline_id AS pipeline_id, u.identity_metadata.run_as AS run_as, CAST(u.usage_quantity AS DOUBLE) AS dbus, "
+    "CAST(u.usage_quantity * lp.pricing.effective_list.default AS DOUBLE) AS list_cost, lp.currency_code AS currency "
+    "FROM system.billing.usage u LEFT JOIN system.billing.list_prices lp ON lp.sku_name = u.sku_name AND lp.cloud = u.cloud "
+    "AND lp.usage_unit = u.usage_unit AND u.usage_end_time >= lp.price_start_time "
+    "AND (lp.price_end_time IS NULL OR u.usage_end_time < lp.price_end_time) "
+    "WHERE u.workspace_id = :workspace_id AND u.usage_date >= :start_date AND u.usage_date < :end_date AND u.usage_unit = 'DBU'), "
+    "runs AS (SELECT 'run' AS row_type, product, sku, cluster_id, job_id, job_run_id, warehouse_id, pipeline_id, run_as, "
+    "SUM(dbus) AS dbus, SUM(list_cost) AS list_cost, MAX(currency) AS currency FROM u "
+    "GROUP BY product, sku, cluster_id, job_id, job_run_id, warehouse_id, pipeline_id, run_as ORDER BY list_cost DESC NULLS LAST LIMIT 300), "
+    "users AS (SELECT 'user' AS row_type, CAST(NULL AS STRING) AS product, CAST(NULL AS STRING) AS sku, CAST(NULL AS STRING) AS cluster_id, "
+    "CAST(NULL AS STRING) AS job_id, CAST(NULL AS STRING) AS job_run_id, CAST(NULL AS STRING) AS warehouse_id, CAST(NULL AS STRING) AS pipeline_id, "
+    "run_as, SUM(dbus) AS dbus, SUM(list_cost) AS list_cost, MAX(currency) AS currency FROM u GROUP BY run_as "
+    "ORDER BY list_cost DESC NULLS LAST LIMIT 100), "
+    "products AS (SELECT 'product' AS row_type, product, sku, CAST(NULL AS STRING) AS cluster_id, CAST(NULL AS STRING) AS job_id, "
+    "CAST(NULL AS STRING) AS job_run_id, CAST(NULL AS STRING) AS warehouse_id, CAST(NULL AS STRING) AS pipeline_id, CAST(NULL AS STRING) AS run_as, "
+    "SUM(dbus) AS dbus, SUM(list_cost) AS list_cost, MAX(currency) AS currency FROM u GROUP BY product, sku) "
+    "SELECT * FROM runs UNION ALL SELECT * FROM users UNION ALL SELECT * FROM products"
+)
+COST_LEARN = {
+    "autotermination": "https://learn.microsoft.com/azure/databricks/compute/clusters-manage#automatic-termination",
+    "jobs_compute": "https://learn.microsoft.com/azure/databricks/jobs/compute",
+    "spot": "https://learn.microsoft.com/azure/databricks/compute/configure#spot-instances",
+    "policies": "https://learn.microsoft.com/azure/databricks/admin/clusters/policies",
+    "tags": "https://learn.microsoft.com/azure/databricks/admin/account-settings/usage-detail-tags",
+    "runtime": "https://learn.microsoft.com/azure/databricks/release-notes/runtime/",
+    "node_types": "https://learn.microsoft.com/azure/databricks/compute/cluster-config-best-practices",
+    "pools": "https://learn.microsoft.com/azure/databricks/compute/pool-best-practices",
+    "warehouse": "https://learn.microsoft.com/azure/databricks/compute/sql-warehouse/create",
+    "photon": "https://learn.microsoft.com/azure/databricks/compute/photon",
+    "streaming": "https://learn.microsoft.com/azure/databricks/jobs/continuous",
+    "billing": "https://learn.microsoft.com/azure/databricks/admin/system-tables/billing",
+    "cost_best_practices": "https://learn.microsoft.com/azure/databricks/lakehouse-architecture/cost-optimization/best-practices",
+}
+AP_SOURCES_EXCLUDED = ("JOB", "PIPELINE", "PIPELINE_MAINTENANCE", "SQL", "MODELS")
+OLD_NODE_RE = re.compile(r"^Standard_(?:DS?\d+[a-z]*_v[23]|DS?\d+|F\d+s?|L\d+s|E\d+[a-z]*_v3|NC\d+[a-z]*(?:_v2)?|NV\d+[a-z]*)$", re.IGNORECASE)
+
+
+def _month_start(day):
+    return day.replace(day=1)
+
+
+def cost_periods(reference):
+    today = datetime.fromisoformat(reference.replace("Z", "+00:00")).date()
+    current = _month_start(today)
+    review_end = current - timedelta(days=1)
+    review = _month_start(review_end)
+    previous = _month_start(review - timedelta(days=1))
+    weekend = sum((review + timedelta(days=i)).weekday() >= 5 for i in range(review_end.day))
+    return {
+        "today": today, "current_start": current, "review_start": review, "review_end": review_end, "previous_start": previous,
+        "labels": {
+            "current": current.strftime("%Y-%m"), "review": review.strftime("%Y-%m"), "previous": previous.strftime("%Y-%m"),
+            "review_days": review_end.day, "review_weekend_days": weekend, "mtd_days": today.day,
+            "current_month_days": ((current + timedelta(days=32)).replace(day=1) - timedelta(days=1)).day,
+        },
+    }
+
+
+def cost_query_body(start, end, granularity, grouping, scope_filter, extra=None):
+    return {
+        "type": COST_METRIC,
+        "timeframe": "Custom",
+        "timePeriod": {"from": start.isoformat() + "T00:00:00Z", "to": end.isoformat() + "T23:59:59Z"},
+        "dataset": {
+            "granularity": granularity,
+            "aggregation": {"totalCost": {"name": "Cost", "function": "Sum"}},
+            "grouping": grouping,
+            "filter": scope_filter if extra is None else {"and": [scope_filter, extra]},
+        },
+    }
+
+
+def parse_cost_payload(payload, source):
+    props = obj(obj(payload, source).get("properties"), source)
+    columns = [text(column.get("name"), source, 128) for column in array(props.get("columns"), source)]
+    index = {name: i for i, name in enumerate(columns)}
+    amount_column = next((name for name in ("Cost", "PreTaxCost", "CostUSD") if name in index), None)
+    rows = props.get("rows")
+    if amount_column is None or "Currency" not in index or not isinstance(rows, list):
+        raise EvidenceError("invalid_cost_shape", "Cost Management returned no amount/currency columns.", source)
+    parsed = []
+    for row in rows:
+        if not isinstance(row, list) or len(row) != len(columns):
+            raise EvidenceError("invalid_cost_shape", "Cost row/column lengths differ.", source)
+        amount = row[index[amount_column]]
+        if isinstance(amount, bool) or not isinstance(amount, (int, float)) or not math.isfinite(amount):
+            raise EvidenceError("invalid_cost_amount", "Cost amount is absent or not finite; it is not zero.", source)
+        if "BillingMonth" in index:
+            period = str(row[index["BillingMonth"]])[:7]
+        elif "UsageDate" in index:
+            raw_day = str(row[index["UsageDate"]])
+            period = raw_day[:4] + "-" + raw_day[4:6] + "-" + raw_day[6:8] if re.fullmatch(r"[0-9]{8}", raw_day) else raw_day[:10]
+        else:
+            period = None
+        key = row[index["TagValue"]] if "TagValue" in index else None
+        key = text(str(key), source, 512) if key not in (None, "") else None
+        category = text(str(row[index["MeterCategory"]]), source, 256) if "MeterCategory" in index and row[index["MeterCategory"]] is not None else None
+        meter = text(str(row[index["Meter"]]), source, 256) if "Meter" in index and row[index["Meter"]] is not None else None
+        currency = text(str(row[index["Currency"]]), source, 8)
+        parsed.append([period, key, category, meter, round(float(amount), 6), currency])
+    return parsed, props.get("nextLink")
+
+
+def ap_clusters(inventory):
+    return [
+        c for c in inventory.get("clusters", [])
+        if c.get("kind") == "AllPurposeCluster" and (c.get("cluster_source") or "UI").upper() not in AP_SOURCES_EXCLUDED
+    ]
+
+
+def cost_query_plan(periods, scope_filter, inventory):
+    review, review_end, previous = periods["review_start"], periods["review_end"], periods["previous_start"]
+    by_meter = [{"type": "Dimension", "name": "MeterCategory"}]
+    plan = [
+        ("meter", cost_query_body(previous, periods["today"], "Monthly", by_meter + [{"type": "Dimension", "name": "Meter"}], scope_filter)),
+        ("vendor", cost_query_body(previous, review_end, "Monthly", [{"type": "TagKey", "name": "Vendor"}] + by_meter, scope_filter)),
+    ]
+    for dimension, tag in COST_DIMENSIONS:
+        plan.append((dimension, cost_query_body(previous, review_end, "Monthly", [{"type": "TagKey", "name": tag}] + by_meter, scope_filter)))
+    for tag in COST_ALLOCATION_TAGS:
+        plan.append(("tag:" + tag, cost_query_body(previous, review_end, "Monthly", [{"type": "TagKey", "name": tag}] + by_meter, scope_filter)))
+    names = sorted({c["name"] for c in ap_clusters(inventory) if c.get("name")})[:MAX_COST_DAILY_KEYS]
+    if names:
+        plan.append(("daily_cluster", cost_query_body(review, review_end, "Daily", [{"type": "TagKey", "name": "ClusterName"}], scope_filter,
+                                                      {"tags": {"name": "ClusterName", "operator": "In", "values": names}})))
+    pools = sorted({p["id"] for p in inventory.get("instance_pools", []) if (p.get("min_idle_instances") or 0) > 0})[:MAX_COST_DAILY_KEYS]
+    if pools:
+        plan.append(("daily_pool", cost_query_body(review, review_end, "Daily", [{"type": "TagKey", "name": "DatabricksInstancePoolId"}], scope_filter,
+                                                   {"tags": {"name": "DatabricksInstancePoolId", "operator": "In", "values": pools}})))
+    return plan
+
+
+def collect_databricks_costs(identity, config, reference, workspace, inventory):
+    periods = cost_periods(reference)
+    labels = periods["labels"]
+    receipt = source_receipt(
+        "azure_cost_databricks", reference, "not_configured",
+        "Databricks cost analysis is disabled in configuration (cost_analysis_enabled=False).",
+        window={"start": periods["previous_start"].isoformat() + "T00:00:00Z", "end": reference},
+        metric=COST_METRIC, queries=[], pagination_complete=False,
+    )
+    if not config.get("cost_analysis_enabled", True):
+        return None, receipt
+    url = ARM_ORIGIN + "/subscriptions/" + SUBSCRIPTION_ID + "/providers/Microsoft.CostManagement/query?api-version=" + COST_API_VERSION
+    reader = HttpReader(identity, ARM_ORIGIN, "arm", patient=True)
+    reader.allow(url, "POST")
+    resource_ids = [config["id"].lower()] + [rid.lower() for rid in config.get("approved_cost_resource_ids", []) if rid.lower() != config["id"].lower()]
+    managed_rg = workspace.get("managed_resource_group") if isinstance(workspace, dict) else None
+    parts = [{"dimensions": {"name": "ResourceId", "operator": "In", "values": resource_ids}}]
+    if managed_rg:
+        parts.append({"dimensions": {"name": "ResourceGroupName", "operator": "In", "values": [managed_rg.lower()]}})
+    scope_filter = parts[0] if len(parts) == 1 else {"or": parts}
+    data = {
+        "metric": COST_METRIC, "periods": labels, "queries": {},
+        "scope": {"subscription_id": SUBSCRIPTION_ID, "resource_ids": resource_ids, "managed_resource_group": managed_rg},
+    }
+    for qid, body in cost_query_plan(periods, scope_filter, inventory):
+        started, rows, pages, error, status = time.monotonic(), [], 0, None, "complete"
+        if identity.deadline - started < COST_QUERY_RESERVE_SECONDS:
+            error = EvidenceError("collection_deadline", "Collection time bound reached before this cost query; it is missing, not zero.", "azure_cost_databricks").public()
+            data["queries"][qid] = {"status": "skipped", "rows": [], "pages": 0, "seconds": 0.0, "error": error}
+            continue
+        current, seen = url, set()
+        try:
+            while True:
+                if current in seen:
+                    raise EvidenceError("pagination_loop", "Cost query repeated a continuation.", "azure_cost_databricks")
+                seen.add(current)
+                payload = reader.request("POST", current, "azure_cost_databricks", body=body)
+                pages += 1
+                parsed, link = parse_cost_payload(payload, "azure_cost_databricks")
+                rows.extend(parsed)
+                if len(rows) > MAX_COST_ROWS:
+                    raise EvidenceError("row_cap", "Cost rows exceeded the safety bound; the query is partial.", "azure_cost_databricks")
+                if not link:
+                    break
+                if pages >= MAX_PAGES:
+                    raise EvidenceError("page_cap", "Cost query page safety cap reached.", "azure_cost_databricks")
+                current = next_arm_link(link, url)
+        except (EvidenceError, ValueError) as exc:
+            failure = exc if isinstance(exc, EvidenceError) else EvidenceError("invalid_cost_shape", "Cost data could not be parsed.", "azure_cost_databricks")
+            error = failure.public()
+            status = "partial" if rows else "denied" if failure.http_status in (401, 403) else "error"
+        data["queries"][qid] = {"status": status, "rows": rows, "pages": pages, "seconds": round(time.monotonic() - started, 1), "error": error}
+    statuses = [q["status"] for q in data["queries"].values()]
+    overall = (
+        "complete" if all(s == "complete" for s in statuses)
+        else "partial" if any(s in ("complete", "partial") for s in statuses)
+        else "denied" if statuses and statuses[0] == "denied"
+        else "error"
+    )
+    receipt.update(
+        status=overall,
+        records=sum(len(q["rows"]) for q in data["queries"].values()),
+        pages=sum(q["pages"] for q in data["queries"].values()),
+        pagination_complete=overall == "complete",
+        scope="/subscriptions/" + SUBSCRIPTION_ID,
+        read_signature="POST " + url,
+        queries=[{"id": qid, "status": q["status"], "records": len(q["rows"]), "seconds": q["seconds"]} for qid, q in data["queries"].items()],
+        errors=[q["error"] for q in data["queries"].values() if q["error"]][:3],
+        note=(
+            "Cost Management grouped by Databricks tags (ClusterName, JobId, SqlEndpointId, DatabricksInstancePoolId, Vendor and "
+            + (", ".join(COST_ALLOCATION_TAGS) or "no allocation tags") + ") for the workspace resource and its managed resource group."
+            if overall != "denied" else
+            "The identity cannot read cost: grant Cost Management Reader (or Reader) on the subscription."
+        ),
+    )
+    return data, receipt
+
+
+def collect_system_billing(identity, config, reference, workspace):
+    periods = cost_periods(reference)
+    receipt = source_receipt(
+        "dbx_system_billing", reference, "not_configured",
+        "Off by default: system.billing.usage + list_prices through the Statement Execution API on an existing SQL warehouse "
+        "(it consumes DBUs). Set system_tables_warehouse_id to enable per-run and per-user detail.",
+    )
+    warehouse = config.get("system_tables_warehouse_id") or ""
+    if not warehouse or not config["workspace_api_enabled"]:
+        return None, receipt
+    workspace_number = (workspace or {}).get("workspace_guid") or ""
+    if not re.fullmatch(r"[0-9]{6,24}", str(workspace_number)):
+        match = re.match(r"adb-([0-9]{6,24})\.", config["workspace_host"])
+        workspace_number = match.group(1) if match else ""
+    if not workspace_number:
+        receipt.update(status="error", errors=[EvidenceError("workspace_id_unknown", "The numeric workspace ID is unknown; system tables were not queried.", "dbx_system_billing").public()])
+        return None, receipt
+    reader = StatementReader(identity, "https://" + config["workspace_host"])
+    url = reader.allow(reader.origin + StatementReader.PATH, "POST")
+    body = {
+        "warehouse_id": warehouse, "statement": SYSTEM_BILLING_STATEMENT, "wait_timeout": "50s", "on_wait_timeout": "CANCEL",
+        "disposition": "INLINE", "format": "JSON_ARRAY",
+        "parameters": [
+            {"name": "workspace_id", "value": str(workspace_number), "type": "STRING"},
+            {"name": "start_date", "value": periods["review_start"].isoformat(), "type": "DATE"},
+            {"name": "end_date", "value": periods["current_start"].isoformat(), "type": "DATE"},
+        ],
+    }
+    receipt.update(read_signature="POST " + url, warehouse_id=warehouse, window={"start": periods["review_start"].isoformat(), "end": periods["current_start"].isoformat()})
+    try:
+        payload = obj(reader.request("POST", url, "dbx_system_billing", body=body), "dbx_system_billing")
+        state = pick(payload, "status", "state")
+        if state != "SUCCEEDED":
+            message = text(pick(payload, "status", "error", "message"), "dbx_system_billing", 400) or ""
+            raise EvidenceError("statement_" + str(state or "unknown").lower(), ("Statement state " + str(state) + ". " + message).strip(), "dbx_system_billing")
+        columns = [text(c.get("name"), "dbx_system_billing", 64) for c in array(pick(payload, "manifest", "schema", "columns") or [], "dbx_system_billing")]
+        data_rows = pick(payload, "result", "data_array") or []
+        if not isinstance(data_rows, list):
+            raise EvidenceError("invalid_shape", "Statement result is not an array.", "dbx_system_billing")
+        rows = []
+        for item in data_rows[:600]:
+            if not isinstance(item, list) or len(item) != len(columns):
+                raise EvidenceError("invalid_shape", "Statement row/column lengths differ.", "dbx_system_billing")
+            record = {}
+            for name, value in zip(columns, item):
+                if name in ("dbus", "list_cost"):
+                    try:
+                        record[name] = round(float(value), 4) if value not in (None, "") else None
+                    except (TypeError, ValueError):
+                        record[name] = None
+                else:
+                    record[name] = text(str(value), "dbx_system_billing", 256) if value is not None else None
+            rows.append(record)
+        receipt.update(status="complete", records=len(rows), pages=1, truncated=bool(pick(payload, "manifest", "truncated")))
+        return {"warehouse_id": warehouse, "window": receipt["window"], "rows": rows, "truncated": receipt["truncated"]}, receipt
+    except EvidenceError as exc:
+        receipt.update(status="denied" if exc.http_status in (401, 403) else "error", errors=[exc.public()])
+        return None, receipt
+
+
+def dbu_family(meter):
+    m = (meter or "").lower()
+    for family, words in (
+        ("sql_serverless", ("serverless sql",)), ("sql", ("sql",)), ("pipelines", ("dlt", "delta live", "pipeline")),
+        ("jobs_light", ("jobs light",)), ("serverless", ("serverless",)), ("jobs", ("jobs", "automated")),
+        ("all_purpose", ("all-purpose", "all purpose", "interactive")), ("ai", ("serving", "inference", "vector", "model", "foundation")),
+    ):
+        if any(word in m for word in words):
+            return family
+    return "other"
+
+
+def _money(value):
+    return round(value, 2) if isinstance(value, (int, float)) else None
+
+
+def en_amount(value, decimals=0):
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return "—"
+    return format(round(value, decimals), "," + "." + str(decimals) + "f")
+
+
+def en_month(label):
+    names = ("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+    match = re.fullmatch(r"(\d{4})-(\d{2})", str(label or ""))
+    return names[int(match.group(2)) - 1] + " " + match.group(1) if match and 1 <= int(match.group(2)) <= 12 else str(label)
+
+
+def _pct(part, whole):
+    return round(100.0 * part / whole, 1) if isinstance(part, (int, float)) and isinstance(whole, (int, float)) and whole > 0 else None
+
+
+def _vm_meter(node_type):
+    return (node_type or "").replace("Standard_", "").replace("_", " ").lower()
+
+
+def cost_tables(data, labels):
+    """Aggregate every Cost Management query result in the dominant billing currency."""
+    queries = data.get("queries", {})
+    totals = {}
+    for q in queries.values():
+        for period, key, category, meter, amount, currency in q["rows"]:
+            totals[currency] = totals.get(currency, 0.0) + abs(amount)
+    currency = max(totals, key=totals.get) if totals else None
+    review, previous, current = labels["review"], labels["previous"], labels["current"]
+    rows = {qid: [r for r in q["rows"] if r[5] == currency] for qid, q in queries.items()}
+    is_dbu = lambda category: (category or "").lower() == "azure databricks"
+
+    def by_key(qid):
+        out = {}
+        for period, key, category, meter, amount, _ in rows.get(qid, []):
+            slot = out.setdefault(key, {"dbu": 0.0, "infra": 0.0, "vm": 0.0, "review": 0.0, "previous": 0.0, "categories": {}})
+            if period == review:
+                slot["review"] += amount
+                slot["dbu" if is_dbu(category) else "infra"] += amount
+                if (category or "").lower() == "virtual machines":
+                    slot["vm"] += amount
+                slot["categories"][category or "—"] = slot["categories"].get(category or "—", 0.0) + amount
+            elif period == previous:
+                slot["previous"] += amount
+        return out
+
+    months = {label: {"dbu": 0.0, "infra": 0.0} for label in (previous, review, current)}
+    families, categories, vm_sizes = {}, {}, {}
+    for period, _, category, meter, amount, _ in rows.get("meter", []):
+        if period not in months:
+            continue
+        months[period]["dbu" if is_dbu(category) else "infra"] += amount
+        if is_dbu(category):
+            slot = families.setdefault(dbu_family(meter), {"review": 0.0, "previous": 0.0, "meters": {}})
+            if period in (review, previous):
+                slot[period == review and "review" or "previous"] += amount
+            if period == review:
+                slot["meters"][meter or "—"] = slot["meters"].get(meter or "—", 0.0) + amount
+        else:
+            slot = categories.setdefault(category or "—", {"review": 0.0, "previous": 0.0})
+            if period in (review, previous):
+                slot[period == review and "review" or "previous"] += amount
+            if period == review and (category or "").lower() == "virtual machines":
+                vm_sizes[meter or "—"] = vm_sizes.get(meter or "—", 0.0) + amount
+    daily = {}
+    for qid in ("daily_cluster", "daily_pool"):
+        per_key = {}
+        for period, key, _, _, amount, _ in rows.get(qid, []):
+            if key is None or not period or len(period) != 10:
+                continue
+            day = per_key.setdefault(key, {})
+            day[period] = day.get(period, 0.0) + amount
+        daily[qid] = per_key
+    return {
+        "currency": currency,
+        "other_currencies": sorted(c for c in totals if c != currency),
+        "months": months, "families": families, "categories": categories, "vm_sizes": vm_sizes, "daily": daily,
+        "dimensions": {qid: by_key(qid) for qid in queries if qid not in ("meter", "daily_cluster", "daily_pool")},
+        "query_status": {qid: q["status"] for qid, q in queries.items()},
+    }
+
+
+def daily_profile(days, labels, start):
+    if not days:
+        return None
+    weekend = sum(v for d, v in days.items() if datetime.strptime(d, "%Y-%m-%d").weekday() >= 5)
+    active = [v for v in days.values() if v > 0.01]
+    floor = min(days.get((start + timedelta(days=i)).isoformat(), 0.0) for i in range(labels["review_days"]))
+    return {"active_days": len(active), "weekend_cost": round(weekend, 2), "floor": round(max(floor, 0.0), 2), "total": round(sum(days.values()), 2)}
+
+
+def cost_signals(inventory, catalog, tables, labels, periods, reference):
+    """Optimisation signals from observed configuration, each with the observed cost of its object and, where the
+    cost data allows it, an estimated monthly saving with a documented rule."""
+    dims = tables["dimensions"] if tables else {}
+    clusters_cost, jobs_cost = dims.get("cluster", {}), dims.get("job", {})
+    pools_cost, warehouses_cost = dims.get("pool", {}), dims.get("warehouse", {})
+    daily = tables["daily"] if tables else {}
+    ref_ms = datetime.fromisoformat(reference.replace("Z", "+00:00")).timestamp() * 1000
+    tags_wanted = [t.lower() for t in COST_ALLOCATION_TAGS]
+    weekend_share = labels["review_weekend_days"] / max(1, labels["review_days"])
+    signals = []
+
+    def add(code, severity, title, kind, oid, name, evidence, cost, saving, saving_kind, basis, recommendation, learn, effort="L"):
+        signals.append({
+            "id": "COST-" + code + "-" + hashlib.sha256((kind + "|" + str(oid)).encode("utf-8")).hexdigest()[:10],
+            "code": code, "severity": severity, "title": title, "object_kind": kind, "object_id": str(oid), "object_name": name,
+            "evidence": evidence, "monthly_cost": _money(cost), "estimated_monthly_saving": _money(saving) if saving and saving > 0.5 else None,
+            "saving_kind": saving_kind if saving and saving > 0.5 else None, "saving_basis": basis if saving and saving > 0.5 else None,
+            "recommendation": recommendation, "learn_url": COST_LEARN[learn], "effort": effort, "counted": False,
+        })
+
+    def total(slot):
+        return slot["review"] if slot else None
+
+    def workers(spec):
+        if isinstance(spec.get("autoscale"), dict) and spec["autoscale"].get("max_workers"):
+            return ((spec["autoscale"].get("min_workers") or 0) + spec["autoscale"]["max_workers"]) / 2.0
+        return spec.get("num_workers") or spec.get("autoscale_max_workers") or 0
+
+    def workers_label(spec):
+        auto = spec.get("autoscale") if isinstance(spec.get("autoscale"), dict) else None
+        if auto and auto.get("max_workers"):
+            return str(auto.get("min_workers") or 0) + "–" + str(auto["max_workers"]) + " (autoscaling)"
+        if spec.get("autoscale_max_workers") and not spec.get("num_workers"):
+            return "up to " + str(spec["autoscale_max_workers"]) + " (autoscaling)"
+        return spec.get("num_workers")
+
+    def missing_tags(tags):
+        present = {k.lower() for k in (tags or {})}
+        return [t for t in COST_ALLOCATION_TAGS if t.lower() not in present]
+
+    ap = ap_clusters(inventory)
+    for c in ap:
+        slot = clusters_cost.get(c["name"])
+        mins = c.get("autotermination_minutes")
+        off = not isinstance(mins, (int, float)) or mins <= 0
+        if off or mins > COST_AUTOTERMINATION_MAX_MINUTES:
+            since = c.get("last_restarted_time") or c.get("start_time")
+            uptime = round((ref_ms - since) / 3.6e6) if c.get("state") == "RUNNING" and isinstance(since, (int, float)) and since < ref_ms else None
+            profile = daily_profile(daily.get("daily_cluster", {}).get(c["name"]), labels, periods["review_start"])
+            saving = profile["weekend_cost"] if off and profile and profile["weekend_cost"] > 0 else None
+            add("AUTOTERM_OFF" if off else "AUTOTERM_LONG", "high" if off else "medium",
+                "Interactive cluster without auto-termination" if off else "Long auto-termination on an interactive cluster",
+                "AllPurposeCluster", c["id"], c["name"],
+                {"autotermination_minutes": 0 if off else mins, "state": c.get("state"), "uptime_hours": uptime,
+                 "active_days": profile and profile["active_days"], "weekend_cost": profile and profile["weekend_cost"]},
+                total(slot), saving, "lower_bound", "weekend_cost",
+                "Set autotermination_minutes to " + str(min(30, COST_AUTOTERMINATION_MAX_MINUTES)) + " minutes or less and enforce it with a compute policy.",
+                "autotermination")
+        w = workers(c)
+        if w and not c.get("instance_pool_id") and not str(c.get("azure_availability") or "ON_DEMAND_AZURE").upper().startswith("SPOT"):
+            saving = slot["vm"] * w / (w + 1.0) * COST_SPOT_DISCOUNT if slot and slot["vm"] else None
+            add("NO_SPOT", "low", "Workers without spot instances on an interactive cluster", "AllPurposeCluster", c["id"], c["name"],
+                {"availability": c.get("azure_availability") or "ON_DEMAND_AZURE", "workers": workers_label(c), "vm_cost": slot and _money(slot["vm"])},
+                total(slot), saving, "estimate", "spot_discount",
+                "Use SPOT_WITH_FALLBACK_AZURE on the workers (first_on_demand=1 keeps the driver on demand) if the workload tolerates retries.",
+                "spot")
+    by_cluster = {}
+    for job in inventory.get("jobs", []):
+        if not job.get("scheduled") or job.get("schedule_paused"):
+            continue
+        for task in job.get("tasks", []):
+            if task.get("existing_cluster_id"):
+                by_cluster.setdefault(task["existing_cluster_id"], set()).add(job["name"])
+    for cid, names in sorted(by_cluster.items()):
+        cluster = next((c for c in inventory.get("clusters", []) if c["id"] == cid), None)
+        name = cluster["name"] if cluster else cid
+        slot = clusters_cost.get(name)
+        saving = slot["dbu"] * (1 - COST_JOBS_TO_ALL_PURPOSE_DBU_RATIO) if slot and slot["dbu"] else None
+        add("JOBS_ON_ALL_PURPOSE", "high", "Scheduled jobs on interactive (all-purpose) compute", "AllPurposeCluster", cid, name,
+            {"jobs": sorted(names)[:6], "jobs_count": len(names), "dbu_cost": slot and _money(slot["dbu"])},
+            total(slot), saving, "upper_bound", "jobs_dbu_ratio",
+            "Move the tasks to job compute (job_cluster_key) or serverless: a jobs DBU costs about "
+            + str(round(100 * (1 - COST_JOBS_TO_ALL_PURPOSE_DBU_RATIO))) + "% less than an all-purpose DBU.",
+            "jobs_compute", "M")
+    for job in inventory.get("jobs", []):
+        slot = jobs_cost.get(job["id"])
+        on_demand = [jc for jc in job.get("job_clusters", []) if workers(jc) and not jc.get("instance_pool_id")
+                     and not str(jc.get("azure_availability") or "ON_DEMAND_AZURE").upper().startswith("SPOT")]
+        if on_demand:
+            top = max(on_demand, key=workers)
+            w = workers(top)
+            saving = slot["vm"] * w / (w + 1.0) * COST_SPOT_DISCOUNT if slot and slot["vm"] else None
+            add("NO_SPOT", "medium", "Job cluster without spot instances", "Job", job["id"], job["name"],
+                {"availability": "ON_DEMAND_AZURE", "workers": workers_label(top), "vm_cost": slot and _money(slot["vm"]), "continuous": job.get("continuous")},
+                total(slot), saving, "estimate", "spot_discount",
+                "Use SPOT_WITH_FALLBACK_AZURE on the job cluster workers; keep the driver on demand.", "spot")
+        if job.get("continuous"):
+            add("CONTINUOUS_JOB", "medium", "Continuous job: compute on all month", "Job", job["id"], job["name"],
+                {"continuous": True}, total(slot), None, None, None,
+                "Confirm that it needs continuous latency; if not, use scheduled or file arrival triggers.", "streaming", "M")
+        big = [jc for jc in job.get("job_clusters", []) if (jc.get("autoscale_max_workers") or jc.get("num_workers") or 0) >= 8
+               and str(jc.get("runtime_engine") or "").upper() != "PHOTON"]
+        if big:
+            add("PHOTON_CANDIDATE", "low", "Large job without Photon: evaluate", "Job", job["id"], job["name"],
+                {"max_workers": max(jc.get("autoscale_max_workers") or jc.get("num_workers") or 0 for jc in big)},
+                total(slot), None, None, None,
+                "Try Photon on one run: it costs more DBUs per hour but usually finishes sooner on SQL and ETL.", "photon", "M")
+    for pool in inventory.get("instance_pools", []):
+        slot = pools_cost.get(pool["id"])
+        idle_min = pool.get("min_idle_instances") or 0
+        if idle_min > 0:
+            profile = daily_profile(daily.get("daily_pool", {}).get(pool["id"]), labels, periods["review_start"])
+            saving = profile["floor"] * labels["review_days"] if profile and profile["floor"] > 0 else None
+            add("POOL_IDLE", "medium", "Pool with idle instances always on", "InstancePool", pool["id"], pool["name"],
+                {"min_idle_instances": idle_min, "idle_now": (pool.get("stats") or {}).get("idle_count"),
+                 "idle_autotermination_minutes": pool.get("idle_instance_autotermination_minutes"), "daily_floor": profile and profile["floor"]},
+                total(slot), saving, "estimate", "daily_floor",
+                "Lower min_idle_instances to 0 (or the minimum you can justify) and set idle instance auto-termination between 10 and 15 minutes.", "pools")
+    for wh in inventory.get("sql_warehouses", []):
+        slot = warehouses_cost.get(wh["id"])
+        mins = wh.get("auto_stop_mins")
+        if not isinstance(mins, (int, float)) or mins <= 0 or mins > COST_WAREHOUSE_AUTOSTOP_MAX_MINUTES:
+            never = not isinstance(mins, (int, float)) or mins <= 0
+            saving = slot["review"] * weekend_share if never and slot and slot["review"] else None
+            add("WAREHOUSE_AUTOSTOP", "high" if never else "medium",
+                "SQL warehouse without auto-stop" if never else "Long auto-stop on a SQL warehouse", "SqlWarehouse", wh["id"], wh["name"],
+                {"auto_stop_mins": mins or 0, "state": wh.get("state"), "serverless": wh.get("enable_serverless_compute")},
+                total(slot), saving, "estimate", "always_on_weekends",
+                "Set auto-stop between 10 and " + str(COST_WAREHOUSE_AUTOSTOP_MAX_MINUTES) + " minutes (serverless starts in seconds).", "warehouse")
+        if wh.get("enable_serverless_compute") is not True:
+            add("WAREHOUSE_SERVERLESS", "low", "Classic or pro SQL warehouse: evaluate serverless", "SqlWarehouse", wh["id"], wh["name"],
+                {"warehouse_type": wh.get("warehouse_type"), "cluster_size": wh.get("cluster_size")}, total(slot), None, None, None,
+                "Evaluate serverless: it starts in seconds, has a short auto-stop and runs no VMs in your subscription.", "warehouse")
+    no_policy = [c for c in ap if not c.get("policy_id")]
+    if no_policy:
+        cost = sum(clusters_cost[c["name"]]["review"] for c in no_policy if c["name"] in clusters_cost)
+        add("NO_POLICY", "low", "Interactive clusters without a compute policy", "AllPurposeCluster", "no-policy",
+            str(len(no_policy)) + (" cluster" if len(no_policy) == 1 else " clusters"),
+            {"objects": [c["name"] for c in no_policy][:8]}, cost, None, None, None,
+            "Assign a policy that sets auto-termination, sizes, spot and allocation tags.", "policies")
+    if tags_wanted:
+        weak = [p for p in inventory.get("cluster_policies", []) if p.get("enforced_tag_keys") is not None
+                and [t for t in tags_wanted if t not in {k.lower() for k in p["enforced_tag_keys"]}]]
+        if weak:
+            add("POLICY_TAGS", "medium", "Policies that don't enforce the allocation tags", "ClusterPolicy", "policy-tags",
+                str(len(weak)) + (" policy" if len(weak) == 1 else " policies"),
+                {"objects": [p["name"] for p in weak][:8], "allocation_tags": COST_ALLOCATION_TAGS}, None, None, None, None,
+                "Add custom_tags." + COST_ALLOCATION_TAGS[0] + " (and the others) as fixed or required tags in each policy.", "policies")
+        groups = (
+            ("AllPurposeCluster", ("interactive cluster", "interactive clusters"), [(c["name"], c.get("custom_tags"), total(clusters_cost.get(c["name"]))) for c in ap]),
+            ("Job", ("job", "jobs"), [(j["name"], job_effective_tags(j), total(jobs_cost.get(j["id"])))
+                                       for j in inventory.get("jobs", []) if j.get("job_clusters")]),
+            ("InstancePool", ("pool", "pools"), [(p["name"], p.get("custom_tags"), total(pools_cost.get(p["id"]))) for p in inventory.get("instance_pools", [])]),
+            ("SqlWarehouse", ("SQL warehouse", "SQL warehouses"), [(w["name"], w.get("custom_tags"), total(warehouses_cost.get(w["id"]))) for w in inventory.get("sql_warehouses", [])]),
+        )
+        for kind, labels, items in groups:
+            missing = [(name, cost, missing_tags(tags)) for name, tags, cost in items if missing_tags(tags)]
+            if missing:
+                cost = sum(c for _, c, _ in missing if c)
+                untagged = sum(1 for _, _, m in missing if len(m) == len(COST_ALLOCATION_TAGS))
+                add("MISSING_ALLOCATION_TAGS", "medium" if cost else "low",
+                    ("No allocation tags on " if untagged == len(missing) else "Incomplete allocation tags on ") + labels[1],
+                    kind, "tags-" + kind, str(len(missing)) + " " + labels[len(missing) != 1],
+                    {"objects": [n + " (missing " + ", ".join(m) + ")" for n, _, m in missing][:8], "allocation_tags": COST_ALLOCATION_TAGS},
+                    cost or None, None, None, None,
+                    {
+                        "AllPurposeCluster": "Add the missing tags to each cluster's custom_tags and make them required with a compute policy.",
+                        "Job": "Add the missing tags as job tags (they propagate to its job clusters) or in the job cluster's custom_tags.",
+                        "InstancePool": "Add the missing tags to the pool's custom_tags: its VMs inherit only the pool tags, not the cluster tags.",
+                        "SqlWarehouse": "Add the missing tags to the SQL warehouse tags.",
+                    }[kind] + " Tags: " + ", ".join(COST_ALLOCATION_TAGS) + ".",
+                    "tags")
+    versions = set((catalog or {}).get("spark_versions") or [])
+    by_version, by_node = {}, {}
+    specs = [(c["name"], c.get("spark_version"), c.get("node_type_id"), clusters_cost.get(c["name"])) for c in ap]
+    specs += [(j["name"], jc.get("spark_version"), jc.get("node_type_id"), None) for j in inventory.get("jobs", []) for jc in j.get("job_clusters", [])]
+    specs += [(p["name"], None, p.get("node_type_id"), None) for p in inventory.get("instance_pools", [])]
+    for name, version, node, _ in specs:
+        major = re.match(r"^(\d+)\.", version or "")
+        if version and ((versions and version not in versions) or (not versions and major and int(major.group(1)) < 13)):
+            by_version.setdefault(version, set()).add(name)
+        info = ((catalog or {}).get("node_types") or {}).get(node) or {}
+        if node and (info.get("is_deprecated") or OLD_NODE_RE.match(node)):
+            by_node.setdefault(node, set()).add(name)
+    for version, names in sorted(by_version.items()):
+        add("RUNTIME_EOS", "medium", "Unsupported runtime" if versions else "Old runtime", "Runtime", version, version,
+            {"objects": sorted(names)[:8], "supported_list_checked": bool(versions)}, None, None, None, None,
+            "Upgrade to a supported LTS version (more performance per DBU and security patches).", "runtime", "M")
+    vm_sizes = tables["vm_sizes"] if tables else {}
+    for node, names in sorted(by_node.items()):
+        size = _vm_meter(node)
+        cost = sum(v for meter, v in vm_sizes.items() if (meter or "").lower().startswith(size)) if vm_sizes else None
+        add("OLD_NODE_FAMILY", "low", "Old or retired VM family", "NodeType", node, node,
+            {"objects": sorted(names)[:8], "deprecated": bool(((catalog or {}).get("node_types") or {}).get(node, {}).get("is_deprecated"))},
+            cost or None, None, None, None,
+            "Compare with the current generation (for example Dds_v5 or Eds_v5): it usually gives better price-performance.", "node_types", "M")
+    best = {}
+    for s in signals:
+        if s["estimated_monthly_saving"]:
+            key = s["object_kind"] + "|" + s["object_id"] if s["object_kind"] != "Job" else "Job|" + s["object_id"]
+            if key not in best or s["estimated_monthly_saving"] > best[key]["estimated_monthly_saving"]:
+                best[key] = s
+    for s in best.values():
+        s["counted"] = True
+    rank = {"high": 0, "medium": 1, "low": 2}
+    signals.sort(key=lambda s: (-(s["estimated_monthly_saving"] or 0) if s["counted"] else 0, rank[s["severity"]], -(s["monthly_cost"] or 0), s["code"]))
+    return signals
+
+
+def job_effective_tags(job):
+    """Job tags propagate to the job clusters a run creates; job-cluster custom_tags add to (and override) them."""
+    tags = dict(job.get("tags") or {})
+    for jc in job.get("job_clusters", []):
+        tags.update(jc.get("custom_tags") or {})
+    return tags
+
+
+def attribution_rows(dimension, slots, inventory, review_total):
+    """One row per tag value of a Cost Management dimension, joined to the observed inventory by name or ID."""
+    clusters = {c["name"]: c for c in inventory.get("clusters", [])}
+    jobs = {j["id"]: j for j in inventory.get("jobs", [])}
+    warehouses = {w["id"]: w for w in inventory.get("sql_warehouses", [])}
+    pools = {p["id"]: p for p in inventory.get("instance_pools", [])}
+    grouped = {}
+    for key, slot in slots.items():
+        if key is None:
+            continue
+        name, kind, found, creator, tags = key, dimension, False, None, {}
+        group_key = key
+        if dimension == "cluster":
+            job_run = re.match(r"^job-(\d+)-run-\d+", key)
+            if job_run:
+                group_key, kind, name = "job-runs", "job_runs", "job_runs"
+            elif key.startswith("dlt-execution-") or key.startswith("dlt-maintenance-"):
+                group_key, kind, name = "pipelines", "pipeline_runs", "pipeline_runs"
+            elif key in clusters:
+                c = clusters[key]
+                kind = "pipeline" if (c.get("cluster_source") or "").upper().startswith("PIPELINE") else "all_purpose" if c.get("kind") == "AllPurposeCluster" else "job_run"
+                found, creator, tags = True, c.get("creator_user_name"), c.get("custom_tags") or {}
+            else:
+                kind = "not_in_inventory"
+        elif dimension == "job" and key in jobs:
+            j = jobs[key]
+            found, name, creator = True, j["name"], j.get("creator_user_name")
+            tags = job_effective_tags(j)
+        elif dimension == "warehouse" and key in warehouses:
+            w = warehouses[key]
+            found, name, creator, tags = True, w["name"], w.get("creator_name"), w.get("custom_tags") or {}
+        elif dimension == "pool" and key in pools:
+            p = pools[key]
+            found, name, tags = True, p["name"], p.get("custom_tags") or {}
+        row = grouped.setdefault(group_key, {
+            "dimension": dimension, "key": group_key, "name": name, "kind": kind, "in_inventory": found, "creator": creator,
+            "tags": {k: v for k, v in tags.items() if k.lower() in {t.lower() for t in COST_ALLOCATION_TAGS}},
+            "dbu": 0.0, "infra": 0.0, "vm": 0.0, "total": 0.0, "previous_total": 0.0, "count": 0,
+        })
+        row["dbu"] += slot["dbu"]
+        row["infra"] += slot["infra"]
+        row["vm"] += slot["vm"]
+        row["total"] += slot["review"]
+        row["previous_total"] += slot["previous"]
+        row["count"] += 1
+    rows = []
+    for row in grouped.values():
+        if row["kind"] == "job_runs":
+            row["name"] = "Ephemeral job clusters (" + str(row["count"]) + (" run)" if row["count"] == 1 else " runs)")
+        elif row["kind"] == "pipeline_runs":
+            row["name"] = "Pipeline clusters (DLT)"
+        row["change"] = round(row["total"] - row["previous_total"], 2)
+        row["change_pct"] = _pct(row["total"] - row["previous_total"], row["previous_total"])
+        row["share"] = _pct(row["total"], review_total)
+        for field in ("dbu", "infra", "vm", "total", "previous_total"):
+            row[field] = round(row[field], 2)
+        rows.append(row)
+    rows.sort(key=lambda r: (-r["total"], str(r["name"])))
+    return rows[:150]
+
+
+def databricks_costs_for(raw, reference):
+    """Section 6 model: where Databricks cost comes from and how to optimise it. Never invents data: a missing query
+    stays missing (None) and its status is reported."""
+    inventory = raw.get("inventory", {})
+    data = raw.get("dbx_cost_data")
+    receipt = next((s for s in raw.get("sources", []) if s["id"] == "azure_cost_databricks"), None)
+    periods = cost_periods(reference)
+    labels = periods["labels"]
+    tables = cost_tables(data, labels) if data else None
+    status = pick(receipt, "status") or ("not_collected" if data is None else "complete")
+    signals = cost_signals(inventory, raw.get("dbx_runtime_catalog"), tables, labels, periods, reference)
+    model = {
+        "status": status,
+        "metric": COST_METRIC,
+        "periods": labels,
+        "currency": tables["currency"] if tables else None,
+        "other_currencies": tables["other_currencies"] if tables else [],
+        "scope": data.get("scope") if data else None,
+        "query_status": tables["query_status"] if tables else {},
+        "assumptions": {
+            "allocation_tags": list(COST_ALLOCATION_TAGS),
+            "autotermination_max_minutes": COST_AUTOTERMINATION_MAX_MINUTES,
+            "warehouse_autostop_max_minutes": COST_WAREHOUSE_AUTOSTOP_MAX_MINUTES,
+            "jobs_to_all_purpose_dbu_ratio": COST_JOBS_TO_ALL_PURPOSE_DBU_RATIO,
+            "spot_discount": COST_SPOT_DISCOUNT,
+            "weekend_share": round(labels["review_weekend_days"] / max(1, labels["review_days"]), 4),
+        },
+        "signals": signals,
+        "headline": None, "monthly": [], "split": None, "attribution": None, "movers": None,
+    }
+    saving_total = round(sum(s["estimated_monthly_saving"] for s in signals if s["counted"]), 2)
+    severity_counts = {sev: sum(s["severity"] == sev for s in signals) for sev in ("high", "medium", "low")}
+    if tables and tables["query_status"].get("meter") in ("complete", "partial"):
+        months = tables["months"]
+        review = months[labels["review"]]
+        previous = months[labels["previous"]]
+        current = months[labels["current"]]
+        review_total = review["dbu"] + review["infra"]
+        previous_total = previous["dbu"] + previous["infra"]
+        vendor = tables["dimensions"].get("vendor")
+        gap = vendor.get(None) if vendor is not None and tables["query_status"].get("vendor") in ("complete", "partial") else None
+        model["monthly"] = [
+            {"month": label, "dbu": round(months[label]["dbu"], 2), "infra": round(months[label]["infra"], 2),
+             "total": round(months[label]["dbu"] + months[label]["infra"], 2), "partial": label == labels["current"]}
+            for label in (labels["previous"], labels["review"], labels["current"])
+        ]
+        family_rows = [
+            {"key": key, "review": round(v["review"], 2), "previous": round(v["previous"], 2), "share": _pct(v["review"], review["dbu"]),
+             "meters": [{"meter": m, "review": round(a, 2)} for m, a in sorted(v["meters"].items(), key=lambda kv: -kv[1])[:6]]}
+            for key, v in sorted(tables["families"].items(), key=lambda kv: -kv[1]["review"])
+        ]
+        category_rows = [
+            {"category": key, "review": round(v["review"], 2), "previous": round(v["previous"], 2), "share": _pct(v["review"], review["infra"])}
+            for key, v in sorted(tables["categories"].items(), key=lambda kv: -kv[1]["review"])
+        ]
+        model["split"] = {
+            "dbu_families": family_rows,
+            "infra_categories": category_rows,
+            "vm_sizes": [{"meter": m, "review": round(a, 2)} for m, a in sorted(tables["vm_sizes"].items(), key=lambda kv: -kv[1])[:8]],
+        }
+        dimensions = []
+        all_rows = []
+        for dimension, tag in COST_DIMENSIONS:
+            slots = tables["dimensions"].get(dimension)
+            state = tables["query_status"].get(dimension)
+            if slots is None or state not in ("complete", "partial"):
+                dimensions.append({"key": dimension, "tag": tag, "status": state or "not_collected", "tagged_share": None, "untagged_total": None})
+                continue
+            untagged = slots.get(None, {"review": 0.0})["review"]
+            rows = attribution_rows(dimension, slots, inventory, review_total)
+            all_rows.extend(rows)
+            dimensions.append({"key": dimension, "tag": tag, "status": state, "tagged_share": _pct(review_total - untagged, review_total),
+                               "untagged_total": round(untagged, 2), "rows": len(rows)})
+        creators = {}
+        for row in all_rows:
+            if row["dimension"] in ("cluster", "job", "warehouse") and row["in_inventory"]:
+                who = row["creator"] or "—"
+                creators[who] = creators.get(who, 0.0) + row["total"]
+        custom = []
+        for tag in COST_ALLOCATION_TAGS:
+            slots = tables["dimensions"].get("tag:" + tag)
+            state = tables["query_status"].get("tag:" + tag)
+            if slots is None or state not in ("complete", "partial"):
+                custom.append({"tag": tag, "status": state or "not_collected", "tagged_share": None, "values": []})
+                continue
+            untagged = slots.get(None, {"review": 0.0})
+            custom.append({
+                "tag": tag, "status": state, "tagged_share": _pct(review_total - untagged["review"], review_total),
+                "untagged_total": round(untagged["review"], 2),
+                "untagged_categories": [{"category": k, "review": round(v, 2)} for k, v in sorted(untagged.get("categories", {}).items(), key=lambda kv: -kv[1])[:6]],
+                "values": [
+                    {"value": k, "total": round(v["review"], 2), "dbu": round(v["dbu"], 2), "infra": round(v["infra"], 2),
+                     "previous_total": round(v["previous"], 2), "share": _pct(v["review"], review_total)}
+                    for k, v in sorted(((k, v) for k, v in slots.items() if k is not None), key=lambda kv: -kv[1]["review"])[:40]
+                ],
+            })
+        model["attribution"] = {
+            "dimensions": dimensions,
+            "rows": all_rows,
+            "creators": [{"creator": k, "total": round(v, 2), "share": _pct(v, review_total)} for k, v in sorted(creators.items(), key=lambda kv: -kv[1])[:25]],
+            "custom_tags": custom,
+            "gap": None if gap is None else {
+                "total": round(gap["review"], 2), "share": _pct(gap["review"], review_total), "previous_total": round(gap["previous"], 2),
+                "categories": [{"category": k, "review": round(v, 2), "share": _pct(v, gap["review"])}
+                               for k, v in sorted(gap["categories"].items(), key=lambda kv: -kv[1])],
+            },
+        }
+        movable = [r for r in all_rows if r["dimension"] in ("cluster", "job", "warehouse", "pool") and r["kind"] not in ("job_runs", "pipeline_runs")]
+        model["movers"] = {
+            "up": [r for r in sorted(movable, key=lambda r: -r["change"]) if r["change"] > 0][:5],
+            "down": [r for r in sorted(movable, key=lambda r: r["change"]) if r["change"] < 0][:3],
+        }
+        top = max((r for r in all_rows if r["dimension"] in ("cluster", "job", "warehouse")), key=lambda r: r["total"], default=None)
+        first_tag = next((c for c in custom if c["tagged_share"] is not None), None)
+        model["headline"] = {
+            "review_month": labels["review"], "previous_month": labels["previous"], "current_month": labels["current"],
+            "review_total": round(review_total, 2), "previous_total": round(previous_total, 2),
+            "change": round(review_total - previous_total, 2), "change_pct": _pct(review_total - previous_total, previous_total),
+            "dbu_total": round(review["dbu"], 2), "infra_total": round(review["infra"], 2), "dbu_share": _pct(review["dbu"], review_total),
+            "mtd_total": round(current["dbu"] + current["infra"], 2), "mtd_days": labels["mtd_days"],
+            "unattributed_total": None if gap is None else round(gap["review"], 2),
+            "unattributed_share": None if gap is None else _pct(gap["review"], review_total),
+            "first_tag": first_tag and {"tag": first_tag["tag"], "tagged_share": first_tag["tagged_share"]},
+            "top_object": top and {"name": top["name"], "dimension": top["dimension"], "total": top["total"], "share": top["share"]},
+            "estimated_monthly_savings": saving_total or None,
+            "savings_signals": sum(1 for s in signals if s["counted"]),
+            "signals": len(signals), "signals_by_severity": severity_counts,
+        }
+    else:
+        model["headline"] = {
+            "review_month": labels["review"], "estimated_monthly_savings": None, "savings_signals": 0,
+            "signals": len(signals), "signals_by_severity": severity_counts,
+        }
+    billing = raw.get("system_billing")
+    billing_receipt = next((s for s in raw.get("sources", []) if s["id"] == "dbx_system_billing"), None)
+    model["system_tables"] = {"status": pick(billing_receipt, "status") or "not_configured", "warehouse_id": pick(billing_receipt, "warehouse_id")}
+    if billing:
+        rows = sorted(billing.get("rows", []), key=lambda r: -(r.get("list_cost") or 0))
+        model["system_tables"].update(
+            window=billing.get("window"), truncated=billing.get("truncated"),
+            runs=[r for r in rows if r.get("row_type") == "run"][:40],
+            users=[r for r in rows if r.get("row_type") == "user"][:20],
+            products=[r for r in rows if r.get("row_type") == "product"][:20],
+            currency=next((r.get("currency") for r in rows if r.get("currency")), None),
+        )
+    return model
+
+
+def cost_summary(model):
+    """Compact cost headline for chat responses (fits the 3,500-byte tool-result budget)."""
+    if not model:
+        return None
+    head = model.get("headline") or {}
+    return {
+        "status": model.get("status"),
+        "month": head.get("review_month"),
+        "currency": model.get("currency"),
+        "total": head.get("review_total"),
+        "change_pct": head.get("change_pct"),
+        "dbu_share": head.get("dbu_share"),
+        "unattributed_share": head.get("unattributed_share"),
+        "estimated_monthly_savings": head.get("estimated_monthly_savings"),
+        "signals": head.get("signals"),
+    }
+
+
+DEMO_SUBSCRIPTION = "00000000-0000-4000-8000-0000000000a1"
+DEMO_TENANT = "00000000-0000-4000-8000-0000000000b2"
+
+
+def _demo_weights(pattern, key, days, start):
+    weights = []
+    for i in range(days):
+        day = start + timedelta(days=i)
+        noise = 0.9 + 0.2 * int(hashlib.sha256((key + day.isoformat()).encode("utf-8")).hexdigest()[:4], 16) / 65535
+        weekday = day.weekday() < 5
+        coin = int(hashlib.sha256((key + "c" + day.isoformat()).encode("utf-8")).hexdigest()[:2], 16) / 255
+        weight = {
+            "always": 1.0, "nightly": 1.0, "weekdays": 1.0 if weekday else 0.0,
+            "light": 1.0 if weekday and coin < 0.55 else 0.0, "sparse": 1.0 if weekday and coin < 0.22 else 0.0,
+            "month_end": 1.0 if i >= days - 6 else 0.0, "pool": 0.62 + (0.38 if weekday else 0.0),
+        }[pattern]
+        weights.append(weight * (noise if pattern != "pool" else 1.0))
+    scale = sum(weights) or 1.0
+    return [w / scale for w in weights]
+
+
+def demo_cost_data(reference, inventory):
+    """SIMULATED Cost Management results built item by item, so every query reconciles exactly as live data would."""
+    periods = cost_periods(reference)
+    labels = periods["labels"]
+    tag = {role: (COST_ALLOCATION_TAGS[i] if len(COST_ALLOCATION_TAGS) > i else None) for i, role in enumerate(("team", "project", "cc"))}
+    vm, db, st = "Virtual Machines", "Azure Databricks", "Storage"
+    ap = lambda name: {"Vendor": "Databricks", "ClusterName": name}
+    job = lambda jid, run: {"Vendor": "Databricks", "ClusterName": "job-" + jid + "-run-" + run, "JobId": jid}
+    wh = lambda wid: {"Vendor": "Databricks", "SqlEndpointId": wid}
+    pool = lambda pid: {"Vendor": "Databricks", "DatabricksInstancePoolId": pid}
+    items = [
+        (ap("bi-sales-shared"), {"team": "sales", "project": "dashboards"}, db, "Premium All-purpose Compute DBU", 3360, 2640, "always"),
+        (ap("bi-sales-shared"), {"team": "sales", "project": "dashboards"}, vm, "DS4 v2", 2050, 1610, "always"),
+        (ap("bi-sales-shared"), {"team": "sales", "project": "dashboards"}, st, "P10 LRS Disk", 140, 130, "always"),
+        (ap("ds-demand-forecast"), {"team": "data-science", "project": "demand-forecast", "cc": "CC-410"}, db, "Premium All-purpose Photon DBU", 820, 760, "weekdays"),
+        (ap("ds-demand-forecast"), {"team": "data-science", "project": "demand-forecast", "cc": "CC-410"}, vm, "E8ds v5 Spot", 310, 290, "weekdays"),
+        (ap("ds-demand-forecast"), {"team": "data-science", "project": "demand-forecast", "cc": "CC-410"}, st, "P10 LRS Disk", 45, 40, "weekdays"),
+        (ap("engineering-adhoc"), {"team": "engineering"}, db, "Premium All-purpose Compute DBU", 410, 450, "light"),
+        (ap("engineering-adhoc"), {"team": "engineering"}, vm, "D8ds v5", 260, 280, "light"),
+        (ap("engineering-adhoc"), {"team": "engineering"}, st, "P10 LRS Disk", 25, 25, "light"),
+        (ap("legacy-reports"), {}, db, "Premium All-purpose Compute DBU", 190, 260, "sparse"),
+        (ap("legacy-reports"), {}, vm, "DS3 v2", 120, 150, "sparse"),
+        (ap("legacy-reports"), {}, st, "P10 LRS Disk", 15, 15, "sparse"),
+        (ap("finance-close"), {"team": "finance", "project": "month-end-close", "cc": "CC-200"}, db, "Premium All-purpose Compute DBU", 260, 180, "month_end"),
+        (pool("1015-090000-pool-general"), {}, vm, "D4ds v5", 1180, 1120, "pool"),
+        (pool("1015-090000-pool-general"), {}, st, "P10 LRS Disk", 60, 58, "pool"),
+        (pool("1015-091500-pool-etlnight"), {"team": "engineering"}, vm, "E8ds v5 Spot", 220, 240, "nightly"),
+        (job("1001", "318842"), {"team": "sales", "project": "etl-sales", "cc": "CC-100"}, db, "Premium Jobs Compute DBU", 1640, 1480, "nightly"),
+        (job("1001", "318842"), {"team": "sales", "project": "etl-sales", "cc": "CC-100"}, vm, "D8ds v5", 1020, 930, "nightly"),
+        (job("1001", "318842"), {"team": "sales", "project": "etl-sales", "cc": "CC-100"}, st, "P10 LRS Disk", 70, 65, "nightly"),
+        (job("1004", "551220"), {"team": "data-science", "project": "demand-forecast"}, db, "Premium Jobs Compute DBU", 690, 640, "nightly"),
+        (job("1004", "551220"), {"team": "data-science", "project": "demand-forecast"}, vm, "E8ds v5 Spot", 160, 150, "nightly"),
+        (job("1005", "77310"), {}, db, "Premium Jobs Compute DBU", 380, 300, "nightly"),
+        (job("1005", "77310"), {}, vm, "DS3 v2", 240, 190, "nightly"),
+        (job("1006", "1"), {"team": "engineering", "project": "erp-ingest", "cc": "CC-300"}, db, "Premium Jobs Compute DBU", 520, 505, "always"),
+        (job("1006", "1"), {"team": "engineering", "project": "erp-ingest", "cc": "CC-300"}, vm, "D4ds v5", 300, 290, "always"),
+        ({"Vendor": "Databricks", "ClusterName": "dlt-execution-0c1d2e3f-orders"}, {"team": "engineering", "project": "erp-ingest"}, db, "Premium DLT Core Compute DBU", 430, 380, "nightly"),
+        ({"Vendor": "Databricks", "ClusterName": "dlt-execution-0c1d2e3f-orders"}, {"team": "engineering", "project": "erp-ingest"}, vm, "D4ds v5", 140, 120, "nightly"),
+        (wh("a1b2c3d4e5f60718"), {"team": "sales"}, db, "Premium SQL Compute Pro DBU", 1920, 1700, "always"),
+        (wh("a1b2c3d4e5f60718"), {"team": "sales"}, vm, "E8ds v5", 640, 560, "always"),
+        (wh("b2c3d4e5f6071829"), {"team": "finance", "project": "month-end-close", "cc": "CC-200"}, db, "Premium Serverless SQL DBU", 640, 590, "weekdays"),
+        ({}, {}, db, "Premium Serverless Compute DBU", 520, 260, "weekdays"),
+        ({}, {}, st, "Hot LRS Data Stored", 420, 400, "always"),
+        ({}, {}, "Bandwidth", "Standard Data Transfer Out", 180, 170, "always"),
+        ({}, {}, "Virtual Network", "NAT Gateway Hours", 140, 140, "always"),
+        ({}, {}, "Load Balancer", "Standard Load Balancer Data Processed", 60, 60, "always"),
+    ]
+    review_days = labels["review_days"]
+    mtd_factor = max(0, labels["mtd_days"] - 1) / review_days * 1.04
+    queries = {}
+
+    def tags_of(item):
+        default, alloc = item[0], item[1]
+        return {**default, **{tag[role]: value for role, value in alloc.items() if tag.get(role)}}
+
+    def emit(qid, key_of, with_meter=False, current=False):
+        out = {}
+        for item in items:
+            key = key_of(tags_of(item))
+            for period, amount in ((labels["previous"], item[5]), (labels["review"], item[4])) + (((labels["current"], round(item[4] * mtd_factor, 2)),) if current else ()):
+                slot = (period, key, item[2], item[3] if with_meter else None)
+                out[slot] = out.get(slot, 0.0) + amount
+        queries[qid] = {"status": "complete", "rows": [[p, k, c, m, round(v, 6), "EUR"] for (p, k, c, m), v in sorted(out.items(), key=str)],
+                        "pages": 1, "seconds": 2.1, "error": None}
+
+    emit("meter", lambda t: None, with_meter=True, current=True)
+    emit("vendor", lambda t: t.get("Vendor"))
+    for dimension, tag_name in COST_DIMENSIONS:
+        emit(dimension, lambda t, n=tag_name: t.get(n))
+    for tag_name in COST_ALLOCATION_TAGS:
+        emit("tag:" + tag_name, lambda t, n=tag_name: t.get(n))
+    names = {c["name"] for c in ap_clusters(inventory)}
+    pools_idle = {p["id"] for p in inventory.get("instance_pools", []) if (p.get("min_idle_instances") or 0) > 0}
+    for qid, tag_name, wanted in (("daily_cluster", "ClusterName", names), ("daily_pool", "DatabricksInstancePoolId", pools_idle)):
+        out = {}
+        for item in items:
+            key = item[0].get(tag_name)
+            if key not in wanted:
+                continue
+            for i, weight in enumerate(_demo_weights(item[6], key + item[3], review_days, periods["review_start"])):
+                day = (periods["review_start"] + timedelta(days=i)).isoformat()
+                if weight:
+                    out[(day, key)] = out.get((day, key), 0.0) + item[4] * weight
+        queries[qid] = {"status": "complete", "rows": [[d, k, None, None, round(v, 6), "EUR"] for (d, k), v in sorted(out.items())],
+                        "pages": 1, "seconds": 1.4, "error": None}
+    return {
+        "metric": COST_METRIC, "periods": labels, "queries": queries,
+        "scope": {"subscription_id": DEMO_SUBSCRIPTION, "resource_ids": [], "managed_resource_group": "databricks-rg-dbx-analytics-prod"},
+    }
+
+
+def demo_system_billing(reference):
+    periods = cost_periods(reference)
+    rows = []
+    for job_id, name, runs, cost, sku, user in (
+        ("1001", "etl-sales-daily", 31, 52.9, "PREMIUM_JOBS_COMPUTE", "sp-etl-production"),
+        ("1004", "demand-forecast-weekly", 4, 172.5, "PREMIUM_JOBS_COMPUTE", "luis.martin@example.com"),
+        ("1005", "data-quality-silver", 31, 12.3, "PREMIUM_JOBS_COMPUTE", "jorge.lopez@example.com"),
+    ):
+        for n in range(min(runs, 6)):
+            rows.append({"row_type": "run", "product": "JOBS", "sku": sku, "cluster_id": None, "job_id": job_id, "job_run_id": str(700000 + int(job_id) * 10 + n),
+                         "warehouse_id": None, "pipeline_id": None, "run_as": user, "dbus": round(cost / 0.30 * (1.18 - 0.07 * n), 1),
+                         "list_cost": round(cost * (1.18 - 0.07 * n), 2), "currency": "USD"})
+    rows.append({"row_type": "run", "product": "ALL_PURPOSE", "sku": "PREMIUM_ALL_PURPOSE_COMPUTE", "cluster_id": "0915-081203-bivts01", "job_id": None,
+                 "job_run_id": None, "warehouse_id": None, "pipeline_id": None, "run_as": "ana.garcia@example.com", "dbus": 6545.5, "list_cost": 3600.0, "currency": "USD"})
+    rows.append({"row_type": "run", "product": "SQL", "sku": "PREMIUM_SQL_PRO_COMPUTE", "cluster_id": None, "job_id": None, "job_run_id": None,
+                 "warehouse_id": "a1b2c3d4e5f60718", "pipeline_id": None, "run_as": None, "dbus": 3740.0, "list_cost": 2057.0, "currency": "USD"})
+    rows.sort(key=lambda r: -r["list_cost"])
+    for user, dbus, cost in (("ana.garcia@example.com", 6545.5, 3600.0), ("sp-etl-production", 5880.0, 1764.0), ("luis.martin@example.com", 3790.0, 1595.0),
+                             ("marta.ruiz@example.com", 800.0, 440.0), ("jorge.lopez@example.com", 1615.0, 650.0)):
+        rows.append({"row_type": "user", "product": None, "sku": None, "cluster_id": None, "job_id": None, "job_run_id": None, "warehouse_id": None,
+                     "pipeline_id": None, "run_as": user, "dbus": dbus, "list_cost": cost, "currency": "USD"})
+    for product, sku, dbus, cost in (("ALL_PURPOSE", "PREMIUM_ALL_PURPOSE_COMPUTE", 9255.0, 5090.0), ("JOBS", "PREMIUM_JOBS_COMPUTE", 11000.0, 3300.0),
+                                     ("SQL", "PREMIUM_SQL_PRO_COMPUTE", 3740.0, 2057.0), ("SQL", "PREMIUM_SERVERLESS_SQL_COMPUTE", 980.0, 686.0),
+                                     ("DLT", "PREMIUM_DLT_CORE_COMPUTE", 1530.0, 459.0), ("INTERACTIVE", "PREMIUM_SERVERLESS_COMPUTE", 400.0, 300.0)):
+        rows.append({"row_type": "product", "product": product, "sku": sku, "cluster_id": None, "job_id": None, "job_run_id": None, "warehouse_id": None,
+                     "pipeline_id": None, "run_as": None, "dbus": dbus, "list_cost": cost, "currency": "USD"})
+    return {"warehouse_id": "b2c3d4e5f6071829", "window": {"start": periods["review_start"].isoformat(), "end": periods["current_start"].isoformat()},
+            "rows": rows, "truncated": False}
+
+
+def demo_raw(reference):
+    """Complete SIMULATED workspace (operation=self_test): no network, no configuration, clearly labelled everywhere."""
+    sub, rg, name, host = DEMO_SUBSCRIPTION, "rg-data-prod", "dbx-analytics-prod", "adb-1234567890123456.7.azuredatabricks.net"
+    base = "/subscriptions/" + sub + "/resourceGroups/" + rg + "/providers/"
+    config = {
+        "name": name, "resource_group": rg, "workspace_host": host, "environment": "PRODUCTION", "auth_mode": "same_tenant_uami",
+        "workspace_api_enabled": True, "unity_catalog_enabled": True, "include_managed_resource_group": True, "advisor_enabled": True,
+        "approved_related_resource_ids": [], "approved_cost_resource_ids": [], "cost_scope": "disabled", "cost_timeframe": "month_to_date",
+        "cost_analysis_enabled": True, "system_tables_warehouse_id": "b2c3d4e5f6071829",
+        "requirements": {"premium_required": True, "no_public_ip_required": True, "vnet_injection_required": True, "cluster_policy_required": True},
+        "sre_tenant_id": DEMO_TENANT, "target_tenant_id": DEMO_TENANT, "cross_tenant": False, "subscription_id": sub,
+        "id": base + "Microsoft.Databricks/workspaces/" + name,
+    }
+    vnet, ac = base + "Microsoft.Network/virtualNetworks/vnet-data-prod", base + "Microsoft.Databricks/accessConnectors/ac-data-prod"
+    nsg, st, kv = base + "Microsoft.Network/networkSecurityGroups/nsg-dbx-prod", base + "Microsoft.Storage/storageAccounts/stdatalakeprod", base + "Microsoft.KeyVault/vaults/kv-data-prod"
+    ws = normalize_workspace({
+        "id": config["id"], "name": name, "location": "westeurope", "sku": {"name": "premium"},
+        "properties": {
+            "workspaceId": "1234567890123456", "workspaceUrl": host, "provisioningState": "Succeeded",
+            "managedResourceGroupId": "/subscriptions/" + sub + "/resourceGroups/databricks-rg-" + name, "publicNetworkAccess": "Enabled",
+            "requiredNsgRules": "AllRules", "defaultCatalog": {"initialType": "UnityCatalog", "initialName": "main"},
+            "accessConnector": {"id": ac, "identityType": "SystemAssigned"},
+            "parameters": {"enableNoPublicIp": {"value": True}, "customVirtualNetworkId": {"value": vnet},
+                           "customPublicSubnetName": {"value": "snet-dbx-host"}, "customPrivateSubnetName": {"value": "snet-dbx-container"},
+                           "storageAccountName": {"value": "dbstoragedemo01"}},
+        },
+    }, "arm_workspace", reference, config)
+    related = [normalize_resource(item, "arm_resource_" + str(i + 1), reference, config, {"type": "direct_reference", "source_id": "arm_workspace", "field": field})
+               for i, (item, field) in enumerate((
+                   ({"id": vnet, "name": "vnet-data-prod", "location": "westeurope", "properties": {"addressSpace": {"addressPrefixes": ["10.20.0.0/16"]},
+                     "subnets": [{"id": vnet + "/subnets/snet-dbx-host"}, {"id": vnet + "/subnets/snet-dbx-container"}]}}, "parameters.customVirtualNetworkId"),
+                   ({"id": vnet + "/subnets/snet-dbx-host", "name": "snet-dbx-host", "properties": {"addressPrefix": "10.20.1.0/24", "networkSecurityGroup": {"id": nsg},
+                     "delegations": [{"name": "dbx", "properties": {"serviceName": "Microsoft.Databricks/workspaces"}}]}}, "parameters.customPublicSubnetName"),
+                   ({"id": vnet + "/subnets/snet-dbx-container", "name": "snet-dbx-container", "properties": {"addressPrefix": "10.20.2.0/24", "networkSecurityGroup": {"id": nsg},
+                     "delegations": [{"name": "dbx", "properties": {"serviceName": "Microsoft.Databricks/workspaces"}}]}}, "parameters.customPrivateSubnetName"),
+                   ({"id": nsg, "name": "nsg-dbx-prod", "properties": {"securityRules": []}}, "nsg_id"),
+                   ({"id": ac, "name": "ac-data-prod", "identity": {"type": "SystemAssigned"}, "properties": {"provisioningState": "Succeeded"}}, "accessConnector.id"),
+                   ({"id": st, "name": "stdatalakeprod", "sku": {"name": "Standard_ZRS"}, "properties": {"supportsHttpsTrafficOnly": True, "minimumTlsVersion": "TLS1_2",
+                     "allowBlobPublicAccess": False, "allowSharedKeyAccess": True, "publicNetworkAccess": "Enabled", "isHnsEnabled": True,
+                     "primaryEndpoints": {"dfs": "https://stdatalakeprod.dfs.core.windows.net/"}}}, "approved_related_resource_ids"),
+                   ({"id": kv, "name": "kv-data-prod", "properties": {"enableRbacAuthorization": True, "enablePurgeProtection": True, "enableSoftDelete": True,
+                     "publicNetworkAccess": "Disabled", "vaultUri": "https://kv-data-prod.vault.azure.net/"}}, "keyvault_metadata.resource_id"),
+               ))]
+    day_ms = 86400000
+    now_ms = int(datetime.fromisoformat(reference.replace("Z", "+00:00")).timestamp() * 1000)
+    tags = lambda **kw: {COST_ALLOCATION_TAGS[i]: kw[r] for i, r in enumerate(("team", "project", "cc")) if len(COST_ALLOCATION_TAGS) > i and r in kw}
+    cluster_specs = [
+        {"cluster_id": "0915-081203-bivts01", "cluster_name": "bi-sales-shared", "cluster_source": "UI", "state": "RUNNING", "spark_version": "13.3.x-scala2.12",
+         "node_type_id": "Standard_DS4_v2", "autoscale": {"min_workers": 2, "max_workers": 8}, "autotermination_minutes": 0, "data_security_mode": "USER_ISOLATION",
+         "azure_attributes": {"availability": "ON_DEMAND_AZURE"}, "custom_tags": tags(team="sales", project="dashboards"),
+         "creator_user_name": "ana.garcia@example.com", "start_time": now_ms - 40 * day_ms, "last_restarted_time": now_ms - 9 * day_ms},
+        {"cluster_id": "0915-091530-dsprv02", "cluster_name": "ds-demand-forecast", "cluster_source": "UI", "state": "TERMINATED", "spark_version": "15.4.x-cpu-ml-scala2.12",
+         "node_type_id": "Standard_E8ds_v5", "num_workers": 4, "autotermination_minutes": 120, "data_security_mode": "SINGLE_USER", "policy_id": "POL-DATA-SCIENCE",
+         "runtime_engine": "PHOTON", "azure_attributes": {"availability": "SPOT_WITH_FALLBACK_AZURE", "first_on_demand": 1},
+         "custom_tags": tags(team="data-science", project="demand-forecast", cc="CC-410"), "creator_user_name": "luis.martin@example.com"},
+        {"cluster_id": "0915-102244-ingad03", "cluster_name": "engineering-adhoc", "cluster_source": "UI", "state": "TERMINATED", "spark_version": "14.3.x-scala2.12",
+         "node_type_id": "Standard_D8ds_v5", "autoscale": {"min_workers": 1, "max_workers": 4}, "autotermination_minutes": 30, "data_security_mode": "USER_ISOLATION",
+         "policy_id": "POL-PERSONAL-USE", "azure_attributes": {"availability": "ON_DEMAND_AZURE"}, "custom_tags": tags(team="engineering"),
+         "creator_user_name": "marta.ruiz@example.com"},
+        {"cluster_id": "0915-110001-legin04", "cluster_name": "legacy-reports", "cluster_source": "UI", "state": "TERMINATED", "spark_version": "10.4.x-scala2.12",
+         "node_type_id": "Standard_DS3_v2", "num_workers": 2, "autotermination_minutes": 60, "data_security_mode": "NONE",
+         "azure_attributes": {"availability": "ON_DEMAND_AZURE"}, "creator_user_name": "jorge.lopez@example.com"},
+        {"cluster_id": "0915-120000-fincr05", "cluster_name": "finance-close", "cluster_source": "API", "state": "TERMINATED", "spark_version": "15.4.x-scala2.12",
+         "node_type_id": "Standard_D4ds_v5", "num_workers": 2, "autotermination_minutes": 20, "data_security_mode": "USER_ISOLATION", "policy_id": "POL-PERSONAL-USE",
+         "instance_pool_id": "1015-090000-pool-general", "custom_tags": tags(team="finance", project="month-end-close", cc="CC-200"),
+         "creator_user_name": "elena.sanz@example.com"},
+        {"cluster_id": "1103-020000-job1004", "cluster_name": "job-1004-run-551220", "cluster_source": "JOB", "state": "TERMINATED", "spark_version": "15.4.x-cpu-ml-scala2.12",
+         "node_type_id": "Standard_E8ds_v5", "num_workers": 6, "data_security_mode": "SINGLE_USER"},
+    ]
+    clusters = [normalize_cluster(c, "dbx_clusters", reference, config) for c in cluster_specs]
+    pools = [normalize_pool(p, "dbx_instance_pools", reference, config) for p in (
+        {"instance_pool_id": "1015-090000-pool-general", "instance_pool_name": "pool-general", "node_type_id": "Standard_D4ds_v5", "min_idle_instances": 4,
+         "max_capacity": 20, "idle_instance_autotermination_minutes": 60, "azure_attributes": {"availability": "ON_DEMAND_AZURE"}, "state": "ACTIVE",
+         "stats": {"used_count": 1, "idle_count": 4}},
+        {"instance_pool_id": "1015-091500-pool-etlnight", "instance_pool_name": "pool-etl-night", "node_type_id": "Standard_E8ds_v5", "min_idle_instances": 0,
+         "max_capacity": 30, "idle_instance_autotermination_minutes": 15, "azure_attributes": {"availability": "SPOT_WITH_FALLBACK_AZURE"}, "state": "ACTIVE",
+         "custom_tags": tags(team="engineering"), "stats": {"used_count": 0, "idle_count": 0}},
+    )]
+    tag_rules = lambda *keys: {"custom_tags." + COST_ALLOCATION_TAGS[i]: {"type": "unlimited", "isOptional": False} for i in keys if len(COST_ALLOCATION_TAGS) > i}
+    policies = [normalize_policy(p, "dbx_cluster_policies", reference, config) for p in (
+        {"policy_id": "POL-PERSONAL-USE", "name": "pol-personal-use", "policy_family_id": "personal-vm",
+         "definition": json.dumps({**tag_rules(0), "autotermination_minutes": {"type": "fixed", "value": 30}})},
+        {"policy_id": "POL-DATA-SCIENCE", "name": "pol-data-science", "definition": json.dumps({**tag_rules(0, 1), "autotermination_minutes": {"type": "range", "maxValue": 120}})},
+        {"policy_id": "POL-JOBS-PRODUCTION", "name": "pol-jobs-production", "definition": json.dumps(tag_rules(0, 1, 2))},
+    )]
+    job_cluster = lambda key, node, pol, avail, extra, **kw: {"job_cluster_key": key, "new_cluster": {
+        "spark_version": kw.pop("version", "15.4.x-scala2.12"), "node_type_id": node, "policy_id": pol, "azure_attributes": {"availability": avail},
+        "custom_tags": tags(**kw), "data_security_mode": "SINGLE_USER", **extra}}
+    job_specs = [
+        (1001, "etl-sales-daily", {"quartz_cron_expression": "0 0 2 * * ?"}, [job_cluster("jc-etl", "Standard_D8ds_v5", "POL-JOBS-PRODUCTION", "ON_DEMAND_AZURE",
+          {"autoscale": {"min_workers": 2, "max_workers": 10}}, team="sales", project="etl-sales", cc="CC-100")], [("bronze", "jc-etl", None), ("silver", "jc-etl", None)]),
+        (1002, "dashboard-refresh", {"quartz_cron_expression": "0 30 6 * * ?"}, [], [("refresh", None, "0915-081203-bivts01")]),
+        (1003, "distributor-orders-export", {"quartz_cron_expression": "0 0 7 * * ?"}, [], [("export", None, "0915-081203-bivts01")]),
+        (1004, "demand-forecast-weekly", {"quartz_cron_expression": "0 0 4 ? * MON"}, [job_cluster("jc-ml", "Standard_E8ds_v5", "POL-DATA-SCIENCE",
+          "SPOT_WITH_FALLBACK_AZURE", {"num_workers": 6}, version="15.4.x-cpu-ml-scala2.12", team="data-science", project="demand-forecast")], [("train", "jc-ml", None)]),
+        (1005, "data-quality-silver", {"quartz_cron_expression": "0 0 3 * * ?"}, [job_cluster("jc-quality", "Standard_DS3_v2", None, "ON_DEMAND_AZURE",
+          {"num_workers": 4}, version="12.2.x-scala2.12")], [("validate", "jc-quality", None)]),
+        (1006, "erp-ingest-continuous", None, [job_cluster("jc-stream", "Standard_D4ds_v5", "POL-JOBS-PRODUCTION", "ON_DEMAND_AZURE", {"num_workers": 2},
+          team="engineering", project="erp-ingest", cc="CC-300")], [("stream", "jc-stream", None)]),
+    ]
+    jobs = []
+    for jid, jname, schedule, clusters_spec, tasks in job_specs:
+        settings = {"name": jname, "job_clusters": clusters_spec, "timeout_seconds": 7200, "email_notifications": {"on_failure": ["data@example.com"]},
+                    "run_as": {"service_principal_name": "00000000-0000-4000-8000-0000000000c3"} if jid in (1001, 1006) else {"user_name": "ana.garcia@example.com"},
+                    "tasks": [{"task_key": key, "job_cluster_key": jck, "existing_cluster_id": ecid, "notebook_task": {"notebook_path": "/Repos/data/" + jname + "/" + key}}
+                              for key, jck, ecid in tasks]}
+        settings.update({"schedule": schedule} if schedule else {"continuous": {"pause_status": "UNPAUSED"}})
+        jobs.append(normalize_job({"job_id": jid, "creator_user_name": "ana.garcia@example.com", "settings": settings}, "dbx_jobs", reference, config))
+    pipelines = [normalize_pipeline({"pipeline_id": "0c1d2e3f-orders", "name": "dlt-orders", "state": "IDLE", "catalog": "main", "target": "silver_orders",
+                                     "serverless": False, "continuous": False}, "dbx_pipelines", reference, config)]
+    warehouses = [normalize_warehouse(w, "dbx_sql_warehouses", reference, config) for w in (
+        {"id": "a1b2c3d4e5f60718", "name": "wh-bi-sales", "state": "RUNNING", "cluster_size": "Medium", "warehouse_type": "PRO", "enable_serverless_compute": False,
+         "auto_stop_mins": 0, "min_num_clusters": 1, "max_num_clusters": 2, "num_clusters": 1, "num_active_sessions": 0, "creator_name": "ana.garcia@example.com",
+         "tags": {"custom_tags": [{"key": k, "value": v} for k, v in tags(team="sales").items()]}},
+        {"id": "b2c3d4e5f6071829", "name": "wh-finance-serverless", "state": "STOPPED", "cluster_size": "Small", "warehouse_type": "PRO",
+         "enable_serverless_compute": True, "auto_stop_mins": 10, "min_num_clusters": 1, "max_num_clusters": 1, "creator_name": "elena.sanz@example.com",
+         "tags": {"custom_tags": [{"key": k, "value": v} for k, v in tags(team="finance", project="month-end-close", cc="CC-200").items()]}},
+    )]
+    scopes = [normalize_secret_scope({"name": "kv-data-prod", "backend_type": "AZURE_KEYVAULT",
+                                      "keyvault_metadata": {"resource_id": kv, "dns_name": "https://kv-data-prod.vault.azure.net/"}}, "dbx_secret_scopes", reference, config)]
+    metastore = normalize_metastore({"metastore_id": "ms-weu-demo", "name": "metastore-westeurope", "region": "westeurope",
+                                     "storage_root": "abfss://metastore@stdatalakeprod.dfs.core.windows.net/root"}, "uc_metastore_summary", reference, config)
+    catalogs = [normalize_catalog({"name": n, "catalog_type": "MANAGED_CATALOG", "storage_root": "abfss://" + n + "@stdatalakeprod.dfs.core.windows.net/" + n,
+                                   "isolation_mode": "ISOLATED", "metastore_id": "ms-weu-demo"}, "uc_catalogs", reference, config) for n in ("main", "sales", "data_science")]
+    schemas = [normalize_schema({"full_name": "main." + n, "name": n, "catalog_name": "main", "metastore_id": "ms-weu-demo"}, "uc_schemas", reference, config)
+               for n in ("bronze_orders", "silver_orders")]
+    creds = [normalize_storage_credential({"id": "sc-demo-01", "name": "cred-data-lake", "read_only": False,
+                                           "azure_managed_identity": {"access_connector_id": ac}}, "uc_storage_credentials", reference, config)]
+    locations = [normalize_external_location({"name": "ext-lake-curated", "url": "abfss://curated@stdatalakeprod.dfs.core.windows.net/", "credential_name": "cred-data-lake",
+                                               "read_only": False, "metastore_id": "ms-weu-demo"}, "uc_external_locations", reference, config)]
+    outbound = [normalize_outbound_endpoint({"category": "Webapp", "endpoints": [{"domainName": "westeurope.azuredatabricks.net", "endpointDetails": [{"port": 443}]}]},
+                                            "arm_outbound_endpoints", reference, config)]
+    inventory = {
+        "clusters": clusters, "instance_pools": pools, "cluster_policies": policies, "jobs": jobs, "pipelines": pipelines, "sql_warehouses": warehouses,
+        "secret_scopes": scopes, "global_init_scripts": [], "uc_metastore": metastore, "uc_catalogs": catalogs, "uc_schemas": schemas,
+        "uc_storage_credentials": creds, "uc_external_locations": locations, "uc_connections": [], "outbound_endpoints": outbound, "related_resources": related,
+    }
+    counts = {"dbx_clusters": clusters, "dbx_instance_pools": pools, "dbx_cluster_policies": policies, "dbx_jobs": jobs, "dbx_pipelines": pipelines,
+              "dbx_sql_warehouses": warehouses, "dbx_secret_scopes": scopes, "uc_catalogs": catalogs, "uc_schemas": schemas, "uc_storage_credentials": creds,
+              "uc_external_locations": locations, "uc_connections": [], "arm_outbound_endpoints": outbound}
+    sources = [source_receipt("arm_workspace", reference, records=1, pages=1)]
+    sources += [source_receipt(sid, reference, records=len(rows), pages=1) for sid, rows in counts.items()]
+    sources += [source_receipt(sid, reference, records=1, pages=1) for sid in ("arm_diagnostics", "dbx_workspace_conf", "uc_metastore_summary", "dbx_spark_versions", "dbx_node_types")]
+    sources += [source_receipt("arm_managed_rg_inventory", reference, records=9, pages=1), source_receipt("dbx_init_scripts", reference, pages=1)]
+    sources += [source_receipt("arm_resource_" + str(i + 1), reference, records=1, pages=1) for i in range(len(related))]
+    sources += [
+        source_receipt("uc_system_lineage", reference, "not_configured", "Runtime table/column lineage is never queried by this collector."),
+        source_receipt("arm_advisor", reference, pages=1),
+        source_receipt("azure_cost", reference, "not_configured", "Legacy cost_scope disabled in the simulated configuration."),
+    ]
+    cost_data = demo_cost_data(reference, inventory)
+    sources.append(source_receipt("azure_cost_databricks", reference, records=sum(len(q["rows"]) for q in cost_data["queries"].values()),
+                                  pages=len(cost_data["queries"]), metric=COST_METRIC,
+                                  queries=[{"id": k, "status": "complete", "records": len(q["rows"]), "seconds": q["seconds"]} for k, q in cost_data["queries"].items()],
+                                  note="SIMULATED Cost Management results (operation=self_test)."))
+    billing = demo_system_billing(reference)
+    sources.append(source_receipt("dbx_system_billing", reference, records=len(billing["rows"]), pages=1, warehouse_id=billing["warehouse_id"],
+                                  note="SIMULATED system.billing.usage result: in production this source is OFF unless system_tables_warehouse_id is set."))
+    return {
+        "workspace": ws, "sources": sources, "inventory": inventory, "requirements": config["requirements"],
+        "workspace_conf": {"enableTokensConfig": "true", "maxTokenLifetimeDays": "90", "enableIpAccessLists": "false",
+                           "enableDbfsFileBrowser": "false", "enableExportNotebook": "true"},
+        "arm_diagnostics": [{"id": config["id"] + "/providers/Microsoft.Insights/diagnosticSettings/diag-dbx", "name": "diag-dbx",
+                             "logs": [{"category": "jobs", "enabled": True}, {"category": "clusters", "enabled": True}]}],
+        "advisor": [], "cost_rows": [],
+        "dbx_runtime_catalog": {
+            "spark_versions": ["13.3.x-scala2.12", "14.3.x-scala2.12", "15.4.x-scala2.12", "15.4.x-cpu-ml-scala2.12", "16.4.x-scala2.12"],
+            "node_types": {"Standard_DS3_v2": {"is_deprecated": False}, "Standard_DS4_v2": {"is_deprecated": False}},
+        },
+        "dbx_cost_data": cost_data,
+        "system_billing": billing,
+        "demo_roster": [{"workspace_id": config["id"], "workspace_name": name, "resource_group": rg, "workspace_host": host,
+                         "environment": "PRODUCTION", "auth_mode": "same_tenant_uami", "cross_tenant": False}],
     }
 
 
@@ -3167,6 +4612,7 @@ def finish_snapshot(raw, reference, provenance="LIVE", environment="UNSPECIFIED"
             ),
         ],
     }
+    raw["databricks_cost_model"] = cost_model = databricks_costs_for(raw, reference)
     dep_graph = dependencies_for(raw, reference, provenance)
     checks = evaluate(raw, reference, dep_graph)
     findings = [check for check in checks if check["status"] == "failed"]
@@ -3181,12 +4627,24 @@ def finish_snapshot(raw, reference, provenance="LIVE", environment="UNSPECIFIED"
     critical = sum(check["severity"] == "critical" for check in findings)
     catalog_count = CATALOG.get("catalogSnapshot", {}).get("item_count", len(CATALOG.get("rules", [])))
     dep_counts = dep_graph["summary_counts"]
+    head = cost_model.get("headline") or {}
+    cost_message = (
+        "Databricks cost " + en_amount(head["review_total"]) + " " + (cost_model.get("currency") or "") + " in " + en_month(head["review_month"])
+        + " (" + en_amount(head.get("dbu_share"), 1) + "% DBU, " + en_amount(100 - (head.get("dbu_share") or 0), 1) + "% infrastructure)"
+        + ("; " + en_amount(head["unattributed_share"], 1) + "% without a compute tag" if head.get("unattributed_share") is not None else "")
+        + ("; estimated savings " + en_amount(head["estimated_monthly_savings"]) + " " + (cost_model.get("currency") or "") + "/month with documented rules."
+           if head.get("estimated_monthly_savings") else ".")
+    ) if head.get("review_total") is not None else (
+        str(head.get("signals") or 0) + " cost optimization signals observed in the configuration; no cost data ("
+        + str(cost_model.get("status")) + "), so no savings are estimated."
+    )
     return {
         "schema_version": "1.0",
         "provenance": provenance,
         "environment": environment,
         "reference_utc": reference,
         "client": {"name": CLIENT_NAME, "logo_data_uri": CLIENT_LOGO_DATA_URI, "logo_alt": CLIENT_LOGO_ALT},
+        "presentation": presentation_settings(),
         "workspace": raw["workspace"],
         "sources": raw["sources"],
         "inventory": raw["inventory"],
@@ -3201,13 +4659,15 @@ def finish_snapshot(raw, reference, provenance="LIVE", environment="UNSPECIFIED"
         "findings": findings,
         "scores": scores,
         "finops": finops_for(raw),
+        "databricks_costs": cost_model,
         "actions": actions_for(findings),
         "executive_messages": [
-            str(dep_counts["nodes_total"]) + " nodos en el mapa de dependencias (" + str(dep_counts["edges_observed"]) + " relaciones OBSERVED, " + str(dep_counts["edges_inferred"]) + " INFERRED explícitas y " + str(dep_counts["unknowns_total"]) + " puntos ciegos UNKNOWN).",
-            str(len(findings)) + " hallazgos de configuración y dependencias observados (" + str(critical) + " críticos reales, sin rellenar un Top 5 ficticio).",
-            str(global_score["evaluated"]) + " de " + str(global_score["evaluated"] + global_score["not_evaluated"]) + " comprobaciones aplicables evaluadas; la cobertura se muestra junto al índice local.",
-            str(dep_counts["broken_references_total"]) + " referencias rotas detectadas entre tareas de Jobs, clústeres, pools, políticas, pipelines, warehouses y credenciales.",
-            str(len(blind_spots)) + " fuentes con estado parcial, denegado o no configurado; ahorro estimado no calculado y ningún clúster o SQL Warehouse fue iniciado.",
+            cost_message,
+            str(dep_counts["nodes_total"]) + " nodes in the dependency map (" + str(dep_counts["edges_observed"]) + " OBSERVED relationships, " + str(dep_counts["edges_inferred"]) + " explicit INFERRED relationships and " + str(dep_counts["unknowns_total"]) + " UNKNOWN blind spots).",
+            str(len(findings)) + " observed configuration and dependency findings (" + str(critical) + " critical; the list is never padded to a top 5).",
+            str(global_score["evaluated"]) + " of " + str(global_score["evaluated"] + global_score["not_evaluated"]) + " applicable checks evaluated; coverage is shown beside the local index.",
+            str(dep_counts["broken_references_total"]) + " broken references found between job tasks, clusters, pools, policies, pipelines, warehouses and credentials.",
+            str(len(blind_spots)) + " sources partial, denied or not configured; no cluster was started for this review.",
         ],
         "methodology": {
             "score_kind": "local_assessment_indicator",
@@ -3266,11 +4726,15 @@ def multi_snapshot(runs, reference, roster):
     }
     scores["coverage"] = dict(scores["global"])
     inv_keys = ("clusters", "jobs", "pipelines", "sql_warehouses", "uc_catalogs", "uc_external_locations", "related_resources")
+    heads = [((s.get("databricks_costs") or {}).get("headline") or {}, (s.get("databricks_costs") or {}).get("currency")) for s in snapshots]
+    currencies = {cur for head, cur in heads if head.get("review_total") is not None}
+    comparable = bool(heads) and len(currencies) == 1 and all(head.get("review_total") is not None for head, _ in heads)
     return {
         "schema_version": "databricks-dep-multi-workspace-v1",
         "reference_utc": reference,
         "provenance": next(iter(provenances)) if provenances else "LIVE",
         "client": {"name": CLIENT_NAME, "logo_data_uri": CLIENT_LOGO_DATA_URI, "logo_alt": CLIENT_LOGO_ALT},
+        "presentation": presentation_settings(),
         "available_workspaces": roster,
         "selected_workspace_names": [run["workspace_name"] for run in runs],
         "workspace_runs": runs,
@@ -3291,6 +4755,11 @@ def multi_snapshot(runs, reference, roster):
             "official_waf_score": False,
             "estimated_savings": None,
             "actual_cost": None,
+            "databricks_costs": {
+                "currency": next(iter(currencies)) if comparable else None,
+                "review_total": round(sum(head["review_total"] for head, _ in heads), 2) if comparable else None,
+                "estimated_monthly_savings": round(sum(head.get("estimated_monthly_savings") or 0 for head, _ in heads), 2) if comparable else None,
+            },
         },
     }
 
@@ -3374,7 +4843,30 @@ def summary(snapshot):
         "actual_cost": snapshot["finops"]["actual_cost"],
         "currency": snapshot["finops"]["currency"],
         "estimated_savings": None,
+        "databricks_costs": cost_summary(snapshot.get("databricks_costs")),
     }
+
+
+def cost_rows_for_query(snapshot):
+    model = snapshot.get("databricks_costs") or {}
+    currency = model.get("currency")
+    head = model.get("headline") or {}
+    rows = [{"record_type": "headline", "name": "databricks_costs", **(cost_summary(model) or {}),
+             "mtd_total": head.get("mtd_total"), "previous_total": head.get("previous_total")}]
+    for s in model.get("signals", []):
+        rows.append({
+            "record_type": "signal", "id": s["id"], "code": s["code"], "severity": s["severity"], "title": s["title"],
+            "name": s["object_name"], "workload_name": s["object_name"], "kind": s["object_kind"], "monthly_cost": s["monthly_cost"],
+            "estimated_monthly_saving": s["estimated_monthly_saving"], "saving_kind": s["saving_kind"], "counted": s["counted"],
+            "currency": currency, "recommendation": s["recommendation"],
+        })
+    for r in ((model.get("attribution") or {}).get("rows") or [])[:60]:
+        rows.append({
+            "record_type": "attribution", "dimension": r["dimension"], "name": r["name"], "workload_name": r["name"], "kind": r["kind"],
+            "total": r["total"], "dbu": r["dbu"], "infra": r["infra"], "previous_total": r["previous_total"], "share": r["share"],
+            "creator": r["creator"], "tags": r["tags"], "currency": currency,
+        })
+    return rows
 
 
 def snapshot_rows(snapshot, view):
@@ -3408,6 +4900,7 @@ def snapshot_rows(snapshot, view):
             + snapshot["dependencies"]["edges"]
             + snapshot["dependencies"]["unknowns"]
         ),
+        "costs": cost_rows_for_query(snapshot),
     }[view]
 
 
@@ -3658,7 +5151,7 @@ def report_envelope(snapshot, paths, root):
     inv_keys = ("clusters", "jobs", "pipelines", "sql_warehouses", "uc_catalogs", "uc_external_locations", "related_resources")
     result = {
         "status": "partial" if partial or (multi and aggregate["workspace_status_counts"].get("error")) else "ok",
-        "operation": "report",
+        "operation": "self_test" if snapshot.get("provenance") == "SIMULATED" else "report",
         "artifact_status": "written",
         **sharing_fields(root, paths),
         "collection": collection_disclosure(snapshot),
@@ -3670,6 +5163,7 @@ def report_envelope(snapshot, paths, root):
         "dependency_counts": aggregate["dependency_counts"] if multi else snapshot["dependencies"]["summary_counts"],
         "critical_total": sum(row["severity"] == "critical" for row in findings),
         "estimated_savings": None,
+        "databricks_costs": aggregate["databricks_costs"] if multi else cost_summary(snapshot.get("databricks_costs")),
         **{key: str(path) for key, path in paths.items()},
     }
     return ensure_response(result)
@@ -3770,6 +5264,17 @@ def main(
             operation, view, workspace_name, workspace_names, workload_name,
             classification, area, level, severity, status, limit, offset,
         )
+        if operation == "self_test":
+            validate_cost_settings()
+            presentation_settings()
+            validate_logo(CLIENT_LOGO_DATA_URI, CLIENT_LOGO_ALT)
+            if not CATALOG.get("rules"):
+                raise EvidenceError("catalog_missing", "Use the build-generated whole-file tool, not unbuilt engine.py.", "rule_catalog")
+            reference = utc_now()
+            raw = demo_raw(reference)
+            snapshot = finish_snapshot(raw, reference, provenance="SIMULATED", environment="PRODUCTION")
+            snapshot.update(available_workspaces=raw["demo_roster"], selected_workspace_names=[raw["demo_roster"][0]["workspace_name"]])
+            return write_report(snapshot)
         configs, roster = selection_configs(workspace_name, workspace_names)
         if operation == "list_workspaces":
             return ensure_response({
