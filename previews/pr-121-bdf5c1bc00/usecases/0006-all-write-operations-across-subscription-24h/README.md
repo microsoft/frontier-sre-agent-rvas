@@ -107,4 +107,7 @@ Daily at 18:00 UTC, the end of the business day, in the same chat thread. Change
 
 ## Credits
 
-Built and tested by Mario Aguilera ([@marioaguileraaa](https://github.com/marioaguileraaa)). Source: [`14-azure-relevant-changes-digest`](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/14-azure-relevant-changes-digest) in `marioaguileraaa/sre-agent-use-cases` (MIT), commit `4eb2e90`. The upstream guide has every step with a screenshot, troubleshooting and the acceptance checks. Field guide: [plate 14](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-14). It implements the earlier idea *All write operations across subscription (24h)*, first listed from [alsanch/azure-sre-agent-scenarios](https://github.com/alsanch/azure-sre-agent-scenarios), and keeps its id.
+- **Built and tested by** Mario Aguilera: [github.com/marioaguileraaa](https://github.com/marioaguileraaa)
+- **Upstream source and step-by-step guide** (every step with a screenshot, troubleshooting and the acceptance checks): [github.com/marioaguileraaa/sre-agent-use-cases/tree/main/14-azure-relevant-changes-digest](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/14-azure-relevant-changes-digest). MIT license; this entry was converted from commit [`4eb2e90`](https://github.com/marioaguileraaa/sre-agent-use-cases/commit/4eb2e90).
+- **Field guide:** [plate 14](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-14)
+- **Earlier idea:** this entry implements *All write operations across subscription (24h)*, first listed from [alsanch/azure-sre-agent-scenarios](https://github.com/alsanch/azure-sre-agent-scenarios), and keeps its id.

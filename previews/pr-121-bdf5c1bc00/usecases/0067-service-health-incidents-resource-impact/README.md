@@ -108,4 +108,7 @@ The tool in `manifests/tools/` is built from `src/`. Edit `src/engine.py` or the
 
 ## Credits
 
-Built and tested by Mario Aguilera ([@marioaguileraaa](https://github.com/marioaguileraaa)). Source: [`05-service-health-events-review`](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/05-service-health-events-review) in `marioaguileraaa/sre-agent-use-cases` (MIT), commit `4eb2e90`. The upstream guide has every step with a screenshot, troubleshooting and the acceptance checks. Field guide: [plate 05](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-05). It implements the earlier idea *Service Health incidents & resource impact*, first listed from [alsanch/azure-sre-agent-scenarios](https://github.com/alsanch/azure-sre-agent-scenarios), and keeps its id.
+- **Built and tested by** Mario Aguilera: [github.com/marioaguileraaa](https://github.com/marioaguileraaa)
+- **Upstream source and step-by-step guide** (every step with a screenshot, troubleshooting and the acceptance checks): [github.com/marioaguileraaa/sre-agent-use-cases/tree/main/05-service-health-events-review](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/05-service-health-events-review). MIT license; this entry was converted from commit [`4eb2e90`](https://github.com/marioaguileraaa/sre-agent-use-cases/commit/4eb2e90).
+- **Field guide:** [plate 05](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-05)
+- **Earlier idea:** this entry implements *Service Health incidents & resource impact*, first listed from [alsanch/azure-sre-agent-scenarios](https://github.com/alsanch/azure-sre-agent-scenarios), and keeps its id.

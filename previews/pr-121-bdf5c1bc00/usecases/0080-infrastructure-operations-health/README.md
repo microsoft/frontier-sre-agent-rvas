@@ -92,4 +92,6 @@ Monthly, on day 1 at 09:00 UTC, for the previous complete UTC calendar month. As
 
 ## Credits
 
-Built and tested by Mario Aguilera ([@marioaguileraaa](https://github.com/marioaguileraaa)). Source: [`03-infrastructure-operations-health`](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/03-infrastructure-operations-health) in `marioaguileraaa/sre-agent-use-cases` (MIT), commit `4eb2e90`. The upstream guide has every step with a screenshot, troubleshooting and the acceptance checks. Field guide: [plate 03](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-03).
+- **Built and tested by** Mario Aguilera: [github.com/marioaguileraaa](https://github.com/marioaguileraaa)
+- **Upstream source and step-by-step guide** (every step with a screenshot, troubleshooting and the acceptance checks): [github.com/marioaguileraaa/sre-agent-use-cases/tree/main/03-infrastructure-operations-health](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/03-infrastructure-operations-health). MIT license; this entry was converted from commit [`4eb2e90`](https://github.com/marioaguileraaa/sre-agent-use-cases/commit/4eb2e90).
+- **Field guide:** [plate 03](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-03)
