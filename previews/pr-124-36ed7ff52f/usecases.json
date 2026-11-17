@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-17T02:49:10Z",
+  "generatedAt": "2026-11-17T09:12:11Z",
   "count": 80,
   "domains": [
     {
@@ -740,9 +740,9 @@
     },
     {
       "id": "0021-databricks-dependency-configuration-review",
-      "status": "built",
+      "status": "validated",
       "title": "Azure Databricks dependency and configuration review",
-      "summary": "Read-only review of a fixed Azure Databricks scope: dependency map (observed, inferred, unknown), security, FinOps and optimization findings, delivered as HTML, JSON and two CSVs.",
+      "summary": "Read-only map of what an Azure Databricks workspace depends on, where its cost comes from, and 36 best-practice checks.",
       "domain": "platform-devops",
       "trigger": [
         "chat"
@@ -752,9 +752,10 @@
       "topPick": false,
       "products": [
         "azure-databricks",
-        "azure-sre-agent",
+        "unity-catalog",
+        "azure-cost-management",
         "azure-resource-manager",
-        "unity-catalog"
+        "azure-sre-agent"
       ],
       "autonomy": "read-only",
       "samplePrompt": "Run the complete Azure Databricks dependency map and configuration review for <APPROVED_DATABRICKS_WORKSPACE_NAME> using operation=report and deliver all four files.",
@@ -763,27 +764,31 @@
         "url": "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/08-databricks-dependency-configuration-review"
       },
       "package": {
-        "version": "0.1.0",
+        "version": "1.0.0",
         "apiVersion": "azuresre.ai/v1",
         "requires": {
           "connectors": [],
           "roles": [
-            "Reader on the Databricks resource group (ARM)",
-            "CAN VIEW on in-scope jobs, pipelines, SQL warehouses and compute (Databricks)",
-            "BROWSE, USE CATALOG, USE SCHEMA on in-scope Unity Catalog objects"
+            "Reader on the Databricks resource group and its managed resource group (ARM)",
+            "Cost Management Reader on the subscription, for the cost section (optional)",
+            "CAN VIEW on in-scope jobs, pipelines, SQL warehouses and compute (Databricks workspace)",
+            "BROWSE, USE CATALOG and USE SCHEMA on in-scope Unity Catalog objects"
           ]
         },
         "parameters": {
           "SUBSCRIPTION_ID": "Subscription of the Databricks workspace",
           "SRE_TENANT_ID": "Tenant of the SRE Agent",
-          "TARGET_TENANT_ID": "Tenant of the Databricks workspace",
+          "TARGET_TENANT_ID": "Tenant of the Databricks workspace (equal to SRE_TENANT_ID when it is the same tenant)",
           "MANAGED_IDENTITY_CLIENT_ID": "Client ID of the agent user-assigned managed identity",
-          "FEDERATED_APP_CLIENT_ID": "App registration used for cross-tenant federation, if any",
-          "APPROVED_WORKSPACES": "Allowlist of workspace names, resource groups and hosts"
+          "FEDERATED_APP_CLIENT_ID": "Multi-tenant app registration used for cross-tenant access, if any",
+          "CROSS_TENANT_CERT_KEYVAULT_URL": "Key Vault that holds the cross-tenant app certificate (cross-tenant only)",
+          "CROSS_TENANT_CERT_NAME": "Name of that certificate in Key Vault (cross-tenant only)",
+          "APPROVED_WORKSPACES": "Allowlist of workspace names, resource groups and hosts",
+          "CLIENT_NAME": "Optional organization name on the report cover"
         },
         "contents": {
           "tools": [
-            "manifests/tools/generate-databricks-dependency-report.yaml"
+            "manifests/tools/databricks-dependency-report.yaml"
           ],
           "skills": [
             "manifests/skills/databricks-dependency-live/SKILL.md"
@@ -800,37 +805,28 @@
       "components": {
         "skill": true,
         "subagent": true,
-        "tool": "generate-databricks-dependency-report.yaml",
+        "tool": "databricks-dependency-report.yaml",
         "task": false,
         "permissions": true,
         "tests": true,
-        "sampleReport": false,
+        "sampleReport": true,
         "images": false
       },
       "readme": "usecases/0021-databricks-dependency-configuration-review/README.md",
       "images": [
-        "docs/images/01-saved-tool-and-12-parameters.png",
-        "docs/images/02-private-code-and-timeout.png",
-        "docs/images/03-identity-access-off.png",
-        "docs/images/04-native-unconfigured-test.png",
-        "docs/images/05-saved-runtime-skill.png",
-        "docs/images/06-saved-restricted-specialist.png",
-        "docs/images/07-saved-explicit-allowlists.png",
-        "docs/images/08-create-drop-down-arrow.png",
-        "docs/images/09-native-no-source-no-files.png",
-        "docs/images/10-select-registered-specialist.png",
-        "docs/images/11-selected-specialist-composer.png",
-        "docs/images/12-live-chat-four-files.png",
-        "docs/images/13-report-overview-and-pillars.png",
-        "docs/images/14-report-dependency-graph.png",
-        "docs/images/15-report-controls-and-reference.png",
-        "docs/images/16-report-source-coverage-ledger.png"
+        "docs/images/report-databricks-costs.png",
+        "docs/images/report-dependency-graph.png",
+        "docs/images/report-preview.png",
+        "docs/images/setup-chat.png",
+        "docs/images/setup-skill.png",
+        "docs/images/setup-subagent.png",
+        "docs/images/setup-tool.png"
       ],
       "page": "usecases/0021-databricks-dependency-configuration-review/",
       "download": {
         "url": "downloads/0021-databricks-dependency-configuration-review.zip",
         "sha256Url": "downloads/0021-databricks-dependency-configuration-review.zip.sha256",
-        "version": "0.1.0"
+        "version": "1.0.0"
       }
     },
     {
