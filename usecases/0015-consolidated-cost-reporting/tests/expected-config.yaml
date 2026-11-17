@@ -1,0 +1,5 @@
+# What `usecases.sh verify` should find on the live agent after deploying this package.
+skills: [azure-finops-review]
+subagents: [finops-reviewer]
+tools: [generate-azure-finops-review]
+scheduledTasks: [monthly-azure-finops-review]

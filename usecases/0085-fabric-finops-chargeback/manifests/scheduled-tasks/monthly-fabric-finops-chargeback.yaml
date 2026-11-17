@@ -1,0 +1,19 @@
+api_version: azuresre.ai/v1
+kind: ScheduledTask
+metadata:
+  name: monthly-fabric-finops-chargeback
+spec:
+  description: Monthly Fabric FinOps and chargeback report. Monthly read-only Fabric FinOps report with
+    real cost by meter, idle capacity, savings and chargeback by workspace; day 2, after Cost Management
+    has published the previous month.
+  schedule: "0 7 2 * *"
+  time_zone: UTC
+  enabled: false
+  agent: fabric-chargeback-live
+  mode: Autonomous
+  prompt: |-
+    Generate the Microsoft Fabric FinOps and chargeback report for the last 30 days (operation="report", period="last_30d", identities="masked").
+    Make exactly one tool call. If the tool returns status="error", report the sanitized error and the sources that failed, and stop; never invent figures.
+    Otherwise summarize in English: total billed cost, % consumed vs switched on without use, hours on and utilization, the top 5 actions with their value and evidence, the reservation verdict, the chargeback by workspace, and consumption by group (member cost per group, people with access but no activity, new users).
+    Finish with an "Artifacts & links" bulleted list with the 4 returned URLs (report_url, snapshot_url, chargeback_csv_url, meters_csv_url) unchanged.
+    Do not modify any Fabric or Azure resource.

@@ -1,0 +1,5 @@
+# What `usecases.sh verify` should find on the live agent after deploying this package.
+skills: [fabric-chargeback-live]
+subagents: [fabric-chargeback-live]
+tools: [generate-fabric-chargeback-report]
+scheduledTasks: [monthly-fabric-finops-chargeback]

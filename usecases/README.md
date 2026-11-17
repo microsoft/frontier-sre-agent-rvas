@@ -111,7 +111,7 @@ Run the framework tests with `usecases/_framework/tests/run.sh`.
 | [0012-certificate-renewal-automation](0012-certificate-renewal-automation/) | Certificate renewal automation | security | idea |
 | [0013-changes-by-non-service-principal-users](0013-changes-by-non-service-principal-users/) | Changes by non-service-principal users | management | idea |
 | [0014-changes-in-last-24h-for-a-resource](0014-changes-in-last-24h-for-a-resource/) | Changes in last 24h for a resource | management | idea |
-| [0015-consolidated-cost-reporting](0015-consolidated-cost-reporting/) | Consolidated cost reporting | billing-entra-tenant | idea |
+| [0015-consolidated-cost-reporting](0015-consolidated-cost-reporting/) | Monthly Azure FinOps review | billing-entra-tenant | validated |
 | [0016-cost-analysis-by-tag-environment](0016-cost-analysis-by-tag-environment/) | Cost analysis by tag/environment | billing-entra-tenant | idea |
 | [0017-cost-anomaly-detection](0017-cost-anomaly-detection/) | Cost anomaly detection | billing-entra-tenant | idea |
 | [0018-cross-period-cost-comparison-mg-level](0018-cross-period-cost-comparison-mg-level/) | Cross-period cost comparison (MG level) | billing-entra-tenant | idea |
@@ -175,4 +175,6 @@ Run the framework tests with `usecases/_framework/tests/run.sh`.
 | [0076-vm-performance-anomaly-detection](0076-vm-performance-anomaly-detection/) | VM performance anomaly detection | management | idea |
 | [0077-vnet-peering-health-check](0077-vnet-peering-health-check/) | VNet peering health check | network-topology | idea |
 | [0078-workbook-auto-generation](0078-workbook-auto-generation/) | Workbook auto-generation | management | idea |
+| [0081-aks-well-architected-review](0081-aks-well-architected-review/) | AKS configuration and Well-Architected review | platform-devops | validated |
+| [0085-fabric-finops-chargeback](0085-fabric-finops-chargeback/) | Microsoft Fabric FinOps and chargeback | billing-entra-tenant | validated |
 <!-- usecases:index:end -->

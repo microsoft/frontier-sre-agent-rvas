@@ -1,0 +1,72 @@
+api_version: azuresre.ai/v1
+kind: Tool
+metadata:
+  name: generate-aks-waf-report
+spec:
+  type: PythonFunctionTool
+  description: Read-only AKS single or multi-cluster configuration and Well-Architected review for a fixed
+    approved cluster allowlist. operation=report writes four files (HTML, snapshot JSON, findings CSV,
+    inventory CSV); query filters a fresh collection; list_clusters returns the configured roster without
+    network calls.
+  timeoutSeconds: 900
+  code_file: ./generate-aks-waf-report.py
+  parameters:
+  - name: operation
+    type: string
+    required: false
+    description: 'report writes four complete files for selected fixed cluster(s); query filters a fresh
+      collection; list_clusters returns one page (limit/offset) of the configured multi-subscription roster
+      without authentication/network, not observed health. Default: report. Allowed: report, query, list_clusters.'
+  - name: view
+    type: string
+    required: false
+    description: 'findings exposes all checks; report findings contains failed checks only. coverage exposes
+      scoped source receipts. architecture exposes observed nodes/edges and explicit unknowns. Default:
+      summary. Allowed: summary, cluster, node_pools, workloads, resources, findings, finops, coverage,
+      actions, architecture.'
+  - name: cluster_name
+    type: string
+    required: false
+    description: Exact key of the fixed operator allowlist (APPROVED_CLUSTERS, up to 500 clusters across
+      subscriptions). Empty selects the first configured cluster. The code rejects any name outside the
+      allowlist; do not add an enum for large fleets.
+  - name: cluster_names
+    type: string
+    required: false
+    description: One to five distinct, exact comma-separated fixed allowlist names, without spaces. Mutually
+      exclusive with cluster_name. Every selected snapshot is preserved; a failed cluster never substitutes
+      empty/healthy data.
+  - name: namespace
+    type: string
+    required: false
+    description: Exact local namespace filter, never a server-side scope override.
+  - name: workload_name
+    type: string
+    required: false
+    description: Exact local workload-name filter; no URL/path/query/command.
+  - name: area
+    type: string
+    required: false
+    description: 'Default: all. Allowed: all, best_practices, security, finops, optimization.'
+  - name: level
+    type: string
+    required: false
+    description: 'Default: all. Allowed: all, cluster, workload, resource.'
+  - name: severity
+    type: string
+    required: false
+    description: 'Default: all. Allowed: all, critical, high, medium, low.'
+  - name: status
+    type: string
+    required: false
+    description: 'Default: all. Allowed: all, passed, failed, not_evaluated, not_applicable, complete,
+      partial, denied, error, not_configured.'
+  - name: limit
+    type: int
+    required: false
+    description: 'Requested row count; 3500-byte default-JSON budget may return fewer whole rows with
+      exact paging disclosure. Default: 25.'
+  - name: offset
+    type: int
+    required: false
+    description: 'Local offset in this fresh collection; not a persistent cursor. Default: 0.'

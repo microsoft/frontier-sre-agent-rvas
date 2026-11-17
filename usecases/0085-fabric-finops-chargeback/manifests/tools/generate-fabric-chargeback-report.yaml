@@ -1,0 +1,25 @@
+api_version: azuresre.ai/v1
+kind: Tool
+metadata:
+  name: generate-fabric-chargeback-report
+spec:
+  type: PythonFunctionTool
+  description: Microsoft Fabric FinOps and chargeback report from REAL tenant data (same-tenant or cross-tenant,
+    read-only) with billed cost per meter, monthly trend, idle capacity, savings (pause schedule, reservation,
+    right-size), chargeback by workspace, who consumes what, access and consumption by group and by person,
+    and governance. Writes HTML + JSON + 2 CSV (English).
+  timeoutSeconds: 150
+  code_file: ./generate-fabric-chargeback-report.py
+  parameters:
+  - name: operation
+    type: string
+    required: false
+    description: report (writes 4 files) or summary (JSON only, faster)
+  - name: period
+    type: string
+    required: false
+    description: last_30d (default), last_14d or last_7d
+  - name: identities
+    type: string
+    required: false
+    description: masked (default) or visible (only when explicitly requested and authorized)

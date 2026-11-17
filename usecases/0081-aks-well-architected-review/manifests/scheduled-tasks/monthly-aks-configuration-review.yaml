@@ -1,0 +1,31 @@
+api_version: azuresre.ai/v1
+kind: ScheduledTask
+metadata:
+  name: monthly-aks-configuration-review
+spec:
+  description: Monthly AKS configuration review. Optional; only when the customer asks for a recurring
+    current configuration snapshot after accepting the first report.
+  schedule: "0 9 1 * *"
+  time_zone: UTC
+  enabled: false
+  agent: aks-waf-live
+  mode: Autonomous
+  prompt: |-
+    Use aks-waf-live and ONLY generate-aks-waf-report. Make exactly one complete
+    call with operation=report and cluster_name="<APPROVED_AKS_NAME>"; keep all
+    other report defaults. Do not add query filters, period parameters, paging,
+    fresh follow-up calls, narrower retries or changes.
+    If status=error, stop with the sanitized code/source and invent no files,
+    counts or healthy-zero workloads. Otherwise immediately deliver the actual
+    HTML, complete JSON, failed-findings CSV and inventory CSV. When sharing_mode
+    is native_ui, render report_url, snapshot_url, findings_csv_url and
+    inventory_csv_url unchanged as relative native links/file widgets. For
+    local_files_only, explain that native aliases are unavailable and show only
+    the actual returned paths. written is not download verification;
+    http_verified=false must not hide provided aliases.
+    Summarize only returned UTC/source coverage, counts and local assessment
+    beside unknowns. Disclose partial/error sources; unavailable Kubernetes stays
+    Not evaluated, not historical workloads or health. Do not claim the current
+    configuration or samples cover the previous calendar month. Never grant roles,
+    enable plans, start/stop a cluster, remediate, call operator assets, fabricate
+    links, drop evidence, split the requested scope or upload to alternative storage.

@@ -1,0 +1,1476 @@
+{
+  "status": "ok",
+  "version": "5.1",
+  "auth_mode": "cross_tenant",
+  "generated_utc": "2026-11-06T09:10:24Z",
+  "period": "Last 30 days",
+  "window_utc": [
+    "2026-10-07",
+    "2026-11-06"
+  ],
+  "currency": "USD",
+  "identities": "visible",
+  "cost_available": true,
+  "cost_unavailable_reason": null,
+  "headline": {
+    "total_cost": 876.15,
+    "consumed_by_workloads": 68.6,
+    "on_without_use": 790.0,
+    "storage": 17.55,
+    "on_hours": 142.9,
+    "uptime_pct": 19.6,
+    "utilization_pct_while_on": 8.0,
+    "hourly_cost_when_on": 5.76,
+    "on_hours_x_public_price": 822.96,
+    "idle_after_last_work_hours": 83.8,
+    "monthly_saving_identified": 472.25
+  },
+  "focus_capacity": {
+    "name": "fabriccapprod",
+    "sku": "F32",
+    "region": "westus3",
+    "state": "Active",
+    "price_per_cu_hour": 0.18,
+    "price_source": "Azure Retail Prices API (public pay-as-you-go price, westus3)",
+    "auto_suspend_utc": "23:38"
+  },
+  "cost_by_category": {
+    "Idle running capacity (Compute Pool)": 790.0,
+    "AI · Copilot and Data Agents": 34.27,
+    "Fabric IQ · Ontology and Graph": 22.47,
+    "Real-Time Intelligence": 5.84,
+    "Warehouse and SQL": 2.2,
+    "Spark and notebooks": 1.86,
+    "OneLake transactions": 1.1,
+    "Power BI": 0.87,
+    "Storage (GB-month)": 17.55
+  },
+  "meters": [
+    {
+      "meter": "Compute Pool",
+      "category": "Idle running capacity (Compute Pool)",
+      "quantity": 4388.89,
+      "cost": 790.0,
+      "explanation": "Share of the running capacity that no workload consumed. Fabric bills the whole capacity per hour while it is running; the unused part appears here."
+    },
+    {
+      "meter": "Copilot and AI",
+      "category": "AI · Copilot and Data Agents",
+      "quantity": 190.38,
+      "cost": 34.27,
+      "explanation": "Copilot, Data Agents and AI experiences (natural-language questions over the data)."
+    },
+    {
+      "meter": "Ontology Logic and Operations",
+      "category": "Fabric IQ · Ontology and Graph",
+      "quantity": 118.95,
+      "cost": 21.41,
+      "explanation": "Fabric IQ: ontology logic and operations (semantic business modelling)."
+    },
+    {
+      "meter": "OneLake Cache Data Stored",
+      "category": "Storage (GB-month)",
+      "quantity": 64.59,
+      "cost": 17.18,
+      "explanation": "OneLake cache (cached data for fast queries, e.g. KQL)."
+    },
+    {
+      "meter": "Eventhouse",
+      "category": "Real-Time Intelligence",
+      "quantity": 20.75,
+      "cost": 3.73,
+      "explanation": "Eventhouse/KQL: real-time database running or being queried."
+    },
+    {
+      "meter": "Spark Memory Optimized",
+      "category": "Spark and notebooks",
+      "quantity": 10.31,
+      "cost": 1.86,
+      "explanation": "Spark compute: notebooks, Spark jobs and lakehouse loads."
+    },
+    {
+      "meter": "Data Warehouse",
+      "category": "Warehouse and SQL",
+      "quantity": 9.27,
+      "cost": 1.67,
+      "explanation": "Warehouse and the lakehouse SQL analytics endpoint."
+    },
+    {
+      "meter": "Ontology Modeling",
+      "category": "Fabric IQ · Ontology and Graph",
+      "quantity": 5.88,
+      "cost": 1.06,
+      "explanation": "Fabric IQ: ontology."
+    },
+    {
+      "meter": "Eventstream Processor",
+      "category": "Real-Time Intelligence",
+      "quantity": 5.44,
+      "cost": 0.98,
+      "explanation": "Eventstream: streaming event ingestion and processing."
+    },
+    {
+      "meter": "Power BI",
+      "category": "Power BI",
+      "quantity": 4.82,
+      "cost": 0.87,
+      "explanation": "Power BI: refreshes, queries and reports on the capacity."
+    },
+    {
+      "meter": "Eventstream Data Traffic",
+      "category": "Real-Time Intelligence",
+      "quantity": 4.7,
+      "cost": 0.85,
+      "explanation": "Eventstream: streaming event ingestion and processing."
+    },
+    {
+      "meter": "OneLake Other Operations",
+      "category": "OneLake transactions",
+      "quantity": 3.57,
+      "cost": 0.64,
+      "explanation": "Read/write transactions in OneLake."
+    },
+    {
+      "meter": "SQL database in Microsoft Fabric",
+      "category": "Warehouse and SQL",
+      "quantity": 2.97,
+      "cost": 0.53,
+      "explanation": "SQL database in Fabric."
+    },
+    {
+      "meter": "OneLake Storage Hot Data Stored",
+      "category": "Storage (GB-month)",
+      "quantity": 15.5,
+      "cost": 0.36,
+      "explanation": "Data storage in OneLake."
+    },
+    {
+      "meter": "Eventstream Flat",
+      "category": "Real-Time Intelligence",
+      "quantity": 1.55,
+      "cost": 0.28,
+      "explanation": "Eventstream: streaming event ingestion and processing."
+    },
+    {
+      "meter": "OneLake Iterative Read Operations Hot",
+      "category": "OneLake transactions",
+      "quantity": 1.42,
+      "cost": 0.26,
+      "explanation": "Read/write transactions in OneLake."
+    },
+    {
+      "meter": "OneLake Write Operations Hot",
+      "category": "OneLake transactions",
+      "quantity": 0.69,
+      "cost": 0.12,
+      "explanation": "Read/write transactions in OneLake."
+    },
+    {
+      "meter": "OneLake Write Operations",
+      "category": "OneLake transactions",
+      "quantity": 0.21,
+      "cost": 0.04,
+      "explanation": "Read/write transactions in OneLake."
+    },
+    {
+      "meter": "OneLake Read Operations Hot",
+      "category": "OneLake transactions",
+      "quantity": 0.1,
+      "cost": 0.02,
+      "explanation": "Read/write transactions in OneLake."
+    },
+    {
+      "meter": "OneLake Other Operations Hot",
+      "category": "OneLake transactions",
+      "quantity": 0.07,
+      "cost": 0.01,
+      "explanation": "Read/write transactions in OneLake."
+    },
+    {
+      "meter": "SQL Storage Data Stored",
+      "category": "Storage (GB-month)",
+      "quantity": 0.06,
+      "cost": 0.01,
+      "explanation": "Fabric meter billed on the capacity."
+    }
+  ],
+  "cost_daily": [
+    {
+      "date": "20261007",
+      "on_hours": 9.6,
+      "cost": 56.89,
+      "cu_h_billed": 309.6,
+      "cu_h_used": 4.9,
+      "utilization_pct": 1.6,
+      "cost_pending": false
+    },
+    {
+      "date": "20261008",
+      "on_hours": 0.0,
+      "cost": 0.01,
+      "cu_h_billed": 0.0,
+      "cu_h_used": 0.0,
+      "utilization_pct": 0,
+      "cost_pending": false
+    },
+    {
+      "date": "20261009",
+      "on_hours": 0.0,
+      "cost": 0.01,
+      "cu_h_billed": 0.0,
+      "cu_h_used": 0.0,
+      "utilization_pct": 0,
+      "cost_pending": false
+    },
+    {
+      "date": "20261010",
+      "on_hours": 0.0,
+      "cost": 0.01,
+      "cu_h_billed": 0.0,
+      "cu_h_used": 0.0,
+      "utilization_pct": 0,
+      "cost_pending": false
+    },
+    {
+      "date": "20261011",
+      "on_hours": 0.0,
+      "cost": 0.01,
+      "cu_h_billed": 0.0,
+      "cu_h_used": 0.0,
+      "utilization_pct": 0,
+      "cost_pending": false
+    },
+    {
+      "date": "20261012",
+      "on_hours": 0.0,
+      "cost": 0.01,
+      "cu_h_billed": 0.0,
+      "cu_h_used": 0.0,
+      "utilization_pct": 0,
+      "cost_pending": false
+    },
+    {
+      "date": "20261013",
+      "on_hours": 11.34,
+      "cost": 66.57,
+      "cu_h_billed": 364.7,
+      "cu_h_used": 3.3,
+      "utilization_pct": 0.9,
+      "cost_pending": false
+    },
+    {
+      "date": "20261014",
+      "on_hours": 15.38,
+      "cost": 102.23,
+      "cu_h_billed": 562.7,
+      "cu_h_used": 120.8,
+      "utilization_pct": 21.5,
+      "cost_pending": false
+    },
+    {
+      "date": "20261015",
+      "on_hours": 16.09,
+      "cost": 114.26,
+      "cu_h_billed": 623.0,
+      "cu_h_used": 203.0,
+      "utilization_pct": 32.6,
+      "cost_pending": false
+    },
+    {
+      "date": "20261016",
+      "on_hours": 0.0,
+      "cost": 0.01,
+      "cu_h_billed": 0.0,
+      "cu_h_used": 0.0,
+      "utilization_pct": 0,
+      "cost_pending": false
+    },
+    {
+      "date": "20261017",
+      "on_hours": 0.0,
+      "cost": 0.01,
+      "cu_h_billed": 0.0,
+      "cu_h_used": 0.0,
+      "utilization_pct": 0,
+      "cost_pending": false
+    },
+    {
+      "date": "20261018",
+      "on_hours": 0.0,
+      "cost": 0.01,
+      "cu_h_billed": 0.0,
+      "cu_h_used": 0.0,
+      "utilization_pct": 0,
+      "cost_pending": false
+    },
+    {
+      "date": "20261019",
+      "on_hours": 0.0,
+      "cost": 0.01,
+      "cu_h_billed": 0.0,
+      "cu_h_used": 0.0,
+      "utilization_pct": 0,
+      "cost_pending": false
+    },
+    {
+      "date": "20261020",
+      "on_hours": 13.71,
+      "cost": 82.88,
+      "cu_h_billed": 454.2,
+      "cu_h_used": 33.8,
+      "utilization_pct": 7.4,
+      "cost_pending": false
+    },
+    {
+      "date": "20261021",
+      "on_hours": 12.8,
+      "cost": 75.38,
+      "cu_h_billed": 409.5,
+      "cu_h_used": 1.0,
+      "utilization_pct": 0.2,
+      "cost_pending": false
+    },
+    {
+      "date": "20261022",
+      "on_hours": 0.0,
+      "cost": 0.01,
+      "cu_h_billed": 0.0,
+      "cu_h_used": 0.0,
+      "utilization_pct": 0,
+      "cost_pending": false
+    },
+    {
+      "date": "20261023",
+      "on_hours": 13.49,
+      "cost": 80.12,
+      "cu_h_billed": 434.9,
+      "cu_h_used": 7.5,
+      "utilization_pct": 1.7,
+      "cost_pending": false
+    },
+    {
+      "date": "20261024",
+      "on_hours": 0.0,
+      "cost": 0.01,
+      "cu_h_billed": 0.0,
+      "cu_h_used": 0.0,
+      "utilization_pct": 0,
+      "cost_pending": false
+    },
+    {
+      "date": "20261025",
+      "on_hours": 0.0,
+      "cost": 0.01,
+      "cu_h_billed": 0.0,
+      "cu_h_used": 0.0,
+      "utilization_pct": 0,
+      "cost_pending": false
+    },
+    {
+      "date": "20261026",
+      "on_hours": 0.0,
+      "cost": 0.01,
+      "cu_h_billed": 0.0,
+      "cu_h_used": 0.0,
+      "utilization_pct": 0,
+      "cost_pending": false
+    },
+    {
+      "date": "20261027",
+      "on_hours": 0.0,
+      "cost": 0.01,
+      "cu_h_billed": 0.0,
+      "cu_h_used": 0.0,
+      "utilization_pct": 0,
+      "cost_pending": false
+    },
+    {
+      "date": "20261028",
+      "on_hours": 12.7,
+      "cost": 75.07,
+      "cu_h_billed": 406.0,
+      "cu_h_used": 0.4,
+      "utilization_pct": 0.1,
+      "cost_pending": false
+    },
+    {
+      "date": "20261029",
+      "on_hours": 11.11,
+      "cost": 65.49,
+      "cu_h_billed": 356.1,
+      "cu_h_used": 1.8,
+      "utilization_pct": 0.5,
+      "cost_pending": false
+    },
+    {
+      "date": "20261030",
+      "on_hours": 0.0,
+      "cost": 0.01,
+      "cu_h_billed": 0.0,
+      "cu_h_used": 0.0,
+      "utilization_pct": 0,
+      "cost_pending": false
+    },
+    {
+      "date": "20261031",
+      "on_hours": 0.0,
+      "cost": 0.01,
+      "cu_h_billed": 0.0,
+      "cu_h_used": 0.0,
+      "utilization_pct": 0,
+      "cost_pending": false
+    },
+    {
+      "date": "20261101",
+      "on_hours": 0.0,
+      "cost": 0.01,
+      "cu_h_billed": 0.0,
+      "cu_h_used": 0.0,
+      "utilization_pct": 0,
+      "cost_pending": false
+    },
+    {
+      "date": "20261102",
+      "on_hours": 0.0,
+      "cost": 0.01,
+      "cu_h_billed": 0.0,
+      "cu_h_used": 0.0,
+      "utilization_pct": 0,
+      "cost_pending": false
+    },
+    {
+      "date": "20261103",
+      "on_hours": 14.44,
+      "cost": 85.81,
+      "cu_h_billed": 461.7,
+      "cu_h_used": 0.7,
+      "utilization_pct": 0.2,
+      "cost_pending": false
+    },
+    {
+      "date": "20261104",
+      "on_hours": 0.0,
+      "cost": 0.01,
+      "cu_h_billed": 0.0,
+      "cu_h_used": 0.0,
+      "utilization_pct": 0,
+      "cost_pending": false
+    },
+    {
+      "date": "20261105",
+      "on_hours": 12.06,
+      "cost": 71.28,
+      "cu_h_billed": 387.6,
+      "cu_h_used": 3.8,
+      "utilization_pct": 1.0,
+      "cost_pending": false
+    },
+    {
+      "date": "20261106",
+      "on_hours": 0.17,
+      "cost": 0.0,
+      "cu_h_billed": 0.0,
+      "cu_h_used": 0.0,
+      "utilization_pct": 0,
+      "cost_pending": true
+    }
+  ],
+  "cost_monthly": [
+    {
+      "month": "2026-01",
+      "cost": 138.6,
+      "in_progress": false,
+      "by_capacity": {
+        "fabriccapprod": 138.6
+      }
+    },
+    {
+      "month": "2026-02",
+      "cost": 853.5,
+      "in_progress": false,
+      "by_capacity": {
+        "fabriccapprod": 853.5
+      }
+    },
+    {
+      "month": "2026-03",
+      "cost": 882.2,
+      "in_progress": false,
+      "by_capacity": {
+        "fabriccapprod": 882.2
+      }
+    },
+    {
+      "month": "2026-04",
+      "cost": 1137.99,
+      "in_progress": false,
+      "by_capacity": {
+        "fabriccapprod": 1137.85,
+        "fabriccapsec": 0.13
+      }
+    },
+    {
+      "month": "2026-05",
+      "cost": 717.9,
+      "in_progress": false,
+      "by_capacity": {
+        "fabriccapprod": 717.9
+      }
+    },
+    {
+      "month": "2026-09",
+      "cost": 1261.31,
+      "in_progress": false,
+      "by_capacity": {
+        "fabriccapprod": 1261.31
+      }
+    },
+    {
+      "month": "2026-10",
+      "cost": 898.18,
+      "in_progress": false,
+      "by_capacity": {
+        "fabriccapprod": 898.18
+      }
+    },
+    {
+      "month": "2026-11",
+      "cost": 157.11,
+      "in_progress": true,
+      "by_capacity": {
+        "fabriccapprod": 157.11
+      }
+    }
+  ],
+  "subscription_context": {
+    "total": 1255.65,
+    "fabric_share_pct": 69.8,
+    "by_service": {
+      "Microsoft Fabric": 876.15,
+      "Microsoft Purview": 220.84,
+      "Microsoft Defender for Cloud": 87.8,
+      "SQL Managed Instance": 40.96,
+      "SQL Database": 15.11,
+      "Azure App Service": 12.98,
+      "Log Analytics": 1.47,
+      "Storage": 0.21,
+      "Foundry Tools": 0.12,
+      "Bandwidth": 0.0
+    },
+    "fabric_named_resources": [
+      {
+        "resource": "res-04",
+        "service": "Foundry Tools",
+        "cost": 0.12
+      }
+    ]
+  },
+  "actions": [
+    {
+      "kind": "save",
+      "title": "Pause the capacity once it is no longer in use",
+      "why": "The capacity is currently paused automatically at around 23:38 UTC, but real work finishes earlier. Across 10 running periods with recorded activity, the capacity stayed on for 83.8 h after the last activity. Pausing 1 h after the last activity saves 73.8 h × 5.76 USD/h.",
+      "evidence": "Wed 28 Oct: last activity 10:58, paused 23:38 → 12.7 h; Tue 20 Oct: last activity 11:57, paused 23:36 → 11.7 h; Wed 21 Oct: last activity 12:12, paused 23:37 → 11.4 h",
+      "value": 472.25,
+      "unit": "/month estimated",
+      "source": "Activity Log + Fabric activity log + Spark + public price"
+    },
+    {
+      "kind": "save",
+      "title": "Simpler alternative: bring the automatic pause forward to 21:00 UTC (22:00 Madrid)",
+      "why": "With that fixed time, no work would have been cut off in the observed period and 26.3 running hours would have been avoided. Not added to the total because it overlaps with the previous action.",
+      "evidence": "17:00 UTC: 66.3 h, 2 day(s) with work cut off · 18:00 UTC: 56.3 h, 2 day(s) with work cut off · 19:00 UTC: 46.3 h, 2 day(s) with work cut off · 20:00 UTC: 36.3 h, 1 day(s) with work cut off · 21:00 UTC: 26.3 h, 0 day(s) with work cut off · 22:00 UTC: 16.3 h, 0 day(s) with work cut off · 23:00 UTC: 6.3 h, 0 day(s) with work cut off",
+      "value": 168.45,
+      "unit": "/month (alternative)",
+      "source": "Activity Log + Fabric activity log"
+    },
+    {
+      "kind": "save",
+      "title": "Avoid starting the capacity on days with no load (8 days)",
+      "why": "On these days the invoice shows practically only the “Compute Pool” meter (capacity running, nothing consumed). Check with the team whether it was started for tests or demos that could have been grouped together.",
+      "evidence": "Wed 07 Oct: 9.6 h, 56.89 USD, Tue 13 Oct: 11.3 h, 66.57 USD, Wed 21 Oct: 12.8 h, 75.38 USD, Fri 23 Oct: 13.5 h, 80.12 USD, Wed 28 Oct: 12.7 h, 75.07 USD, Thu 29 Oct: 11.1 h, 65.49 USD, Tue 03 Nov: 14.4 h, 85.81 USD, Thu 05 Nov: 12.1 h, 71.28 USD",
+      "value": 576.61,
+      "unit": "in the period (to validate)",
+      "source": "Azure Cost Management + Activity Log"
+    },
+    {
+      "kind": "avoid",
+      "title": "Do not buy a capacity reservation with the current usage pattern",
+      "why": "A 1-year reservation costs 938 USD per CU/year (30,016 USD for F32). It only pays off if the capacity runs more than 59% of the time; it currently runs 20% of the time. At the current rate, pay-as-you-go costs 10,446 USD/year.",
+      "evidence": "Pay-as-you-go price 0.1800 USD/CU-h · Azure Retail Prices API (public pay-as-you-go price, westus3)",
+      "value": 19569.68,
+      "unit": "/year of overspend avoided",
+      "source": "Azure Retail Prices + Cost Management"
+    },
+    {
+      "kind": "scenario",
+      "title": "Scenario: downsize from F32 to F16 (validate peaks)",
+      "why": "On average 2.7 CUs were consumed per running hour; on the busiest day (Thu 15 Oct) the average was 12.6 CUs, 79% of an F16. These are hourly averages: before changing, review peaks and throttling in the Capacity Metrics app, which is already installed.",
+      "evidence": "Billed CU-h − “Compute Pool” CU-h per day · 142.7 running hours with cost",
+      "value": 410.98,
+      "unit": "/month if confirmed",
+      "source": "Cost Management (CU-h quantities)"
+    },
+    {
+      "kind": "risk",
+      "title": "Delete or tag the paused capacity “fabriccapsec” (F64)",
+      "why": "It is paused and has no workspaces assigned. If someone resumed it by mistake it would cost 11.52 USD/h (8,294 USD/month while running).",
+      "evidence": "Resource group rg_fabric_sec · no tags",
+      "value": 8294.4,
+      "unit": "/month of risk avoided",
+      "source": "ARM + Fabric Admin API"
+    },
+    {
+      "kind": "gov",
+      "title": "Move AI usage to a designated Copilot capacity",
+      "why": "AI (Copilot, Data Agents, Ontology AI) already costs 34.27 USD (3.9%). Designating a capacity for Copilot lets you charge that cost back to each team accurately.",
+      "evidence": "Tenant setting “Capacities can be designated as Fabric Copilot capacities”: enabled",
+      "value": null,
+      "unit": "",
+      "source": "Cost Management + Tenant settings"
+    },
+    {
+      "kind": "gov",
+      "title": "Tag the capacities with a cost center",
+      "why": "Without tags (costCenter, owner, environment), Cost Management cannot allocate costs or create budgets per business area.",
+      "evidence": "fabriccapsec (F64), fabriccapprod (F32)",
+      "value": null,
+      "unit": "",
+      "source": "ARM"
+    },
+    {
+      "kind": "gov",
+      "title": "Fix 2 failed refreshes",
+      "why": "Models whose last refresh failed: users are working with stale data.",
+      "evidence": "Semantic model 13 (Hotels Analytics) ModelRefreshDisabled; Semantic model 04 (Contact Center) CapacityNotActive",
+      "value": null,
+      "unit": "",
+      "source": "Admin API refreshables"
+    },
+    {
+      "kind": "gov",
+      "title": "Plan for the end of the trial capacity",
+      "why": "Anything on the trial capacity will stop working, or will have to be moved to a paid capacity, when the trial ends.",
+      "evidence": "Trial capacity (0 workspaces, 0 items)",
+      "value": null,
+      "unit": "",
+      "source": "Fabric Admin API"
+    },
+    {
+      "kind": "gov",
+      "title": "Clean up 230 items unchanged for more than 90 days",
+      "why": "Reduces clutter, risk and storage. First check that they are not being queried (see the most-used items table).",
+      "evidence": "Notebook: 51, Report: 31, SemanticModel: 27, SQLEndpoint: 24, Lakehouse: 22, DataAgent: 19",
+      "value": null,
+      "unit": "",
+      "source": "Admin API items"
+    }
+  ],
+  "pause_whatif": [
+    {
+      "pause_hour_utc": 17,
+      "hours_saved": 66.3,
+      "saving_per_month": 424.45,
+      "days_with_work_cut": 2
+    },
+    {
+      "pause_hour_utc": 18,
+      "hours_saved": 56.3,
+      "saving_per_month": 360.45,
+      "days_with_work_cut": 2
+    },
+    {
+      "pause_hour_utc": 19,
+      "hours_saved": 46.3,
+      "saving_per_month": 296.45,
+      "days_with_work_cut": 2
+    },
+    {
+      "pause_hour_utc": 20,
+      "hours_saved": 36.3,
+      "saving_per_month": 232.45,
+      "days_with_work_cut": 1
+    },
+    {
+      "pause_hour_utc": 21,
+      "hours_saved": 26.3,
+      "saving_per_month": 168.45,
+      "days_with_work_cut": 0
+    },
+    {
+      "pause_hour_utc": 22,
+      "hours_saved": 16.3,
+      "saving_per_month": 104.45,
+      "days_with_work_cut": 0
+    },
+    {
+      "pause_hour_utc": 23,
+      "hours_saved": 6.3,
+      "saving_per_month": 40.45,
+      "days_with_work_cut": 0
+    }
+  ],
+  "reservation": {
+    "breakeven_uptime_pct": {
+      "1y": 59.5,
+      "3y": 59.5
+    },
+    "annual_payg_current": 10446.32,
+    "annual_reservation": {
+      "1y": 30016.0,
+      "3y": 30016.0
+    }
+  },
+  "size_scenarios": [
+    {
+      "sku": "F16",
+      "avg_load_pct": 17,
+      "peak_day_load_pct": 79,
+      "saving_per_month": 410.98
+    },
+    {
+      "sku": "F8",
+      "avg_load_pct": 33,
+      "peak_day_load_pct": 158,
+      "saving_per_month": 616.46
+    },
+    {
+      "sku": "F4",
+      "avg_load_pct": 67,
+      "peak_day_load_pct": 315,
+      "saving_per_month": 719.21
+    }
+  ],
+  "chargeback_by_workspace": [
+    {
+      "workspace": "Hotels Analytics",
+      "capacity": "fabriccapprod",
+      "operations": 13459,
+      "ai_queries": 11328,
+      "spark_hours": 0.73,
+      "direct": 58.74,
+      "idle_share": 687.46,
+      "total": 746.2
+    },
+    {
+      "workspace": "Contact Center",
+      "capacity": "fabriccapprod",
+      "operations": 4811,
+      "ai_queries": 2,
+      "spark_hours": 3.95,
+      "direct": 8.76,
+      "idle_share": 102.53,
+      "total": 111.29
+    }
+  ],
+  "chargeback_not_assignable": {
+    "Unallocatable platform cost · Storage (GB-month)": 17.55,
+    "Unallocatable platform cost · OneLake transactions": 1.1
+  },
+  "access_by_group": [
+    {
+      "group": "Finance Analysts",
+      "workspaces": [],
+      "items": [
+        {
+          "item": "Graph Model 09",
+          "type": "GraphModel",
+          "workspace": "Hotels Analytics",
+          "permission": "Read"
+        },
+        {
+          "item": "Lakehouse 06",
+          "type": "SQLAnalyticsEndpoint",
+          "workspace": "Hotels Analytics",
+          "permission": "Read"
+        },
+        {
+          "item": "Lakehouse 17",
+          "type": "Lakehouse",
+          "workspace": "Hotels Analytics",
+          "permission": "Read"
+        },
+        {
+          "item": "Data agent 08",
+          "type": "DataAgent",
+          "workspace": "Hotels Analytics",
+          "permission": "Read"
+        },
+        {
+          "item": "Ontology 05",
+          "type": "Ontology",
+          "workspace": "Hotels Analytics",
+          "permission": "Read"
+        },
+        {
+          "item": "Report 20",
+          "type": "reports",
+          "workspace": "Hotels Analytics",
+          "permission": "ReadReshare"
+        },
+        {
+          "item": "Semantic model 13",
+          "type": "datasets",
+          "workspace": "Hotels Analytics",
+          "permission": "ReadReshare"
+        },
+        {
+          "item": "Semantic model 15",
+          "type": "datasets",
+          "workspace": "Hotels Analytics",
+          "permission": "Read"
+        }
+      ],
+      "members": 2,
+      "active_members": 2,
+      "new_members": 1,
+      "member_operations": 5636,
+      "member_cost": 239.31,
+      "member_scope": "operations of the group members on the workspaces and items granted to the group",
+      "cost_of_accessible_resources": 239.31,
+      "resources_consumed_by_members": [
+        {
+          "item": "Data agent 08",
+          "workspace": "Hotels Analytics",
+          "operations": 5240,
+          "cost": 201.33
+        },
+        {
+          "item": "Ontology 05",
+          "workspace": "Hotels Analytics",
+          "operations": 76,
+          "cost": 22.36
+        },
+        {
+          "item": "Lakehouse 06",
+          "workspace": "Hotels Analytics",
+          "operations": 274,
+          "cost": 14.33
+        },
+        {
+          "item": "Graph Model 09",
+          "workspace": "Hotels Analytics",
+          "operations": 4,
+          "cost": 1.18
+        },
+        {
+          "item": "Semantic model 15",
+          "workspace": "Hotels Analytics",
+          "operations": 20,
+          "cost": 0.05
+        },
+        {
+          "item": "Semantic model 13",
+          "workspace": "Hotels Analytics",
+          "operations": 13,
+          "cost": 0.04
+        },
+        {
+          "item": "Report 20",
+          "workspace": "Hotels Analytics",
+          "operations": 9,
+          "cost": 0.02
+        }
+      ],
+      "members_consumption": [
+        {
+          "person": "user06@contoso.com",
+          "operations": 4788,
+          "cost": 188.49,
+          "total_operations": 4799,
+          "total_cost": 188.5,
+          "top_resources": [
+            {
+              "item": "Data agent 08",
+              "workspace": "Hotels Analytics",
+              "operations": 4768,
+              "cost": 183.19
+            },
+            {
+              "item": "Ontology 05",
+              "workspace": "Hotels Analytics",
+              "operations": 18,
+              "cost": 5.3
+            },
+            {
+              "item": "Report 20",
+              "workspace": "Hotels Analytics",
+              "operations": 2,
+              "cost": 0.01
+            }
+          ]
+        },
+        {
+          "person": "User 01 · user01@contoso.com",
+          "operations": 848,
+          "cost": 50.82,
+          "total_operations": 13637,
+          "total_cost": 667.87,
+          "top_resources": [
+            {
+              "item": "Data agent 08",
+              "workspace": "Hotels Analytics",
+              "operations": 472,
+              "cost": 18.13
+            },
+            {
+              "item": "Ontology 05",
+              "workspace": "Hotels Analytics",
+              "operations": 58,
+              "cost": 17.07
+            },
+            {
+              "item": "Lakehouse 06",
+              "workspace": "Hotels Analytics",
+              "operations": 274,
+              "cost": 14.33
+            },
+            {
+              "item": "Graph Model 09",
+              "workspace": "Hotels Analytics",
+              "operations": 4,
+              "cost": 1.18
+            },
+            {
+              "item": "Semantic model 15",
+              "workspace": "Hotels Analytics",
+              "operations": 20,
+              "cost": 0.05
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Customer Service",
+      "workspaces": [],
+      "items": [
+        {
+          "item": "Report 20",
+          "type": "reports",
+          "workspace": "Hotels Analytics",
+          "permission": "Read"
+        },
+        {
+          "item": "Semantic model 13",
+          "type": "datasets",
+          "workspace": "Hotels Analytics",
+          "permission": "ReadExplore"
+        }
+      ],
+      "members": 2,
+      "active_members": 1,
+      "new_members": 1,
+      "member_operations": 20,
+      "member_cost": 0.05,
+      "member_scope": "operations of the group members on the workspaces and items granted to the group",
+      "cost_of_accessible_resources": 0.06,
+      "resources_consumed_by_members": [
+        {
+          "item": "Semantic model 13",
+          "workspace": "Hotels Analytics",
+          "operations": 13,
+          "cost": 0.04
+        },
+        {
+          "item": "Report 20",
+          "workspace": "Hotels Analytics",
+          "operations": 7,
+          "cost": 0.02
+        }
+      ],
+      "members_consumption": [
+        {
+          "person": "User 01 · user01@contoso.com",
+          "operations": 20,
+          "cost": 0.05,
+          "total_operations": 13637,
+          "total_cost": 667.87,
+          "top_resources": [
+            {
+              "item": "Semantic model 13",
+              "workspace": "Hotels Analytics",
+              "operations": 13,
+              "cost": 0.04
+            },
+            {
+              "item": "Report 20",
+              "workspace": "Hotels Analytics",
+              "operations": 7,
+              "cost": 0.02
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "people_with_access": {
+    "total": 6,
+    "without_activity": 3,
+    "new": 2,
+    "group_membership": "read",
+    "without_activity_list": [
+      "User 02 · user02@contoso.com",
+      "user04@contoso.com",
+      "user07@contoso.com"
+    ],
+    "consumers": [
+      {
+        "person": "User 01 · user01@contoso.com",
+        "via": [
+          "direct",
+          "Customer Service",
+          "Finance Analysts"
+        ],
+        "operations": 13637,
+        "cost": 667.87,
+        "top_resources": [
+          {
+            "item": "Data agent 14",
+            "workspace": "Hotels Analytics",
+            "operations": 4485,
+            "cost": 172.32
+          },
+          {
+            "item": "Ontology 11",
+            "workspace": "Hotels Analytics",
+            "operations": 584,
+            "cost": 171.85
+          },
+          {
+            "item": "Data agent 22",
+            "workspace": "Hotels Analytics",
+            "operations": 1144,
+            "cost": 43.95
+          }
+        ]
+      },
+      {
+        "person": "user06@contoso.com",
+        "via": [
+          "direct",
+          "Finance Analysts"
+        ],
+        "operations": 4799,
+        "cost": 188.5,
+        "top_resources": [
+          {
+            "item": "Data agent 08",
+            "workspace": "Hotels Analytics",
+            "operations": 4768,
+            "cost": 183.19
+          },
+          {
+            "item": "Ontology 05",
+            "workspace": "Hotels Analytics",
+            "operations": 18,
+            "cost": 5.3
+          },
+          {
+            "item": "Report 06",
+            "workspace": "Hotels Analytics",
+            "operations": 2,
+            "cost": 0.01
+          }
+        ]
+      },
+      {
+        "person": "User 05 · user05@contoso.com",
+        "via": [
+          "direct",
+          "Customer Service"
+        ],
+        "operations": 2,
+        "cost": 0.01,
+        "top_resources": [
+          {
+            "item": "Report 05",
+            "workspace": "user05@contoso.com",
+            "operations": 2,
+            "cost": 0.01
+          }
+        ]
+      }
+    ]
+  },
+  "top_identities": [
+    {
+      "identity": "User 01 · user01@contoso.com",
+      "kind": "user",
+      "operations": 13637,
+      "active_days": 12,
+      "spark_hours": 4.68,
+      "workspaces": [
+        "Hotels Analytics",
+        "Contact Center",
+        "00000000"
+      ]
+    },
+    {
+      "identity": "user06@contoso.com",
+      "kind": "user",
+      "operations": 4799,
+      "active_days": 6,
+      "spark_hours": 0,
+      "workspaces": [
+        "Hotels Analytics"
+      ]
+    },
+    {
+      "identity": "User 05 · user05@contoso.com",
+      "kind": "user",
+      "operations": 2,
+      "active_days": 1,
+      "spark_hours": 0,
+      "workspaces": [
+        "user05@contoso.com"
+      ]
+    },
+    {
+      "identity": "App 00000000-0000-0000-0000-000000000000",
+      "kind": "app",
+      "operations": 1,
+      "active_days": 1,
+      "spark_hours": 0,
+      "workspaces": [
+        "Hotels Analytics"
+      ]
+    }
+  ],
+  "top_items": [
+    {
+      "item": "Data agent 08",
+      "type": "LLMPlugin",
+      "workspace": "Hotels Analytics",
+      "operations": 5240,
+      "identities": 2
+    },
+    {
+      "item": "Data agent 14",
+      "type": "LLMPlugin",
+      "workspace": "Hotels Analytics",
+      "operations": 4485,
+      "identities": 1
+    },
+    {
+      "item": "Semantic model 04",
+      "type": "SemanticModel",
+      "workspace": "Contact Center",
+      "operations": 3984,
+      "identities": 1
+    },
+    {
+      "item": "Data agent 22",
+      "type": "LLMPlugin",
+      "workspace": "Hotels Analytics",
+      "operations": 1144,
+      "identities": 1
+    },
+    {
+      "item": "Notebook 33",
+      "type": "SynapseNotebook",
+      "workspace": "Contact Center",
+      "operations": 706,
+      "identities": 1
+    },
+    {
+      "item": "Ontology 11",
+      "type": "Ontology",
+      "workspace": "Hotels Analytics",
+      "operations": 584,
+      "identities": 1
+    },
+    {
+      "item": "User Data Function 03",
+      "type": "FunctionSet",
+      "workspace": "Hotels Analytics",
+      "operations": 327,
+      "identities": 1
+    },
+    {
+      "item": "Lakehouse 06",
+      "type": "Lakehouse",
+      "workspace": "Hotels Analytics",
+      "operations": 274,
+      "identities": 1
+    },
+    {
+      "item": "Data agent 18",
+      "type": "LLMPlugin",
+      "workspace": "Hotels Analytics",
+      "operations": 221,
+      "identities": 1
+    },
+    {
+      "item": "Notebook 44",
+      "type": "Lakehouse",
+      "workspace": "Hotels Analytics",
+      "operations": 215,
+      "identities": 1
+    }
+  ],
+  "spark_notebooks": [
+    {
+      "notebook": "Notebook 33",
+      "workspace": "Contact Center",
+      "sessions": 3,
+      "scheduled": 0,
+      "failed": 0,
+      "hours": 3.95,
+      "cost": 1.57
+    },
+    {
+      "notebook": "Notebook 14",
+      "workspace": "Hotels Analytics",
+      "sessions": 1,
+      "scheduled": 0,
+      "failed": 0,
+      "hours": 0.37,
+      "cost": 0.15
+    },
+    {
+      "notebook": "Notebook 15",
+      "workspace": "Hotels Analytics",
+      "sessions": 1,
+      "scheduled": 0,
+      "failed": 0,
+      "hours": 0.36,
+      "cost": 0.14
+    }
+  ],
+  "capacities": [
+    {
+      "name": "fabriccapsec",
+      "sku": "F64",
+      "state": "Suspended",
+      "workspaces": 0,
+      "cost": 0.0,
+      "finding": "Paused with no workspaces: candidate for deletion",
+      "tags": "no tags"
+    },
+    {
+      "name": "Trial capacity",
+      "sku": "FTL4",
+      "state": "Active",
+      "workspaces": 0,
+      "cost": 0.0,
+      "finding": "Trial capacity",
+      "tags": "not an Azure resource"
+    },
+    {
+      "name": "Premium Per User - Reserved",
+      "sku": "PP3",
+      "state": "Active",
+      "workspaces": 0,
+      "cost": 0.0,
+      "finding": "Premium Per User (license, not CUs)",
+      "tags": "not an Azure resource"
+    },
+    {
+      "name": "fabriccapprod",
+      "sku": "F32",
+      "state": "Active",
+      "workspaces": 26,
+      "cost": 876.15,
+      "finding": "Running 20% of the period · 8% used",
+      "tags": "no tags"
+    }
+  ],
+  "failed_refreshes": [
+    {
+      "item": "Semantic model 13",
+      "workspace": "Hotels Analytics",
+      "last": "2026-07-04",
+      "error": "ModelRefreshDisabled"
+    },
+    {
+      "item": "Semantic model 04",
+      "workspace": "Contact Center",
+      "last": "2026-10-01",
+      "error": "CapacityNotActive"
+    }
+  ],
+  "idle_workspaces_on_paid_capacity": [],
+  "tenant_settings": [
+    {
+      "setting": "Users can use Copilot, AI Agents and other AI experiences powered by Azure OpenAI",
+      "enabled": true,
+      "scope": "Entire organization"
+    },
+    {
+      "setting": "Capacities can be designated as Fabric Copilot capacities",
+      "enabled": true,
+      "scope": "Entire organization"
+    },
+    {
+      "setting": "Users can create Fabric items",
+      "enabled": true,
+      "scope": "Entire organization"
+    },
+    {
+      "setting": "Service principals can access read-only admin APIs",
+      "enabled": true,
+      "scope": "Groups: sg-sre-agent-fabric"
+    },
+    {
+      "setting": "Show user data in the Fabric Capacity Metrics app and reports",
+      "enabled": true,
+      "scope": "Entire organization"
+    },
+    {
+      "setting": "Users can access a standalone, cross-item Power BI Copilot experience (preview)",
+      "enabled": true,
+      "scope": "Entire organization"
+    },
+    {
+      "setting": "Enable sending Operations Agents observability data to Agent 365 (preview)",
+      "enabled": false,
+      "scope": "—"
+    },
+    {
+      "setting": "Publish to web",
+      "enabled": true,
+      "scope": "Entire organization"
+    },
+    {
+      "setting": "Guest users can access Microsoft Fabric",
+      "enabled": true,
+      "scope": "Entire organization"
+    },
+    {
+      "setting": "Users can access data stored in OneLake with apps external to Fabric",
+      "enabled": true,
+      "scope": "Entire organization"
+    }
+  ],
+  "capacity_metrics_app": "installed; not queryable by service principal (RLS/SSO model)",
+  "sources": {
+    "cross_tenant_auth": {
+      "status": "ok",
+      "http": 200,
+      "count": null,
+      "note": "Bridge app certificate read from Key Vault"
+    },
+    "access_workspaces": {
+      "status": "ok",
+      "http": 200,
+      "count": 76,
+      "note": null
+    },
+    "arm": {
+      "status": "ok",
+      "http": 200,
+      "count": 1,
+      "note": null
+    },
+    "workspaces": {
+      "status": "ok",
+      "http": 200,
+      "count": 33,
+      "note": null
+    },
+    "refreshables": {
+      "status": "ok",
+      "http": 200,
+      "count": 26,
+      "note": null
+    },
+    "tenant_settings": {
+      "status": "ok",
+      "http": 200,
+      "count": 184,
+      "note": null
+    },
+    "capacities": {
+      "status": "ok",
+      "http": 200,
+      "count": 4,
+      "note": null
+    },
+    "access_items": {
+      "status": "ok",
+      "http": 200,
+      "count": 346,
+      "note": "40/40 workspaces scanned"
+    },
+    "spark": {
+      "status": "ok",
+      "http": "200",
+      "count": 5,
+      "note": "25/33 workspaces"
+    },
+    "group_members": {
+      "status": "ok",
+      "http": 200,
+      "count": 4,
+      "note": "3/3 groups"
+    },
+    "items": {
+      "status": "ok",
+      "http": 200,
+      "count": 345,
+      "note": null
+    },
+    "cost": {
+      "status": "ok",
+      "http": 200,
+      "count": 225,
+      "note": null
+    },
+    "activity_log": {
+      "status": "ok",
+      "http": 200,
+      "count": 25,
+      "note": null
+    },
+    "cost_monthly": {
+      "status": "ok",
+      "http": 200,
+      "count": 9,
+      "note": null
+    },
+    "sub_costs": {
+      "status": "ok",
+      "http": 200,
+      "count": 32,
+      "note": null
+    },
+    "prices": {
+      "status": "ok",
+      "http": 200,
+      "count": 203,
+      "note": null
+    },
+    "onelake": {
+      "status": "partial",
+      "http": 200,
+      "count": 28,
+      "note": "5/28 lakehouses/warehouses read"
+    },
+    "activity": {
+      "status": "ok",
+      "http": 200,
+      "count": 24663,
+      "note": "27/27 days"
+    }
+  },
+  "analysis_seconds": 0.3,
+  "raw_counts": {
+    "subscriptions": 1,
+    "workspaces": 33,
+    "refreshables": 26,
+    "tenant_settings": 184,
+    "pbi_capacities": 4,
+    "access": 943,
+    "livy": 5,
+    "items": 345,
+    "arm_capacities": 2,
+    "cost_rows": 225,
+    "activity_log": 25,
+    "cost_monthly": 9,
+    "sub_costs": 32,
+    "prices": 203,
+    "onelake": 28,
+    "events": 21642
+  }
+}

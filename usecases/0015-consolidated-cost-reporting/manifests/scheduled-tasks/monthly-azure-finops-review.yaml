@@ -1,0 +1,17 @@
+api_version: azuresre.ai/v1
+kind: ScheduledTask
+metadata:
+  name: monthly-azure-finops-review
+spec:
+  description: Azure FinOps - Monthly cost review. On the 3rd at 07:00 UTC, when the previous month's
+    costs have settled.
+  schedule: "0 7 3 * *"
+  time_zone: UTC
+  enabled: false
+  agent: finops-reviewer
+  mode: Autonomous
+  prompt: '@finops-reviewer Run the monthly Azure FinOps review (operation=report). Give me the links
+    to the HTML report, the JSON snapshot and the three CSV files first, then the verdict, the headline
+    numbers, the cost per project and which tag identifies the projects, the prioritised actions with
+    their estimated monthly savings, the budgets at risk, the unusual days and jumps, the allocation readiness
+    and the coverage.'

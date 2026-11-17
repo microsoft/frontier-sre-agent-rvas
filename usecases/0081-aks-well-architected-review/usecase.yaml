@@ -1,0 +1,36 @@
+id: 0081-aks-well-architected-review
+status: validated
+title: "AKS configuration and Well-Architected review"
+summary: "Read-only review of approved AKS clusters, workloads and related resources against best practices for security, cost and optimization."
+domain: platform-devops
+trigger: [chat, schedule]
+frequency: "On demand or monthly"
+timeSaved: High
+topPick: false
+products: [azure-kubernetes-service, azure-advisor, azure-cost-management, azure-resource-manager, azure-sre-agent]
+autonomy: read-only
+samplePrompt: "Generate the complete read-only AKS configuration review for <APPROVED_AKS_NAME> with operation=report and deliver the HTML, the complete JSON, the findings CSV and the inventory CSV."
+source: { type: community, url: "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/04-aks-well-architected-review" }
+package:
+  version: 1.0.0
+  apiVersion: azuresre.ai/v1
+  requires:
+    connectors: []
+    roles:
+      - "Reader on the subscription of each approved AKS cluster (cluster, agent pool, associated-resource, Kubernetes version and Advisor reads)"
+      - "Azure Kubernetes Service Cluster User Role on each approved managed-Entra cluster"
+      - "Azure Kubernetes Service RBAC Reader on each approved cluster, or equivalent read-only Kubernetes RBAC bindings, for the fixed Kubernetes lists"
+      - "Cost Management Reader on the query scope, for billing evidence (optional)"
+  parameters:
+    SUBSCRIPTION_ID: "Default subscription of the approved clusters"
+    TENANT_ID: "Tenant of the clusters"
+    MANAGED_IDENTITY_CLIENT_ID: "Client ID of the agent user-assigned managed identity"
+    APPROVED_CLUSTERS: "Allowlist of cluster names, resource groups and subscriptions (up to 500 clusters)"
+    CLIENT_NAME: "Optional organization name on the report cover"
+    CLIENT_LOGO_DATA_URI: "Optional logo as a data URI"
+  contents:
+    tools: [manifests/tools/generate-aks-waf-report.yaml]
+    skills: [manifests/skills/aks-waf-live/SKILL.md]
+    subagents: [manifests/subagents/aks-waf-live.yaml]
+    scheduledTasks: [manifests/scheduled-tasks/monthly-aks-configuration-review.yaml]
+    permissions: [permissions/grant-aks-review-reader.ps1]

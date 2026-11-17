@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "generate-aks-waf-report parameters",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "operation": {"type":"string","enum":["report","query","list_clusters"],"default":"report","description":"report writes four complete files for selected fixed cluster(s); query filters a fresh collection; list_clusters returns one page (limit/offset) of the configured multi-subscription roster without authentication/network, not observed health."},
+    "view": {"type":"string","enum":["summary","cluster","node_pools","workloads","resources","findings","finops","coverage","actions","architecture"],"default":"summary","description":"findings exposes all checks; report findings contains failed checks only. coverage exposes scoped source receipts. architecture exposes observed nodes/edges and explicit unknowns."},
+    "cluster_name": {"type":"string","maxLength":63,"pattern":"^[A-Za-z0-9_.()-]*$","default":"","description":"Exact key of the fixed operator allowlist (APPROVED_CLUSTERS, up to 500 clusters across subscriptions). Empty selects the first configured cluster. The code rejects any name outside the allowlist; do not add an enum for large fleets."},
+    "cluster_names": {"type":"string","maxLength":319,"pattern":"^(?:[A-Za-z0-9_.()-]{1,63}(?:,[A-Za-z0-9_.()-]{1,63}){0,4})?$","default":"","description":"One to five distinct, exact comma-separated fixed allowlist names, without spaces. Mutually exclusive with cluster_name. Every selected snapshot is preserved; a failed cluster never substitutes empty/healthy data."},
+    "namespace": {"type":"string","maxLength":63,"pattern":"^[A-Za-z0-9_.()-]*$","default":"","description":"Exact local namespace filter, never a server-side scope override."},
+    "workload_name": {"type":"string","maxLength":253,"pattern":"^[A-Za-z0-9_.()-]*$","default":"","description":"Exact local workload-name filter; no URL/path/query/command."},
+    "area": {"type":"string","enum":["all","best_practices","security","finops","optimization"],"default":"all"},
+    "level": {"type":"string","enum":["all","cluster","workload","resource"],"default":"all"},
+    "severity": {"type":"string","enum":["all","critical","high","medium","low"],"default":"all"},
+    "status": {"type":"string","enum":["all","passed","failed","not_evaluated","not_applicable","complete","partial","denied","error","not_configured"],"default":"all"},
+    "limit": {"type":"integer","minimum":1,"maximum":100,"default":25,"description":"Requested row count; 3500-byte default-JSON budget may return fewer whole rows with exact paging disclosure."},
+    "offset": {"type":"integer","minimum":0,"maximum":500000,"default":0,"description":"Local offset in this fresh collection; not a persistent cursor."}
+  },
+  "allOf": [
+    {"if":{"properties":{"operation":{"const":"report"}}},"then":{"properties":{"view":{"const":"summary"},"namespace":{"const":""},"workload_name":{"const":""},"area":{"const":"all"},"level":{"const":"all"},"severity":{"const":"all"},"status":{"const":"all"},"limit":{"const":25},"offset":{"const":0}}}},
+    {"if":{"properties":{"operation":{"const":"list_clusters"}}},"then":{"properties":{"view":{"const":"summary"},"namespace":{"const":""},"workload_name":{"const":""},"area":{"const":"all"},"level":{"const":"all"},"severity":{"const":"all"},"status":{"const":"all"}}}},
+    {"if":{"properties":{"cluster_name":{"minLength":1}},"required":["cluster_name"]},"then":{"properties":{"cluster_names":{"const":""}}}},
+    {"if":{"properties":{"cluster_names":{"minLength":1}},"required":["cluster_names"]},"then":{"properties":{"cluster_name":{"const":""}}}},
+    {"if":{"properties":{"operation":{"const":"list_clusters"}}},"then":{"properties":{"cluster_name":{"const":""},"cluster_names":{"const":""}}}}
+  ]
+}
