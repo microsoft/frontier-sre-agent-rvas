@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-16T19:15:48Z",
+  "generatedAt": "2026-11-17T02:40:55Z",
   "count": 79,
   "domains": [
     {
@@ -740,7 +740,7 @@
     },
     {
       "id": "0021-databricks-dependency-configuration-review",
-      "status": "built",
+      "status": "validated",
       "title": "Azure Databricks dependency and configuration review",
       "summary": "Read-only map of what an Azure Databricks workspace depends on, where its cost comes from, and 36 best-practice checks.",
       "domain": "platform-devops",
@@ -809,7 +809,7 @@
         "task": false,
         "permissions": true,
         "tests": true,
-        "sampleReport": false,
+        "sampleReport": true,
         "images": false
       },
       "readme": "usecases/0021-databricks-dependency-configuration-review/README.md",

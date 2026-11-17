@@ -2,7 +2,7 @@
 
 ![Report summary: 1 top bar with sections and exports, 2 verdict-first summary, 3 KPI cards](docs/images/report-preview.png)
 
-*Report rendered from the synthetic test fixture (in Spanish). 1 Top bar with sections, exports and print · 2 Verdict-first summary with provenance chips and severity · 3 KPI cards: findings, local index beside coverage, relations, blind spots and observed cost.*
+*Sample run with simulated data. 1 Top bar with sections, Read-only chip, export menu and print · 2 Verdict-first summary with provenance chips and severity · 3 KPI cards: findings, local index beside coverage, relationships, blind spots and observed cost.*
 
 > **The problem.** Our Databricks workspace connects to many things, nobody has the full map, and nobody can say where its cost comes from or how to reduce it.
 
@@ -20,7 +20,7 @@ Every dependency is classified as `OBSERVED` (a native ID or key join returned b
 | **Delivers** | HTML report, findings CSV, dependencies CSV and the full JSON snapshot |
 | **Agent pieces** | Tool `databricks-dependency-report` · skill `databricks-dependency-live` · subagent `databricks-dependency-live` |
 | **Access** | ARM `Reader` on the workspace resource groups, optional `Cost Management Reader`, and the identity as a Databricks service principal with view-only grants |
-| **Report language** | Spanish |
+| **Report language** | English |
 
 **Compare with:** [AKS cluster review](https://microsoft.github.io/frontier-sre-agent-rvas/usecase.html?id=0081-aks-well-architected-review) · [Monthly Azure FinOps review](https://microsoft.github.io/frontier-sre-agent-rvas/usecase.html?id=0015-consolidated-cost-reporting)
 
@@ -87,6 +87,10 @@ More prompts, with the expected result of each, are in [`tests/prompts.md`](test
 
 *Cost section, from SIMULATED data: 1 month cost, DBU and infrastructure split, unattributed share and estimated savings · 2 DBU by compute type and infrastructure by service · 3 who consumes it, by cluster, job, SQL warehouse, pool, creator and tag.*
 
+## Sample report
+
+[`sample-report/`](sample-report/) holds the four files of a SIMULATED run that the tool wrote offline from the sanitized test fixture, without calling Azure or Databricks: the [HTML report](sample-report/simulated-20261016T120000Z-c0a7e5d10b2c.html) (download it and open it in a browser), the JSON snapshot, the findings CSV and the dependencies CSV. Every workspace, host, user and identifier is fictitious (`dbx-contoso-prod-weu-01`, `Contoso`).
+
 ## Cadence
 
 On demand. Add a scheduled task only if the workspace owner wants recurring reviews after accepting the first report.
@@ -97,8 +101,8 @@ The tool in `manifests/tools/` is built from `src/`. Edit `src/engine.py` or the
 
 ## Status
 
-`built`. Upstream saved and read back the native deployment on 2026-10-16, ran a live cross-tenant report on 2026-10-19 and re-validated the sidecar-token and Key Vault certificate changes in a lab agent on 2026-11-06 (`tests/native-readiness-validation.json`, `tests/visual-evidence.json`, `tests/runtime-changes.json`). The report is in Spanish and there is no English sample report yet, so it is not `validated`. Screenshots and evidence from runs before 16 November 2026 show the previous tool name `generate-databricks-dependency-report` (37 characters, over today's portal limit).
+`validated`: built, with test prompts in `tests/` and a SIMULATED sample report. Upstream saved and read back the native deployment on 2026-10-16, ran a live cross-tenant report on 2026-10-19 and re-validated the sidecar-token and Key Vault certificate changes in a lab agent on 2026-11-06 (`tests/native-readiness-validation.json`, `tests/visual-evidence.json`, `tests/runtime-changes.json`). It has not been deployed from this repository with `usecases.sh deploy` yet. Screenshots and evidence from runs before 16 November 2026 show the previous tool name `generate-databricks-dependency-report` (37 characters, over today's portal limit).
 
 ## Credits
 
-Built and tested by Mario Aguilera ([@marioaguileraaa](https://github.com/marioaguileraaa)). Source: [`08-databricks-dependency-configuration-review`](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/08-databricks-dependency-configuration-review) in `marioaguileraaa/sre-agent-use-cases` (MIT), commit `5341edb`. The upstream guide has every step with a screenshot, troubleshooting and the acceptance checks. Field guide: [plate 08](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-08).
+Built and tested by Mario Aguilera ([@marioaguileraaa](https://github.com/marioaguileraaa)). Source: [`08-databricks-dependency-configuration-review`](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/08-databricks-dependency-configuration-review) in `marioaguileraaa/sre-agent-use-cases` (MIT), commit `4eb2e90`. The upstream guide has every step with a screenshot, troubleshooting and the acceptance checks. Field guide: [plate 08](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-08).
