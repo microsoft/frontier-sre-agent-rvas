@@ -1,0 +1,53 @@
+api_version: azuresre.ai/v1
+kind: Tool
+metadata:
+  name: patching-investigation-report
+spec:
+  type: PythonFunctionTool
+  description: Read-only Azure Update Manager post-patching cycle report and per-machine failure and blocker
+    root-cause investigation across Azure VMs and Azure Arc-enabled servers. operation=report writes four
+    files (HTML, snapshot JSON, machines CSV, patches CSV); query returns bounded views.
+  timeoutSeconds: 900
+  code_file: ./generate-patching-investigation-report.py
+  parameters:
+  - name: operation
+    type: string
+    required: false
+    description: 'report writes four complete files (HTML, snapshot JSON, machines CSV, patches CSV) for
+      the configured subscription; query returns bounded views under the 3500-byte JSON transport budget.
+      Default: report. Allowed: report, query.'
+  - name: period
+    type: string
+    required: false
+    description: 'UTC time window for maintenance cycles and patch installation runs. Default: last_30d.
+      Allowed: last_30d, last_14d, last_7d, last_24h.'
+  - name: view
+    type: string
+    required: false
+    description: 'View to return for operation=''query''. Must remain ''summary'' when operation=''report''.
+      Default: summary. Allowed: summary, machines, failures, cycles, patches, extensions, coverage, actions.'
+  - name: hosting
+    type: string
+    required: false
+    description: 'Filter by machine hosting plane: ''azure'' (Microsoft.Compute/virtualMachines) or ''arc''
+      (Microsoft.HybridCompute/machines). Default: all. Allowed: all, azure, arc.'
+  - name: failure_category
+    type: string
+    required: false
+    description: 'Filter by automated per-machine root-cause failure category. Default: all. Allowed:
+      all, maintenance_window_unresponsive, arc_agent_expired_or_disconnected, assessment_stuck_or_readiness_undetermined,
+      hotpatch_or_patch_extension_error, pending_security_patches_unscheduled, unassessed_no_update_manager_telemetry,
+      healthy.'
+  - name: machine_name
+    type: string
+    required: false
+    description: Optional exact machine name filter for operation='query'. Must be empty for operation='report'.
+  - name: limit
+    type: int
+    required: false
+    description: 'Maximum rows to return in operation=''query'' (subject to 3500-byte transport cap).
+      Default: 25.'
+  - name: offset
+    type: int
+    required: false
+    description: '0-based row offset for operation=''query''. Default: 0.'

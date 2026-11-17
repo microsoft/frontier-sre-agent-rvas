@@ -1,0 +1,34 @@
+id: 0082-azure-backup-operations-review
+status: validated
+title: "Azure Backup jobs review"
+summary: "Monthly read-only review of Azure Backup jobs, errors, warnings and protected items of approved Recovery Services vaults, for a human decision."
+domain: management
+trigger: [schedule, chat]
+frequency: "Monthly"
+timeSaved: High
+topPick: false
+products: [azure-backup, recovery-services-vault, azure-sre-agent]
+autonomy: read-only
+samplePrompt: "Review the Azure Backup jobs of the last 14 days for the approved vaults and deliver the HTML, the complete source JSON, the jobs CSV and the items and coverage CSV."
+source: { type: community, url: "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/06-azure-backup-operations-review" }
+package:
+  version: 1.0.0
+  apiVersion: azuresre.ai/v1
+  requires:
+    connectors: []
+    roles:
+      - "Reader on the monitored subscription (Backup Reader alone does not cover the subscription read)"
+      - "SRE Agent Author and Standard User, or SRE Agent Administrator, for the person deploying"
+  parameters:
+    SUBSCRIPTION_ID: "Monitored subscription"
+    TENANT_ID: "Tenant of the monitored subscription"
+    MANAGED_IDENTITY_CLIENT_ID: "Client ID of the agent user-assigned managed identity"
+    APPROVED_VAULT_IDS: "Resource IDs of the approved Recovery Services vaults"
+    CLIENT_NAME: "Optional organization name on the report"
+    COMPANY_LOGO_DATA_URI: "Optional PNG or JPEG logo as a data URI"
+  contents:
+    tools: [manifests/tools/generate-azure-backup-report.yaml]
+    skills: [manifests/skills/azure-backup-live/SKILL.md]
+    subagents: [manifests/subagents/azure-backup-live.yaml]
+    scheduledTasks: [manifests/scheduled-tasks/monthly-azure-backup-operations-review.yaml]
+    permissions: [permissions/grant-backup-review-reader.ps1]

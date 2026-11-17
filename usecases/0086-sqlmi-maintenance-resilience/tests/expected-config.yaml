@@ -1,0 +1,5 @@
+# What `usecases.sh verify` should find on the live agent after deploying this package.
+skills: [sqlmi-maintenance-resilience]
+subagents: [sqlmi-maintenance-advisor]
+tools: [generate-sqlmi-maintenance-report]
+scheduledTasks: [weekly-sqlmi-maintenance-resilience]

@@ -1,0 +1,26 @@
+api_version: azuresre.ai/v1
+kind: Tool
+metadata:
+  name: generate-sqlmi-maintenance-report
+spec:
+  type: PythonFunctionTool
+  description: 'Read-only Azure SQL Managed Instance maintenance resilience report: maintenance windows,
+    connection type, failover groups, real reconfigurations (Resource Health, Activity Log), upcoming
+    planned maintenance (Service Health), per-application user impact from Application Insights and recommended
+    window from real load. HTML + JSON + 2 CSV. Never changes anything.'
+  timeoutSeconds: 180
+  code_file: ./generate-sqlmi-maintenance-report.py
+  parameters:
+  - name: operation
+    type: string
+    required: false
+    description: report (HTML+JSON+2 CSV, default), summary (KPIs, findings, apps) or upcoming (next planned
+      maintenance and at-risk apps).
+  - name: period
+    type: string
+    required: false
+    description: 'History window: last_30d (default), last_14d or last_7d.'
+  - name: data_source
+    type: string
+    required: false
+    description: 'auto (default: live if configured, otherwise demo), live or demo (simulated data).'

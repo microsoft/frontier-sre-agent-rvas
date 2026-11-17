@@ -175,4 +175,7 @@ Run the framework tests with `usecases/_framework/tests/run.sh`.
 | [0076-vm-performance-anomaly-detection](0076-vm-performance-anomaly-detection/) | VM performance anomaly detection | management | idea |
 | [0077-vnet-peering-health-check](0077-vnet-peering-health-check/) | VNet peering health check | network-topology | idea |
 | [0078-workbook-auto-generation](0078-workbook-auto-generation/) | Workbook auto-generation | management | idea |
+| [0082-azure-backup-operations-review](0082-azure-backup-operations-review/) | Azure Backup jobs review | management | validated |
+| [0083-update-manager-patching-failure-investigation](0083-update-manager-patching-failure-investigation/) | Patching results and failed machines investigation | management | validated |
+| [0086-sqlmi-maintenance-resilience](0086-sqlmi-maintenance-resilience/) | Azure SQL Managed Instance maintenance resilience | management | validated |
 <!-- usecases:index:end -->
