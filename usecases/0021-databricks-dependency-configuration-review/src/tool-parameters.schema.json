@@ -1,14 +1,14 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "generate-databricks-dependency-report parameters",
+  "title": "databricks-dependency-report parameters",
   "type": "object",
   "additionalProperties": false,
   "properties": {
     "operation": {
       "type": "string",
-      "enum": ["report", "query", "list_workspaces"],
+      "enum": ["report", "query", "list_workspaces", "self_test"],
       "default": "report",
-      "description": "report writes four complete files for selected fixed workspace(s); query filters a fresh collection; list_workspaces returns the configured roster without authentication/network, not observed health."
+      "description": "report writes four complete files for selected fixed workspace(s); query filters a fresh collection; list_workspaces returns the configured roster without authentication/network, not observed health; self_test writes the same four files from a built-in SIMULATED workspace without authentication or network (demos only, labelled SIMULATED)."
     },
     "view": {
       "type": "string",
@@ -23,12 +23,13 @@
         "resources",
         "findings",
         "finops",
+        "costs",
         "coverage",
         "actions",
         "dependencies"
       ],
       "default": "summary",
-      "description": "findings exposes all checks; report findings contains failed checks only. coverage exposes scoped source receipts. dependencies exposes OBSERVED, INFERRED and UNKNOWN nodes, edges and blind spots."
+      "description": "findings exposes all checks; report findings contains failed checks only. costs exposes the Databricks cost model (headline, DBU vs infrastructure, attribution rows and optimisation signals). coverage exposes scoped source receipts. dependencies exposes OBSERVED, INFERRED and UNKNOWN nodes, edges and blind spots."
     },
     "workspace_name": {
       "type": "string",
@@ -105,7 +106,7 @@
   },
   "allOf": [
     {
-      "if": { "properties": { "operation": { "enum": ["report", "list_workspaces"] } } },
+      "if": { "properties": { "operation": { "enum": ["report", "list_workspaces", "self_test"] } } },
       "then": {
         "properties": {
           "view": { "const": "summary" },
@@ -129,7 +130,7 @@
       "then": { "properties": { "workspace_name": { "const": "" } } }
     },
     {
-      "if": { "properties": { "operation": { "const": "list_workspaces" } } },
+      "if": { "properties": { "operation": { "enum": ["list_workspaces", "self_test"] } } },
       "then": { "properties": { "workspace_name": { "const": "" }, "workspace_names": { "const": "" } } }
     }
   ]

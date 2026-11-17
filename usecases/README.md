@@ -117,7 +117,7 @@ Run the framework tests with `usecases/_framework/tests/run.sh`.
 | [0018-cross-period-cost-comparison-mg-level](0018-cross-period-cost-comparison-mg-level/) | Cross-period cost comparison (MG level) | billing-entra-tenant | idea |
 | [0019-custom-policy-generation](0019-custom-policy-generation/) | Custom Policy generation | governance | idea |
 | [0020-data-collection-rules-audit](0020-data-collection-rules-audit/) | Data collection rules audit | management | idea |
-| [0021-databricks-dependency-configuration-review](0021-databricks-dependency-configuration-review/) | Azure Databricks dependency and configuration review | platform-devops | built |
+| [0021-databricks-dependency-configuration-review](0021-databricks-dependency-configuration-review/) | Azure Databricks dependency and configuration review | platform-devops | validated |
 | [0022-ddos-protection-coverage-audit](0022-ddos-protection-coverage-audit/) | DDoS protection coverage audit | network-topology | idea |
 | [0023-defender-for-cloud-assessment](0023-defender-for-cloud-assessment/) | Defender for Cloud assessment | security | idea |
 | [0024-diagnostic-settings-coverage-audit](0024-diagnostic-settings-coverage-audit/) | Diagnostic settings coverage audit | management | idea |
