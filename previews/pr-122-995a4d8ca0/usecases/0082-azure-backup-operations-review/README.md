@@ -92,7 +92,7 @@ More prompts, with the expected result of each, are in [`tests/prompts.md`](test
 
 ## Sample report
 
-[`sample-report/`](sample-report/) holds the four files of a SIMULATED run generated offline from the upstream synthetic fixtures: the [HTML report](sample-report/simulated-20261014T090000Z-ac528d818534.html) (download it and open it in a browser), the complete JSON, the jobs CSV and the items and coverage CSV. No Azure call was made and the figures are not real.
+[`sample-report/`](sample-report/) holds the four files of a SIMULATED run generated offline from the upstream synthetic fixtures, with the fictitious client name `Contoso`: the [HTML report](sample-report/simulated-20261014T090000Z-ac528d818534.html) (download it and open it in a browser), the complete JSON, the jobs CSV and the items and coverage CSV. No Azure call was made and the figures are not real.
 
 ## Cadence
 
@@ -104,4 +104,4 @@ Monthly, on day 1 at 10:30 UTC, for the last 14 days. The cadence leaves gaps be
 
 ## Credits
 
-Built and tested by Mario Aguilera ([@marioaguileraaa](https://github.com/marioaguileraaa)). Source: [`06-azure-backup-operations-review`](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/06-azure-backup-operations-review) in `marioaguileraaa/sre-agent-use-cases` (MIT), commit `5341edb`. The upstream guide has every step with a screenshot, troubleshooting and the acceptance checks. Field guide: [plate 06](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-06).
+Built and tested by Mario Aguilera ([@marioaguileraaa](https://github.com/marioaguileraaa)). Source: [`06-azure-backup-operations-review`](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/06-azure-backup-operations-review) in `marioaguileraaa/sre-agent-use-cases` (MIT), commit `4eb2e90`. The upstream guide has every step with a screenshot, troubleshooting and the acceptance checks. Field guide: [plate 06](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-06).

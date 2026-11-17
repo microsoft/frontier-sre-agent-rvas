@@ -2,7 +2,7 @@
 
 ![Report header: short answer and KPIs of the period](docs/images/report-preview.png)
 
-*Sample report in demo mode (simulated data, report in Spanish): 10 reconfigurations, average 11.4 s, maximum 28 s, 2,248 user-facing errors, and 95 % of them came from 3 applications without retries.*
+*Sample report in demo mode (simulated data): 10 reconfigurations, average 11.4 s, maximum 28 s, 2,248 user-facing errors, and 95% of them came from 3 applications without retries.*
 
 > **The problem.** Every time Azure patches our SQL Managed Instances, users see errors, and we want to choose the hour like we did on-premises.
 
@@ -20,7 +20,7 @@ The short answer for the customer: **the window decides WHEN the reconfiguration
 | **Delivers** | HTML report, instances CSV, impact CSV and the JSON snapshot |
 | **Agent pieces** | Tool `generate-sqlmi-maintenance-report` · skill `sqlmi-maintenance-resilience` · subagent `sqlmi-maintenance-advisor` · scheduled task `SQL MI - Weekly maintenance resilience report` |
 | **Access** | `Reader` and `Monitoring Reader` on the SQL MI subscriptions, `Log Analytics Reader` on the Application Insights workspaces |
-| **Report language** | Spanish (this guide gives the English meaning of each section) |
+| **Report language** | English |
 
 **Compare with:** [Azure Service Health incidents and planned maintenance review](https://microsoft.github.io/frontier-sre-agent-rvas/usecase.html?id=0067-service-health-incidents-resource-impact) · [Planned maintenance awareness (idea)](https://github.com/microsoft/frontier-sre-agent-rvas/tree/main/usecases/0050-planned-maintenance-awareness)
 
@@ -91,7 +91,11 @@ More prompts, with the expected result of each, are in [`tests/prompts.md`](test
 
 ![Applications: who absorbs the reconfiguration and who shows errors to users](docs/images/report-applications.png)
 
-*Per application: user-facing errors during reconfigurations, retry readiness and the fix to apply (report in Spanish).*
+*Per application: user-facing errors against transient SQL failures during reconfigurations, with the verdict No retries, Partial, Resilient or No impact observed.*
+
+## Sample report
+
+[`sample-report/`](sample-report/) holds a run in demo mode (`data_source=demo`, simulated data): the [HTML report](sample-report/sqlmi-maintenance-20261030T094210Z.html) (download it and open it in a browser), the instances CSV and the impact CSV. The instances, applications, subscription ID and planned maintenance event are fictitious. The run's complete JSON (934 KB, mostly the raw hourly load series behind the heat maps) is left out to keep this folder small; it is in the [upstream sample run](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/12-sqlmi-maintenance-resilience/sample-run).
 
 ## Cadence
 
@@ -99,8 +103,8 @@ Weekly, on Mondays at 07:00 UTC, with `period=last_7d`. Use `operation=upcoming`
 
 ## Status
 
-`built`. Upstream built and ran it in a Microsoft lab (the published screenshots and sample use demo mode, 2026-10-30). The report is in Spanish, so there is no English sample report yet and it is not `validated`. The upstream folder also has a controlled failover drill for pre-production instances (`simulate-maintenance-failover.ps1`); it is not part of this read-only package.
+`validated`: built, with test prompts in `tests/` and a sample report in demo mode (simulated data). Upstream built and ran it in a Microsoft lab (the published screenshots and the sample run use demo mode, 2026-10-30). It has not been deployed from this repository with `usecases.sh deploy` yet. The upstream folder also has a controlled failover drill for pre-production instances (`simulate-maintenance-failover.ps1`); it is not part of this read-only package.
 
 ## Credits
 
-Built and tested by Mario Aguilera ([@marioaguileraaa](https://github.com/marioaguileraaa)). Source: [`12-sqlmi-maintenance-resilience`](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/12-sqlmi-maintenance-resilience) in `marioaguileraaa/sre-agent-use-cases` (MIT), commit `5341edb`. The upstream guide has every step with a screenshot, troubleshooting and the acceptance checks. Field guide: [plate 12](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-12).
+Built and tested by Mario Aguilera ([@marioaguileraaa](https://github.com/marioaguileraaa)). Source: [`12-sqlmi-maintenance-resilience`](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/12-sqlmi-maintenance-resilience) in `marioaguileraaa/sre-agent-use-cases` (MIT), commit `4eb2e90`. The upstream guide has every step with a screenshot, troubleshooting and the acceptance checks. Field guide: [plate 12](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-12).

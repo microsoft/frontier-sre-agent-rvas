@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-16T19:25:26Z",
+  "generatedAt": "2026-11-17T02:45:54Z",
   "count": 82,
   "domains": [
     {
@@ -2808,7 +2808,7 @@
     },
     {
       "id": "0083-update-manager-patching-failure-investigation",
-      "status": "built",
+      "status": "validated",
       "title": "Patching results and failed machines investigation",
       "summary": "After each patching cycle, a read-only review of Azure VMs and Arc servers in Update Manager that explains why each failed machine failed.",
       "domain": "management",
@@ -2873,7 +2873,7 @@
         "task": true,
         "permissions": true,
         "tests": true,
-        "sampleReport": false,
+        "sampleReport": true,
         "images": false
       },
       "readme": "usecases/0083-update-manager-patching-failure-investigation/README.md",
@@ -2895,7 +2895,7 @@
     },
     {
       "id": "0086-sqlmi-maintenance-resilience",
-      "status": "built",
+      "status": "validated",
       "title": "Azure SQL Managed Instance maintenance resilience",
       "summary": "Weekly read-only report of SQL Managed Instance maintenance: real reconfigurations, apps that showed errors and the best window.",
       "domain": "management",
@@ -2961,7 +2961,7 @@
         "task": true,
         "permissions": true,
         "tests": true,
-        "sampleReport": false,
+        "sampleReport": true,
         "images": false
       },
       "readme": "usecases/0086-sqlmi-maintenance-resilience/README.md",

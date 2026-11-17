@@ -2,7 +2,7 @@
 
 ![Patching report cover and cycle summary with field marks 1 to 3](docs/images/report-preview.png)
 
-*Lab run, report in Spanish. 1 Exports · 2 Report cover and scope · 3 Summary of the patching cycle.*
+*Sample run with simulated data. 1 Read-only chip, dark mode, export menu and print · 2 Verdict-first cover: key numbers, window and provenance chips, verdict and machines by severity · 3 Summary of the patching cycle.*
 
 > **The problem.** After every patching window someone has to log in to each failed server to find out why it didn't patch.
 
@@ -20,7 +20,7 @@ Each machine is classified in one of seven operational categories (`maintenance_
 | **Delivers** | HTML report, machines CSV, patches CSV and the JSON snapshot |
 | **Agent pieces** | Tool `patching-investigation-report` · skill `patching-investigation-live` · subagent `patching-investigation-live` · scheduled task `Monthly Azure Update Manager patching & failure investigation` |
 | **Access** | `Reader` on the target subscription |
-| **Report language** | Spanish |
+| **Report language** | English |
 
 **Compare with:** [Server health and capacity review](https://microsoft.github.io/frontier-sre-agent-rvas/usecase.html?id=0080-infrastructure-operations-health) · [Extension health across VMs (idea)](https://github.com/microsoft/frontier-sre-agent-rvas/tree/main/usecases/0032-extension-health-across-vms)
 
@@ -87,7 +87,11 @@ More prompts, with the expected result of each, are in [`tests/prompts.md`](test
 
 ![Automated failure investigation per machine](docs/images/report-failure-investigation.png)
 
-*Automated failure investigation: each failed machine with its category and the Azure evidence behind it (report in Spanish).*
+*Automated failure investigation: 1 filters by failure category, hosting (Azure VM or Arc), severity and search · 2 each machine with its category, the correlated Azure evidence and the recommended action.*
+
+## Sample report
+
+[`sample-report/`](sample-report/) holds the four files of a SIMULATED run that the tool wrote offline from its test fixture, without calling Azure: the [HTML report](sample-report/patch-20261020T160000Z-18966844ec9a.html) (download it and open it in a browser), the JSON snapshot, the machines CSV and the cycles and patches CSV. Every machine, resource group, maintenance configuration and identifier is fictitious (`contoso-vm-app-01`, `rg-contoso-servers-weu`).
 
 ## Cadence
 
@@ -99,8 +103,8 @@ The tool in `manifests/tools/` is built from `src/`. Edit `src/engine.py` or the
 
 ## Status
 
-`built`. Upstream ran it live in a Microsoft lab with Azure VMs and Arc servers; the sidecar-token identity fix of 16 November 2026 is covered by `src/tests/test_sidecar_tokens.py`. The report is in Spanish and there is no English sample report yet, so it is not `validated`. Screenshots and evidence from runs before 16 November 2026 show the previous tool name `generate-patching-investigation-report` (38 characters, over today's portal limit).
+`validated`: built, with test prompts in `tests/` and a SIMULATED sample report. Upstream ran it live in a Microsoft lab with Azure VMs and Arc servers; the sidecar-token identity fix of 16 November 2026 is covered by `src/tests/test_sidecar_tokens.py`. It has not been deployed from this repository with `usecases.sh deploy` yet. Screenshots and evidence from runs before 16 November 2026 show the previous tool name `generate-patching-investigation-report` (38 characters, over today's portal limit).
 
 ## Credits
 
-Built and tested by Mario Aguilera ([@marioaguileraaa](https://github.com/marioaguileraaa)). Source: [`09-update-manager-patching-failure-investigation`](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/09-update-manager-patching-failure-investigation) in `marioaguileraaa/sre-agent-use-cases` (MIT), commit `5341edb`. The upstream guide has every step with a screenshot, troubleshooting and the acceptance checks. Field guide: [plate 09](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-09).
+Built and tested by Mario Aguilera ([@marioaguileraaa](https://github.com/marioaguileraaa)). Source: [`09-update-manager-patching-failure-investigation`](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/09-update-manager-patching-failure-investigation) in `marioaguileraaa/sre-agent-use-cases` (MIT), commit `4eb2e90`. The upstream guide has every step with a screenshot, troubleshooting and the acceptance checks. Field guide: [plate 09](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-09).
