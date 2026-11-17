@@ -1,0 +1,26 @@
+id: 0087-sre-use-case-builder
+status: validated
+title: "Azure SRE Agent use-case builder"
+summary: "Describe an operations idea in one sentence and get a tested, read-only SRE Agent use case: tool, skill, subagent, task, permissions and report."
+domain: platform-devops
+trigger: [chat]
+frequency: "On demand"
+timeSaved: High
+topPick: false
+products: [azure-sre-agent, azure-resource-graph, log-analytics, microsoft-graph, azure-cost-management]
+autonomy: read-only
+samplePrompt: "I need a weekly report of orphaned managed disks (not attached to any VM) across my subscriptions, with size and SKU, so we can clean up waste."
+source: { type: community, url: "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/case_0_v3" }
+package:
+  version: 3.1.1
+  apiVersion: azuresre.ai/v1
+  requires:
+    connectors: []
+    roles:
+      - "None for the builder itself: it reads only what the agent managed identity can already read, to live-check the generated tool"
+      - "SRE Agent Administrator, or SRE Agent Author and Standard User, for the person deploying"
+  parameters: {}
+  contents:
+    tools: [manifests/tools/sre-usecase-builder-kit.yaml]
+    skills: [manifests/skills/sre-usecase-builder/SKILL.md]
+    subagents: [manifests/subagents/sre-usecase-builder.yaml]

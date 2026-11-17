@@ -175,4 +175,5 @@ Run the framework tests with `usecases/_framework/tests/run.sh`.
 | [0076-vm-performance-anomaly-detection](0076-vm-performance-anomaly-detection/) | VM performance anomaly detection | management | idea |
 | [0077-vnet-peering-health-check](0077-vnet-peering-health-check/) | VNet peering health check | network-topology | idea |
 | [0078-workbook-auto-generation](0078-workbook-auto-generation/) | Workbook auto-generation | management | idea |
+| [0087-sre-use-case-builder](0087-sre-use-case-builder/) | Azure SRE Agent use-case builder | platform-devops | validated |
 <!-- usecases:index:end -->

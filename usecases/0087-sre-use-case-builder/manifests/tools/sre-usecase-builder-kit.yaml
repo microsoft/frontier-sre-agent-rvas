@@ -1,0 +1,31 @@
+api_version: azuresre.ai/v1
+kind: Tool
+metadata:
+  name: sre-usecase-builder-kit
+spec:
+  type: PythonFunctionTool
+  description: Builds working Azure SRE Agent use cases. operation=catalog returns a compact index of
+    recipes, source types and spec fields (spec_json=<recipe or topic> returns its details); environment
+    discovers what the agent identity can read (subscriptions, Log Analytics workspaces, storage, roles);
+    brand reads a customer website and proposes the report identity (official logo, colours, font) with
+    a sample branded report; probe reads a few live rows for a spec; scaffold generates, lints, self-tests
+    and live-checks the Python tool, whose report is a branded interactive HTML plus a PDF of the same
+    design; get returns the generated Builder blocks, code and guides page by page; lint checks tool code.
+    Every result fits the tool-result size limit.
+  timeoutSeconds: 300
+  code_file: ./sre-usecase-builder-kit.py
+  parameters:
+  - name: operation
+    type: string
+    required: false
+    description: 'catalog | environment | brand | probe | scaffold | get | lint. Default: catalog'
+  - name: spec_json
+    type: string
+    required: false
+    description: 'probe/scaffold: use-case spec as JSON (start from a catalog recipe). catalog: recipe
+      name or topic (spec, operators, a source type). brand: {"website": "https://www.customer.com"}.
+      get: ''<name>/<part>[/<page>]'', e.g. ''vm-heartbeat-gaps/answer''.'
+  - name: code
+    type: string
+    required: false
+    description: Python tool code to lint (operation=lint only).
