@@ -652,12 +652,12 @@
     },
     {
       "filename": "13-report-overview-and-pillars.png",
-      "bytes": 259830,
-      "sha256": "e1c507003813191f91347bdb48521cff8f9525a46ec11dd0b5497b4ce9465a48",
+      "bytes": 275695,
+      "sha256": "3299b76e42be0abae7e3a49c5997f21c2c16632de638188ae9ac0f58f3ffd1fe",
       "width": 1440,
       "height": 1020,
-      "evidence_kind": "sanitized_synthetic_fixture_render",
-      "caption": "English HTML report top (sample run from the sanitized synthetic fixture with Contoso names, SIMULATED / LAB): verdict-first navy hero with the key numbers, provenance chips, Contoso plaque, verdict card and severity distribution, then KPI cards (findings, local index beside coverage, relationships, UNKNOWN blind spots, observed cost).",
+      "evidence_kind": "simulated_fleet_sample_run_render",
+      "caption": "English HTML report, detailed view of one workspace (SIMULATED fleet sample run with Contoso names; dbx-analytics-prod selected in the Workspace filter): slim top bar, Subscription / Workspace / Search filter band, verdict-first navy hero with the key numbers, provenance chips, Contoso plaque, verdict card and severity distribution, then KPI cards (findings, local index beside coverage, relationships, UNKNOWN blind spots, Databricks cost).",
       "callouts": [
         {
           "number": 1,
@@ -677,50 +677,66 @@
         },
         {
           "number": 2,
-          "meaning": "Verdict-first hero: one sentence with the key numbers, provenance chips (UTC, workspace, cross_tenant_multitenant_fic, LAB, SIMULATED DATA), Contoso plaque, verdict card and severity distribution bar",
+          "meaning": "Workspace filter with dbx-analytics-prod selected (name and collection status): it opens the detailed review of that workspace; All returns to the fleet overview",
           "box": [
-            50,
-            107,
-            1390,
-            505
+            734,
+            71,
+            1056,
+            121
           ],
           "badge": [
-            54,
-            81,
-            82,
-            105
+            738,
+            125,
+            766,
+            149
           ]
         },
         {
           "number": 3,
-          "meaning": "KPI cards: findings by severity, local index beside evaluated coverage (32 of 42 applicable checks), relationships (OBSERVED / INFERRED), UNKNOWN blind spots and observed cost (Not evaluated when ARM billing is denied)",
+          "meaning": "Verdict-first hero: one sentence with the key numbers, provenance chips (UTC, workspace, same_tenant_uami, PRODUCTION, SIMULATED DATA), Contoso plaque, verdict card and severity distribution bar",
+          "box": [
+            50,
+            170,
+            1390,
+            595
+          ],
+          "badge": [
+            54,
+            144,
+            82,
+            168
+          ]
+        },
+        {
+          "number": 4,
+          "meaning": "KPI cards: findings by severity, local index beside evaluated coverage (70 of 75 applicable checks), relationships (OBSERVED / INFERRED), UNKNOWN blind spots and the month's Databricks cost with estimated savings",
           "box": [
             52,
-            529,
+            619,
             1388,
-            672
+            781
           ],
           "badge": [
             19,
-            531,
+            621,
             47,
-            555
+            645
           ]
         }
       ],
       "privacy_and_annotation_pixel_proof": true,
       "PNG_metadata_absent": true,
       "customer_source_assessment": "NOT_CONFIGURED_NOT_RUN",
-      "regenerated_at_utc": "2026-11-16"
+      "regenerated_at_utc": "2026-11-17"
     },
     {
       "filename": "14-report-dependency-graph.png",
-      "bytes": 155145,
-      "sha256": "08d7112e3b66d19c2913520fedb9ea7fc8949b5e657c4f7d031354b62accfc92",
+      "bytes": 147693,
+      "sha256": "9b87e0135e427e55e33f346cc01c36548cc1f1fefad9d9a86bbb56918a4d7689",
       "width": 1440,
       "height": 1020,
-      "evidence_kind": "sanitized_synthetic_fixture_render",
-      "caption": "Section 3 dependency map (English sample run, sanitized synthetic fixture): OBSERVED / INFERRED / UNKNOWN counts, observed vs. undeployed reference tabs and filters, a layered neighborhood graph where dashed amber INFERRED references (ADLS Gen2 and Key Vault hosts outside the ARM inventory) are kept apart from solid OBSERVED native joins, and the complete relationships table.",
+      "evidence_kind": "simulated_fleet_sample_run_render",
+      "caption": "Section 3 dependency map of dbx-analytics-prod (SIMULATED fleet sample run with Contoso names): OBSERVED / INFERRED / UNKNOWN counts, observed vs. undeployed reference tabs and filters, a layered neighborhood graph where the dashed amber INFERRED reference (an ADLS Gen2 account outside the ARM inventory) is kept apart from solid OBSERVED native joins, and the complete relationships table.",
       "callouts": [
         {
           "number": 1,
@@ -729,7 +745,7 @@
             54,
             64,
             1386,
-            315
+            316
           ],
           "badge": [
             21,
@@ -740,18 +756,18 @@
         },
         {
           "number": 2,
-          "meaning": "Layered neighborhood graph (one column per layer) with solid OBSERVED joins, dashed amber INFERRED references and a legend",
+          "meaning": "Layered neighborhood graph (one column per layer) with solid OBSERVED joins, a dashed amber INFERRED reference and a legend",
           "box": [
             63,
-            311,
+            312,
             1377,
             798
           ],
           "badge": [
             30,
-            325,
+            326,
             58,
-            349
+            350
           ]
         },
         {
@@ -774,16 +790,16 @@
       "privacy_and_annotation_pixel_proof": true,
       "PNG_metadata_absent": true,
       "customer_source_assessment": "NOT_CONFIGURED_NOT_RUN",
-      "regenerated_at_utc": "2026-11-16"
+      "regenerated_at_utc": "2026-11-17"
     },
     {
       "filename": "15-report-controls-and-reference.png",
-      "bytes": 139173,
-      "sha256": "32ff6cffe414ec0282090e088ab3606e21779efb6d5351a23face5a7e653a653",
+      "bytes": 138982,
+      "sha256": "5abd958c9d30bafa0b76ecc9e675792d649c5b55de612dc7a0bb8e64cf671cce",
       "width": 1440,
       "height": 1020,
-      "evidence_kind": "sanitized_synthetic_fixture_render",
-      "caption": "Undeployed Azure Databricks Well-Architected Lakehouse reference tab ('Reference proposal - NOT deployed'), kept visually separate from the observed inventory (English sample run, sanitized synthetic fixture).",
+      "evidence_kind": "simulated_fleet_sample_run_render",
+      "caption": "Undeployed Azure Databricks Well-Architected Lakehouse reference tab ('Reference proposal - NOT deployed'), kept visually separate from the observed inventory (SIMULATED fleet sample run with Contoso names, workspace dbx-analytics-prod).",
       "callouts": [
         {
           "number": 1,
@@ -821,25 +837,25 @@
       "privacy_and_annotation_pixel_proof": true,
       "PNG_metadata_absent": true,
       "customer_source_assessment": "NOT_CONFIGURED_NOT_RUN",
-      "regenerated_at_utc": "2026-11-16"
+      "regenerated_at_utc": "2026-11-17"
     },
     {
       "filename": "16-report-source-coverage-ledger.png",
-      "bytes": 122870,
-      "sha256": "52ac390093f8d6cebc981b98b2ad11841dbc953cff6e09415c4e3d63f4d632c8",
+      "bytes": 131100,
+      "sha256": "b31d912e700ce91f45f0ca2a9815f6a12f00a98d172b3e7b75718f6892ba556d",
       "width": 1440,
       "height": 1020,
-      "evidence_kind": "sanitized_synthetic_fixture_render",
-      "caption": "Section 8 source ledger and HTTP receipts (English sample run, sanitized synthetic fixture with Plane 1 ARM reads returning HTTP 403): status summary bars, Plane 1 ARM receipts recorded as Denied (HTTP 403) and Plane 2 Databricks REST / Unity Catalog receipts recorded as Complete.",
+      "evidence_kind": "simulated_fleet_sample_run_render",
+      "caption": "Section 8 source ledger and HTTP receipts of dbx-ml-prod, the sample workspace without in-workspace access (SIMULATED fleet sample run with Contoso names): status summary bars, the Plane 1 ARM receipt recorded as Complete and the Plane 2 Databricks REST / Unity Catalog receipts recorded as Denied (HTTP 403).",
       "callouts": [
         {
           "number": 1,
-          "meaning": "Plane 1 ARM receipts honestly recorded as Denied (HTTP 403, access_denied) when resource-group Reader is pending",
+          "meaning": "Plane 1 ARM receipt recorded as Complete: the Azure-side review (workspace, network, managed resource group, Advisor, cost) still runs",
           "box": [
             59,
             378,
             1381,
-            624
+            430
           ],
           "badge": [
             26,
@@ -850,32 +866,32 @@
         },
         {
           "number": 2,
-          "meaning": "Plane 2 Databricks Workspace and Unity Catalog REST sources recorded as Complete with pages and records",
+          "meaning": "Plane 2 Databricks Workspace and Unity Catalog REST sources recorded as Denied (HTTP 403, access_denied) because the identity was not added inside the workspace; never shown as empty inventories",
           "box": [
             59,
-            620,
+            426,
             1381,
-            1014
+            1013
           ],
           "badge": [
             26,
-            622,
+            428,
             54,
-            646
+            452
           ]
         }
       ],
       "privacy_and_annotation_pixel_proof": true,
       "PNG_metadata_absent": true,
       "customer_source_assessment": "NOT_CONFIGURED_NOT_RUN",
-      "regenerated_at_utc": "2026-11-16"
+      "regenerated_at_utc": "2026-11-17"
     },
     {
       "filename": "17-report-databricks-costs.png",
-      "caption": "Report section 6 'Databricks costs: where they come from and how to optimize them' rendered in English from operation=self_test (built-in SIMULATED workspace, no customer data): month cost and change, DBU vs infrastructure, cost without a compute tag, estimated savings and the three-month trend, DBU by compute type, infrastructure by service and who consumes it.",
-      "evidence_kind": "simulated_self_test_render",
-      "bytes": 195120,
-      "sha256": "bd33eb745618e0cd354c987a305b0b3c0d61561468eaf22b67ca4516d1499b68",
+      "caption": "Report section 6 'Databricks costs: where they come from and how to optimize them' for dbx-analytics-prod (SIMULATED fleet sample run with Contoso names, no customer data): month cost and change, DBU vs infrastructure, cost without a compute tag, estimated savings and the three-month trend, DBU by compute type, infrastructure by service and who consumes it.",
+      "evidence_kind": "simulated_fleet_sample_run_render",
+      "bytes": 195344,
+      "sha256": "033b8c492163c5268d02e46f7fd9d802376176b6e33be771c0edffc986c55b11",
       "width": 1440,
       "height": 1400,
       "callouts": [
@@ -931,14 +947,14 @@
       "privacy_and_annotation_pixel_proof": true,
       "PNG_metadata_absent": true,
       "customer_source_assessment": "NOT_CONFIGURED_NOT_RUN",
-      "regenerated_at_utc": "2026-11-16"
+      "regenerated_at_utc": "2026-11-17"
     },
     {
       "filename": "18-report-databricks-cost-signals.png",
-      "caption": "Report section 6 optimization signals rendered in English from operation=self_test (SIMULATED): count and counted savings, filters and CSV, then each signal with evidence, object, month cost, estimated saving with its basis, the action and a Microsoft Learn link.",
-      "evidence_kind": "simulated_self_test_render",
-      "bytes": 177001,
-      "sha256": "1f208393ff7535a807145e2a80d6f2c933081290c18c447e5ddaba97c71bb060",
+      "caption": "Report section 6 optimization signals for dbx-analytics-prod (SIMULATED fleet sample run with Contoso names): count and counted savings, filters and CSV, then each signal with evidence, object, month cost, estimated saving with its basis, the action and a Microsoft Learn link.",
+      "evidence_kind": "simulated_fleet_sample_run_render",
+      "bytes": 179670,
+      "sha256": "5315472467e6f1995d66923c3fded4e5002899780867f11c15db3cbc69f6ce29",
       "width": 1440,
       "height": 1020,
       "callouts": [
@@ -960,12 +976,12 @@
         },
         {
           "number": 2,
-          "meaning": "Each signal: evidence chips, object and kind, cost of the month, estimated saving with its basis (lower bound or estimate) and what to do with a Microsoft Learn link",
+          "meaning": "Each signal: evidence chips, object and kind, cost of the month, estimated saving with its basis (upper bound or estimate) and what to do with a Microsoft Learn link",
           "box": [
             61,
             269,
             1379,
-            568
+            584
           ],
           "badge": [
             28,
@@ -978,7 +994,86 @@
       "privacy_and_annotation_pixel_proof": true,
       "PNG_metadata_absent": true,
       "customer_source_assessment": "NOT_CONFIGURED_NOT_RUN",
-      "regenerated_at_utc": "2026-11-16"
+      "regenerated_at_utc": "2026-11-17"
+    },
+    {
+      "filename": "19-report-fleet-filters.png",
+      "bytes": 178527,
+      "sha256": "e8c7da6abfb3a92d1396876ee82c42f49adfe82a726bb53becfbc5d9a48472e2",
+      "width": 1440,
+      "height": 1020,
+      "evidence_kind": "simulated_fleet_sample_run_render",
+      "caption": "Fleet overview, the default view of a multi-workspace report (SIMULATED fleet sample run with Contoso names: 4 workspaces in 3 subscriptions, one without in-workspace access): Subscription / Workspace / Search filters, KPI cards over the visible workspaces and one row per workspace.",
+      "callouts": [
+        {
+          "number": 1,
+          "meaning": "Filters: Subscription (All or one subscription by display name, with its workspace count), Workspace (All or one workspace, which opens its detailed review) and Search (name, resource group or region); they drive the KPIs, the fleet table and the findings below",
+          "box": [
+            418,
+            71,
+            1386,
+            121
+          ],
+          "badge": [
+            385,
+            73,
+            413,
+            97
+          ]
+        },
+        {
+          "number": 2,
+          "meaning": "Fleet KPI cards over the visible workspaces: workspaces and collection status, workspaces without in-workspace access, findings by severity, combined local index, combined coverage and cost of the period",
+          "box": [
+            52,
+            329,
+            1388,
+            513
+          ],
+          "badge": [
+            19,
+            331,
+            47,
+            355
+          ]
+        },
+        {
+          "number": 3,
+          "meaning": "One row per workspace: name (opens its detail), subscription, resource group, region / SKU, collection status, in-workspace access, index / coverage, findings by severity and period cost",
+          "box": [
+            60,
+            527,
+            1380,
+            1007
+          ],
+          "badge": [
+            27,
+            529,
+            55,
+            553
+          ]
+        },
+        {
+          "number": 4,
+          "meaning": "dbx-ml-prod: collection Partial and in-workspace access No, with the reason (HTTP 403: identity not added or without permissions, or a network block); its Azure-side review is still delivered",
+          "box": [
+            623,
+            769,
+            931,
+            931
+          ],
+          "badge": [
+            938,
+            838,
+            966,
+            862
+          ]
+        }
+      ],
+      "privacy_and_annotation_pixel_proof": true,
+      "PNG_metadata_absent": true,
+      "customer_source_assessment": "NOT_CONFIGURED_NOT_RUN",
+      "captured_at_utc": "2026-11-17"
     },
     {
       "filename": "newui-menu.png",
