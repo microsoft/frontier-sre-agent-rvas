@@ -4,16 +4,17 @@ Open a new chat in the SRE Agent portal, type `/agent`, pick **sre-usecase-build
 One or two sentences are enough: say **what** you want to know, **how often**, and **why**. Mention where the data lives
 if you know it. If you don't, the builder discovers it or leaves a placeholder for you to fill.
 
-Prompts marked ✅ were run live on a lab agent; each one produced all 4 Builder blocks with no questions.
+Prompts marked ✅ were run live on a lab agent; each one produced all 4 Builder blocks with no questions. Three of them were run
+in Spanish and are shown here in English: the builder answers in the language you write in.
 
 ## 1. Verified prompts
 
 | ✅ | Prompt | Result |
 |---|---|---|
 | ✅ | I need a weekly report of orphaned managed disks (not attached to any VM) across my subscriptions, with size and SKU, so we can clean up waste. | `READY_LIVE_VERIFIED` (Resource Graph) |
-| ✅ | Quiero que cada lunes me avise de los secretos de las aplicaciones de Entra ID que ya han caducado o caducan en los próximos 30 días, para que no se nos caiga ninguna integración. | `READY_LIVE_VERIFIED` (Microsoft Graph) |
-| ✅ | Cada mañana a las 7 quiero saber qué máquinas virtuales están paradas pero no desasignadas (siguen facturando cómputo), en todas mis suscripciones, para que el equipo las desasigne. | `READY_LIVE_VERIFIED` (Resource Graph) |
-| ✅ | Tenemos un Excel en SharePoint donde el equipo de sistemas mantiene el inventario de certificados con su fecha de caducidad. Quiero un informe semanal que lea el último Excel, marque los que caducan en menos de 30 días, lo compare con la semana anterior y deje el informe publicado en SharePoint. | `READY_WITH_INPUTS` (site and folder to fill) |
+| ✅ | Every Monday, warn me about the Entra ID app secrets that have already expired or expire in the next 30 days, so that no integration goes down. | `READY_LIVE_VERIFIED` (Microsoft Graph) |
+| ✅ | Every morning at 7, I want to know which virtual machines are stopped but not deallocated (they still bill compute) across all my subscriptions, so the team can deallocate them. | `READY_LIVE_VERIFIED` (Resource Graph) |
+| ✅ | We keep an Excel file in SharePoint where the systems team tracks the certificate inventory with expiry dates. I want a weekly report that reads the latest Excel file, flags the certificates that expire in less than 30 days, compares it with the previous week and publishes the report in SharePoint. | `READY_WITH_INPUTS` (site and folder to fill) |
 
 ## 2. More ideas by source type
 
@@ -21,19 +22,19 @@ Prompts marked ✅ were run live on a lab agent; each one produced all 4 Builder
 
 - Every morning, list the VMs and Arc servers that stopped sending heartbeat in the last 24 hours, grouped by resource group, using workspace `<workspace name>`.
 - Weekly report of servers with average CPU above 85% or free disk below 10% over the last 7 days.
-- Quiero un informe diario de los errores 5xx de mis Application Gateway en las últimas 24 horas, con las URLs más afectadas.
+- Daily report of the 5xx errors of my Application Gateways in the last 24 hours, with the most affected URLs.
 
 ### Azure Resource Graph / ARM
 
 - Monthly list of high-impact Azure Advisor recommendations per subscription, with what changed since last month.
 - Weekly report of public IPs not associated with any resource, and network interfaces not attached to any VM.
-- Informe mensual de las máquinas sin backup configurado en Recovery Services, por suscripción.
+- Monthly report of the machines without backup configured in Recovery Services, per subscription.
 - Every Monday, list the resources deleted in the last 7 days from the Activity Log, with who deleted them.
 
 ### Cost Management
 
 - Weekly cost by resource group for the last 7 days, highlighting the 10 biggest increases versus the previous week.
-- Informe mensual del coste por servicio y por etiqueta `CostCenter`, marcando lo que no tenga etiqueta.
+- Monthly report of cost by service and by `CostCenter` tag, flagging what has no tag.
 
 ### Microsoft Graph
 
@@ -43,7 +44,7 @@ Prompts marked ✅ were run live on a lab agent; each one produced all 4 Builder
 ### Files in SharePoint or Blob
 
 - Read the latest server inventory CSV in storage account `<account>`, container `inventory`, and flag servers past end of support or without an owner.
-- Lee cada semana el último Excel de la carpeta `Informes/Seguridad` del sitio `https://contoso.sharepoint.com/sites/infra`, compáralo con la semana anterior y publica el informe en la misma carpeta.
+- Every week, read the latest Excel file in the `Reports/Security` folder of the site `https://contoso.sharepoint.com/sites/infra`, compare it with the previous week and publish the report in the same folder.
 
 ### Combine sources in one report
 
@@ -54,7 +55,7 @@ Prompts marked ✅ were run live on a lab agent; each one produced all 4 Builder
 Name the company or its website and the builder reads the logo, colours and font from the public site:
 
 - Weekly report of VMs and Arc servers without heartbeat for Contoso (https://www.contoso.com), with its logo and colours.
-- Quiero un informe semanal de los secretos de Entra ID que caducan en 30 días para Contoso (https://www.contoso.com), con su logo y sus colores, y gráficos por aplicación.
+- Weekly report of the Entra ID secrets that expire in 30 days for Contoso (https://www.contoso.com), with its logo and colours, and charts per application.
 
 ## 3. Follow-up prompts in the same thread
 
