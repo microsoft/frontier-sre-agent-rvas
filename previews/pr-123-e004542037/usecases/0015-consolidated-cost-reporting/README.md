@@ -112,4 +112,7 @@ Monthly, on the 3rd at 07:00 UTC, when the previous month's costs have settled. 
 
 ## Credits
 
-Built and tested by Mario Aguilera ([@marioaguileraaa](https://github.com/marioaguileraaa)). Source: [`15-azure-finops-monthly-review`](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/15-azure-finops-monthly-review) in `marioaguileraaa/sre-agent-use-cases` (MIT), commit `4eb2e90`. The upstream guide has every step with a screenshot, troubleshooting and the acceptance checks. Field guide: [plate 15](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-15). It implements the earlier idea *Consolidated cost reporting*, first listed from [alsanch/azure-sre-agent-scenarios](https://github.com/alsanch/azure-sre-agent-scenarios), and keeps its id.
+- **Built and tested by** Mario Aguilera: [github.com/marioaguileraaa](https://github.com/marioaguileraaa)
+- **Upstream source and step-by-step guide** (every step with a screenshot, troubleshooting and the acceptance checks): [github.com/marioaguileraaa/sre-agent-use-cases/tree/main/15-azure-finops-monthly-review](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/15-azure-finops-monthly-review). MIT license; this entry was converted from commit [`4eb2e90`](https://github.com/marioaguileraaa/sre-agent-use-cases/commit/4eb2e90).
+- **Field guide:** [plate 15](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-15)
+- **Earlier idea:** this entry implements *Consolidated cost reporting*, first listed from [alsanch/azure-sre-agent-scenarios](https://github.com/alsanch/azure-sre-agent-scenarios), and keeps its id.
