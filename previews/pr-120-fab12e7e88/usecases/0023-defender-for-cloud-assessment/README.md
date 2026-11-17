@@ -100,4 +100,7 @@ Monthly, on day 1 at 09:00 UTC. Ask in chat between runs for a fresh, filtered v
 
 ## Credits
 
-Built and tested by Mario Aguilera ([@marioaguileraaa](https://github.com/marioaguileraaa)). Source: [`02-arc-defender-posture-audit`](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/02-arc-defender-posture-audit) in `marioaguileraaa/sre-agent-use-cases` (MIT), commit `4eb2e90`. The upstream guide has every step with a screenshot, troubleshooting and the acceptance checks. Field guide: [plate 02](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-02). It implements the earlier idea *Defender for Cloud assessment*, first listed from [alsanch/azure-sre-agent-scenarios](https://github.com/alsanch/azure-sre-agent-scenarios), and keeps its id.
+- **Built and tested by** Mario Aguilera: [github.com/marioaguileraaa](https://github.com/marioaguileraaa)
+- **Upstream source and step-by-step guide** (every step with a screenshot, troubleshooting and the acceptance checks): [github.com/marioaguileraaa/sre-agent-use-cases/tree/main/02-arc-defender-posture-audit](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/02-arc-defender-posture-audit). MIT license; this entry was converted from commit [`4eb2e90`](https://github.com/marioaguileraaa/sre-agent-use-cases/commit/4eb2e90).
+- **Field guide:** [plate 02](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-02)
+- **Earlier idea:** this entry implements *Defender for Cloud assessment*, first listed from [alsanch/azure-sre-agent-scenarios](https://github.com/alsanch/azure-sre-agent-scenarios), and keeps its id.
