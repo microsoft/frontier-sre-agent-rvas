@@ -1,0 +1,5 @@
+# What `usecases.sh verify` should find on the live agent after deploying this package.
+skills: [rbac-privileged-access-review]
+subagents: [rbac-access-reviewer]
+tools: [generate-rbac-privileged-review]
+scheduledTasks: [monthly-rbac-privileged-access-review]
