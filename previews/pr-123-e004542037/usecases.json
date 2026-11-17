@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-16T19:27:21Z",
+  "generatedAt": "2026-11-17T02:47:35Z",
   "count": 81,
   "domains": [
     {
@@ -2779,7 +2779,7 @@
     },
     {
       "id": "0081-aks-well-architected-review",
-      "status": "built",
+      "status": "validated",
       "title": "AKS configuration and Well-Architected review",
       "summary": "Read-only review of approved AKS clusters, workloads and related resources against best practices for security, cost and optimization.",
       "domain": "platform-devops",
@@ -2849,7 +2849,7 @@
         "task": true,
         "permissions": true,
         "tests": true,
-        "sampleReport": false,
+        "sampleReport": true,
         "images": false
       },
       "readme": "usecases/0081-aks-well-architected-review/README.md",

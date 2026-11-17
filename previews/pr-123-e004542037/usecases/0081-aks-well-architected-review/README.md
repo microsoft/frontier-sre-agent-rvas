@@ -1,8 +1,8 @@
 # AKS configuration and Well-Architected review
 
-![AKS review cover with field marks 1 to 3](docs/images/report-preview.png)
+![AKS review cover: verdict, evidence labels and KPI cards, with field marks 1 to 3](docs/images/report-preview.png)
 
-*Lab run, report in Spanish. 1 Report cover · 2 Evidence labels (observed, lab) · 3 Cluster facts: region, AKS version and state.*
+*Sample run with simulated data. 1 Verdict · 2 Evidence labels (simulated, declared production) · 3 Findings, local index, coverage, cost and workloads.*
 
 > **The problem.** Our Kubernetes clusters grew fast, and we are not sure they follow best practices or what they really cost.
 
@@ -20,7 +20,7 @@ Three permission planes stay separate: ARM reads, the cluster-user credential fo
 | **Delivers** | HTML report, findings CSV, inventory CSV and the complete JSON |
 | **Agent pieces** | Tool `generate-aks-waf-report` · skill `aks-waf-live` · subagent `aks-waf-live` · scheduled task `Monthly AKS configuration review` |
 | **Access** | `Reader` on the clusters' subscriptions, `Azure Kubernetes Service Cluster User Role` and `Azure Kubernetes Service RBAC Reader` on each cluster, and optional `Cost Management Reader` |
-| **Report language** | Spanish |
+| **Report language** | English |
 
 **Compare with:** [Azure Databricks dependency and configuration review](https://microsoft.github.io/frontier-sre-agent-rvas/usecase.html?id=0021-databricks-dependency-configuration-review) · [Monthly Azure FinOps review](https://microsoft.github.io/frontier-sre-agent-rvas/usecase.html?id=0015-consolidated-cost-reporting) · [SKU reliability assessment (idea)](https://github.com/microsoft/frontier-sre-agent-rvas/tree/main/usecases/0068-sku-reliability-assessment)
 
@@ -81,14 +81,18 @@ More prompts, with the expected result of each, are in [`tests/prompts.md`](test
 
 ## Read the report
 
-- **Cover and assessment:** evidence labels, cluster facts and the local index beside coverage and not-evaluated checks.
+- **Cover and assessment:** verdict, evidence labels, cluster facts and the local index beside coverage and not-evaluated checks.
 - **Drill-down:** findings by cluster, workload and associated resource, with the recommendation of each.
 - **Observed architecture and reference design:** what exists today and an undeployed Well-Architected proposal.
 - **FinOps and sources:** measured utilization, billed cost and every source receipt.
 
 ![Observed architecture of the cluster and its associated resources](docs/images/report-observed-architecture.png)
 
-*Observed architecture of the cluster and its associated resources, built only from collected evidence (report in Spanish).*
+*Observed architecture, built only from collected evidence: 1 observed tab, next to the undeployed reference proposal · 2 resource selector · 3 confirmed relationships of the selected resource.*
+
+## Sample report
+
+[`sample-report/`](sample-report/) holds a SIMULATED two-cluster run that the standalone tool wrote from the public test fixture, with fictitious Contoso names (`contoso-aks-prod-01`, `contoso-aks-prod-02`) and placeholder subscription IDs: the [HTML report](sample-report/simulated-20261010T120000Z-4596adfa1b2c.html) (download it and open it in a browser), the findings CSV and the inventory CSV. Nothing was read from Azure. The other GUIDs in it are public: Azure Review Checklist item IDs and the built-in AcrPull role ID. The snapshot JSON (858 KB) is left out because the HTML embeds it (**Full JSON** exports it); the four original files are in the [upstream sample run](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/04-aks-well-architected-review/sample-run).
 
 ## Cadence
 
@@ -100,8 +104,8 @@ The tool in `manifests/tools/` is built from `src/` (engine, report template, ru
 
 ## Status
 
-`built`. Upstream ran it live in a Microsoft lab; single-cluster, multi-cluster and multi-subscription behaviour and the sidecar-token identity fix of 16 November 2026 are covered by the unit tests in `src/tests/`. The report is in Spanish and there is no English sample report yet, so it is not `validated`. The upstream demo AKS lab (`operator/`) is not part of this package.
+`validated`: built, with test prompts in `tests/` and a SIMULATED sample report. Upstream ran it live in a Microsoft lab; single-cluster, multi-cluster and multi-subscription behaviour and the sidecar-token identity fix of 16 November 2026 are covered by the unit tests in `src/tests/`. It has not been deployed from this repository with `usecases.sh deploy` yet. The upstream demo AKS lab (`operator/`) is not part of this package.
 
 ## Credits
 
-Built and tested by Mario Aguilera ([@marioaguileraaa](https://github.com/marioaguileraaa)). Source: [`04-aks-well-architected-review`](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/04-aks-well-architected-review) in `marioaguileraaa/sre-agent-use-cases` (MIT), commit `5341edb`. The upstream guide has every step with a screenshot, troubleshooting and the acceptance checks. Field guide: [plate 04](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-04).
+Built and tested by Mario Aguilera ([@marioaguileraaa](https://github.com/marioaguileraaa)). Source: [`04-aks-well-architected-review`](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/04-aks-well-architected-review) in `marioaguileraaa/sre-agent-use-cases` (MIT), commit `4eb2e90`. The upstream guide has every step with a screenshot, troubleshooting and the acceptance checks. Field guide: [plate 04](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-04).
