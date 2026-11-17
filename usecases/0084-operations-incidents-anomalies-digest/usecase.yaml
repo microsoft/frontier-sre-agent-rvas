@@ -1,0 +1,34 @@
+id: 0084-operations-incidents-anomalies-digest
+status: validated
+title: "Monthly operations incidents and anomalies digest"
+summary: "Monthly read-only digest of alerts, Service Health, failed extensions, telemetry anomalies and Advisor tips, with a prioritized action list."
+domain: management
+trigger: [schedule, chat]
+frequency: "Monthly"
+timeSaved: High
+topPick: false
+products: [azure-monitor, azure-service-health, log-analytics, azure-advisor, azure-sre-agent]
+autonomy: read-only
+samplePrompt: "Generate the monthly operations digest for the previous month and deliver the four files with the prioritised actions."
+source: { type: community, url: "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/10-operations-incidents-anomalies-digest" }
+package:
+  version: 1.0.0
+  apiVersion: azuresre.ai/v1
+  requires:
+    connectors: []
+    roles:
+      - "Reader on the target subscription"
+      - "Log Analytics Reader on the approved workspaces"
+      - "SRE Agent Author and Standard User, or SRE Agent Administrator, for the person deploying"
+  parameters:
+    SUBSCRIPTION_ID: "Target subscription"
+    MANAGED_IDENTITY_CLIENT_ID: "Client ID of the agent user-assigned managed identity"
+    APPROVED_LOG_WORKSPACES: "Approved Log Analytics workspaces for telemetry anomalies (up to 10)"
+    CLIENT_NAME: "Optional organization name on the report"
+    CLIENT_LOGO_DATA_URI: "Optional logo as a data URI"
+  contents:
+    tools: [manifests/tools/generate-operations-digest-report.yaml]
+    skills: [manifests/skills/operations-digest-live/SKILL.md]
+    subagents: [manifests/subagents/operations-digest-live.yaml]
+    scheduledTasks: [manifests/scheduled-tasks/monthly-operations-incidents-anomalies-digest.yaml]
+    permissions: [permissions/grant-operations-digest-reader.ps1]

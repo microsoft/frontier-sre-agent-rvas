@@ -1,0 +1,5 @@
+# What `usecases.sh verify` should find on the live agent after deploying this package.
+skills: [azure-change-digest]
+subagents: [change-digest-reviewer]
+tools: [generate-azure-change-digest]
+scheduledTasks: [daily-relevant-changes-digest]

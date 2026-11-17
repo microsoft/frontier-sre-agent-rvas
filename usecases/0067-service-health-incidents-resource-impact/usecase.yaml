@@ -1,11 +1,33 @@
 id: 0067-service-health-incidents-resource-impact
-status: idea
-title: "Service Health incidents & resource impact"
-summary: "Detects Azure platform incidents and maps them to specific customer resources to quantify blast radius during outages."
+status: validated
+title: "Azure Service Health incidents and planned maintenance review"
+summary: "Monthly read-only review of the Azure incidents and planned maintenance published for a subscription, with the resources that may be affected."
 domain: management
-trigger: [alert]
-frequency: "On new incident"
+trigger: [schedule, chat]
+frequency: "Monthly"
 timeSaved: High
 topPick: true
-samplePrompt: "Check Azure Service Health for any active incidents affecting resources in my subscriptions. Show incident title, affected services, impacted regions, status, and list my specific resources in those regions. For each impacted resource, show current health status and dependent workloads affected. Suggest mitigation actions if available."
-source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }
+products: [azure-service-health, azure-resource-manager, azure-sre-agent]
+autonomy: read-only
+samplePrompt: "Make one generate-service-health-report call with operation=\"report\" and period=\"previous_month\" and deliver the HTML, the complete JSON, the events CSV and the impacted-resources CSV."
+source: { type: community, url: "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/05-service-health-events-review" }
+package:
+  version: 1.0.0
+  apiVersion: azuresre.ai/v1
+  requires:
+    connectors: []
+    roles:
+      - "Reader on the monitored subscription (Microsoft.ResourceHealth/events/read and events/impactedResources/read)"
+      - "SRE Agent Author and Standard User, or SRE Agent Administrator, for the person deploying"
+  parameters:
+    SUBSCRIPTION_ID: "Monitored subscription"
+    TENANT_ID: "Tenant of the monitored subscription"
+    MANAGED_IDENTITY_CLIENT_ID: "Client ID of the agent user-assigned managed identity"
+    CLIENT_NAME: "Optional organization name on the report"
+    COMPANY_LOGO_DATA_URI: "Optional PNG or JPEG logo as a data URI"
+  contents:
+    tools: [manifests/tools/generate-service-health-report.yaml]
+    skills: [manifests/skills/service-health-live/SKILL.md]
+    subagents: [manifests/subagents/service-health-live.yaml]
+    scheduledTasks: [manifests/scheduled-tasks/monthly-service-health-events-review.yaml]
+    permissions: [permissions/grant-service-health-reader.ps1]

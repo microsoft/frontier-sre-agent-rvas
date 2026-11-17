@@ -1,0 +1,1608 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; connect-src 'none'">
+<title>Operations, incidents, anomalies, and recommended actions report</title>
+<style>
+:root {
+  --brand-orange: #FF4E00;
+  --brand-orange-alt: #FC4C00;
+  --brand-orange-text: #C23800;
+  --brand-orange-wash: #FFF2EC;
+  --brand-orange-line: #FFC9AE;
+  --slate-topbar: #141B24;
+  --slate-header: #1C2532;
+  --bg-page: #F6F5F2;
+  --bg-panel: #FFFFFF;
+  --bg-subtle: #F1EEE8;
+  --bg-row-hover: #FAF8F4;
+  --ink-primary: #141B24;
+  --ink-secondary: #3E4C5E;
+  --ink-muted: #5A687A;
+  --border-hairline: #DEDCD6;
+  --border-strong: #9AA5B5;
+  --hero-bg: #1C2532;
+  --hero-deep: #141B24;
+  --hero-ink: #E6EBF1;
+  --hero-muted: #C3CCD8;
+  --hero-line: rgba(255, 255, 255, 0.18);
+  --sev-critical: #B42318;
+  --sev-critical-bg: #FEE4E2;
+  --sev-critical-bar: #D92D20;
+  --sev-high: #B93815;
+  --sev-high-bg: #FFEAD5;
+  --sev-high-bar: #EF6820;
+  --sev-medium: #93370D;
+  --sev-medium-bg: #FEF0C7;
+  --sev-medium-bar: #F79009;
+  --sev-low: #175CD3;
+  --sev-low-bg: #D1E9FF;
+  --sev-low-bar: #2E90FA;
+  --sev-info: #344054;
+  --sev-info-bg: #EAECF0;
+  --sev-info-bar: #98A2B3;
+  --ok: #067647;
+  --ok-bg: #DCFAE6;
+  --note-bg: #FFFAEB;
+  --note-line: #FEDF89;
+  --note-ink: #7A2E0E;
+  --chart: #3E4C5E;
+  --edge: rgba(20, 27, 36, 0.18);
+  --shadow-card: 0 1px 2px rgba(20, 27, 36, 0.04), 0 6px 20px rgba(20, 27, 36, 0.06);
+  --font-sans: 'Outfit', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Consolas', ui-monospace, 'Cascadia Mono', monospace;
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  --brand-orange: #FF5C14;
+  --brand-orange-alt: #FF6B2B;
+  --brand-orange-text: #FF8854;
+  --brand-orange-wash: #2B1A12;
+  --brand-orange-line: #6E3417;
+  --slate-topbar: #0B0F15;
+  --slate-header: #121923;
+  --bg-page: #0F141B;
+  --bg-panel: #161E29;
+  --bg-subtle: #1D2736;
+  --bg-row-hover: #1B2431;
+  --ink-primary: #F3F5F8;
+  --ink-secondary: #CBD5E1;
+  --ink-muted: #9AA8BA;
+  --border-hairline: #2A3647;
+  --border-strong: #475569;
+  --hero-bg: #121923;
+  --hero-deep: #0B0F15;
+  --hero-muted: #B8C3D1;
+  --hero-line: rgba(255, 255, 255, 0.14);
+  --sev-critical: #FDA29B;
+  --sev-critical-bg: rgba(217, 45, 32, 0.22);
+  --sev-high: #F9B87F;
+  --sev-high-bg: rgba(239, 104, 32, 0.22);
+  --sev-medium: #FEC84B;
+  --sev-medium-bg: rgba(247, 144, 9, 0.18);
+  --sev-low: #84CAFF;
+  --sev-low-bg: rgba(46, 144, 250, 0.2);
+  --sev-info: #D0D5DD;
+  --sev-info-bg: rgba(152, 162, 179, 0.2);
+  --ok: #75E0A7;
+  --ok-bg: rgba(23, 178, 106, 0.18);
+  --note-bg: #2A2212;
+  --note-line: #6B571E;
+  --note-ink: #FDE68A;
+  --chart: #9AA8BA;
+  --edge: rgba(0, 0, 0, 0.55);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scrollbar-color: var(--border-strong) var(--bg-page); -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg-page); color: var(--ink-primary); font: 15px/1.55 var(--font-sans); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+::selection { background: #FFD9C7; color: #141B24; }
+a { color: var(--brand-orange-text); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 2px solid var(--brand-orange); outline-offset: 2px; }
+button, input, select { font: inherit; color: inherit; }
+code { font-family: var(--font-mono); font-size: 0.86em; }
+p, li { text-wrap: pretty; }
+h2, h3 { text-wrap: balance; }
+svg { flex: none; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.skip-link { position: absolute; left: 16px; top: -60px; z-index: 60; padding: 8px 14px; border-radius: 8px; background: var(--bg-panel); color: var(--ink-primary); font-weight: 600; box-shadow: var(--shadow-card); }
+.skip-link:focus { top: 12px; }
+.print-only { display: none; }
+.print-only:empty { display: none !important; }
+
+/* Top bar */
+.topbar { position: sticky; top: 0; z-index: 40; background-color: var(--slate-topbar); color: #FFFFFF; border-bottom: 2px solid var(--brand-orange); }
+.topbar-inner { max-width: 1400px; min-height: 58px; margin: 0 auto; padding: 8px 40px; display: flex; align-items: center; gap: 16px; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; color: #FFFFFF; text-decoration: none; }
+.client-plaque { flex-shrink: 0; display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 4px 10px; border-radius: 6px; background: #FFFFFF; color: #141B24; }
+.client-plaque img { display: block; max-height: 24px; width: auto; }
+.client-name-label { font-size: 13px; font-weight: 700; letter-spacing: 0.02em; }
+.brand-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.brand-text b { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.brand-text span { font-size: 12.5px; color: #C3CCD8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.section-nav { display: flex; gap: 2px; margin-left: 12px; }
+.section-nav a { padding: 7px 10px; border-radius: 6px; color: #D5DCE5; font-size: 13.5px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.section-nav a:hover { background: rgba(255, 255, 255, 0.08); color: #FFFFFF; }
+.section-nav a[aria-current="true"] { color: #FFFFFF; box-shadow: inset 0 -2px 0 var(--brand-orange); border-radius: 6px 6px 0 0; }
+.section-nav .n { margin-left: 5px; color: #9FB0C3; font-weight: 500; }
+.toolbar-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.chip-ro { padding: 4px 11px; border: 1px solid rgba(255, 255, 255, 0.24); border-radius: 999px; color: #D5DCE5; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 38px; padding: 0 14px; border: 1px solid transparent; border-radius: 8px; font-size: 13.5px; font-weight: 600; line-height: 1.2; white-space: nowrap; cursor: pointer; text-decoration: none; transition: background-color 150ms ease, border-color 150ms ease, filter 150ms ease; }
+.btn svg { width: 16px; height: 16px; }
+.btn-bar { background: transparent; color: #F3F5F8; border-color: rgba(255, 255, 255, 0.26); }
+.btn-bar:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.45); }
+.btn-primary { background: var(--brand-orange); border-color: var(--brand-orange); color: #141B24; }
+.btn-primary:hover { filter: brightness(1.07); }
+.btn-ghost { background: var(--bg-panel); color: var(--ink-primary); border-color: var(--border-strong); }
+.btn-ghost:hover { background: var(--bg-subtle); border-color: var(--ink-secondary); }
+.btn-bar:focus-visible, .btn-primary:focus-visible { outline-color: #FFFFFF; }
+
+/* Hero */
+.hero { background: linear-gradient(160deg, var(--hero-bg) 0%, var(--hero-deep) 100%); color: var(--hero-ink); padding: 44px 40px 100px; }
+.hero-in { max-width: 1320px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px 48px; align-items: start; }
+.hero h1 { margin: 0; max-width: 24ch; color: #FFFFFF; font-size: 42px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; text-wrap: balance; }
+.hero-scope { margin: 10px 0 0; color: var(--hero-muted); font-size: 15px; }
+.hero-lead { margin: 16px 0 0; max-width: 68ch; font-size: 17px; line-height: 1.55; }
+.hero-lead b { color: #FFFFFF; font-weight: 700; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 0; padding: 0; list-style: none; }
+.meta li { max-width: 100%; padding: 4px 11px; border: 1px solid var(--hero-line); border-radius: 999px; color: var(--hero-muted); font-size: 12.5px; overflow-wrap: anywhere; }
+.meta li.on { color: #FFFFFF; font-weight: 600; border-color: rgba(255, 255, 255, 0.42); }
+.meta li.warn { color: #FEDF89; font-weight: 600; border-color: rgba(254, 223, 137, 0.5); }
+.verdict { padding: 20px 22px; border: 1px solid var(--verdict-line, var(--hero-line)); border-radius: 14px; background: rgba(255, 255, 255, 0.05); }
+.verdict .k { color: var(--hero-muted); font-size: 13px; font-weight: 600; }
+.verdict b { display: block; margin-top: 6px; color: var(--verdict-ink, #FFFFFF); font-size: 28px; line-height: 1.15; font-weight: 700; }
+.verdict p { margin: 8px 0 0; color: var(--hero-muted); font-size: 14px; }
+.verdict p + p { margin-top: 4px; }
+.verdict.crit { --verdict-ink: #FFB4AB; --verdict-line: rgba(255, 180, 171, 0.5); }
+.verdict.warn { --verdict-ink: #FEDF89; --verdict-line: rgba(254, 223, 137, 0.5); }
+.verdict.ok { --verdict-ink: #A6F4C5; --verdict-line: rgba(166, 244, 197, 0.45); }
+.dist { grid-column: 1 / -1; margin-top: 4px; }
+.dist-head { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; color: var(--hero-muted); font-size: 13px; }
+.track { display: flex; height: 12px; overflow: hidden; border-radius: 999px; background: rgba(255, 255, 255, 0.12); }
+.track i { display: block; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; color: var(--hero-muted); font-size: 13px; }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.legend i { width: 10px; height: 10px; border-radius: 3px; }
+.legend b { color: #FFFFFF; }
+
+/* Page body */
+.page { max-width: 1320px; margin: 0 auto; padding: 0 40px 56px; }
+.kpis { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; margin-top: -60px; }
+.kpi { min-width: 0; padding: 16px 18px 18px; border: 1px solid var(--border-hairline); border-radius: 12px; background: var(--bg-panel); box-shadow: var(--shadow-card); }
+.kpi .v { font-size: 36px; line-height: 1; font-weight: 700; letter-spacing: -0.02em; }
+.kpi .l { margin-top: 10px; font-size: 14px; line-height: 1.35; font-weight: 600; }
+.kpi .d { margin-top: 4px; color: var(--ink-muted); font-size: 12.5px; line-height: 1.4; }
+.notes { display: grid; gap: 10px; margin-top: 16px; }
+.notes:empty { display: none; }
+.note { display: flex; align-items: flex-start; gap: 10px; padding: 11px 16px; border: 1px solid var(--note-line); border-radius: 10px; background: var(--note-bg); color: var(--note-ink); font-size: 14px; font-weight: 500; }
+.note svg { width: 18px; height: 18px; margin-top: 1px; }
+.note a { color: inherit; font-weight: 700; }
+.note.sim { background: repeating-linear-gradient(135deg, var(--note-bg) 0 12px, rgba(254, 223, 137, 0.07) 12px 24px), var(--note-bg); }
+html:not([data-theme="dark"]) .note.sim { background: repeating-linear-gradient(135deg, #FFFAEB 0 12px, #FEF0C7 12px 24px); }
+.sec { margin-top: 48px; scroll-margin-top: 80px; }
+.sh { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 8px 24px; margin-bottom: 14px; }
+.sh h2 { margin: 0; font-size: 22px; line-height: 1.3; font-weight: 700; letter-spacing: -0.01em; }
+.sh h3 { margin: 0; font-size: 18px; line-height: 1.3; font-weight: 700; }
+.sub-sh { margin-top: 32px; }
+.why { margin: 4px 0 0; max-width: 75ch; color: var(--ink-muted); font-size: 14px; }
+.count { margin: 0; color: var(--ink-secondary); font-size: 13.5px; white-space: nowrap; }
+.count strong { color: var(--ink-primary); }
+.card { min-width: 0; padding: 20px 22px; border: 1px solid var(--border-hairline); border-radius: 12px; background: var(--bg-panel); box-shadow: var(--shadow-card); }
+.card h3 { margin: 0; font-size: 16.5px; line-height: 1.3; font-weight: 700; }
+.card .sub { margin: 4px 0 14px; color: var(--ink-muted); font-size: 13.5px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.mt { margin-top: 16px; }
+
+/* Overview */
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 6px; }
+.tile { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px 14px; border: 1px solid transparent; border-radius: 10px; background: var(--bg-subtle); text-align: left; cursor: pointer; transition: border-color 150ms ease; }
+.tile:hover { border-color: var(--border-strong); }
+.tile b { font-size: 28px; line-height: 1; font-weight: 700; }
+.tile span { color: var(--ink-secondary); font-size: 12.5px; line-height: 1.35; }
+.tile.imm { border-color: var(--brand-orange-line); background: var(--brand-orange-wash); }
+.tile.imm b { color: var(--brand-orange-text); }
+.todo { margin: 0; padding: 0; list-style: none; }
+.todo li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; padding: 11px 0; border-top: 1px solid var(--border-hairline); }
+.todo li > div { min-width: 0; overflow-wrap: anywhere; }
+.todo .rk { color: var(--ink-muted); font-size: 15px; font-weight: 700; }
+.todo .t { font-size: 14px; line-height: 1.4; font-weight: 600; }
+.todo .m { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 5px; color: var(--ink-muted); font-size: 12.5px; }
+.todo .m > span:last-child { min-width: 0; }
+.more-link { display: inline-block; margin-top: 4px; font-size: 14px; font-weight: 600; }
+.exec-list { margin: 0; padding-left: 18px; max-width: 75ch; }
+.exec-list li { margin: 0 0 8px; font-size: 14.5px; line-height: 1.55; }
+.exec-list li::marker { color: var(--ink-muted); }
+.exec-list b { font-weight: 700; }
+.prov { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; margin: 16px 0 0; padding-top: 14px; border-top: 1px solid var(--border-hairline); font-size: 13.5px; }
+.prov dt { color: var(--ink-muted); }
+.prov dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.bars { display: grid; gap: 2px; }
+.brow { display: grid; grid-template-columns: minmax(110px, 42%) minmax(0, 1fr) 40px; gap: 12px; align-items: center; width: calc(100% + 16px); margin: 0 -8px; padding: 7px 8px; border: 0; border-radius: 8px; background: none; font-size: 14px; text-align: left; cursor: pointer; }
+.brow:hover { background: var(--bg-subtle); }
+.brow .bl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.brow .bl small { margin-left: 6px; color: var(--ink-muted); font-size: 12.5px; }
+.brow .bt { height: 10px; overflow: hidden; border-radius: 999px; background: var(--bg-subtle); }
+.brow:hover .bt { background: var(--bg-panel); }
+.brow .bt i { display: block; height: 100%; min-width: 3px; border-radius: 999px; background: var(--chart); }
+.brow b { text-align: right; font-weight: 700; }
+.dot { display: inline-block; width: 9px; height: 9px; margin-right: 8px; border-radius: 50%; vertical-align: 0; }
+.empty-note { margin: 0; color: var(--ink-muted); font-size: 14px; }
+
+/* Filters */
+.filters { display: grid; grid-template-columns: minmax(220px, 1.5fr) repeat(3, minmax(170px, 1fr)) auto; gap: 12px; align-items: end; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field label { color: var(--ink-secondary); font-size: 13px; font-weight: 600; }
+.field label code { margin-left: 4px; color: var(--ink-muted); font-weight: 500; }
+.control { width: 100%; min-height: 40px; padding: 0 12px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--bg-panel); color: var(--ink-primary); font-size: 14px; }
+.control::placeholder { color: var(--ink-muted); opacity: 1; }
+.control:focus { outline: none; border-color: var(--brand-orange-text); box-shadow: 0 0 0 3px rgba(255, 78, 0, 0.22); }
+.filter-foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px 24px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-hairline); }
+.status-line { margin: 0; color: var(--ink-secondary); font-size: 13.5px; }
+.status-line b { color: var(--ink-primary); }
+.downloads { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.downloads > span { margin-right: 2px; color: var(--ink-muted); font-size: 13px; }
+
+/* Tables */
+.table-card { padding: 0; overflow: hidden; }
+.table-scroll { overflow-x: auto; background: linear-gradient(90deg, var(--bg-panel) 30%, transparent) left / 36px 100% no-repeat local, linear-gradient(270deg, var(--bg-panel) 30%, transparent) right / 36px 100% no-repeat local, radial-gradient(farthest-side at 0 50%, var(--edge), transparent) left / 14px 100% no-repeat scroll, radial-gradient(farthest-side at 100% 50%, var(--edge), transparent) right / 14px 100% no-repeat scroll; }
+.ledger-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.ledger-table th { padding: 10px 12px; border-bottom: 1px solid var(--border-hairline); background: var(--bg-subtle); color: var(--ink-secondary); font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; line-height: 1.35; text-align: left; text-transform: uppercase; vertical-align: bottom; }
+.ledger-table th .hg { white-space: nowrap; }
+.ledger-table td { padding: 12px; border-bottom: 1px solid var(--border-hairline); vertical-align: top; }
+.ledger-table tbody tr:last-child td { border-bottom: 0; }
+.ledger-table tbody tr:hover td { background: var(--bg-row-hover); }
+.ledger-table .n { text-align: right; white-space: nowrap; }
+.ledger-table tr.flash td { background: var(--brand-orange-wash); }
+.ledger-table tr[id] { scroll-margin-top: 90px; }
+.ledger-table tr.pg { display: none; }
+.more-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 16px; padding: 14px 16px; border-top: 1px solid var(--border-hairline); color: var(--ink-muted); font-size: 13px; }
+.more-row[hidden] { display: none; }
+.sort { position: relative; display: inline-block; margin: -4px -16px -4px -6px; padding: 4px 16px 4px 6px; border: 0; border-radius: 4px; background: none; color: inherit; font: inherit; letter-spacing: inherit; line-height: inherit; text-align: left; text-transform: inherit; cursor: pointer; }
+.th-print { display: none; }
+.sort:hover { color: var(--ink-primary); }
+.sort::after { content: ""; position: absolute; right: 4px; bottom: 10px; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid currentColor; opacity: 0; }
+.sort:hover::after { opacity: 0.35; }
+th[aria-sort="ascending"] .sort::after { opacity: 1; border-top: 0; border-bottom: 5px solid currentColor; }
+th[aria-sort="descending"] .sort::after { opacity: 1; }
+th[aria-sort] { color: var(--ink-primary); }
+.empty-row td { padding: 22px 16px; color: var(--ink-muted); }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; line-height: 1.3; white-space: nowrap; }
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.pill.critical { color: var(--sev-critical); background: var(--sev-critical-bg); }
+.pill.high { color: var(--sev-high); background: var(--sev-high-bg); }
+.pill.medium { color: var(--sev-medium); background: var(--sev-medium-bg); }
+.pill.low { color: var(--sev-low); background: var(--sev-low-bg); }
+.pill.info { color: var(--sev-info); background: var(--sev-info-bg); }
+.pill.ok { color: var(--ok); background: var(--ok-bg); }
+.tag { display: inline-block; padding: 2px 9px; border: 1px solid var(--border-hairline); border-radius: 6px; background: var(--bg-subtle); color: var(--ink-secondary); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.tag.immediate_24h { border-color: var(--brand-orange-line); background: var(--brand-orange-wash); color: var(--brand-orange-text); }
+.id { color: var(--ink-secondary); font-family: var(--font-mono); font-size: 12.5px; white-space: nowrap; }
+.sm { display: block; margin-top: 3px; color: var(--ink-muted); font-size: 12.5px; line-height: 1.45; }
+.stack > * + * { margin-top: 6px; }
+.res b { display: block; font-weight: 600; overflow-wrap: anywhere; }
+.code { color: var(--ink-secondary); font-family: var(--font-mono); font-size: 12px; }
+.ext { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.ext svg { width: 12px; height: 12px; }
+.ids { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip-id { padding: 2px 7px; border: 1px solid var(--border-hairline); border-radius: 6px; background: var(--bg-subtle); color: var(--ink-secondary); font-family: var(--font-mono); font-size: 12px; text-decoration: none; white-space: nowrap; }
+a.chip-id:hover { border-color: var(--brand-orange-text); color: var(--brand-orange-text); }
+.state { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; white-space: nowrap; }
+.state::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--sev-info-bar); }
+.state.on::before { background: var(--sev-high-bar); }
+.rank { font-size: 16px; font-weight: 700; }
+.wide { min-width: 280px; overflow-wrap: anywhere; }
+.w3 { min-width: 250px; overflow-wrap: anywhere; }
+.w2 { min-width: 170px; overflow-wrap: anywhere; }
+.w1 { min-width: 150px; }
+.nw { white-space: nowrap; }
+.errbox { margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: var(--sev-critical-bg); color: var(--sev-critical); font-size: 12.5px; line-height: 1.45; }
+.wslist { margin: 6px 0 0; padding: 0; list-style: none; color: var(--ink-muted); font-size: 12.5px; }
+.plain-list { margin: 14px 0 0; padding-left: 18px; color: var(--ink-secondary); font-size: 14px; }
+.plain-list li { margin-bottom: 6px; }
+.report-error { margin-top: 24px; }
+
+/* Footer */
+.foot { max-width: 1320px; margin: 0 auto; padding: 20px 40px 40px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; color: var(--ink-muted); font-size: 13px; }
+.foot-in { border-top: 1px solid var(--border-hairline); }
+
+.topbar:has(#client-logo-img) .brand-text span { display: none; }
+@media (max-width: 1300px) {
+  .topbar:has(#client-logo-img) .section-nav { display: none; }
+}
+@media (max-width: 760px) {
+  .topbar:has(#client-logo-img) .client-name-label { display: none; }
+}
+@media (max-width: 1360px) {
+  #theme-toggle { min-width: 40px; padding: 0 10px; }
+  #theme-toggle .lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+@media (max-width: 1220px) {
+  .section-nav { display: none; }
+}
+@media (max-width: 1100px) {
+  .hero-in { grid-template-columns: minmax(0, 1fr); }
+  .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .grid2 { grid-template-columns: minmax(0, 1fr); }
+  .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .topbar-inner { gap: 10px; padding: 8px 16px; }
+  .chip-ro { display: none; }
+  .brand-text span, .btn .lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .btn-bar, .btn-primary { min-width: 40px; padding: 0 10px; }
+  .hero { padding: 28px 16px 84px; }
+  .hero h1 { font-size: 30px; }
+  .hero-lead { font-size: 15.5px; }
+  .verdict b { font-size: 24px; }
+  .page { padding: 0 16px 40px; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: -56px; }
+  .kpi { padding: 14px; }
+  .kpi .v { font-size: 30px; }
+  .sec { margin-top: 36px; }
+  .sh h2 { font-size: 20px; }
+  .card { padding: 16px; }
+  .tiles { gap: 8px; }
+  .tile { padding: 10px; }
+  .tile b { font-size: 24px; }
+  .filters { grid-template-columns: minmax(0, 1fr); }
+  .brow { grid-template-columns: minmax(0, 1fr) 36px; row-gap: 6px; }
+  .brow .bt { grid-column: 1 / -1; grid-row: 2; }
+  .foot { padding: 16px 16px 32px; }
+}
+@media (max-width: 360px) {
+  .topbar-inner { gap: 8px; padding: 8px 12px; }
+  .brand { gap: 8px; }
+  .client-plaque { padding: 4px 7px; }
+  .client-name-label { font-size: 12px; }
+  .brand-text b { font-size: 13px; }
+}
+@media (max-width: 340px) {
+  .brand-text { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+@page { size: A4 landscape; margin: 10mm 10mm 14mm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 8.5pt 'Segoe UI', sans-serif; color: #5A687A; } }
+@media print {
+  html, html[data-theme="dark"] {
+    --bg-page: #FFFFFF; --bg-panel: #FFFFFF; --bg-subtle: #F1EEE8; --bg-row-hover: #FFFFFF;
+    --ink-primary: #141B24; --ink-secondary: #3E4C5E; --ink-muted: #5A687A;
+    --border-hairline: #DEDCD6; --border-strong: #9AA5B5;
+    --brand-orange-text: #C23800; --brand-orange-wash: #FFF2EC; --brand-orange-line: #FFC9AE;
+    --hero-bg: #1C2532; --hero-deep: #141B24; --hero-muted: #C3CCD8;
+    --sev-critical: #B42318; --sev-critical-bg: #FEE4E2; --sev-high: #B93815; --sev-high-bg: #FFEAD5;
+    --sev-medium: #93370D; --sev-medium-bg: #FEF0C7; --sev-low: #175CD3; --sev-low-bg: #D1E9FF;
+    --sev-info: #344054; --sev-info-bg: #EAECF0; --ok: #067647; --ok-bg: #DCFAE6;
+    --note-bg: #FFFAEB; --note-line: #FEDF89; --note-ink: #7A2E0E; --chart: #3E4C5E;
+    color-scheme: light;
+  }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { background: #FFFFFF; font-size: 11.5px; }
+  .topbar { position: static; background-color: #FFFFFF; color: #141B24; border-bottom: 0; }
+  .topbar-inner { min-height: 0; padding: 0 0 8px; }
+  .brand { color: #141B24; }
+  .client-plaque { border: 1px solid #DEDCD6; }
+  .brand-text span { color: #5A687A; }
+  .chip-ro { display: inline-block; color: #3E4C5E; border-color: #DEDCD6; }
+  .section-nav, #theme-toggle, #btn-print, .skip-link, #sec-filters, .downloads, .more-link, .more-row { display: none !important; }
+  .ledger-table tr.pg { display: table-row; }
+  .print-only { display: block; }
+  .hero { padding: 22px 24px 70px; border-radius: 12px; }
+  .hero h1 { font-size: 30px; max-width: none; }
+  .hero-lead { font-size: 13.5px; }
+  .hero-in { grid-template-columns: minmax(0, 1fr) 260px; gap: 14px 28px; }
+  .verdict b { font-size: 21px; }
+  .page { padding: 0; max-width: none; }
+  .kpis { grid-template-columns: repeat(6, minmax(0, 1fr)); margin-top: -50px; }
+  .kpi .v { font-size: 26px; }
+  .kpi, .card, .note, .brow, .verdict, .todo li, .tile, .ledger-table tr { break-inside: avoid; }
+  .card.table-card { break-inside: auto; }
+  .card, .kpi { box-shadow: none; }
+  .grid2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sec { margin-top: 20px; }
+  .sh { break-after: avoid; }
+  .table-card { overflow: visible; }
+  .table-scroll { overflow: visible; background: none; }
+  .ledger-table { font-size: 10.5px; }
+  .ledger-table th { font-size: 9.5px; padding: 6px 8px; }
+  .ledger-table td { padding: 6px 8px; overflow-wrap: break-word; }
+  .ledger-table td.wide, .ledger-table td.w2, .ledger-table td.w3 { overflow-wrap: anywhere; }
+  .ledger-table thead { display: table-header-group; }
+  .ledger-table .sm, .ledger-table .ext, .ledger-table .pill, .ledger-table .tag, .ledger-table .state { font-size: 9.5px; }
+  .ledger-table .id, .ledger-table .code, .ledger-table .chip-id { font-size: 9.5px; }
+  .ledger-table .rank { font-size: 12px; }
+  .brow .bl { white-space: normal; }
+  .brow .bl small { display: block; margin: 1px 0 0 17px; }
+  .wide, .w1, .w2, .w3 { min-width: 0; }
+  .sort { display: none !important; }
+  .th-print { display: inline; }
+  .ext svg { display: none; }
+  a { text-decoration: none; }
+  .foot { padding: 12px 0 0; max-width: none; }
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#report-body">Skip to content</a>
+<header class="topbar" id="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#top" aria-label="Top of the report">
+      <span class="client-plaque" id="client-plaque">
+        <span id="client-logo-slot"></span>
+        <span class="client-name-label" id="client-name-label">Customer</span>
+      </span>
+      <span class="brand-text"><b>Azure SRE Agent</b><span id="topbar-subtitle">Operations digest</span></span>
+    </a>
+    <nav class="section-nav" id="section-nav" aria-label="Report sections">
+      <a href="#sec-executive">Summary</a>
+      <a href="#sec-incidents">Incidents<span class="n" id="nav-incidents-count">0</span></a>
+      <a href="#sec-anomalies">Anomalies<span class="n" id="nav-anomalies-count">0</span></a>
+      <a href="#sec-actions">Actions<span class="n" id="nav-actions-count">0</span></a>
+      <a href="#sec-resources">Resources<span class="n" id="nav-resources-count">0</span></a>
+      <a href="#sec-coverage">Coverage<span class="n" id="nav-sources-count">0</span></a>
+    </nav>
+    <div class="toolbar-actions">
+      <span class="chip-ro">Read-only</span>
+      <button type="button" class="btn btn-bar" id="theme-toggle" title="Dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg><span class="lbl">Dark mode</span></button>
+      <button type="button" class="btn btn-primary" id="btn-print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z"/></svg><span class="lbl">Print / PDF</span></button>
+    </div>
+  </div>
+</header>
+
+<main id="report-body">
+  <section class="hero" id="top" aria-labelledby="cover-title">
+    <div class="hero-in">
+      <div>
+        <h1 id="cover-title">Incidents, anomalies, and recommended actions</h1>
+        <p class="hero-scope" id="hero-scope">Periodic Azure operations report</p>
+        <p class="hero-lead" id="hero-lead"></p>
+        <ul class="meta" id="hero-meta" aria-label="Report context"></ul>
+      </div>
+      <aside class="verdict" id="verdict-card" aria-label="Verdict">
+        <div class="k">Verdict</div>
+        <b id="verdict-title">—</b>
+        <p id="verdict-detail"></p>
+        <p id="verdict-sub"></p>
+      </aside>
+      <div class="dist" id="evidence-distribution-bar">
+        <div class="dist-head"><span>Severity of incidents and anomalies</span><span id="dist-total-label">0 signals</span></div>
+        <div class="track" id="dist-track" role="img" aria-label="Distribution by severity"></div>
+        <div class="legend" id="dist-legend"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="page">
+    <div class="kpis" id="ledger-summary-grid">
+      <div class="kpi"><div class="v" id="kpi-native-alerts">0</div><div class="l">Azure Monitor alerts</div><div class="d" id="kpi-native-alerts-sub">alertsmanagementresources</div></div>
+      <div class="kpi"><div class="v" id="kpi-service-health">0</div><div class="l">Service Health communications</div><div class="d" id="kpi-service-health-sub">ServiceIssue and PlannedMaintenance</div></div>
+      <div class="kpi"><div class="v" id="kpi-posture-anomalies">0</div><div class="l">Control plane and Arc anomalies</div><div class="d" id="kpi-posture-anomalies-sub">Failed extensions and connectivity</div></div>
+      <div class="kpi"><div class="v" id="kpi-telemetry-anomalies">0</div><div class="l">Telemetry anomalies</div><div class="d" id="kpi-telemetry-anomalies-sub">InsightsMetrics, Perf, and Heartbeat</div></div>
+      <div class="kpi"><div class="v" id="kpi-actions-total">0</div><div class="l">Recommended actions</div><div class="d" id="kpi-actions-sub">Prioritized by horizon</div></div>
+      <div class="kpi"><div class="v" id="kpi-resources-total">0</div><div class="l">Resources in scope</div><div class="d" id="kpi-resources-sub">0 with active findings</div></div>
+    </div>
+    <div class="notes" id="status-notes"></div>
+
+    <section class="sec" id="sec-executive" aria-labelledby="h-executive">
+      <div class="sh"><div><h2 id="h-executive">Period summary</h2><p class="why">What needs attention first, and where the signals of the evaluated window come from.</p></div></div>
+      <div class="grid2">
+        <div class="card">
+          <h3>What to do now</h3>
+          <p class="sub">Prioritized actions for human review; each one cites the evidence behind it.</p>
+          <div class="tiles" id="horizon-tiles"></div>
+          <ol class="todo" id="top-actions"></ol>
+          <a class="more-link" href="#sec-actions" id="all-actions-link">See all actions</a>
+        </div>
+        <div class="card">
+          <h3>Executive summary</h3>
+          <p class="sub">The essentials of the period, calculated from the sources read.</p>
+          <ul class="exec-list" id="executive-messages-list"></ul>
+          <dl class="prov" id="provenance-strip">
+            <dt>Azure subscription</dt><dd class="code" id="prov-subscription">—</dd>
+            <dt>Evaluation window</dt><dd id="prov-window-label">—</dd>
+            <dt>Exact UTC interval</dt><dd id="prov-window-range">—</dd>
+            <dt>Cadence</dt><dd id="prov-cadence">—</dd>
+            <dt>Data provenance</dt><dd id="prov-provenance">—</dd>
+            <dt>Reference time (UTC)</dt><dd id="reference-utc-label">—</dd>
+          </dl>
+        </div>
+        <div class="card">
+          <h3>Signals by evidence stream</h3>
+          <p class="sub">Each bar filters the records by that stream.</p>
+          <div class="bars" id="stream-bars"></div>
+        </div>
+        <div class="card">
+          <h3>Resources with the most signals</h3>
+          <p class="sub">Incidents plus anomalies per resource: where the review starts.</p>
+          <div class="bars" id="resource-bars"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec" id="sec-filters" aria-labelledby="h-filters">
+      <div class="sh"><div><h2 id="h-filters">Filter records</h2><p class="why">The filters narrow incidents, anomalies, actions, resources, and Advisor at the same time. Downloads always include every record.</p></div></div>
+      <div class="card">
+        <div class="filters">
+          <div class="field">
+            <label for="filter-search">Search</label>
+            <input type="search" class="control" id="filter-search" placeholder="Resource, ID, extension, or metric" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="filter-category">Evidence stream <code>category</code></label>
+            <select class="control" id="filter-category">
+              <option value="all">All categories</option>
+              <option value="native_alert">Azure Monitor native alerts</option>
+              <option value="service_health">Azure Service Health communications</option>
+              <option value="extension_failure">VM / Azure Arc extension failures</option>
+              <option value="connectivity_posture">Connectivity / control plane anomalies</option>
+              <option value="telemetry_anomaly">Telemetry anomalies (CPU / Memory / Disk / Heartbeat)</option>
+              <option value="advisor_recommendation">Azure Advisor recommendations</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="filter-severity">Severity <code>severity</code></label>
+            <select class="control" id="filter-severity">
+              <option value="all">All severities</option>
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="filter-horizon">Action horizon <code>horizon</code></label>
+            <select class="control" id="filter-horizon">
+              <option value="all">All horizons</option>
+              <option value="immediate_24h">Immediate &lt;24h</option>
+              <option value="short_term_7d">Short term 1-7 days</option>
+              <option value="monthly_cycle">Monthly cycle</option>
+            </select>
+          </div>
+          <button type="button" class="btn btn-ghost" id="filter-reset">Reset</button>
+        </div>
+        <div class="filter-foot">
+          <p class="status-line" id="filter-status-summary" aria-live="polite">Showing every collected record</p>
+          <div class="downloads">
+            <span>Local downloads:</span>
+            <button type="button" class="btn btn-ghost" id="btn-export-json"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M4 21h16"/></svg>Full JSON</button>
+            <button type="button" class="btn btn-ghost" id="btn-export-incidents-csv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M4 21h16"/></svg>Incidents and anomalies CSV</button>
+            <button type="button" class="btn btn-ghost" id="btn-export-actions-csv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M4 21h16"/></svg>Recommended actions CSV</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <p class="print-only status-line" id="print-filter-note"></p>
+
+    <section class="sec" id="sec-incidents" aria-labelledby="h-incidents">
+      <div class="sh"><div><h2 id="h-incidents">Incidents and platform communications</h2><p class="why">Azure Monitor native alerts and official Service Health communications in the window: what already happened or is still active.</p></div><p class="count"><strong id="incidents-count">0</strong> of <span id="incidents-total">0</span> incidents</p></div>
+      <div class="card table-card"><div class="table-scroll" tabindex="0" role="region" aria-labelledby="h-incidents">
+        <table class="ledger-table" id="incidents-table"><caption class="sr-only">Incidents and platform communications</caption><thead></thead><tbody id="incidents-tbody"></tbody></table>
+      </div></div>
+    </section>
+
+    <section class="sec" id="sec-anomalies" aria-labelledby="h-anomalies">
+      <div class="sh"><div><h2 id="h-anomalies">Technical anomalies</h2><p class="why">Deviations detected by the agent: failed extensions, control plane posture, and out-of-range telemetry.</p></div><p class="count"><strong id="anomalies-count">0</strong> of <span id="anomalies-total">0</span> anomalies</p></div>
+      <div class="card table-card"><div class="table-scroll" tabindex="0" role="region" aria-labelledby="h-anomalies">
+        <table class="ledger-table" id="anomalies-table"><caption class="sr-only">Technical anomalies</caption><thead></thead><tbody id="anomalies-tbody"></tbody></table>
+      </div></div>
+    </section>
+
+    <section class="sec" id="sec-actions" aria-labelledby="h-actions">
+      <div class="sh"><div><h2 id="h-actions">Prioritized recommended actions</h2><p class="why">Plan ordered by urgency for human review. Each action links the evidence behind it; the agent doesn't make any changes.</p></div><p class="count"><strong id="actions-count">0</strong> of <span id="actions-total">0</span> actions</p></div>
+      <div class="card table-card"><div class="table-scroll" tabindex="0" role="region" aria-labelledby="h-actions">
+        <table class="ledger-table" id="actions-table"><caption class="sr-only">Prioritized recommended actions</caption><thead></thead><tbody id="actions-tbody"></tbody></table>
+      </div></div>
+    </section>
+
+    <section class="sec" id="sec-resources" aria-labelledby="h-resources">
+      <div class="sh"><div><h2 id="h-resources">Status by resource</h2><p class="why">Every inventoried resource with its incidents, anomalies, extensions, and actions; resources with active findings first.</p></div><p class="count"><strong id="resources-count">0</strong> of <span id="resources-total">0</span> resources</p></div>
+      <div class="card table-card"><div class="table-scroll" tabindex="0" role="region" aria-labelledby="h-resources">
+        <table class="ledger-table" id="resources-table"><caption class="sr-only">Operational status by resource</caption><thead></thead><tbody id="resources-tbody"></tbody></table>
+      </div></div>
+      <div class="sh sub-sh"><div><h3 id="h-advisor">Azure Advisor recommendations</h3><p class="why">Cached recommendations from <code>arm_advisor_recommendations</code>, correlated with the action plan.</p></div><p class="count"><strong id="advisor-count">0</strong> of <span id="advisor-total">0</span> recommendations</p></div>
+      <div class="card table-card"><div class="table-scroll" tabindex="0" role="region" aria-labelledby="h-advisor">
+        <table class="ledger-table" id="advisor-table"><caption class="sr-only">Azure Advisor recommendations</caption><thead></thead><tbody id="advisor-tbody"></tbody></table>
+      </div></div>
+    </section>
+
+    <section class="sec" id="sec-coverage" aria-labelledby="h-coverage">
+      <div class="sh"><div><h2 id="h-coverage">Source coverage and method</h2><p class="why">What was read and with what result. A partial source is a blind spot, not a clean result.</p></div><p class="count"><strong id="sources-count">0</strong> sources</p></div>
+      <div class="card table-card"><div class="table-scroll" tabindex="0" role="region" aria-labelledby="h-coverage">
+        <table class="ledger-table" id="sources-table"><caption class="sr-only">Coverage receipts by source</caption><thead></thead><tbody id="sources-tbody"></tbody></table>
+      </div></div>
+      <div class="grid2 mt">
+        <div class="card">
+          <h3>Operational guarantees and limitations</h3>
+          <p class="sub">What this report doesn't claim.</p>
+          <ul class="exec-list" id="methodology-list"></ul>
+        </div>
+        <div class="card">
+          <h3>Method</h3>
+          <p class="sub">Run parameters and the evidence streams queried in read-only mode.</p>
+          <dl class="prov" id="method-facts" style="margin-top:0;padding-top:0;border-top:0"></dl>
+          <ul class="plain-list mt" id="method-streams"></ul>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="foot-in"><div class="foot" id="report-footer"><span id="footer-left">Generated by Azure SRE Agent · Read-only</span><span id="footer-right"></span></div></footer>
+
+<script type="application/json" id="report-data">__REPORT_DATA_JSON__</script>
+<script>
+(function () {
+  "use strict";
+
+  var SEV_RANK = { critical: 0, high: 1, medium: 2, low: 3 };
+  var SEV_LABEL = { critical: "Critical", high: "High", medium: "Medium", low: "Low" };
+  var SEV_WORDS = { critical: ["critical", "critical"], high: ["high", "high"], medium: ["medium", "medium"], low: ["low", "low"] };
+  var SEV_BAR = { critical: "--sev-critical-bar", high: "--sev-high-bar", medium: "--sev-medium-bar", low: "--sev-low-bar" };
+  var HORIZON_RANK = { immediate_24h: 0, short_term_7d: 1, monthly_cycle: 2 };
+  var STATUS = { complete: ["Complete", "ok"], partial: ["Partial", "medium"], denied: ["Denied", "critical"], error: ["Error", "critical"], not_configured: ["Not configured", "info"] };
+  var SHORT_CAT = {
+    native_alert: "Azure Monitor alert",
+    service_health: "Service Health",
+    extension_failure: "Failed extension",
+    connectivity_posture: "Control plane",
+    telemetry_anomaly: "Telemetry",
+    advisor_recommendation: "Azure Advisor"
+  };
+  var UNIT = { Percent: "%", Minutes: "min", MB: "MB", State: "" };
+  var TYPE_LABEL = {
+    "microsoft.compute/virtualmachines": "Virtual machine",
+    "microsoft.compute/virtualmachinescalesets": "Virtual machine scale set",
+    "microsoft.hybridcompute/machines": "Azure Arc server",
+    "microsoft.kubernetes/connectedclusters": "Azure Arc-enabled Kubernetes",
+    "microsoft.containerservice/managedclusters": "AKS cluster",
+    "microsoft.app/containerapps": "Container App",
+    "microsoft.web/sites": "App Service",
+    "microsoft.web/serverfarms": "App Service plan",
+    "microsoft.storage/storageaccounts": "Storage account",
+    "microsoft.keyvault/vaults": "Key Vault",
+    "microsoft.sql/servers/databases": "SQL database",
+    "microsoft.dbforpostgresql/flexibleservers": "PostgreSQL flexible server",
+    "microsoft.cache/redis": "Azure Cache for Redis",
+    "microsoft.operationalinsights/workspaces": "Log Analytics workspace",
+    "microsoft.resourcehealth/events": "Service Health"
+  };
+  var PATHS = {
+    ext: "M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5",
+    alert: "M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z",
+    moon: "M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z",
+    sun: "M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"
+  };
+  var REDUCED = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function el(tag, attrs, children) {
+    var node = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (k) {
+        if (k === "className") {
+          node.className = attrs[k];
+        } else if (k === "textContent") {
+          node.textContent = attrs[k];
+        } else if (attrs[k] !== null && attrs[k] !== undefined) {
+          node.setAttribute(k, String(attrs[k]));
+        }
+      });
+    }
+    (children || []).forEach(function (ch) {
+      if (ch === null || ch === undefined || ch === false) {
+        return;
+      }
+      node.appendChild(typeof ch === "string" || typeof ch === "number" ? document.createTextNode(String(ch)) : ch);
+    });
+    return node;
+  }
+
+  function clear(node) {
+    while (node.firstChild) {
+      node.removeChild(node.firstChild);
+    }
+  }
+
+  function icon(name) {
+    var ns = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(ns, "svg");
+    var attrs = { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" };
+    Object.keys(attrs).forEach(function (k) { svg.setAttribute(k, attrs[k]); });
+    var path = document.createElementNS(ns, "path");
+    path.setAttribute("d", PATHS[name]);
+    svg.appendChild(path);
+    return svg;
+  }
+
+  var dataNode = document.getElementById("report-data");
+  var DATA;
+  try {
+    DATA = JSON.parse(dataNode.textContent);
+  } catch (err) {
+    var holder = document.querySelector(".page");
+    clear(holder);
+    holder.appendChild(el("div", { className: "note report-error", role: "alert" }, [icon("alert"), el("span", null, ["Couldn't read the embedded data model. Generate the report with the tool (operation=\"report\") instead of opening the template directly."])]));
+    return;
+  }
+  var COUNTS = DATA.counts || {};
+
+  function n(value) {
+    var v = Number(value) || 0;
+    return Math.round(v) === v ? String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ",") : String(v);
+  }
+
+  function plural(count, one, many) {
+    return Number(count) === 1 ? one : many;
+  }
+
+  function b(value) {
+    return el("b", { textContent: n(value) });
+  }
+
+  function utc(value) {
+    if (!value) {
+      return "—";
+    }
+    return String(value).replace("T", " ").replace(/:\d{2}(\.\d+)?Z$/, "").replace(/Z$/, "");
+  }
+
+  function plain(value) {
+    if (value === null || value === undefined) {
+      return "";
+    }
+    var s = String(value);
+    if (!/[<&]/.test(s)) {
+      return s;
+    }
+    var doc = new DOMParser().parseFromString(s.replace(/<\/(p|div|li|h[1-6]|tr|ul|ol)>|<br\s*\/?>/gi, " $& "), "text/html");
+    return (doc.body.textContent || "").replace(/\s+/g, " ").trim();
+  }
+
+  function breakable(value, cls) {
+    var span = el("span", { className: cls === undefined ? "code" : cls || null });
+    var buf = "";
+    String(value === null || value === undefined ? "" : value).split("").forEach(function (ch) {
+      buf += ch;
+      if ("/.?&=_".indexOf(ch) >= 0) {
+        span.appendChild(document.createTextNode(buf));
+        span.appendChild(document.createElement("wbr"));
+        buf = "";
+      }
+    });
+    if (buf) {
+      span.appendChild(document.createTextNode(buf));
+    }
+    return span;
+  }
+
+  function prose(value) {
+    var text = plain(value);
+    var span = el("span");
+    var last = 0;
+    text.replace(/[A-Za-z)][\/.](?=[A-Za-z(])/g, function (match, offset) {
+      var cut = offset + match.length;
+      span.appendChild(document.createTextNode(text.slice(last, cut)));
+      span.appendChild(document.createElement("wbr"));
+      last = cut;
+      return match;
+    });
+    span.appendChild(document.createTextNode(text.slice(last)));
+    return span;
+  }
+
+  function withName(text, name) {
+    var s = String(text || "");
+    var at = name && name.length <= 32 ? s.indexOf(name) : -1;
+    if (at < 0) {
+      return [s];
+    }
+    return [s.slice(0, at), el("span", { className: "nw", textContent: name }), s.slice(at + name.length)];
+  }
+
+  function sevKey(row) {
+    return SEV_RANK.hasOwnProperty(row.severity) ? SEV_RANK[row.severity] : 9;
+  }
+
+  function pill(sev, label, title) {
+    var tone = SEV_RANK.hasOwnProperty(sev) || sev === "ok" || sev === "info" ? sev : "info";
+    return el("span", { className: "pill " + tone, textContent: label || SEV_LABEL[sev] || String(sev || "—"), title: title || null });
+  }
+
+  function extLink(href, label) {
+    if (typeof href !== "string" || !/^https:\/\//.test(href)) {
+      return null;
+    }
+    return el("a", { className: "ext", href: href, target: "_blank", rel: "noopener noreferrer" }, [label, icon("ext")]);
+  }
+
+  function portalUrl(id) {
+    return typeof id === "string" && /^\/subscriptions\/[^/]+\/(resourcegroups|providers)\/[^?#]+$/i.test(id)
+      ? "https://portal.azure.com/#@/resource" + id
+      : null;
+  }
+
+  function typeLabel(type) {
+    var t = String(type || "").toLowerCase();
+    return TYPE_LABEL[t] || t.split("/").pop() || "";
+  }
+
+  function rgLabel(rg) {
+    return rg === "subscription-scope" ? "Subscription scope" : (rg || "");
+  }
+
+  function resourceCell(name, rg, type, id, extra) {
+    var meta = [rgLabel(rg), type ? typeLabel(type) : "", extra || ""].filter(Boolean).join(" · ");
+    return el("div", { className: "res", title: id || null }, [
+      el("b", { textContent: name || "—" }),
+      meta ? el("span", { className: "sm", textContent: meta, title: type || null }) : null,
+      portalUrl(id) ? extLink(portalUrl(id), "Portal") : null
+    ]);
+  }
+
+  function idCell(row) {
+    return [el("span", { className: "id", textContent: row.id }), el("span", { className: "sm", textContent: SHORT_CAT[row.category] || row.category_label || "", title: row.category_label || null })];
+  }
+
+  function withUnit(value, unit) {
+    var u = UNIT.hasOwnProperty(unit) ? UNIT[unit] : (unit || "");
+    var text = typeof value === "number" ? n(value) : String(value === null || value === undefined ? "—" : value);
+    return u ? text + (u === "%" ? "" : "\u00a0") + u : text;
+  }
+
+  /* ---------- Header, hero and KPIs ---------- */
+
+  function renderBranding() {
+    var client = DATA.client || {};
+    var nameLabel = document.getElementById("client-name-label");
+    var logoSlot = document.getElementById("client-logo-slot");
+    clear(logoSlot);
+    nameLabel.textContent = client.name || "Customer";
+    if (client.logo_data_uri && /^data:image\/(png|jpeg);base64,/.test(client.logo_data_uri)) {
+      logoSlot.appendChild(el("img", { id: "client-logo-img", src: client.logo_data_uri, alt: client.logo_alt || "Authorized customer logo" }));
+    }
+  }
+
+  function verdict() {
+    var sb = COUNTS.severity_breakdown || {};
+    var imm = COUNTS.actions_immediate_24h || 0;
+    var parts = ["critical", "high", "medium", "low"].filter(function (k) { return sb[k]; }).map(function (k) {
+      return n(sb[k]) + " " + SEV_WORDS[k][sb[k] === 1 ? 0 : 1];
+    });
+    var tone = imm > 0 || sb.critical ? "crit" : (sb.high || sb.medium) ? "warn" : "ok";
+    var card = document.getElementById("verdict-card");
+    card.className = "verdict " + tone;
+    document.getElementById("verdict-title").textContent = tone === "crit" ? "Action required" : tone === "warn" ? "Needs attention" : parts.length ? "No priority findings" : "No findings";
+    document.getElementById("verdict-detail").textContent = parts.length ? parts.join(" · ") : "No incidents or anomalies in the window";
+    document.getElementById("verdict-sub").textContent =
+      (imm ? n(imm) + " " + plural(imm, "immediate action", "immediate actions") + " (<24 h)" : "No actions in the immediate horizon")
+      + " · " + n(COUNTS.resources_attention || 0) + " " + plural(COUNTS.resources_attention, "resource", "resources") + " with active findings";
+  }
+
+  function renderHero() {
+    var win = DATA.window || {};
+    var sources = DATA.sources || [];
+    var degraded = sources.filter(function (s) { return s.status !== "complete" && s.status !== "not_configured"; });
+    document.getElementById("hero-scope").textContent = "Periodic Azure operations report · " + (win.label || win.period || "window not specified");
+    document.title = "Operations digest: incidents, anomalies, and recommended actions · " + (win.label || "") + " · " + ((DATA.client || {}).name || "Customer");
+
+    var lead = document.getElementById("hero-lead");
+    clear(lead);
+    [
+      "The window recorded ", b(COUNTS.incidents_total), " " + plural(COUNTS.incidents_total, "incident", "incidents") + " and ",
+      b(COUNTS.anomalies_total), " " + plural(COUNTS.anomalies_total, "technical anomaly", "technical anomalies") + " across ",
+      b(COUNTS.resources_total), " " + plural(COUNTS.resources_total, "evaluated resource", "evaluated resources") + " (",
+      b(COUNTS.resources_attention), " with active findings); the plan proposes ",
+      b(COUNTS.actions_total), " " + plural(COUNTS.actions_total, "prioritized action", "prioritized actions") + ": ",
+      b(COUNTS.actions_immediate_24h), " " + plural(COUNTS.actions_immediate_24h, "immediate", "immediate") + ", ",
+      b(COUNTS.actions_short_term_7d), " short-term, and ", b(COUNTS.actions_monthly_cycle), " for the monthly cycle."
+    ].forEach(function (part) {
+      lead.appendChild(typeof part === "string" ? document.createTextNode(part) : part);
+    });
+
+    var sub = DATA.subscription_id || "";
+    var meta = document.getElementById("hero-meta");
+    clear(meta);
+    var live = DATA.provenance === "LIVE";
+    [
+      ["Generated " + utc(DATA.reference_utc) + " UTC", ""],
+      ["Window " + utc(win.start_utc).slice(0, 10) + " → " + utc(win.end_utc).slice(0, 10) + " (UTC)", ""],
+      [sub ? "Subscription " + (sub.length > 16 ? sub.slice(0, 8) + "…" + sub.slice(-4) : sub) : "", ""],
+      [live ? "Live read (LIVE)" : "Simulated data (" + (DATA.provenance || "SIMULATED") + ")", "on"],
+      [degraded.length ? "Partial coverage · " + (sources.length - degraded.length) + " of " + sources.length + " sources" : "Complete coverage · " + sources.length + " sources", degraded.length ? "warn" : ""]
+    ].forEach(function (item) {
+      if (item[0]) {
+        meta.appendChild(el("li", { className: item[1] || null, textContent: item[0], title: item[0].indexOf("Subscription") === 0 ? sub : null }));
+      }
+    });
+
+    verdict();
+
+    var sb = COUNTS.severity_breakdown || {};
+    var total = ["critical", "high", "medium", "low"].reduce(function (acc, k) { return acc + (sb[k] || 0); }, 0);
+    document.getElementById("dist-total-label").textContent = n(total) + " " + plural(total, "signal", "signals");
+    var track = document.getElementById("dist-track");
+    var legend = document.getElementById("dist-legend");
+    clear(track);
+    clear(legend);
+    var described = [];
+    ["critical", "high", "medium", "low"].forEach(function (k) {
+      var count = sb[k] || 0;
+      var color = "var(" + SEV_BAR[k] + ")";
+      if (total > 0 && count > 0) {
+        var seg = el("i", { title: SEV_LABEL[k] + ": " + count });
+        seg.style.width = (count * 100 / total).toFixed(2) + "%";
+        seg.style.background = color;
+        track.appendChild(seg);
+      }
+      var sw = el("i");
+      sw.style.background = color;
+      legend.appendChild(el("span", null, [sw, SEV_LABEL[k] + " ", el("b", { textContent: n(count) })]));
+      described.push(SEV_LABEL[k] + " " + count);
+    });
+    track.setAttribute("aria-label", "Distribution by severity: " + described.join(", "));
+
+    var notes = document.getElementById("status-notes");
+    clear(notes);
+    if (!live) {
+      notes.appendChild(el("div", { className: "note sim" }, [icon("alert"), el("span", null, ["Simulated data (" + (DATA.provenance || "SIMULATED") + "): demonstration figures generated without reading Azure; they don't describe a real environment."])]));
+    }
+    if (degraded.length) {
+      notes.appendChild(el("div", { className: "note" }, [icon("alert"), el("span", null, [
+        "Partial coverage: " + degraded.map(function (s) { return s.id + " (" + (STATUS[s.status] || [s.status])[0].toLowerCase() + ")"; }).join(", ")
+        + ". What wasn't read is a blind spot, not a clean result. ",
+        el("a", { href: "#sec-coverage", textContent: "See source coverage" })
+      ])]));
+    }
+  }
+
+  function renderKpis() {
+    var incidents = DATA.incidents || [];
+    var native = incidents.filter(function (r) { return r.category === "native_alert"; });
+    var fired = native.filter(function (r) { return String(r.monitor_condition || "").toLowerCase() === "fired"; }).length;
+    var sh = incidents.filter(function (r) { return r.category === "service_health"; });
+    var issues = sh.filter(function (r) { return r.signal_type === "ServiceIssue"; }).length;
+    var set = function (id, value) { document.getElementById(id).textContent = value; };
+    set("kpi-native-alerts", n(COUNTS.native_alerts_total));
+    set("kpi-native-alerts-sub", n(fired) + " " + plural(fired, "active", "active") + " (Fired) · " + n(native.length - fired) + " " + plural(native.length - fired, "resolved", "resolved"));
+    set("kpi-service-health", n(COUNTS.service_health_total));
+    set("kpi-service-health-sub", n(issues) + " " + plural(issues, "service issue", "service issues") + " · " + n(sh.length - issues) + " " + plural(sh.length - issues, "maintenance event", "maintenance events"));
+    set("kpi-posture-anomalies", n((COUNTS.extension_failures_total || 0) + (COUNTS.connectivity_posture_total || 0)));
+    set("kpi-posture-anomalies-sub", n(COUNTS.extension_failures_total) + " failed ext. · " + n(COUNTS.connectivity_posture_total) + " connectivity/posture");
+    set("kpi-telemetry-anomalies", n(COUNTS.telemetry_anomalies_total));
+    var kinds = { cpu: 0, mem: 0, disk: 0, hb: 0 };
+    (DATA.anomalies || []).forEach(function (a) {
+      if (a.category === "telemetry_anomaly") {
+        var k = String(a.anomaly_kind || "");
+        kinds[/cpu/.test(k) ? "cpu" : /memory/.test(k) ? "mem" : /disk/.test(k) ? "disk" : "hb"] += 1;
+      }
+    });
+    var kindText = [["cpu", "CPU"], ["mem", "memory"], ["disk", "disk"], ["hb", "heartbeat"]].filter(function (k) { return kinds[k[0]]; }).map(function (k) { return n(kinds[k[0]]) + " " + k[1]; }).join(" · ");
+    set("kpi-telemetry-anomalies-sub", kindText || "InsightsMetrics, Perf, and Heartbeat");
+    set("kpi-actions-total", n(COUNTS.actions_total));
+    set("kpi-actions-sub", n(COUNTS.actions_immediate_24h) + " immediate · " + n(COUNTS.actions_short_term_7d) + " short-term · " + n(COUNTS.actions_monthly_cycle) + " monthly");
+    set("kpi-resources-total", n(COUNTS.resources_total));
+    set("kpi-resources-sub", n(COUNTS.resources_attention) + " with active findings");
+  }
+
+  /* ---------- Overview ---------- */
+
+  function jumpTo(id) {
+    var target = document.getElementById(id);
+    if (target) {
+      target.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" });
+    }
+  }
+
+  function renderOverview() {
+    var win = DATA.window || {};
+    var messages = document.getElementById("executive-messages-list");
+    clear(messages);
+    (DATA.executive_messages || []).forEach(function (msg) {
+      var li = el("li");
+      var text = String(msg);
+      text.split(/(\d+(?:,\d{3})*)/).forEach(function (part, i, all) {
+        if (!part) {
+          return;
+        }
+        var prev = i > 0 ? all[i - 1].slice(-1) : "";
+        var next = i + 1 < all.length ? all[i + 1].charAt(0) : "";
+        var standalone = i % 2 === 1 && !/[-:T<\w]/.test(prev) && !/[-:\w]/.test(next);
+        li.appendChild(standalone ? el("b", { textContent: part }) : document.createTextNode(part));
+      });
+      messages.appendChild(li);
+    });
+    document.getElementById("prov-subscription").textContent = DATA.subscription_id || "—";
+    document.getElementById("prov-window-label").textContent = win.label || win.period || "—";
+    document.getElementById("prov-window-range").textContent = (win.start_utc || "—") + " → " + (win.end_utc || "—");
+    document.getElementById("prov-cadence").textContent = win.cadence || "Scheduled monthly (30 8 1 * * UTC)";
+    document.getElementById("prov-provenance").textContent = (DATA.provenance || "LIVE") + " · read-only";
+    document.getElementById("reference-utc-label").textContent = DATA.reference_utc || "—";
+
+    var tiles = document.getElementById("horizon-tiles");
+    clear(tiles);
+    [["immediate_24h", "Immediate <24h", COUNTS.actions_immediate_24h], ["short_term_7d", "Short term 1-7 days", COUNTS.actions_short_term_7d], ["monthly_cycle", "Monthly cycle", COUNTS.actions_monthly_cycle]].forEach(function (t) {
+      var tile = el("button", { type: "button", className: "tile" + (t[0] === "immediate_24h" && t[2] ? " imm" : ""), "aria-label": t[1] + ": " + (t[2] || 0) + " actions. Filter the plan by this horizon" }, [el("b", { textContent: n(t[2]) }), el("span", { textContent: t[1] })]);
+      tile.addEventListener("click", function () {
+        resetFilters(true);
+        document.getElementById("filter-horizon").value = t[0];
+        renderTables();
+        jumpTo("sec-actions");
+      });
+      tiles.appendChild(tile);
+    });
+
+    var list = document.getElementById("top-actions");
+    clear(list);
+    var actions = (DATA.actions || []).slice(0, 5);
+    if (!actions.length) {
+      list.appendChild(el("li", null, [el("span", { className: "rk", textContent: "—" }), el("div", { className: "t", textContent: "No recommended actions in this window." })]));
+    }
+    actions.forEach(function (act) {
+      list.appendChild(el("li", null, [
+        el("span", { className: "rk", textContent: String(act.priority_rank) }),
+        el("div", null, [
+          el("div", { className: "t" }, withName(act.title, act.resource_name)),
+          el("div", { className: "m" }, [pill(act.severity, act.severity_label), el("span", { className: "tag " + (act.horizon || ""), textContent: act.horizon_label }), el("span", { textContent: act.resource_name + (act.resource_group ? " · " + rgLabel(act.resource_group) : "") })])
+        ])
+      ]));
+    });
+    document.getElementById("all-actions-link").textContent = "See all " + n(COUNTS.actions_total) + " actions in the plan";
+
+    var streams = [
+      ["native_alert", "Azure Monitor native alerts", COUNTS.native_alerts_total, "sec-incidents"],
+      ["service_health", "Service Health communications", COUNTS.service_health_total, "sec-incidents"],
+      ["extension_failure", "Failed VM / Arc extensions", COUNTS.extension_failures_total, "sec-anomalies"],
+      ["connectivity_posture", "Control plane and connectivity", COUNTS.connectivity_posture_total, "sec-anomalies"],
+      ["telemetry_anomaly", "Out-of-range telemetry", COUNTS.telemetry_anomalies_total, "sec-anomalies"],
+      ["advisor_recommendation", "Azure Advisor recommendations", COUNTS.advisor_recommendations_total, "sec-resources"]
+    ];
+    var maxStream = Math.max.apply(null, streams.map(function (s) { return s[2] || 0; }).concat([1]));
+    var streamBox = document.getElementById("stream-bars");
+    clear(streamBox);
+    streams.forEach(function (s) {
+      var bar = el("i");
+      bar.style.width = ((s[2] || 0) * 100 / maxStream).toFixed(1) + "%";
+      if (!s[2]) {
+        bar.style.minWidth = "0";
+      }
+      var row = el("button", { type: "button", className: "brow", "aria-label": s[1] + ": " + (s[2] || 0) + ". Filter the records by this stream" }, [el("span", { className: "bl", textContent: s[1] }), el("span", { className: "bt" }, [bar]), el("b", { textContent: n(s[2]) })]);
+      row.addEventListener("click", function () {
+        resetFilters(true);
+        document.getElementById("filter-category").value = s[0];
+        renderTables();
+        jumpTo(s[3]);
+      });
+      streamBox.appendChild(row);
+    });
+
+    var hot = (DATA.resources || []).map(function (r) {
+      return { r: r, v: (r.incident_count || 0) + (r.anomaly_count || 0) };
+    }).filter(function (x) { return x.v > 0; }).sort(function (x, y) {
+      return y.v - x.v || sevKey(x.r) - sevKey(y.r) || String(x.r.resource_name).localeCompare(String(y.r.resource_name));
+    }).slice(0, 6);
+    var resBox = document.getElementById("resource-bars");
+    clear(resBox);
+    if (!hot.length) {
+      resBox.appendChild(el("p", { className: "empty-note", textContent: "No inventoried resource has incidents or anomalies in the window." }));
+    }
+    var maxHot = hot.length ? hot[0].v : 1;
+    hot.forEach(function (x) {
+      var color = "var(" + (SEV_BAR[x.r.severity] || "--sev-info-bar") + ")";
+      var bar = el("i");
+      bar.style.width = (x.v * 100 / maxHot).toFixed(1) + "%";
+      bar.style.background = color;
+      var dot = el("span", { className: "dot" });
+      dot.style.background = color;
+      var row = el("button", { type: "button", className: "brow", title: x.r.resource_id, "aria-label": x.r.resource_name + ": " + x.v + " signals, highest severity " + (x.r.severity_label || "") + ". Search the records for this resource" }, [
+        el("span", { className: "bl" }, [dot, x.r.resource_name, el("small", { textContent: x.r.resource_group || "" })]),
+        el("span", { className: "bt" }, [bar]),
+        el("b", { textContent: n(x.v) })
+      ]);
+      row.addEventListener("click", function () {
+        resetFilters(true);
+        document.getElementById("filter-search").value = x.r.resource_name;
+        renderTables();
+        jumpTo(x.r.incident_count ? "sec-incidents" : "sec-anomalies");
+      });
+      resBox.appendChild(row);
+    });
+  }
+
+  /* ---------- Registers ---------- */
+
+  var TABLES = {};
+  var PAGE = 50;
+  var lastFilterKey = "";
+
+  function headLabel(text) {
+    var parts = String(text).split(" · ");
+    var out = [];
+    parts.forEach(function (part, i) {
+      if (i) {
+        out.push(" ");
+      }
+      out.push(el("span", { className: "hg", textContent: part + (i < parts.length - 1 ? " ·" : "") }));
+    });
+    return out;
+  }
+
+  function setupTable(tableId, cols, rowId) {
+    var table = document.getElementById(tableId);
+    var tr = el("tr");
+    cols.forEach(function (c, i) {
+      var th = el("th", { scope: "col", className: c.num ? "n" : null });
+      if (c.sort) {
+        var btn = el("button", { type: "button", className: "sort" }, headLabel(c.head));
+        btn.addEventListener("click", function () {
+          var st = TABLES[tableId].sort;
+          TABLES[tableId].sort = { i: i, dir: st.i === i && st.dir === "ascending" ? "descending" : "ascending" };
+          renderTables();
+        });
+        th.appendChild(btn);
+        th.appendChild(el("span", { className: "th-print", "aria-hidden": "true" }, headLabel(c.head)));
+      } else {
+        headLabel(c.head).forEach(function (part) { th.appendChild(typeof part === "string" ? document.createTextNode(part) : part); });
+      }
+      tr.appendChild(th);
+    });
+    var thead = table.querySelector("thead");
+    clear(thead);
+    thead.appendChild(tr);
+    var more = el("div", { className: "more-row", id: tableId + "-more", hidden: "hidden" }, [el("span"), el("button", { type: "button", className: "btn btn-ghost" })]);
+    more.querySelector("button").addEventListener("click", function () {
+      TABLES[tableId].limit += PAGE;
+      renderTables();
+    });
+    table.closest(".table-card").appendChild(more);
+    TABLES[tableId] = { cols: cols, sort: { i: -1, dir: "" }, rowId: rowId, limit: PAGE };
+  }
+
+  function fillTable(tableId, rows, emptyText) {
+    var t = TABLES[tableId];
+    var table = document.getElementById(tableId);
+    var tbody = table.querySelector("tbody");
+    var more = document.getElementById(tableId + "-more");
+    var st = t.sort;
+    var ths = table.querySelectorAll("thead th");
+    for (var k = 0; k < ths.length; k++) {
+      if (k === st.i) {
+        ths[k].setAttribute("aria-sort", st.dir);
+      } else {
+        ths[k].removeAttribute("aria-sort");
+      }
+    }
+    if (st.i >= 0) {
+      var acc = t.cols[st.i].sort;
+      var dir = st.dir === "ascending" ? 1 : -1;
+      rows = rows.map(function (r, idx) { return [r, idx]; }).sort(function (x, y) {
+        var a = acc(x[0]);
+        var c = acc(y[0]);
+        var d = typeof a === "number" && typeof c === "number" ? a - c : String(a).localeCompare(String(c), "en", { numeric: true, sensitivity: "base" });
+        return d ? d * dir : x[1] - y[1];
+      }).map(function (p) { return p[0]; });
+    }
+    clear(tbody);
+    var hidden = Math.max(0, rows.length - t.limit);
+    more.hidden = hidden === 0;
+    if (hidden) {
+      more.querySelector("span").textContent = "Showing " + n(t.limit) + " of " + n(rows.length) + ". Printing includes every row.";
+      more.querySelector("button").textContent = "Show " + n(Math.min(PAGE, hidden)) + " more";
+    }
+    if (!rows.length) {
+      tbody.appendChild(el("tr", { className: "empty-row" }, [el("td", { colspan: String(t.cols.length), textContent: emptyText })]));
+      return;
+    }
+    var frag = document.createDocumentFragment();
+    rows.forEach(function (row, idx) {
+      var attrs = t.rowId ? { id: t.rowId(row) } : {};
+      if (idx >= t.limit) {
+        attrs.className = "pg";
+      }
+      var tr = el("tr", attrs);
+      t.cols.forEach(function (c) {
+        var value = c.cell(row);
+        tr.appendChild(el("td", { className: c.cls || (c.num ? "n" : null) }, Array.isArray(value) ? value : [value]));
+      });
+      frag.appendChild(tr);
+    });
+    tbody.appendChild(frag);
+  }
+
+  function stateCell(row) {
+    var cond = row.monitor_condition || "—";
+    var active = /^(fired|active)$/i.test(cond);
+    return [el("span", { className: "state" + (active ? " on" : ""), textContent: cond }), el("span", { className: "sm", textContent: row.state || "" })];
+  }
+
+  function evidenceLinks(ids) {
+    return el("div", { className: "ids" }, (ids || []).map(function (id) {
+      var a = el("a", { className: "chip-id", href: "#ev-" + id, textContent: id, title: "Go to evidence " + id });
+      a.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        gotoEvidence(id);
+      });
+      return a;
+    }));
+  }
+
+  function gotoEvidence(id) {
+    var row = document.getElementById("ev-" + id);
+    if (!row) {
+      resetFilters();
+      row = document.getElementById("ev-" + id);
+    }
+    if (row && row.classList.contains("pg")) {
+      TABLES[row.closest("table").id].limit = Infinity;
+      renderTables();
+      row = document.getElementById("ev-" + id);
+    }
+    if (!row) {
+      return;
+    }
+    row.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "center" });
+    row.classList.add("flash");
+    setTimeout(function () { row.classList.remove("flash"); }, 1800);
+  }
+
+  function evId(row) {
+    return "ev-" + row.id;
+  }
+
+  function telemetryText(metrics) {
+    var tm = metrics || {};
+    var parts = [];
+    if (tm.cpu_percent) {
+      parts.push("CPU max " + tm.cpu_percent.max + "% (median " + tm.cpu_percent.median + "%)");
+    }
+    if (tm.memory_available_mb) {
+      parts.push("Memory min " + n(tm.memory_available_mb.min) + " MB");
+    }
+    if (tm.disk_free_percent) {
+      parts.push("Disk free min " + tm.disk_free_percent.min + "%");
+    }
+    if (tm.heartbeat_silence_minutes) {
+      parts.push("Heartbeat silence " + n(tm.heartbeat_silence_minutes.max) + " min");
+    }
+    return parts.length ? parts.join(" · ") : "No guest telemetry in the window";
+  }
+
+  function setupTables() {
+    var byName = function (r) { return String(r.resource_name || "").toLowerCase(); };
+    setupTable("incidents-table", [
+      { head: "Severity", sort: sevKey, cls: "nw", cell: function (r) { return [pill(r.severity, r.severity_label), el("span", { className: "sm", textContent: r.native_severity || "" })]; } },
+      { head: "ID · stream", sort: function (r) { return r.id; }, cls: "nw", cell: idCell },
+      { head: "Resource / service", sort: byName, cls: "w2", cell: function (r) {
+        if (r.category === "service_health") {
+          return resourceCell(r.resource_name, "subscription-scope", null, null, (r.regions || []).join(", "));
+        }
+        return resourceCell(r.resource_name, r.resource_group, r.resource_type, r.resource_id);
+      } },
+      { head: "State", sort: function (r) { return (r.monitor_condition || "") + " " + (r.state || ""); }, cls: "nw", cell: stateCell },
+      { head: "Signal", sort: function (r) { return r.signal_type || ""; }, cell: function (r) { return [el("div", { textContent: r.signal_type || "—" }), el("span", { className: "sm", textContent: r.monitor_service || "" })]; } },
+      { head: "Start · updated (UTC)", sort: function (r) { return r.start_time_utc || ""; }, cls: "nw", cell: function (r) {
+        return [el("div", { textContent: utc(r.start_time_utc), title: r.start_time_utc }), el("span", { className: "sm", textContent: "updated " + utc(r.last_updated_utc), title: r.last_updated_utc })];
+      } },
+      { head: "Description", cls: "wide", cell: function (r) { return [el("div", null, [prose(r.summary)]), extLink(r.learn_url, "Microsoft Learn")]; } }
+    ], evId);
+
+    setupTable("anomalies-table", [
+      { head: "Severity", sort: sevKey, cls: "nw", cell: function (r) { return pill(r.severity, r.severity_label); } },
+      { head: "ID · stream", sort: function (r) { return r.id; }, cls: "nw", cell: idCell },
+      { head: "Resource", sort: byName, cls: "w2", cell: function (r) { return resourceCell(r.resource_name, r.resource_group, r.resource_type, r.resource_id); } },
+      { head: "Metric or property", sort: function (r) { return r.metric_or_field || ""; }, cell: function (r) { return breakable(r.metric_or_field, "code"); } },
+      { head: "Observed · reference", cell: function (r) {
+        return [el("div", null, [el("b", { textContent: withUnit(r.observed_value, r.unit) })]), el("span", { className: "sm", textContent: "ref. " + withUnit(r.baseline_or_expected, r.unit) })];
+      } },
+      { head: "Samples · window", sort: function (r) { return Number(r.sample_count) || 0; }, cell: function (r) {
+        var count = Number(r.sample_count) || 1;
+        return [el("div", { className: "nw", textContent: n(count) + " " + plural(count, "sample", "samples") }), el("span", { className: "sm", textContent: (r.window_grain || "PointInTime") + (r.workspace_name ? " · " + r.workspace_name : "") })];
+      } },
+      { head: "Technical evidence", cls: "wide", cell: function (r) { return [el("div", null, [prose(r.summary)]), extLink(r.learn_url, "Guidance on Microsoft Learn")]; } }
+    ], evId);
+
+    setupTable("actions-table", [
+      { head: "Priority", sort: function (r) { return Number(r.priority_rank) || 0; }, cls: "nw", cell: function (r) { return [el("span", { className: "rank", textContent: "#" + r.priority_rank }), el("span", { className: "sm id", textContent: r.id })]; } },
+      { head: "Horizon · severity", sort: function (r) { return (HORIZON_RANK.hasOwnProperty(r.horizon) ? HORIZON_RANK[r.horizon] : 9) * 10 + sevKey(r); }, cls: "nw stack", cell: function (r) {
+        return [el("div", null, [el("span", { className: "tag " + (r.horizon || ""), textContent: r.horizon_label })]), el("div", null, [pill(r.severity, r.severity_label)])];
+      } },
+      { head: "Recommended action", sort: function (r) { return r.title || ""; }, cls: "w3", cell: function (r) {
+        return el("div", { className: "res", title: r.resource_id || null }, [el("b", null, withName(r.title, r.resource_name)), el("span", { className: "sm", textContent: (r.resource_name || "") + (r.resource_group ? " · " + rgLabel(r.resource_group) : "") }), portalUrl(r.resource_id) ? extLink(portalUrl(r.resource_id), "Portal") : null]);
+      } },
+      { head: "Owner · effort", sort: function (r) { return r.owner_scope || ""; }, cls: "w1", cell: function (r) { return [el("div", { textContent: r.owner_scope || "—" }), el("span", { className: "sm", textContent: "Effort: " + (r.effort_label || "—") })]; } },
+      { head: "Evidence", cell: function (r) { return evidenceLinks(r.linked_evidence_ids); } },
+      { head: "Guidance for human review", cls: "wide", cell: function (r) {
+        return [el("div", null, [prose(r.recommendation)]), el("span", { className: "sm" }, ["Evidence: ", prose(r.evidence_summary)]), extLink(r.learn_url, "Microsoft Learn reference")];
+      } }
+    ]);
+
+    setupTable("resources-table", [
+      { head: "Resource", sort: byName, cls: "w2", cell: function (r) { return resourceCell(r.resource_name, r.resource_group, null, r.resource_id, r.location); } },
+      { head: "Type · hosting", sort: function (r) { return typeLabel(r.resource_type); }, cell: function (r) { return [el("div", { textContent: typeLabel(r.resource_type) }), el("span", { className: "sm" }, [breakable(r.resource_type, "code"), " · " + String(r.hosting || "").toUpperCase()])]; } },
+      { head: "Operational status", sort: function (r) { return (r.status === "attention" ? 0 : r.status === "review" ? 1 : 2) * 10 + sevKey(r); }, cls: "nw", cell: function (r) {
+        return [r.status === "healthy" ? pill("ok", "Normal") : pill(r.severity, r.severity_label), el("span", { className: "sm", textContent: r.operational_state || "" })];
+      } },
+      { head: "Incidents", num: true, sort: function (r) { return r.incident_count || 0; }, cell: function (r) { return n(r.incident_count); } },
+      { head: "Anomalies", num: true, sort: function (r) { return r.anomaly_count || 0; }, cell: function (r) { return n(r.anomaly_count); } },
+      { head: "Failed ext.", num: true, sort: function (r) { return r.failed_extension_count || 0; }, cell: function (r) { return n(r.failed_extension_count) + " / " + n(r.extensions_total); } },
+      { head: "Actions", num: true, sort: function (r) { return r.action_count || 0; }, cell: function (r) { return n(r.action_count); } },
+      { head: "Telemetry summary", cls: "w2", cell: function (r) { return telemetryText(r.telemetry_metrics); } }
+    ]);
+
+    setupTable("advisor-table", [
+      { head: "Impact", sort: sevKey, cls: "nw", cell: function (r) { return [pill(r.severity, r.severity_label, "Impact " + (r.impact || "")), el("span", { className: "sm", textContent: r.advisor_category || "" })]; } },
+      { head: "ID", sort: function (r) { return r.id; }, cls: "nw", cell: function (r) { return el("span", { className: "id", textContent: r.id }); } },
+      { head: "Resource", sort: byName, cls: "w2", cell: function (r) { return resourceCell(r.resource_name, r.resource_group, r.resource_type, r.resource_id); } },
+      { head: "Detected problem", cls: "w2", cell: function (r) { return prose(r.problem); } },
+      { head: "Recommended solution", cls: "wide", cell: function (r) { return [el("div", null, [prose(r.solution)]), extLink(r.learn_url, "Azure Advisor on Microsoft Learn")]; } },
+      { head: "Updated (UTC)", sort: function (r) { return r.last_updated_utc || ""; }, cls: "nw", cell: function (r) { return el("span", { textContent: utc(r.last_updated_utc), title: r.last_updated_utc }); } }
+    ], evId);
+
+    setupTable("sources-table", [
+      { head: "Source", cls: "nw", cell: function (r) { return el("span", { className: "id", textContent: r.id }); } },
+      { head: "Status", cls: "nw", cell: function (r) { var s = STATUS[r.status] || [r.status, "critical"]; return pill(s[1], s[0], r.status); } },
+      { head: "Records", num: true, cell: function (r) { return n(r.records); } },
+      { head: "Pages", num: true, cell: function (r) { return n(r.pages); } },
+      { head: "Pagination complete", cls: "nw", cell: function (r) { return r.pagination_complete ? "Yes" : "No"; } },
+      { head: "Read signature and detail", cls: "wide", cell: function (r) {
+        var kids = [breakable(r.read_signature || "—", "code")];
+        if (Array.isArray(r.workspaces_queried) && r.workspaces_queried.length) {
+          kids.push(el("ul", { className: "wslist" }, r.workspaces_queried.map(function (w) {
+            return el("li", { textContent: w.workspace_name + " · " + ((STATUS[w.status] || [w.status])[0]) + " · " + n(w.records) + " " + plural(w.records, "row", "rows") });
+          })));
+        }
+        (r.errors || []).forEach(function (e) {
+          kids.push(el("div", { className: "errbox" }, [el("b", { textContent: e.code || "error" }), " · " + (e.message || "") + (e.http_status ? " (HTTP " + e.http_status + ")" : "")]));
+        });
+        return kids;
+      } },
+      { head: "Notes and scope", cls: "w2", cell: function (r) { return r.note || "—"; } }
+    ]);
+  }
+
+  function matchesCommonFilter(row, cat, sev, query) {
+    if (cat !== "all" && row.category !== cat) {
+      return false;
+    }
+    if (sev !== "all" && row.severity !== sev) {
+      return false;
+    }
+    if (query) {
+      var hay = [row.id, row.title, row.resource_name, row.resource_id, row.resource_group, row.summary, row.metric_or_field, row.signal_type, row.owner_scope, row.recommendation].join(" ").toLowerCase();
+      if (hay.indexOf(query) < 0) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function renderTables() {
+    var cat = document.getElementById("filter-category").value;
+    var sev = document.getElementById("filter-severity").value;
+    var hor = document.getElementById("filter-horizon").value;
+    var rawQuery = (document.getElementById("filter-search").value || "").trim();
+    var query = rawQuery.toLowerCase();
+    var filterKey = [cat, sev, hor, query].join("\u0001");
+    if (filterKey !== lastFilterKey) {
+      lastFilterKey = filterKey;
+      Object.keys(TABLES).forEach(function (id) { TABLES[id].limit = PAGE; });
+    }
+
+    var incidents = (DATA.incidents || []).filter(function (row) { return matchesCommonFilter(row, cat, sev, query); });
+    var anomalies = (DATA.anomalies || []).filter(function (row) { return matchesCommonFilter(row, cat, sev, query); });
+    var actions = (DATA.actions || []).filter(function (row) {
+      return (hor === "all" || row.horizon === hor) && matchesCommonFilter(row, cat, sev, query);
+    });
+    var resources = (DATA.resources || []).filter(function (row) {
+      if (sev !== "all" && row.severity !== sev) {
+        return false;
+      }
+      if (query) {
+        var hay = [row.resource_name, row.resource_id, row.resource_group, row.resource_type, row.operational_state].join(" ").toLowerCase();
+        if (hay.indexOf(query) < 0) {
+          return false;
+        }
+      }
+      return true;
+    });
+    var advisor = (DATA.advisor || []).filter(function (row) { return matchesCommonFilter(row, cat, sev, query); });
+
+    var counts = { incidents: incidents.length, anomalies: anomalies.length, actions: actions.length, resources: resources.length, advisor: advisor.length };
+    Object.keys(counts).forEach(function (key) {
+      document.getElementById(key + "-count").textContent = String(counts[key]);
+      document.getElementById(key + "-total").textContent = String((DATA[key] || []).length);
+      var nav = document.getElementById("nav-" + key + "-count");
+      if (nav) {
+        nav.textContent = String(counts[key]);
+      }
+    });
+
+    var active = cat !== "all" || sev !== "all" || hor !== "all" || query;
+    var status = document.getElementById("filter-status-summary");
+    clear(status);
+    [b(incidents.length), " " + plural(incidents.length, "incident", "incidents") + " · ", b(anomalies.length), " " + plural(anomalies.length, "anomaly", "anomalies") + " · ", b(actions.length), " " + plural(actions.length, "action", "actions") + " · ", b(resources.length), " " + plural(resources.length, "resource", "resources"), active ? " (filter active)" : " (no filters)"].forEach(function (part) {
+      status.appendChild(typeof part === "string" ? document.createTextNode(part) : part);
+    });
+    var labelOf = function (id) { var s = document.getElementById(id); return s.options[s.selectedIndex].text; };
+    document.getElementById("print-filter-note").textContent = active
+      ? "Filters applied when printing: " + [cat !== "all" ? labelOf("filter-category") : "", sev !== "all" ? "severity " + labelOf("filter-severity") : "", hor !== "all" ? "horizon " + labelOf("filter-horizon") : "", query ? "search “" + rawQuery + "”" : ""].filter(Boolean).join(" · ")
+      : "";
+
+    var none = function (key, filtered, empty) { return (DATA[key] || []).length ? filtered : empty; };
+    fillTable("incidents-table", incidents, none("incidents", "No incidents or alerts match the current filters.", "No incidents or alerts in the evaluated window."));
+    fillTable("anomalies-table", anomalies, none("anomalies", "No technical anomalies match the current filters.", "No technical anomalies in the evaluated window."));
+    fillTable("actions-table", actions, none("actions", "No recommended actions match the current filters.", "No recommended actions for this window."));
+    fillTable("resources-table", resources, none("resources", "No inventoried resources match the current filter.", "No inventoried resources in scope."));
+    fillTable("advisor-table", advisor, none("advisor", "No cached Azure Advisor recommendations match the current filter.", "No cached Azure Advisor recommendations for the subscription."));
+  }
+
+  function resetFilters(silent) {
+    document.getElementById("filter-category").value = "all";
+    document.getElementById("filter-severity").value = "all";
+    document.getElementById("filter-horizon").value = "all";
+    document.getElementById("filter-search").value = "";
+    if (!silent) {
+      renderTables();
+    }
+  }
+
+  function renderCoverage() {
+    var sources = DATA.sources || [];
+    document.getElementById("sources-count").textContent = String(sources.length);
+    document.getElementById("nav-sources-count").textContent = String(sources.length);
+    fillTable("sources-table", sources, "The data model has no source receipts.");
+
+    var meth = DATA.methodology || {};
+    var methList = document.getElementById("methodology-list");
+    clear(methList);
+    (meth.limitations || []).forEach(function (lim) {
+      methList.appendChild(el("li", { textContent: lim }));
+    });
+    var facts = document.getElementById("method-facts");
+    clear(facts);
+    [
+      ["Mode", meth.read_only === false ? "Write" : "Read-only"],
+      ["Official SLA calculation", meth.official_sla_calculation ? "Yes" : "No"],
+      ["Schedule", (meth.scheduled_cadence_cron || "30 8 1 * *") + " (UTC)"],
+      ["Default period", meth.scheduled_default_period || "previous_month"],
+      ["Supported periods", (meth.supported_periods || []).join(", ") || "—"]
+    ].forEach(function (f) {
+      facts.appendChild(el("dt", { textContent: f[0] }));
+      facts.appendChild(el("dd", { textContent: f[1] }));
+    });
+    var streams = document.getElementById("method-streams");
+    clear(streams);
+    (meth.evidence_streams || []).forEach(function (s) {
+      streams.appendChild(el("li", { textContent: s }));
+    });
+
+    var client = (DATA.client || {}).name || "Customer";
+    document.getElementById("footer-left").textContent = "Generated by Azure SRE Agent · Read-only · Reference " + utc(DATA.reference_utc) + " UTC · " + (DATA.schema_version || "");
+    document.getElementById("footer-right").textContent = client;
+    var page = el("style", { textContent: "@page{@bottom-left{content:\"" + ("Operations report · " + client + " · " + ((DATA.window || {}).label || "") + " · " + utc(DATA.reference_utc) + " UTC").replace(/["\\\r\n]/g, " ") + "\";font:8.5pt 'Segoe UI',sans-serif;color:#5A687A}}" });
+    document.head.appendChild(page);
+  }
+
+  function watchSections() {
+    if (!("IntersectionObserver" in window)) {
+      return;
+    }
+    var links = {};
+    Array.prototype.forEach.call(document.querySelectorAll("#section-nav a"), function (a) {
+      links[a.getAttribute("href").slice(1)] = a;
+    });
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          Object.keys(links).forEach(function (k) { links[k].removeAttribute("aria-current"); });
+          if (links[entry.target.id]) {
+            links[entry.target.id].setAttribute("aria-current", "true");
+          }
+        }
+      });
+    }, { rootMargin: "-35% 0px -60% 0px" });
+    Array.prototype.forEach.call(document.querySelectorAll("#top, .sec"), function (section) {
+      observer.observe(section);
+    });
+  }
+
+  /* ---------- Exports ---------- */
+
+  function downloadBlob(filename, content, mime) {
+    var blob = new Blob([content], { type: mime });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 500);
+  }
+
+  function csvEscape(val) {
+    if (val === null || val === undefined) {
+      return '""';
+    }
+    var str = typeof val === "object" ? JSON.stringify(val) : String(val);
+    if (/^[=+\-@\t\r\n]/.test(str.trimLeft())) {
+      str = "'" + str;
+    }
+    return '"' + str.replace(/"/g, '""') + '"';
+  }
+
+  function exportIncidentsCsv() {
+    var headers = ["record_kind", "id", "category", "severity", "title", "resource_name", "resource_group", "metric_or_signal", "observed_value", "observed_at_utc", "summary"];
+    var lines = [headers.join(",")];
+    (DATA.incidents || []).forEach(function (inc) {
+      lines.push([
+        "incident", inc.id, inc.category, inc.severity, inc.title, inc.resource_name,
+        inc.resource_group, inc.signal_type, inc.native_severity, inc.last_updated_utc, inc.summary
+      ].map(csvEscape).join(","));
+    });
+    (DATA.anomalies || []).forEach(function (anom) {
+      lines.push([
+        "anomaly", anom.id, anom.category, anom.severity, anom.title, anom.resource_name,
+        anom.resource_group, anom.metric_or_field, anom.observed_value, anom.observed_at_utc, anom.summary
+      ].map(csvEscape).join(","));
+    });
+    downloadBlob("ops-digest-incidents-anomalies.csv", "\uFEFF" + lines.join("\r\n"), "text/csv;charset=utf-8");
+  }
+
+  function exportActionsCsv() {
+    var headers = ["priority_rank", "id", "horizon_label", "severity", "category", "title", "resource_name", "resource_group", "owner_scope", "effort_label", "linked_evidence_ids", "recommendation"];
+    var lines = [headers.join(",")];
+    (DATA.actions || []).forEach(function (act) {
+      lines.push([
+        act.priority_rank, act.id, act.horizon_label, act.severity, act.category, act.title,
+        act.resource_name, act.resource_group, act.owner_scope, act.effort_label,
+        (act.linked_evidence_ids || []).join(";"), act.recommendation
+      ].map(csvEscape).join(","));
+    });
+    downloadBlob("ops-digest-recommended-actions.csv", "\uFEFF" + lines.join("\r\n"), "text/csv;charset=utf-8");
+  }
+
+  /* ---------- Wiring ---------- */
+
+  ["filter-category", "filter-severity", "filter-horizon"].forEach(function (id) {
+    document.getElementById(id).addEventListener("change", renderTables);
+  });
+  document.getElementById("filter-search").addEventListener("input", renderTables);
+  document.getElementById("filter-reset").addEventListener("click", function () { resetFilters(); });
+
+  document.getElementById("theme-toggle").addEventListener("click", function () {
+    var root = document.documentElement;
+    var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    this.querySelector(".lbl").textContent = next === "dark" ? "Light mode" : "Dark mode";
+    this.title = this.querySelector(".lbl").textContent;
+    this.querySelector("path").setAttribute("d", next === "dark" ? PATHS.sun : PATHS.moon);
+  });
+
+  document.getElementById("btn-export-json").addEventListener("click", function () {
+    downloadBlob("ops-digest-snapshot.json", JSON.stringify(DATA, null, 2), "application/json;charset=utf-8");
+  });
+  document.getElementById("btn-export-incidents-csv").addEventListener("click", exportIncidentsCsv);
+  document.getElementById("btn-export-actions-csv").addEventListener("click", exportActionsCsv);
+  document.getElementById("btn-print").addEventListener("click", function () {
+    window.print();
+  });
+
+  renderBranding();
+  renderHero();
+  renderKpis();
+  setupTables();
+  renderOverview();
+  renderTables();
+  renderCoverage();
+  watchSections();
+})();
+</script>
+</body>
+</html>
