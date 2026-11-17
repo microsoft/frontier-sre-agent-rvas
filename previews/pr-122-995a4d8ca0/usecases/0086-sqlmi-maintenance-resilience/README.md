@@ -107,4 +107,6 @@ Weekly, on Mondays at 07:00 UTC, with `period=last_7d`. Use `operation=upcoming`
 
 ## Credits
 
-Built and tested by Mario Aguilera ([@marioaguileraaa](https://github.com/marioaguileraaa)). Source: [`12-sqlmi-maintenance-resilience`](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/12-sqlmi-maintenance-resilience) in `marioaguileraaa/sre-agent-use-cases` (MIT), commit `4eb2e90`. The upstream guide has every step with a screenshot, troubleshooting and the acceptance checks. Field guide: [plate 12](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-12).
+- **Built and tested by** Mario Aguilera: [github.com/marioaguileraaa](https://github.com/marioaguileraaa)
+- **Upstream source and step-by-step guide** (every step with a screenshot, troubleshooting and the acceptance checks): [github.com/marioaguileraaa/sre-agent-use-cases/tree/main/12-sqlmi-maintenance-resilience](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/12-sqlmi-maintenance-resilience). MIT license; this entry was converted from commit [`4eb2e90`](https://github.com/marioaguileraaa/sre-agent-use-cases/commit/4eb2e90).
+- **Field guide:** [plate 12](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-12)

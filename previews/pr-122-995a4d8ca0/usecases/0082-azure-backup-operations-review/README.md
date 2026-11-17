@@ -104,4 +104,6 @@ Monthly, on day 1 at 10:30 UTC, for the last 14 days. The cadence leaves gaps be
 
 ## Credits
 
-Built and tested by Mario Aguilera ([@marioaguileraaa](https://github.com/marioaguileraaa)). Source: [`06-azure-backup-operations-review`](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/06-azure-backup-operations-review) in `marioaguileraaa/sre-agent-use-cases` (MIT), commit `4eb2e90`. The upstream guide has every step with a screenshot, troubleshooting and the acceptance checks. Field guide: [plate 06](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-06).
+- **Built and tested by** Mario Aguilera: [github.com/marioaguileraaa](https://github.com/marioaguileraaa)
+- **Upstream source and step-by-step guide** (every step with a screenshot, troubleshooting and the acceptance checks): [github.com/marioaguileraaa/sre-agent-use-cases/tree/main/06-azure-backup-operations-review](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/06-azure-backup-operations-review). MIT license; this entry was converted from commit [`4eb2e90`](https://github.com/marioaguileraaa/sre-agent-use-cases/commit/4eb2e90).
+- **Field guide:** [plate 06](https://marioaguileraaa.github.io/sre-agent-use-cases/#plate-06)
