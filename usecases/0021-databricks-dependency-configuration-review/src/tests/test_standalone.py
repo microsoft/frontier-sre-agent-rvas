@@ -8,7 +8,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
-from support import REFERENCE, ROOT, STANDALONE, fixture, load_engine
+from support import REFERENCE, ROOT, fixture, load_engine
 from test_engine import cwd
 
 
@@ -17,10 +17,10 @@ class StandaloneTests(unittest.TestCase):
         spec = importlib.util.spec_from_file_location("builder", ROOT / "build_tool.py")
         builder = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(builder)
-        self.assertEqual(STANDALONE.read_text(encoding="utf-8"), builder.build())
+        self.assertEqual((ROOT.parent / "manifests" / "tools" / "generate-databricks-dependency-report.py").read_text(encoding="utf-8"), builder.build())
 
     def test_wholefile_paste_loads_without_network_or_stdout_even_as_main(self):
-        source = STANDALONE.read_text(encoding="utf-8")
+        source = (ROOT.parent / "manifests" / "tools" / "generate-databricks-dependency-report.py").read_text(encoding="utf-8")
         self.assertLess(max(len(line) for line in source.splitlines()), 10000)
         stdout = io.StringIO()
         namespace = {"__name__": "__main__"}
@@ -34,7 +34,7 @@ class StandaloneTests(unittest.TestCase):
     def test_copied_file_has_all_assets_and_writes_complete_real_files(self):
         with tempfile.TemporaryDirectory() as directory:
             copied = Path(directory) / "whole-file.py"
-            shutil.copyfile(STANDALONE, copied)
+            shutil.copyfile(ROOT.parent / "manifests" / "tools" / "generate-databricks-dependency-report.py", copied)
             spec = importlib.util.spec_from_file_location("isolated_canonical_tool", copied)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)

@@ -1,11 +1,13 @@
 ---
 name: databricks-dependency-live
-description: Read-only, evidence-qualified Azure Databricks dependency mapping, configuration, security, FinOps and optimization review using the single fixed-scope tool.
+description: Read-only, evidence-qualified Azure Databricks dependency mapping, configuration, security, cost attribution (where Databricks cost comes from and how to optimize it) and optimization review using the single fixed-scope tool.
+tools:
+- databricks-dependency-report
 ---
 
 # Azure Databricks dependency and configuration review
 
-Use ONLY `generate-databricks-dependency-report`. The operator must explicitly
+Use ONLY `databricks-dependency-report`. The operator must explicitly
 select that one tool and this skill for `databricks-dependency-live`; no
 inherited tools, shell, exec, generic Python, SQL execution tools, remediation
 connectors or role-grant tools.
@@ -74,9 +76,10 @@ Every dependency node, edge and blind spot carries an explicit
 - **`UNKNOWN`**: Uncollected or out-of-scope dependency layers that require
   running compute or code inspection:
   - Runtime table and column lineage (`system.access.table_lineage`,
-    `system.access.column_lineage`) and historical DBU billing
-    (`system.billing.usage`), which require executing SQL on a running SQL
-    Warehouse.
+    `system.access.column_lineage`), which require executing SQL on a running
+    SQL Warehouse, and per-run or per-user DBU billing (`system.billing.usage`)
+    unless the operator enabled it with `system_tables_warehouse_id` (off by
+    default).
   - Dynamic paths, JDBC strings or table names embedded inside notebook,
     Python or JAR code.
   - Effective data-plane packet flow, DNS resolution and storage/Key Vault
@@ -106,11 +109,37 @@ findings CSV (`findings_csv_path`) and dependencies CSV
   `error.http_status` and stop. Do not claim completion, invent files, narrow
   scope, use ZIP/storage fallbacks or substitute a simulated report.
 
+## Databricks costs (report section 6, `view="costs"`)
+
+The cost section answers *where Databricks cost comes from and how to optimize
+it*. It reads Azure Cost Management (amortized cost by default) for the
+workspace resource and its managed resource group, grouped by the tags
+Databricks puts on compute (`ClusterName`, `JobId`, `SqlEndpointId`,
+`DatabricksInstancePoolId`, `Vendor`) and by the operator's allocation tags.
+
+- Answer in this order: cost of the last closed month and its change, DBU vs
+  infrastructure, the clusters, jobs, SQL warehouses and pools that concentrate
+  it, the share no tag explains, then the top optimization signals.
+- Every saving is an estimate with a `saving_kind` (`lower_bound`,
+  `upper_bound` or `estimate`) and a documented formula; say so, never promise
+  it, and never add savings across signals of the same object (only rows with
+  `counted=true` add up). Signals without a saving show "No estimate".
+- The unattributed share is cost without the `Vendor` tag: shared workspace
+  services and serverless DBUs, which carry no Azure tags. Explain it; do not
+  spread it across teams.
+- If `databricks_costs.status` is `denied`, say the identity needs Cost
+  Management Reader on the subscription and show no figures; `partial` or
+  `skipped` queries stay missing, never zero.
+- Only when the user explicitly asks for a demo or a test without a workspace,
+  call `operation="self_test"` with other defaults. Its four files come from a
+  built-in workspace labelled `SIMULATED`; say so in the answer and never use it
+  in place of a failed or unconfigured live run.
+
 ## Grounded questions
 
 Use `operation="query"` with `view` in `summary`, `workspace`, `compute`,
 `jobs`, `pipelines`, `warehouses`, `unity_catalog`, `resources`, `findings`,
-`finops`, `coverage`, `actions`, or `dependencies`.
+`finops`, `costs`, `coverage`, `actions`, or `dependencies`.
 
 - Use `classification` (`OBSERVED`, `INFERRED`, `UNKNOWN`) with
   `view="dependencies"` to filter the dependency graph by provenance.
@@ -121,13 +150,15 @@ Use `operation="query"` with `view` in `summary`, `workspace`, `compute`,
   `transport_capped` and fresh-collection disclosure under the 3,500-byte
   default-serialized response budget.
 - Scores are local assessment indicators, never an official Microsoft WAF or
-  Databricks grade. Always report evaluated, `not_evaluated` (`No evaluado`) and
-  `not_applicable` (`No aplica`) counts alongside any score.
+  Databricks grade. Always report evaluated, `not_evaluated` (`Not evaluated`) and
+  `not_applicable` (`Not applicable`) counts alongside any score.
 
 ## Never do
 
 No Azure RBAC or Unity Catalog grants, no multi-tenant consent or federation
 policy creation, no cluster or SQL Warehouse start/stop, no job or pipeline
-runs, no `/api/2.0/sql/statements` execution, no `/api/2.0/secrets/get` calls,
-no export of `spark_env_vars`, `spark_conf`, init script bodies, notebook code
-or job parameter values, and no fabricated savings or lineage.
+runs, no `/api/2.0/sql/statements` execution other than the fixed billing
+statement the operator enabled with `system_tables_warehouse_id`, no
+`/api/2.0/secrets/get` calls, no export of `spark_env_vars`, `spark_conf`, init
+script bodies, notebook code or job parameter values, no savings beyond the
+tool's documented estimates and no fabricated lineage.
