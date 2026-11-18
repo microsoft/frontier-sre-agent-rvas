@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-11-17T09:08:13Z",
-  "count": 82,
+  "generatedAt": "2026-11-18T18:07:52Z",
+  "count": 86,
   "domains": [
     {
       "slug": "billing-entra-tenant",
@@ -244,36 +244,95 @@
     },
     {
       "id": "0006-all-write-operations-across-subscription-24h",
-      "status": "idea",
-      "title": "All write operations across subscription (24h)",
-      "summary": "Provides a daily digest of all infrastructure changes for operational awareness and audit trail.",
+      "status": "validated",
+      "title": "Daily relevant Azure changes digest",
+      "summary": "Every evening, a read-only digest of the Azure changes that matter, with noise filtered out and who, when, how and the old and new values.",
       "domain": "management",
       "trigger": [
-        "schedule"
+        "schedule",
+        "chat"
       ],
-      "frequency": "Daily digest",
-      "timeSaved": "Medium",
+      "frequency": "Daily",
+      "timeSaved": "High",
       "topPick": false,
-      "samplePrompt": "Summarize all write and delete operations in subscription '{subscription_name}' in the last 24 hours. Group by resource type, show total operations count, and flag any failed operations. Exclude read-only and diagnostic operations.",
+      "products": [
+        "azure-resource-graph",
+        "azure-monitor-activity-log",
+        "azure-resource-manager",
+        "azure-sre-agent"
+      ],
+      "autonomy": "read-only",
+      "samplePrompt": "Run the daily relevant Azure changes digest for the last 24 hours and give me the report.",
       "source": {
         "type": "community",
-        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+        "url": "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/14-azure-relevant-changes-digest"
+      },
+      "package": {
+        "version": "1.0.0",
+        "apiVersion": "azuresre.ai/v1",
+        "requires": {
+          "connectors": [],
+          "roles": [
+            "Reader on each watched subscription, or on a management group",
+            "Optional: Microsoft Graph Application.Read.All, to show application names (off by default)",
+            "SRE Agent Administrator for the person deploying"
+          ]
+        },
+        "parameters": {
+          "MANAGED_IDENTITY_CLIENT_ID": "Client ID of the agent user-assigned managed identity",
+          "SUBSCRIPTION_IDS": "Subscriptions to watch (or leave empty and set MANAGEMENT_GROUP_ID)",
+          "MANAGEMENT_GROUP_ID": "Optional management group to watch instead of a subscription list",
+          "BUSINESS_TIMEZONE": "IANA time zone for local times and the after-hours flag",
+          "PROD_TAGS": "Tags that mark production resource groups or resources",
+          "EXPECTED_AUTOMATION": "Known pipeline identities whose changes are one level lower",
+          "CLIENT_NAME": "Optional organization name in the report header"
+        },
+        "contents": {
+          "tools": [
+            "manifests/tools/generate-azure-change-digest.yaml"
+          ],
+          "skills": [
+            "manifests/skills/azure-change-digest/SKILL.md"
+          ],
+          "subagents": [
+            "manifests/subagents/change-digest-reviewer.yaml"
+          ],
+          "scheduledTasks": [
+            "manifests/scheduled-tasks/daily-relevant-changes-digest.yaml"
+          ],
+          "permissions": [
+            "permissions/grant-change-digest-reader.ps1"
+          ]
+        }
       },
       "path": "usecases/0006-all-write-operations-across-subscription-24h",
       "components": {
-        "skill": false,
-        "subagent": false,
-        "tool": false,
-        "task": false,
-        "permissions": false,
-        "tests": false,
-        "sampleReport": false,
+        "skill": true,
+        "subagent": true,
+        "tool": "generate-azure-change-digest.yaml",
+        "task": true,
+        "permissions": true,
+        "tests": true,
+        "sampleReport": true,
         "images": false
       },
-      "readme": null,
-      "images": [],
-      "page": null,
-      "download": null
+      "readme": "usecases/0006-all-write-operations-across-subscription-24h/README.md",
+      "images": [
+        "docs/images/report-preview.png",
+        "docs/images/report-what-changed.png",
+        "docs/images/setup-chat.png",
+        "docs/images/setup-configure.png",
+        "docs/images/setup-skill.png",
+        "docs/images/setup-subagent.png",
+        "docs/images/setup-task.png",
+        "docs/images/setup-tool.png"
+      ],
+      "page": "usecases/0006-all-write-operations-across-subscription-24h/",
+      "download": {
+        "url": "downloads/0006-all-write-operations-across-subscription-24h.zip",
+        "sha256Url": "downloads/0006-all-write-operations-across-subscription-24h.zip.sha256",
+        "version": "1.0.0"
+      }
     },
     {
       "id": "0007-automated-compliance-remediation-tasks",
@@ -742,7 +801,7 @@
       "id": "0021-databricks-dependency-configuration-review",
       "status": "validated",
       "title": "Azure Databricks dependency and configuration review",
-      "summary": "Read-only map of what an Azure Databricks workspace depends on, where its cost comes from, and 36 best-practice checks.",
+      "summary": "Read-only review of every Azure Databricks workspace the agent can read: dependency map, where the cost comes from, and 36 best-practice checks.",
       "domain": "platform-devops",
       "trigger": [
         "chat"
@@ -753,37 +812,39 @@
       "products": [
         "azure-databricks",
         "unity-catalog",
+        "azure-resource-graph",
         "azure-cost-management",
         "azure-resource-manager",
         "azure-sre-agent"
       ],
       "autonomy": "read-only",
-      "samplePrompt": "Run the complete Azure Databricks dependency map and configuration review for <APPROVED_DATABRICKS_WORKSPACE_NAME> using operation=report and deliver all four files.",
+      "samplePrompt": "Generate the complete dependency and configuration report for every Azure Databricks workspace in every subscription (operation=report, workspace_names=all) and deliver all four files.",
       "source": {
         "type": "community",
         "url": "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/08-databricks-dependency-configuration-review"
       },
       "package": {
-        "version": "1.0.0",
+        "version": "1.1.0",
         "apiVersion": "azuresre.ai/v1",
         "requires": {
           "connectors": [],
           "roles": [
-            "Reader on the Databricks resource group and its managed resource group (ARM)",
-            "Cost Management Reader on the subscription, for the cost section (optional)",
-            "CAN VIEW on in-scope jobs, pipelines, SQL warehouses and compute (Databricks workspace)",
-            "BROWSE, USE CATALOG and USE SCHEMA on in-scope Unity Catalog objects"
+            "Reader on the management group (recommended) or on each subscription with Databricks workspaces (Resource Graph discovery and the ARM reads of each workspace and its managed resource group)",
+            "Cost Management Reader on the same scope, for the cost section",
+            "Inside each workspace, the identity as a service principal with workspace-access and databricks-sql-access (never admin) and CAN VIEW on jobs, pipelines and SQL warehouses",
+            "BROWSE, USE CATALOG and USE SCHEMA on the Unity Catalog catalogs (metadata only)"
           ]
         },
         "parameters": {
-          "SUBSCRIPTION_ID": "Subscription of the Databricks workspace",
-          "SRE_TENANT_ID": "Tenant of the SRE Agent",
-          "TARGET_TENANT_ID": "Tenant of the Databricks workspace (equal to SRE_TENANT_ID when it is the same tenant)",
-          "MANAGED_IDENTITY_CLIENT_ID": "Client ID of the agent user-assigned managed identity",
-          "FEDERATED_APP_CLIENT_ID": "Multi-tenant app registration used for cross-tenant access, if any",
+          "SRE_TENANT_ID": "Tenant of the SRE Agent (required)",
+          "TARGET_TENANT_ID": "Tenant of the workspaces (required): the same value as SRE_TENANT_ID in the same tenant, which turns on auto-discovery",
+          "MANAGED_IDENTITY_CLIENT_ID": "Client ID of the agent user-assigned managed identity (required)",
+          "SUBSCRIPTION_ID": "Optional: subscription for APPROVED_WORKSPACES entries without their own subscription_id",
+          "APPROVED_WORKSPACES": "Optional per-workspace overrides (environment, cost scope, requirements); the list of workspaces only for cross-tenant access",
+          "DISCOVERY_SUBSCRIPTION_IDS": "Optional: limit discovery to these subscription IDs (empty: every subscription the identity can read)",
+          "FEDERATED_APP_CLIENT_ID": "Multi-tenant app registration used for cross-tenant access (cross-tenant only)",
           "CROSS_TENANT_CERT_KEYVAULT_URL": "Key Vault that holds the cross-tenant app certificate (cross-tenant only)",
           "CROSS_TENANT_CERT_NAME": "Name of that certificate in Key Vault (cross-tenant only)",
-          "APPROVED_WORKSPACES": "Allowlist of workspace names, resource groups and hosts",
           "CLIENT_NAME": "Optional organization name on the report cover"
         },
         "contents": {
@@ -797,6 +858,7 @@
             "manifests/subagents/databricks-dependency-live.yaml"
           ],
           "permissions": [
+            "permissions/grant-databricks-permissions.ps1",
             "permissions/grant-databricks-reader.ps1"
           ]
         }
@@ -817,6 +879,7 @@
         "docs/images/report-databricks-costs.png",
         "docs/images/report-dependency-graph.png",
         "docs/images/report-preview.png",
+        "docs/images/report-workspace-summary.png",
         "docs/images/setup-chat.png",
         "docs/images/setup-skill.png",
         "docs/images/setup-subagent.png",
@@ -826,7 +889,7 @@
       "download": {
         "url": "downloads/0021-databricks-dependency-configuration-review.zip",
         "sha256Url": "downloads/0021-databricks-dependency-configuration-review.zip.sha256",
-        "version": "1.0.0"
+        "version": "1.1.0"
       }
     },
     {
@@ -864,36 +927,89 @@
     },
     {
       "id": "0023-defender-for-cloud-assessment",
-      "status": "idea",
-      "title": "Defender for Cloud assessment",
-      "summary": "Provides a security posture snapshot from Defender for Cloud, highlighting critical findings and score trends.",
+      "status": "built",
+      "title": "Security posture from Defender for Cloud",
+      "summary": "Monthly read-only report of the live Defender for Cloud evidence of a subscription that shows what to review first, with grounded follow-up questions.",
       "domain": "security",
       "trigger": [
-        "schedule"
+        "schedule",
+        "chat"
       ],
-      "frequency": "Weekly",
+      "frequency": "Monthly",
       "timeSaved": "High",
       "topPick": false,
-      "samplePrompt": "Pull Defender for Cloud assessment for all subscriptions: (1) secure score current and 30-day trend, (2) unhealthy resources by severity (high/medium/low), (3) top 10 recommendations by impacted resource count, (4) new recommendations in last 7 days. Prioritize by exploitability and blast radius.",
+      "products": [
+        "defender-for-cloud",
+        "azure-resource-graph",
+        "azure-arc",
+        "azure-sre-agent"
+      ],
+      "autonomy": "read-only",
+      "samplePrompt": "Use defender-cloud-live and only generate-defender-cloud-report with operation=\"report\" and deliver the four files with what to review first.",
       "source": {
         "type": "community",
-        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+        "url": "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/02-arc-defender-posture-audit"
+      },
+      "package": {
+        "version": "1.0.0",
+        "apiVersion": "azuresre.ai/v1",
+        "requires": {
+          "connectors": [],
+          "roles": [
+            "Reader on the monitored subscription (Security Reader alone does not cover the whole pipeline)",
+            "SRE Agent Author and Standard User, or SRE Agent Administrator, for the person deploying"
+          ]
+        },
+        "parameters": {
+          "SUBSCRIPTION_ID": "Monitored subscription",
+          "TENANT_ID": "Tenant of the monitored subscription",
+          "MANAGED_IDENTITY_CLIENT_ID": "Client ID of the agent user-assigned managed identity"
+        },
+        "contents": {
+          "tools": [
+            "manifests/tools/generate-defender-cloud-report.yaml"
+          ],
+          "skills": [
+            "manifests/skills/defender-cloud-live/SKILL.md"
+          ],
+          "subagents": [
+            "manifests/subagents/defender-cloud-live.yaml"
+          ],
+          "scheduledTasks": [
+            "manifests/scheduled-tasks/monthly-defender-cloud-evidence-audit.yaml"
+          ],
+          "permissions": [
+            "permissions/grant-defender-evidence-reader.ps1"
+          ]
+        }
       },
       "path": "usecases/0023-defender-for-cloud-assessment",
       "components": {
-        "skill": false,
-        "subagent": false,
-        "tool": false,
-        "task": false,
-        "permissions": false,
-        "tests": false,
+        "skill": true,
+        "subagent": true,
+        "tool": "generate-defender-cloud-report.yaml",
+        "task": true,
+        "permissions": true,
+        "tests": true,
         "sampleReport": false,
         "images": false
       },
-      "readme": null,
-      "images": [],
-      "page": null,
-      "download": null
+      "readme": "usecases/0023-defender-for-cloud-assessment/README.md",
+      "images": [
+        "docs/images/report-preview.png",
+        "docs/images/report-resource-details.png",
+        "docs/images/setup-chat.png",
+        "docs/images/setup-skill.png",
+        "docs/images/setup-subagent.png",
+        "docs/images/setup-task.png",
+        "docs/images/setup-tool.png"
+      ],
+      "page": "usecases/0023-defender-for-cloud-assessment/",
+      "download": {
+        "url": "downloads/0023-defender-for-cloud-assessment.zip",
+        "sha256Url": "downloads/0023-defender-for-cloud-assessment.zip.sha256",
+        "version": "1.0.0"
+      }
     },
     {
       "id": "0024-diagnostic-settings-coverage-audit",
@@ -2319,36 +2435,90 @@
     },
     {
       "id": "0067-service-health-incidents-resource-impact",
-      "status": "idea",
-      "title": "Service Health incidents & resource impact",
-      "summary": "Detects Azure platform incidents and maps them to specific customer resources to quantify blast radius during outages.",
+      "status": "validated",
+      "title": "Azure Service Health incidents and planned maintenance review",
+      "summary": "Monthly read-only review of the Azure incidents and planned maintenance published for a subscription, with the resources that may be affected.",
       "domain": "management",
       "trigger": [
-        "alert"
+        "schedule",
+        "chat"
       ],
-      "frequency": "On new incident",
+      "frequency": "Monthly",
       "timeSaved": "High",
       "topPick": true,
-      "samplePrompt": "Check Azure Service Health for any active incidents affecting resources in my subscriptions. Show incident title, affected services, impacted regions, status, and list my specific resources in those regions. For each impacted resource, show current health status and dependent workloads affected. Suggest mitigation actions if available.",
+      "products": [
+        "azure-service-health",
+        "azure-resource-manager",
+        "azure-sre-agent"
+      ],
+      "autonomy": "read-only",
+      "samplePrompt": "Make one generate-service-health-report call with operation=\"report\" and period=\"previous_month\" and deliver the HTML, the complete JSON, the events CSV and the impacted-resources CSV.",
       "source": {
         "type": "community",
-        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+        "url": "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/05-service-health-events-review"
+      },
+      "package": {
+        "version": "1.0.0",
+        "apiVersion": "azuresre.ai/v1",
+        "requires": {
+          "connectors": [],
+          "roles": [
+            "Reader on the monitored subscription (Microsoft.ResourceHealth/events/read and events/impactedResources/read)",
+            "SRE Agent Author and Standard User, or SRE Agent Administrator, for the person deploying"
+          ]
+        },
+        "parameters": {
+          "SUBSCRIPTION_ID": "Monitored subscription",
+          "TENANT_ID": "Tenant of the monitored subscription",
+          "MANAGED_IDENTITY_CLIENT_ID": "Client ID of the agent user-assigned managed identity",
+          "CLIENT_NAME": "Optional organization name on the report",
+          "COMPANY_LOGO_DATA_URI": "Optional PNG or JPEG logo as a data URI"
+        },
+        "contents": {
+          "tools": [
+            "manifests/tools/generate-service-health-report.yaml"
+          ],
+          "skills": [
+            "manifests/skills/service-health-live/SKILL.md"
+          ],
+          "subagents": [
+            "manifests/subagents/service-health-live.yaml"
+          ],
+          "scheduledTasks": [
+            "manifests/scheduled-tasks/monthly-service-health-events-review.yaml"
+          ],
+          "permissions": [
+            "permissions/grant-service-health-reader.ps1"
+          ]
+        }
       },
       "path": "usecases/0067-service-health-incidents-resource-impact",
       "components": {
-        "skill": false,
-        "subagent": false,
-        "tool": false,
-        "task": false,
-        "permissions": false,
-        "tests": false,
-        "sampleReport": false,
+        "skill": true,
+        "subagent": true,
+        "tool": "generate-service-health-report.yaml",
+        "task": true,
+        "permissions": true,
+        "tests": true,
+        "sampleReport": true,
         "images": false
       },
-      "readme": null,
-      "images": [],
-      "page": null,
-      "download": null
+      "readme": "usecases/0067-service-health-incidents-resource-impact/README.md",
+      "images": [
+        "docs/images/report-preview.png",
+        "docs/images/report-requested-updates.png",
+        "docs/images/setup-chat.png",
+        "docs/images/setup-skill.png",
+        "docs/images/setup-subagent.png",
+        "docs/images/setup-task.png",
+        "docs/images/setup-tool.png"
+      ],
+      "page": "usecases/0067-service-health-incidents-resource-impact/",
+      "download": {
+        "url": "downloads/0067-service-health-incidents-resource-impact.zip",
+        "sha256Url": "downloads/0067-service-health-incidents-resource-impact.zip.sha256",
+        "version": "1.0.0"
+      }
     },
     {
       "id": "0068-sku-reliability-assessment",
@@ -2418,36 +2588,94 @@
     },
     {
       "id": "0070-stale-rbac-assignments",
-      "status": "idea",
-      "title": "Stale RBAC assignments",
-      "summary": "Find assignments to deleted or inactive principals for an access review.",
+      "status": "validated",
+      "title": "Azure RBAC privileged access review",
+      "summary": "Monthly read-only review of privileged Azure role assignments: what can be removed today without anybody losing access, and what needs an owner.",
       "domain": "identity-access",
       "trigger": [
-        "schedule"
+        "schedule",
+        "chat"
       ],
-      "frequency": "Weekly",
+      "frequency": "Monthly",
       "timeSaved": "High",
       "topPick": true,
-      "samplePrompt": "List all role assignments where: (1) the principal object no longer exists in Entra ID (orphaned SIDs), (2) the user principal hasn't signed in for > 90 days, (3) the service principal has no recent activity. Show assignment scope, role, principal display name/ID, and last sign-in date. Recommend removal.",
+      "products": [
+        "azure-rbac",
+        "entra-id",
+        "microsoft-graph",
+        "azure-resource-manager",
+        "azure-sre-agent"
+      ],
+      "autonomy": "read-only",
+      "samplePrompt": "Run the monthly Azure RBAC privileged access review and give me the links to the HTML report, CSV and JSON with the executive summary, Owner decisions, coverage and required actions.",
       "source": {
         "type": "community",
-        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+        "url": "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/13-rbac-privileged-access-review"
+      },
+      "package": {
+        "version": "1.0.0",
+        "apiVersion": "azuresre.ai/v1",
+        "requires": {
+          "connectors": [],
+          "roles": [
+            "Reader on each reviewed subscription, or on a management group",
+            "Microsoft Graph User.Read.All, Application.Read.All, GroupMember.Read.All and AuditLog.Read.All (application permissions)",
+            "Privileged Role Administrator (Microsoft Entra), once, to grant the Graph permissions",
+            "SRE Agent Administrator for the person deploying"
+          ]
+        },
+        "parameters": {
+          "MANAGED_IDENTITY_CLIENT_ID": "Client ID of the agent user-assigned managed identity",
+          "SUBSCRIPTION_IDS": "Subscriptions to review (role assignments inherited from management groups are included)",
+          "ORGANIZATION_NAME": "Optional organization name in the report title and footer",
+          "LOGO_DATA_URI": "Optional data URI of the organization logo"
+        },
+        "contents": {
+          "tools": [
+            "manifests/tools/generate-rbac-privileged-review.yaml"
+          ],
+          "skills": [
+            "manifests/skills/rbac-privileged-access-review/SKILL.md"
+          ],
+          "subagents": [
+            "manifests/subagents/rbac-access-reviewer.yaml"
+          ],
+          "scheduledTasks": [
+            "manifests/scheduled-tasks/monthly-rbac-privileged-access-review.yaml"
+          ],
+          "permissions": [
+            "permissions/grant-rbac-review-permissions.ps1"
+          ]
+        }
       },
       "path": "usecases/0070-stale-rbac-assignments",
       "components": {
-        "skill": false,
-        "subagent": false,
-        "tool": false,
-        "task": false,
-        "permissions": false,
-        "tests": false,
-        "sampleReport": false,
+        "skill": true,
+        "subagent": true,
+        "tool": "generate-rbac-privileged-review.yaml",
+        "task": true,
+        "permissions": true,
+        "tests": true,
+        "sampleReport": true,
         "images": false
       },
-      "readme": null,
-      "images": [],
-      "page": null,
-      "download": null
+      "readme": "usecases/0070-stale-rbac-assignments/README.md",
+      "images": [
+        "docs/images/report-preview.png",
+        "docs/images/report-top-identities.png",
+        "docs/images/setup-chat.png",
+        "docs/images/setup-configure.png",
+        "docs/images/setup-skill.png",
+        "docs/images/setup-subagent.png",
+        "docs/images/setup-task.png",
+        "docs/images/setup-tool.png"
+      ],
+      "page": "usecases/0070-stale-rbac-assignments/",
+      "download": {
+        "url": "downloads/0070-stale-rbac-assignments.zip",
+        "sha256Url": "downloads/0070-stale-rbac-assignments.zip.sha256",
+        "version": "1.0.0"
+      }
     },
     {
       "id": "0071-subscription-hygiene-score",
@@ -2715,6 +2943,176 @@
       "download": null
     },
     {
+      "id": "0079-entra-credential-expiration-audit",
+      "status": "validated",
+      "title": "Microsoft Entra credential expiration audit",
+      "summary": "Monthly read-only audit of expired and expiring secrets and certificates of every Microsoft Entra app registration and service principal.",
+      "domain": "identity-access",
+      "trigger": [
+        "schedule",
+        "chat"
+      ],
+      "frequency": "Monthly",
+      "timeSaved": "High",
+      "topPick": false,
+      "products": [
+        "entra-id",
+        "microsoft-graph",
+        "azure-sre-agent"
+      ],
+      "autonomy": "read-only",
+      "samplePrompt": "Run the full Microsoft Entra credential expiration audit and deliver the HTML report with the coverage and risk summary.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/01-entra-credential-expiration-audit"
+      },
+      "package": {
+        "version": "1.0.0",
+        "apiVersion": "azuresre.ai/v1",
+        "requires": {
+          "connectors": [],
+          "roles": [
+            "Microsoft Graph Application.Read.All (application permission) for the agent managed identity",
+            "Privileged Role Administrator (Microsoft Entra), once, to grant that permission",
+            "SRE Agent Author and Standard User, or SRE Agent Administrator, for the person deploying"
+          ]
+        },
+        "parameters": {
+          "MANAGED_IDENTITY_CLIENT_ID": "Client ID of the agent user-assigned managed identity, set in the tool and in grant-graph-permission.ps1"
+        },
+        "contents": {
+          "tools": [
+            "manifests/tools/generate-entra-credential-expiration.yaml"
+          ],
+          "skills": [
+            "manifests/skills/entra-full-credential-inventory/SKILL.md"
+          ],
+          "subagents": [
+            "manifests/subagents/credential-monitor-full.yaml"
+          ],
+          "scheduledTasks": [
+            "manifests/scheduled-tasks/monthly-entra-credential-expiration-audit.yaml"
+          ],
+          "permissions": [
+            "permissions/grant-graph-permission.ps1"
+          ]
+        }
+      },
+      "path": "usecases/0079-entra-credential-expiration-audit",
+      "components": {
+        "skill": true,
+        "subagent": true,
+        "tool": "generate-entra-credential-expiration.yaml",
+        "task": true,
+        "permissions": true,
+        "tests": true,
+        "sampleReport": true,
+        "images": false
+      },
+      "readme": "usecases/0079-entra-credential-expiration-audit/README.md",
+      "images": [
+        "docs/images/report-inventory.png",
+        "docs/images/report-preview.png",
+        "docs/images/setup-chat.png",
+        "docs/images/setup-skill.png",
+        "docs/images/setup-subagent.png",
+        "docs/images/setup-task.png",
+        "docs/images/setup-tool.png"
+      ],
+      "page": "usecases/0079-entra-credential-expiration-audit/",
+      "download": {
+        "url": "downloads/0079-entra-credential-expiration-audit.zip",
+        "sha256Url": "downloads/0079-entra-credential-expiration-audit.zip.sha256",
+        "version": "1.0.0"
+      }
+    },
+    {
+      "id": "0080-infrastructure-operations-health",
+      "status": "built",
+      "title": "Server health and capacity review",
+      "summary": "Monthly read-only review of CPU, memory, capacity, health and alerts of Azure VMs and Arc servers, saying clearly where data is missing.",
+      "domain": "management",
+      "trigger": [
+        "schedule",
+        "chat"
+      ],
+      "frequency": "Monthly",
+      "timeSaved": "High",
+      "topPick": false,
+      "products": [
+        "azure-monitor",
+        "log-analytics",
+        "azure-arc",
+        "azure-resource-graph",
+        "azure-sre-agent"
+      ],
+      "autonomy": "read-only",
+      "samplePrompt": "Use infra-ops-live and infrastructure-operations-report with operation=report and period=previous_month, and deliver the four files.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/03-infrastructure-operations-health"
+      },
+      "package": {
+        "version": "1.0.0",
+        "apiVersion": "azuresre.ai/v1",
+        "requires": {
+          "connectors": [],
+          "roles": [
+            "Reader on the monitored subscription",
+            "Log Analytics Reader on the approved workspaces (workspace-context reads of InsightsMetrics, Perf and Heartbeat)",
+            "SRE Agent Author and Standard User, or SRE Agent Administrator, for the person deploying"
+          ]
+        },
+        "parameters": {
+          "SUBSCRIPTION_ID": "Monitored subscription",
+          "TENANT_ID": "Tenant of the monitored subscription",
+          "MANAGED_IDENTITY_CLIENT_ID": "Client ID of the agent user-assigned managed identity",
+          "LOG_WORKSPACE_IDS": "Approved Log Analytics workspace IDs (customer IDs) for guest metrics",
+          "COMPANY_LOGO_DATA_URI": "Optional PNG or JPEG logo as a data URI"
+        },
+        "contents": {
+          "tools": [
+            "manifests/tools/infrastructure-operations-report.yaml"
+          ],
+          "skills": [
+            "manifests/skills/infra-ops-live/SKILL.md"
+          ],
+          "subagents": [
+            "manifests/subagents/infra-ops-live.yaml"
+          ],
+          "scheduledTasks": [
+            "manifests/scheduled-tasks/monthly-infrastructure-operations-review.yaml"
+          ],
+          "permissions": [
+            "permissions/grant-infrastructure-operations-reader.ps1"
+          ]
+        }
+      },
+      "path": "usecases/0080-infrastructure-operations-health",
+      "components": {
+        "skill": true,
+        "subagent": true,
+        "tool": "infrastructure-operations-report.yaml",
+        "task": true,
+        "permissions": true,
+        "tests": true,
+        "sampleReport": false,
+        "images": false
+      },
+      "readme": "usecases/0080-infrastructure-operations-health/README.md",
+      "images": [
+        "docs/images/report-arc-administration.png",
+        "docs/images/report-preview.png",
+        "docs/images/setup-task.png"
+      ],
+      "page": "usecases/0080-infrastructure-operations-health/",
+      "download": {
+        "url": "downloads/0080-infrastructure-operations-health.zip",
+        "sha256Url": "downloads/0080-infrastructure-operations-health.zip.sha256",
+        "version": "1.0.0"
+      }
+    },
+    {
       "id": "0082-azure-backup-operations-review",
       "status": "validated",
       "title": "Azure Backup jobs review",
@@ -2890,6 +3288,96 @@
       }
     },
     {
+      "id": "0084-operations-incidents-anomalies-digest",
+      "status": "validated",
+      "title": "Monthly operations incidents and anomalies digest",
+      "summary": "Monthly read-only digest of alerts, Service Health, failed extensions, telemetry anomalies and Advisor tips, with a prioritized action list.",
+      "domain": "management",
+      "trigger": [
+        "schedule",
+        "chat"
+      ],
+      "frequency": "Monthly",
+      "timeSaved": "High",
+      "topPick": false,
+      "products": [
+        "azure-monitor",
+        "azure-service-health",
+        "log-analytics",
+        "azure-advisor",
+        "azure-sre-agent"
+      ],
+      "autonomy": "read-only",
+      "samplePrompt": "Generate the monthly operations digest for the previous month and deliver the four files with the prioritised actions.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/10-operations-incidents-anomalies-digest"
+      },
+      "package": {
+        "version": "1.0.0",
+        "apiVersion": "azuresre.ai/v1",
+        "requires": {
+          "connectors": [],
+          "roles": [
+            "Reader on the target subscription",
+            "Log Analytics Reader on the approved workspaces",
+            "SRE Agent Author and Standard User, or SRE Agent Administrator, for the person deploying"
+          ]
+        },
+        "parameters": {
+          "SUBSCRIPTION_ID": "Target subscription",
+          "MANAGED_IDENTITY_CLIENT_ID": "Client ID of the agent user-assigned managed identity",
+          "APPROVED_LOG_WORKSPACES": "Approved Log Analytics workspaces for telemetry anomalies (up to 10)",
+          "CLIENT_NAME": "Optional organization name on the report",
+          "CLIENT_LOGO_DATA_URI": "Optional logo as a data URI"
+        },
+        "contents": {
+          "tools": [
+            "manifests/tools/generate-operations-digest-report.yaml"
+          ],
+          "skills": [
+            "manifests/skills/operations-digest-live/SKILL.md"
+          ],
+          "subagents": [
+            "manifests/subagents/operations-digest-live.yaml"
+          ],
+          "scheduledTasks": [
+            "manifests/scheduled-tasks/monthly-operations-incidents-anomalies-digest.yaml"
+          ],
+          "permissions": [
+            "permissions/grant-operations-digest-reader.ps1"
+          ]
+        }
+      },
+      "path": "usecases/0084-operations-incidents-anomalies-digest",
+      "components": {
+        "skill": true,
+        "subagent": true,
+        "tool": "generate-operations-digest-report.yaml",
+        "task": true,
+        "permissions": true,
+        "tests": true,
+        "sampleReport": true,
+        "images": false
+      },
+      "readme": "usecases/0084-operations-incidents-anomalies-digest/README.md",
+      "images": [
+        "docs/images/report-preview.png",
+        "docs/images/report-recommended-actions.png",
+        "docs/images/setup-chat.png",
+        "docs/images/setup-skill.png",
+        "docs/images/setup-subagent.png",
+        "docs/images/setup-task.png",
+        "docs/images/setup-tool.png"
+      ],
+      "page": "usecases/0084-operations-incidents-anomalies-digest/",
+      "download": {
+        "url": "downloads/0084-operations-incidents-anomalies-digest.zip",
+        "sha256Url": "downloads/0084-operations-incidents-anomalies-digest.zip.sha256",
+        "version": "1.0.0"
+      }
+    },
+    {
       "id": "0086-sqlmi-maintenance-resilience",
       "status": "validated",
       "title": "Azure SQL Managed Instance maintenance resilience",
@@ -2976,6 +3464,81 @@
         "url": "downloads/0086-sqlmi-maintenance-resilience.zip",
         "sha256Url": "downloads/0086-sqlmi-maintenance-resilience.zip.sha256",
         "version": "1.0.0"
+      }
+    },
+    {
+      "id": "0087-sre-use-case-builder",
+      "status": "validated",
+      "title": "Azure SRE Agent use-case builder",
+      "summary": "Describe an operations idea in one sentence and get a tested, read-only SRE Agent use case: tool, skill, subagent, task, permissions and report.",
+      "domain": "platform-devops",
+      "trigger": [
+        "chat"
+      ],
+      "frequency": "On demand",
+      "timeSaved": "High",
+      "topPick": false,
+      "products": [
+        "azure-sre-agent",
+        "azure-resource-graph",
+        "log-analytics",
+        "microsoft-graph",
+        "azure-cost-management"
+      ],
+      "autonomy": "read-only",
+      "samplePrompt": "I need a weekly report of orphaned managed disks (not attached to any VM) across my subscriptions, with size and SKU, so we can clean up waste.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/case_0_v3"
+      },
+      "package": {
+        "version": "3.1.1",
+        "apiVersion": "azuresre.ai/v1",
+        "requires": {
+          "connectors": [],
+          "roles": [
+            "None for the builder itself: it reads only what the agent managed identity can already read, to live-check the generated tool",
+            "SRE Agent Administrator, or SRE Agent Author and Standard User, for the person deploying"
+          ]
+        },
+        "parameters": {},
+        "contents": {
+          "tools": [
+            "manifests/tools/sre-usecase-builder-kit.yaml"
+          ],
+          "skills": [
+            "manifests/skills/sre-usecase-builder/SKILL.md"
+          ],
+          "subagents": [
+            "manifests/subagents/sre-usecase-builder.yaml"
+          ]
+        }
+      },
+      "path": "usecases/0087-sre-use-case-builder",
+      "components": {
+        "skill": true,
+        "subagent": true,
+        "tool": "sre-usecase-builder-kit.yaml",
+        "task": false,
+        "permissions": false,
+        "tests": true,
+        "sampleReport": true,
+        "images": false
+      },
+      "readme": "usecases/0087-sre-use-case-builder/README.md",
+      "images": [
+        "docs/images/builder-blocks.png",
+        "docs/images/report-preview.png",
+        "docs/images/setup-chat.png",
+        "docs/images/setup-skill.png",
+        "docs/images/setup-subagent.png",
+        "docs/images/setup-tool.png"
+      ],
+      "page": "usecases/0087-sre-use-case-builder/",
+      "download": {
+        "url": "downloads/0087-sre-use-case-builder.zip",
+        "sha256Url": "downloads/0087-sre-use-case-builder.zip.sha256",
+        "version": "3.1.1"
       }
     }
   ]
