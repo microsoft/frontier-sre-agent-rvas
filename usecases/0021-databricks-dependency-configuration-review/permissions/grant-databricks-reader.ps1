@@ -14,4 +14,5 @@ $scopes = @("/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroup")
 if ($ManagedResourceGroup) { $scopes += "/subscriptions/$SubscriptionId/resourceGroups/$ManagedResourceGroup" }
 foreach ($scope in $scopes) {
   az role assignment create --assignee-object-id $PrincipalId --assignee-principal-type ServicePrincipal --role Reader --scope $scope
+  if ($LASTEXITCODE -ne 0) { throw "az role assignment create failed (exit code $LASTEXITCODE): Reader on $scope" }
 }

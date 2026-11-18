@@ -1,0 +1,44 @@
+api_version: azuresre.ai/v1
+kind: Tool
+metadata:
+  name: generate-azure-change-digest
+spec:
+  type: PythonFunctionTool
+  description: 'Read-only daily digest of relevant Azure control-plane changes (Change Analysis in Azure
+    Resource Graph, Reader): filters platform noise, scores deletes, exposure and security settings, SKU
+    changes, new role assignments and Activity Log gap events (locks, diagnostic settings, policy, RBAC
+    deletes), shows who / when / client and old -> new values, flags after-hours, first-time-actor and
+    burst activity, and writes an offline HTML report, a JSON snapshot and two CSV files. Never changes
+    anything.'
+  timeoutSeconds: 150
+  code_file: ./generate-azure-change-digest.py
+  parameters:
+  - name: operation
+    type: string
+    required: false
+    description: 'report (default: HTML + JSON + changes CSV + property diffs CSV) or query (bounded chat
+      view, no files).'
+  - name: period
+    type: string
+    required: false
+    description: 'Rolling window: last_24h (default), last_7d or last_14d (Change Analysis retention).'
+  - name: min_level
+    type: string
+    required: false
+    description: 'Lowest level listed in detail: high, medium (default) or low. Lower levels are still
+      counted.'
+  - name: view
+    type: string
+    required: false
+    description: 'Only with operation=query: summary (default), relevant, deletes, security, actors, unusual,
+      rbac, noise or coverage.'
+  - name: resource_group
+    type: string
+    required: false
+    description: 'Optional focus: resource group name or part of one (letters, digits, _ - . ( ), up to
+      90 characters). Empty = all.'
+  - name: limit
+    type: int
+    required: false
+    description: 'Only with operation=query: maximum rows, 1-100 (default 25); answers are capped to 3,500
+      bytes.'

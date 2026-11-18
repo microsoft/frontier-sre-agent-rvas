@@ -1,0 +1,5 @@
+# What `usecases.sh verify` should find on the live agent after deploying this package.
+skills: [patching-investigation-live]
+subagents: [patching-investigation-live]
+tools: [patching-investigation-report]
+scheduledTasks: [monthly-update-manager-patching-investigation]

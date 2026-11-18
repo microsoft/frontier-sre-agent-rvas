@@ -1,0 +1,5 @@
+# What `usecases.sh verify` should find on the live agent after deploying this package.
+skills: [entra-full-credential-inventory]
+subagents: [credential-monitor-full]
+tools: [generate-entra-credential-expiration]
+scheduledTasks: [monthly-entra-credential-expiration-audit]

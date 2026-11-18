@@ -102,7 +102,7 @@ sed -i 's/^skills: .*/skills: [other]/' "$tmp/0001-my-case/tests/expected-config
 check "verify fails when a resource is missing" fails env PATH="$bin:$PATH" "$SH" --root "$tmp" verify my-case --endpoint https://example.test
 
 out="$("$SH" deploy databricks-dependency-configuration-review --endpoint https://example.test --dry-run 2>&1)"
-check "tool code_file is inlined as functionCode" bash -c "grep -q 'tools/generate-databricks-dependency-report.*functionCode' <<<\"\$1\" && ! grep -q 'code_file' <<<\"\$1\"" _ "$out"
+check "tool code_file is inlined as functionCode" bash -c "grep -q 'tools/databricks-dependency-report.*functionCode' <<<\"\$1\" && ! grep -q 'code_file' <<<\"\$1\"" _ "$out"
 
 # package builds a standalone zip with the framework CLI and a matching checksum.
 pk="$tmp/dist"

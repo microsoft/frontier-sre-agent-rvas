@@ -1,0 +1,5 @@
+# What `usecases.sh verify` should find on the live agent after deploying this package.
+skills: [azure-backup-live]
+subagents: [azure-backup-live]
+tools: [generate-azure-backup-report]
+scheduledTasks: [monthly-azure-backup-operations-review]

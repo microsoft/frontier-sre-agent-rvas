@@ -1,0 +1,38 @@
+api_version: azuresre.ai/v1
+kind: ScheduledTask
+metadata:
+  name: monthly-defender-cloud-evidence-audit
+spec:
+  description: Monthly Defender for Cloud live evidence audit. Complete live report of the configured
+    subscription, read-only.
+  schedule: "0 9 1 * *"
+  time_zone: UTC
+  enabled: false
+  agent: defender-cloud-live
+  mode: Autonomous
+  prompt: |-
+    Use defender-cloud-live and generate-defender-cloud-report only.
+    Make exactly one generate-defender-cloud-report call with operation="report"
+    and every other parameter at its default, over the complete fixed Enabled
+    subscription. This is a current snapshot, not previous-month event history.
+    Do not make follow-up query calls, enumerate pages, retry/repeat reports,
+    narrow scope, drop evidence or change byte limits to complete this task.
+    Deliver the four actual returned files: self-contained HTML, inventory CSV,
+    finding CSV and complete JSON snapshot, using their exact runtime-owned paths
+    and the normal native thread-sharing flow. Do not invent paths or links.
+    Summarize only the returned compact evidence and top_actions, including LIVE
+    provenance, UTC reference, declared scope, source coverage and at most three
+    evidence-led owner-review priorities. Detail already in the artifacts must
+    stay there, not trigger extra queries or unsupported chat claims.
+    Keep native risk separate from technical severity, subscription context
+    separate from Arc-only metrics, and finding/CVE occurrences separate from
+    distinct resources or IDs. Retain all recommendation statuses in the files.
+    Keep independent MDE sensor health explicitly Unknown when not sourced.
+    Plans, extensions and AKS configuration do not prove runtime health; graph
+    context is not a confirmed attack, root cause or certification.
+    Disclose partial/unavailable sources and indexed/evaluation-time limits.
+    Empty returned data is not a zero-risk or complete-coverage guarantee.
+    Declare Action required for observed gaps or incomplete assurance, not an
+    invented score. On status="error", report the sanitized source/code and stop
+    without invented files/results. On sharing failure, report that failure
+    without recollecting. Never modify plans, roles, services, tasks or resources.

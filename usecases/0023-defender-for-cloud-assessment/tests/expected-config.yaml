@@ -1,0 +1,5 @@
+# What `usecases.sh verify` should find on the live agent after deploying this package.
+skills: [defender-cloud-live]
+subagents: [defender-cloud-live]
+tools: [generate-defender-cloud-report]
+scheduledTasks: [monthly-defender-cloud-evidence-audit]

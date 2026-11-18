@@ -1,0 +1,5 @@
+# What `usecases.sh verify` should find on the live agent after deploying this package.
+skills: [sre-usecase-builder]
+subagents: [sre-usecase-builder]
+tools: [sre-usecase-builder-kit]
+scheduledTasks: []

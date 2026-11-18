@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "patching-investigation-report parameters",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "operation": {
+      "type": "string",
+      "enum": ["report", "query"],
+      "default": "report",
+      "description": "report writes four complete files (HTML, snapshot JSON, machines CSV, patches CSV) for the configured subscription; query returns bounded views under the 3500-byte JSON transport budget."
+    },
+    "period": {
+      "type": "string",
+      "enum": ["last_30d", "last_14d", "last_7d", "last_24h"],
+      "default": "last_30d",
+      "description": "UTC time window for maintenance cycles and patch installation runs."
+    },
+    "view": {
+      "type": "string",
+      "enum": [
+        "summary",
+        "machines",
+        "failures",
+        "cycles",
+        "patches",
+        "extensions",
+        "coverage",
+        "actions"
+      ],
+      "default": "summary",
+      "description": "View to return for operation='query'. Must remain 'summary' when operation='report'."
+    },
+    "hosting": {
+      "type": "string",
+      "enum": ["all", "azure", "arc"],
+      "default": "all",
+      "description": "Filter by machine hosting plane: 'azure' (Microsoft.Compute/virtualMachines) or 'arc' (Microsoft.HybridCompute/machines)."
+    },
+    "failure_category": {
+      "type": "string",
+      "enum": [
+        "all",
+        "maintenance_window_unresponsive",
+        "arc_agent_expired_or_disconnected",
+        "assessment_stuck_or_readiness_undetermined",
+        "hotpatch_or_patch_extension_error",
+        "pending_security_patches_unscheduled",
+        "unassessed_no_update_manager_telemetry",
+        "healthy"
+      ],
+      "default": "all",
+      "description": "Filter by automated per-machine root-cause failure category."
+    },
+    "machine_name": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_.-]{0,128}$",
+      "default": "",
+      "description": "Optional exact machine name filter for operation='query'. Must be empty for operation='report'."
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 25,
+      "description": "Maximum rows to return in operation='query' (subject to 3500-byte transport cap)."
+    },
+    "offset": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 500000,
+      "default": 0,
+      "description": "0-based row offset for operation='query'."
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "operation": { "const": "report" } } },
+      "then": {
+        "properties": {
+          "view": { "const": "summary" },
+          "hosting": { "const": "all" },
+          "failure_category": { "const": "all" },
+          "machine_name": { "const": "" },
+          "limit": { "const": 25 },
+          "offset": { "const": 0 }
+        }
+      }
+    }
+  ]
+}

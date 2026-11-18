@@ -1,0 +1,32 @@
+id: 0083-update-manager-patching-failure-investigation
+status: validated
+title: "Patching results and failed machines investigation"
+summary: "After each patching cycle, a read-only review of Azure VMs and Arc servers in Update Manager that explains why each failed machine failed."
+domain: management
+trigger: [schedule, chat]
+frequency: "Monthly"
+timeSaved: High
+topPick: false
+products: [azure-update-manager, azure-arc, azure-resource-graph, azure-sre-agent]
+autonomy: read-only
+samplePrompt: "Generate the post-patching and failure investigation report for the last 30 days and deliver the four files."
+source: { type: community, url: "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/09-update-manager-patching-failure-investigation" }
+package:
+  version: 1.0.0
+  apiVersion: azuresre.ai/v1
+  requires:
+    connectors: []
+    roles:
+      - "Reader on the target subscription"
+      - "SRE Agent Author and Standard User, or SRE Agent Administrator, for the person deploying"
+  parameters:
+    SUBSCRIPTION_ID: "Target subscription"
+    MANAGED_IDENTITY_CLIENT_ID: "Client ID of the agent user-assigned managed identity"
+    CLIENT_NAME: "Optional organization name on the report"
+    CLIENT_LOGO_DATA_URI: "Optional logo as a data URI"
+  contents:
+    tools: [manifests/tools/patching-investigation-report.yaml]
+    skills: [manifests/skills/patching-investigation-live/SKILL.md]
+    subagents: [manifests/subagents/patching-investigation-live.yaml]
+    scheduledTasks: [manifests/scheduled-tasks/monthly-update-manager-patching-investigation.yaml]
+    permissions: [permissions/grant-patching-investigation-reader.ps1]

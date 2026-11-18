@@ -11,7 +11,7 @@
   "interpretation": [
     "Local rule-resource indicators, not an official Microsoft Well-Architected assessment, certification or Databricks audit grade.",
     "Dependency edges distinguish OBSERVED native ID/key joins from explicit INFERRED URI/host references and UNKNOWN runtime lineage.",
-    "Control-plane REST API reads never start clusters or SQL warehouses and never execute billable SQL queries against system.access.table_lineage or system.billing.usage.",
+    "Control-plane REST API reads never start clusters or SQL warehouses and never execute billable SQL queries against system.access.table_lineage; system.billing.usage is queried only when the operator sets system_tables_warehouse_id (off by default; that one fixed statement consumes DBUs and can start the chosen warehouse).",
     "Cross-tenant collection requires explicit administrator-configured federation or Azure Lighthouse delegation; a single-tenant SRE UAMI never acquires foreign-tenant tokens implicitly.",
     "Configuration presence does not prove effective firewall enforcement, data-plane network reachability, least-privilege Unity Catalog grants or workload SLA compliance."
   ],
@@ -25,9 +25,9 @@
       "pillar": "security",
       "severity": "high",
       "effort": "medium",
-      "title": "SKU Premium para gobernanza y controles de seguridad",
-      "recommendation": "Validar el uso del tier Premium para cargas de producción que requieren Unity Catalog, control de acceso basado en roles y auditoría avanzada.",
-      "business_impact": "Un tier inferior a Premium puede limitar controles de identidad, Unity Catalog y aislamiento de acceso.",
+      "title": "Premium SKU for governance and security controls",
+      "recommendation": "Confirm the Premium tier for production workloads that need Unity Catalog, role-based access control and advanced auditing.",
+      "business_impact": "A tier below Premium can limit identity controls, Unity Catalog and access isolation.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/well-architected/service-guides/azure-databricks#cost-optimization"
     },
     {
@@ -39,9 +39,9 @@
       "pillar": "security",
       "severity": "high",
       "effort": "medium",
-      "title": "Secure Cluster Connectivity (No Public IP)",
-      "recommendation": "Habilitar enableNoPublicIp en el workspace para que los nodos de cómputo no tengan direcciones IP públicas y conecten al plano de control por relé saliente.",
-      "business_impact": "Nodos de clúster con IP pública incrementan la superficie de exposición de red del plano de datos.",
+      "title": "Secure cluster connectivity (no public IP)",
+      "recommendation": "Enable enableNoPublicIp on the workspace so compute nodes have no public IP addresses and reach the control plane through an outbound relay.",
+      "business_impact": "Cluster nodes with public IP addresses increase the network exposure of the data plane.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/security/network/classic/secure-cluster-connectivity"
     },
     {
@@ -53,9 +53,9 @@
       "pillar": "security",
       "severity": "medium",
       "effort": "high",
-      "title": "Despliegue con VNet Injection en red gestionada por el cliente",
-      "recommendation": "Cuando la arquitectura de red corporativa lo requiera, desplegar el workspace con customVirtualNetworkId y subredes host/container dedicadas.",
-      "business_impact": "La VNet administrada por defecto impide aplicar rutas personalizadas, inspección de egress o emparejamientos granulares.",
+      "title": "VNet injection into a customer-managed network",
+      "recommendation": "When the corporate network architecture requires it, deploy the workspace with customVirtualNetworkId and dedicated host and container subnets.",
+      "business_impact": "The default managed VNet prevents custom routes, egress inspection and granular peering.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/security/network/classic/vnet-inject"
     },
     {
@@ -67,9 +67,9 @@
       "pillar": "security",
       "severity": "high",
       "effort": "high",
-      "title": "Restricción de red pública y Private Link del workspace",
-      "recommendation": "Revisar publicNetworkAccess, requiredNsgRules y conexiones Private Endpoint aprobadas según los requisitos de aislamiento privado.",
-      "business_impact": "El acceso público abierto sin controles compensatorios amplía la superficie de entrada al workspace.",
+      "title": "Public network restriction and Private Link for the workspace",
+      "recommendation": "Review publicNetworkAccess, requiredNsgRules and the approved private endpoint connections against your private isolation requirements.",
+      "business_impact": "Open public access without compensating controls widens the entry surface of the workspace.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/security/network/classic/private-link"
     },
     {
@@ -81,9 +81,9 @@
       "pillar": "security",
       "severity": "medium",
       "effort": "medium",
-      "title": "Access Connector con identidad administrada y firewall de almacenamiento",
-      "recommendation": "Vincular un Azure Databricks Access Connector con identidad administrada (SystemAssigned o UserAssigned) y revisar defaultStorageFirewall.",
-      "business_impact": "La ausencia de Access Connector impide autenticar con identidad administrada hacia almacenamiento gobernado.",
+      "title": "Access connector with managed identity and storage firewall",
+      "recommendation": "Link an Azure Databricks access connector with a managed identity (SystemAssigned or UserAssigned) and review defaultStorageFirewall.",
+      "business_impact": "Without an access connector, the workspace can't use a managed identity to authenticate to governed storage.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/connect/unity-catalog/cloud-storage/azure-managed-identities"
     },
     {
@@ -95,9 +95,9 @@
       "pillar": "security",
       "severity": "medium",
       "effort": "medium",
-      "title": "Cifrado con claves gestionadas por el cliente (CMK) e infraestructura",
-      "recommendation": "Si la política de cumplimiento exige CMK, configurar claves de Key Vault para managedServices y managedDisk con rotación automática.",
-      "business_impact": "Sin CMK cuando es requerido por normativa, el cliente no controla directamente la revocación criptográfica.",
+      "title": "Customer-managed key (CMK) and infrastructure encryption",
+      "recommendation": "If your compliance policy requires CMK, configure Key Vault keys for managedServices and managedDisk with automatic rotation.",
+      "business_impact": "Without CMK where regulation requires it, the customer doesn't directly control cryptographic revocation.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/security/keys/"
     },
     {
@@ -109,9 +109,9 @@
       "pillar": "operations",
       "severity": "low",
       "effort": "medium",
-      "title": "Perfil de seguridad mejorada y actualización automática de clústeres",
-      "recommendation": "Evaluar enhancedSecurityMonitoring, automaticClusterUpdate y complianceSecurityProfile cuando apliquen normativas específicas.",
-      "business_impact": "Sin actualizaciones automáticas o monitorización mejorada requerida, el mantenimiento de agentes depende de procesos manuales.",
+      "title": "Enhanced security profile and automatic cluster update",
+      "recommendation": "Evaluate enhancedSecurityMonitoring, automaticClusterUpdate and complianceSecurityProfile when specific regulations apply.",
+      "business_impact": "Without automatic updates or the required enhanced monitoring, agent maintenance depends on manual processes.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/security/privacy/security-profile"
     },
     {
@@ -123,9 +123,9 @@
       "pillar": "operations",
       "severity": "medium",
       "effort": "low",
-      "title": "Configuración de Diagnostic Settings en el plano de control ARM",
-      "recommendation": "Configurar categorías de auditoría en Microsoft.Insights/diagnosticSettings hacia Log Analytics, Storage o Event Hub y verificar la ingesta.",
-      "business_impact": "Sin registros diagnósticos habilitados se reduce la trazabilidad de eventos de control plane, jobs y accesos.",
+      "title": "Diagnostic settings on the ARM control plane",
+      "recommendation": "Send audit categories through Microsoft.Insights/diagnosticSettings to Log Analytics, Storage or Event Hubs and verify the ingestion.",
+      "business_impact": "Without diagnostic logs, control-plane, job and access events are harder to trace.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/admin/account-settings/audit-logs"
     },
     {
@@ -137,9 +137,9 @@
       "pillar": "security",
       "severity": "medium",
       "effort": "low",
-      "title": "Gobernanza de Personal Access Tokens (PAT) en workspace-conf",
-      "recommendation": "Revisar enableTokensConfig y priorizar autenticación OAuth M2M o identidades administradas de Microsoft Entra frente a PATs duraderos.",
-      "business_impact": "Tokens personales sin control de emisión o expiración incrementan el riesgo de credenciales persistentes.",
+      "title": "Personal access token (PAT) governance in workspace-conf",
+      "recommendation": "Review enableTokensConfig and prefer OAuth M2M authentication or Microsoft Entra managed identities over long-lived PATs.",
+      "business_impact": "Personal tokens without issuance or expiry control increase the risk of persistent credentials.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/security/auth/api-access-permissions"
     },
     {
@@ -151,9 +151,9 @@
       "pillar": "operations",
       "severity": "medium",
       "effort": "medium",
-      "title": "Catálogo predeterminado en Unity Catalog frente a Hive heredado",
-      "recommendation": "Configurar UnityCatalog como catálogo predeterminado y evitar almacenar datos de negocio en el DBFS root o hive_metastore.",
-      "business_impact": "El uso de hive_metastore y DBFS root dificulta el control de acceso unificado y el linaje de datos.",
+      "title": "Unity Catalog as the default catalog instead of legacy Hive",
+      "recommendation": "Set UnityCatalog as the default catalog and avoid storing business data in the DBFS root or hive_metastore.",
+      "business_impact": "Using hive_metastore and the DBFS root makes unified access control and data lineage harder.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/data-governance/unity-catalog/best-practices"
     },
     {
@@ -165,9 +165,9 @@
       "pillar": "security",
       "severity": "low",
       "effort": "low",
-      "title": "Higiene y revisión de Global Init Scripts",
-      "recommendation": "Minimizar o auditar los global init scripts habilitados y preferir políticas de clúster o scripts con alcance de unidad en Unity Catalog.",
-      "business_impact": "Los global init scripts se ejecutan en todos los clústeres del workspace y pueden introducir dependencias ocultas o superficie de fallo.",
+      "title": "Global init script hygiene and review",
+      "recommendation": "Minimize or audit the enabled global init scripts and prefer cluster policies or init scripts stored in Unity Catalog volumes.",
+      "business_impact": "Global init scripts run on every cluster in the workspace and can introduce hidden dependencies or points of failure.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/init-scripts/global"
     },
     {
@@ -179,9 +179,9 @@
       "pillar": "operations",
       "severity": "low",
       "effort": "low",
-      "title": "Revisión de recomendaciones cacheadas de Azure Advisor",
-      "recommendation": "Consultar las recomendaciones cacheadas de Azure Advisor para el workspace y recursos asociados como insumo complementario.",
-      "business_impact": "Ignorar alertas de plataforma puede retrasar la detección de mejoras de fiabilidad o coste.",
+      "title": "Review of cached Azure Advisor recommendations",
+      "recommendation": "Check the cached Azure Advisor recommendations for the workspace and its associated resources as a complementary input.",
+      "business_impact": "Ignoring platform alerts can delay finding reliability or cost improvements.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/well-architected/service-guides/azure-databricks"
     },
     {
@@ -193,9 +193,9 @@
       "pillar": "cost",
       "severity": "high",
       "effort": "low",
-      "title": "Autoterminación configurada en clústeres interactivos All-Purpose",
-      "recommendation": "Definir autotermination_minutes (por ejemplo <= 60 minutos) en todos los clústeres All-Purpose para evitar consumo DBU y VM en inactividad.",
-      "business_impact": "Un clúster interactivo sin autoterminación o con umbral excesivo mantiene nodos facturando sin carga activa.",
+      "title": "Auto-termination on interactive all-purpose clusters",
+      "recommendation": "Set autotermination_minutes (for example 60 minutes or less) on every all-purpose cluster to avoid idle DBU and VM consumption.",
+      "business_impact": "An interactive cluster without auto-termination, or with a high threshold, keeps nodes billing with no active workload.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/compute/cluster-config-best-practices"
     },
     {
@@ -207,9 +207,9 @@
       "pillar": "cost",
       "severity": "medium",
       "effort": "medium",
-      "title": "Clústeres gobernados mediante Cluster Policy",
-      "recommendation": "Asociar policy_id a los clústeres para aplicar límites de tipo de instancia, autoterminación, versión de runtime y etiquetas FinOps.",
-      "business_impact": "Crear clústeres sin política permite configuraciones no estandarizadas y sobrecostes accidentales.",
+      "title": "Clusters governed by a cluster policy",
+      "recommendation": "Attach a policy_id to clusters to enforce limits on instance type, auto-termination, runtime version and FinOps tags.",
+      "business_impact": "Creating clusters without a policy allows non-standard configurations and accidental overspending.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/admin/clusters/policies"
     },
     {
@@ -221,9 +221,9 @@
       "pillar": "security",
       "severity": "high",
       "effort": "medium",
-      "title": "Modo de acceso de cómputo compatible con aislamiento y Unity Catalog",
-      "recommendation": "Configurar data_security_mode en USER_ISOLATION (Standard/Shared) o SINGLE_USER (Dedicated) y evitar modos sin aislamiento (NONE).",
-      "business_impact": "Modos de acceso heredados o sin aislamiento impiden aplicar controles de Unity Catalog o permiten acceso directo no gobernado.",
+      "title": "Compute access mode compatible with isolation and Unity Catalog",
+      "recommendation": "Set data_security_mode to USER_ISOLATION (Standard/Shared) or SINGLE_USER (Dedicated) and avoid modes without isolation (NONE).",
+      "business_impact": "Legacy or non-isolated access modes prevent Unity Catalog controls or allow ungoverned direct access.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/compute/configure#access-mode"
     },
     {
@@ -235,9 +235,9 @@
       "pillar": "reliability",
       "severity": "medium",
       "effort": "medium",
-      "title": "Versión de Databricks Runtime soportada (LTS / actual)",
-      "recommendation": "Mantener spark_version en una versión Long Term Support (LTS) vigente (por ejemplo 13.3 LTS, 14.3 LTS, 15.4 LTS o superior).",
-      "business_impact": "Versiones antiguas de Databricks Runtime pierden soporte, parches de seguridad y optimizaciones de Photon/Delta.",
+      "title": "Supported Databricks Runtime version (LTS / current)",
+      "recommendation": "Keep spark_version on a current Long Term Support (LTS) version (for example 13.3 LTS, 14.3 LTS, 15.4 LTS or later).",
+      "business_impact": "Old Databricks Runtime versions lose support, security patches and Photon/Delta optimizations.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/release-notes/runtime/"
     },
     {
@@ -249,9 +249,9 @@
       "pillar": "performance",
       "severity": "low",
       "effort": "low",
-      "title": "Escalado dinámico (Autoscale) o uso de Instance Pool en clústeres",
-      "recommendation": "Evaluar autoscale (min_workers/max_workers) o vinculación a instance_pool_id para adaptar capacidad a variaciones de carga.",
-      "business_impact": "Un número fijo de workers sin pool puede infrautilizar recursos en valles o limitar concurrencia en picos.",
+      "title": "Autoscaling or instance pool on clusters",
+      "recommendation": "Evaluate autoscale (min_workers/max_workers) or an instance_pool_id binding to match capacity to workload changes.",
+      "business_impact": "A fixed number of workers without a pool can leave resources idle in quiet periods or limit concurrency at peaks.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/compute/cluster-config-best-practices#autoscaling"
     },
     {
@@ -263,9 +263,9 @@
       "pillar": "cost",
       "severity": "high",
       "effort": "medium",
-      "title": "Jobs programados ejecutando en Job Compute o Serverless en lugar de All-Purpose",
-      "recommendation": "Migrar las tareas de Jobs que apuntan a existing_cluster_id hacia job_cluster_key o cómputo Serverless de Jobs.",
-      "business_impact": "Ejecutar jobs automatizados sobre clústeres All-Purpose consume tarifas DBU más altas y acopla fallos entre cargas.",
+      "title": "Scheduled jobs on job compute or serverless instead of all-purpose",
+      "recommendation": "Move job tasks that point to existing_cluster_id to job_cluster_key or serverless job compute.",
+      "business_impact": "Running automated jobs on all-purpose clusters costs higher DBU rates and couples failures across workloads.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/well-architected/service-guides/azure-databricks#cost-optimization"
     },
     {
@@ -277,9 +277,9 @@
       "pillar": "reliability",
       "severity": "medium",
       "effort": "low",
-      "title": "Timeouts, reintentos o notificaciones en Jobs de orquestación",
-      "recommendation": "Configurar timeout_seconds, políticas de reintento y notificaciones o alertas en los Jobs críticos para detectar ejecuciones colgadas o fallidas.",
-      "business_impact": "Un job sin timeout ni alertas puede quedar bloqueado consumiendo recursos o incumplir ventanas de datos sin aviso.",
+      "title": "Timeouts, retries or notifications on orchestration jobs",
+      "recommendation": "Configure timeout_seconds, retry policies and notifications or alerts on critical jobs to detect hung or failed runs.",
+      "business_impact": "A job without a timeout or alerts can hang while consuming resources, or miss data windows without warning.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/jobs/configure-job"
     },
     {
@@ -291,9 +291,9 @@
       "pillar": "operations",
       "severity": "medium",
       "effort": "medium",
-      "title": "Ejecución de Jobs mediante Service Principal (run_as)",
-      "recommendation": "Configurar run_as con un Service Principal dedicado en lugar de una cuenta de usuario individual para evitar fallos ante bajas o cambios de rol.",
-      "business_impact": "Los jobs ejecutados bajo identidad de usuario fallan si el usuario deja la organización o pierde permisos.",
+      "title": "Jobs run as a service principal (run_as)",
+      "recommendation": "Set run_as to a dedicated service principal instead of an individual user account, so jobs don't fail when people leave or change roles.",
+      "business_impact": "Jobs that run under a user identity fail if the user leaves the organization or loses permissions.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/admin/users-groups/service-principals"
     },
     {
@@ -305,9 +305,9 @@
       "pillar": "cost",
       "severity": "medium",
       "effort": "low",
-      "title": "Auto-stop y arquitectura Serverless/Pro en SQL Warehouses",
-      "recommendation": "Configurar auto_stop_mins (<= 30 minutos) o usar SQL Warehouses Serverless para cargas BI e interactivas con demanda variable.",
-      "business_impact": "Un SQL Warehouse sin auto-stop mantiene capacidad facturable activa fuera de las ventanas de consulta.",
+      "title": "Auto-stop and serverless/pro architecture on SQL warehouses",
+      "recommendation": "Set auto_stop_mins (30 minutes or less) or use serverless SQL warehouses for BI and interactive workloads with variable demand.",
+      "business_impact": "A SQL warehouse without auto-stop keeps billable capacity running outside query windows.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/compute/sql-warehouse/create"
     },
     {
@@ -319,9 +319,9 @@
       "pillar": "operations",
       "severity": "medium",
       "effort": "medium",
-      "title": "Pipelines declarativos (Lakeflow / DLT) publicados en Unity Catalog",
-      "recommendation": "Definir un catálogo de Unity Catalog en los pipelines declarativos para asegurar linaje nativo y gobernanza de tablas.",
-      "business_impact": "Los pipelines publicados en hive_metastore quedan fuera del modelo centralizado de permisos y linaje.",
+      "title": "Declarative pipelines (Lakeflow / DLT) published to Unity Catalog",
+      "recommendation": "Set a Unity Catalog catalog on declarative pipelines to get native lineage and table governance.",
+      "business_impact": "Pipelines published to hive_metastore fall outside the central permission and lineage model.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/ldp/unity-catalog"
     },
     {
@@ -333,9 +333,9 @@
       "pillar": "security",
       "severity": "high",
       "effort": "high",
-      "title": "Asignación de Metastore de Unity Catalog al workspace",
-      "recommendation": "Vincular el workspace a un Metastore regional de Unity Catalog para centralizar identidades, control de acceso, auditoría y linaje.",
-      "business_impact": "Sin Metastore adjunto no están disponibles las capacidades de gobierno unificado, ubicaciones externas ni tablas de sistema.",
+      "title": "Unity Catalog metastore assigned to the workspace",
+      "recommendation": "Link the workspace to a regional Unity Catalog metastore to centralize identities, access control, auditing and lineage.",
+      "business_impact": "Without an attached metastore, unified governance, external locations and system tables aren't available.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/data-governance/unity-catalog/get-started"
     },
     {
@@ -347,9 +347,9 @@
       "pillar": "security",
       "severity": "high",
       "effort": "medium",
-      "title": "Storage Credentials de Unity Catalog basadas en Managed Identity",
-      "recommendation": "Usar Azure Managed Identity (vía Access Connector) en las Storage Credentials de Unity Catalog en lugar de secretos de Service Principal.",
-      "business_impact": "Las credenciales basadas en secretos requieren rotación manual y aumentan el riesgo ante filtraciones.",
+      "title": "Unity Catalog storage credentials based on managed identity",
+      "recommendation": "Use an Azure managed identity (through an access connector) in Unity Catalog storage credentials instead of service principal secrets.",
+      "business_impact": "Secret-based credentials need manual rotation and raise the risk if they leak.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/connect/unity-catalog/cloud-storage/storage-credentials"
     },
     {
@@ -361,9 +361,9 @@
       "pillar": "security",
       "severity": "medium",
       "effort": "medium",
-      "title": "External Locations con Storage Credential válida y rutas ADLS Gen2 explícitas",
-      "recommendation": "Verificar que cada External Location enlace con una Storage Credential existente, utilice abfss:// y aplique vinculación por workspace cuando proceda.",
-      "business_impact": "Ubicaciones externas huérfanas o sin aislamiento pueden exponer contenedores compartidos entre entornos.",
+      "title": "External locations with a valid storage credential and explicit ADLS Gen2 paths",
+      "recommendation": "Check that each external location links to an existing storage credential, uses abfss:// and applies workspace binding where appropriate.",
+      "business_impact": "Orphaned or non-isolated external locations can expose containers shared across environments.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/data-governance/unity-catalog/best-practices#external-locations"
     },
     {
@@ -375,9 +375,9 @@
       "pillar": "security",
       "severity": "medium",
       "effort": "medium",
-      "title": "Secret Scopes respaldados por Azure Key Vault",
-      "recommendation": "Preferir Secret Scopes con backend AZURE_KEYVAULT frente a scopes locales DATABRICKS cuando se requiera gestión centralizada de secretos.",
-      "business_impact": "Los scopes locales de Databricks no se integran directamente con las políticas de rotación y auditoría de Azure Key Vault.",
+      "title": "Secret scopes backed by Azure Key Vault",
+      "recommendation": "Prefer secret scopes with the AZURE_KEYVAULT backend over local DATABRICKS scopes when you need central secret management.",
+      "business_impact": "Local Databricks scopes don't integrate directly with Azure Key Vault rotation and audit policies.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/security/secrets/secret-scopes"
     },
     {
@@ -389,9 +389,9 @@
       "pillar": "reliability",
       "severity": "high",
       "effort": "medium",
-      "title": "Integridad referencial del mapa de dependencias de Jobs, Cómputo y Gobernanza",
-      "recommendation": "Corregir referencias rotas en tareas de Jobs (clústeres eliminados, SQL Warehouses inexistentes, pipelines o jobs hijos ausentes y credenciales no resueltas).",
-      "business_impact": "Una dependencia rota observada en la definición de un Job provocará fallos inmediatos de ejecución en producción.",
+      "title": "Referential integrity of the job, compute and governance dependency map",
+      "recommendation": "Fix broken references in job tasks (deleted clusters, SQL warehouses that don't exist, missing pipelines or child jobs, and unresolved credentials).",
+      "business_impact": "A broken dependency observed in a job definition causes immediate run failures in production.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/jobs/configure-job"
     },
     {
@@ -403,9 +403,9 @@
       "pillar": "operations",
       "severity": "low",
       "effort": "medium",
-      "title": "Linaje dinámico de tablas y columnas (system.access.table_lineage)",
-      "recommendation": "Si se requiere linaje en tiempo de ejecución a nivel de tabla/columna, habilitar y consultar system.access.table_lineage en una sesión autorizada sin arrancar cómputo automáticamente desde este colector.",
-      "business_impact": "El análisis de plano de control mapea dependencias declaradas, pero no las lecturas/escrituras SQL dinámicas dentro de notebooks.",
+      "title": "Runtime table and column lineage (system.access.table_lineage)",
+      "recommendation": "If you need runtime lineage at table or column level, enable and query system.access.table_lineage in an authorized session; this collector never starts compute to do it.",
+      "business_impact": "Control-plane analysis maps declared dependencies, not the dynamic SQL reads and writes inside notebooks.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/admin/system-tables/lineage"
     },
     {
@@ -417,9 +417,9 @@
       "pillar": "operations",
       "severity": "low",
       "effort": "low",
-      "title": "Gobernanza de conexiones externas en Unity Catalog (Lakehouse Federation)",
-      "recommendation": "Inventariar las conexiones de Lakehouse Federation en Unity Catalog y verificar sus dependencias de red y credenciales.",
-      "business_impact": "Las conexiones federadas externas representan dependencias críticas hacia motores SQL o plataformas de terceros.",
+      "title": "Governance of external connections in Unity Catalog (Lakehouse Federation)",
+      "recommendation": "Inventory the Lakehouse Federation connections in Unity Catalog and check their network and credential dependencies.",
+      "business_impact": "Federated external connections are critical dependencies on third-party SQL engines or platforms.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/query-federation/"
     },
     {
@@ -431,9 +431,9 @@
       "pillar": "reliability",
       "severity": "medium",
       "effort": "low",
-      "title": "Visibilidad de dependencias de red saliente (outboundNetworkDependenciesEndpoints)",
-      "recommendation": "Contrastar las reglas de firewall/UDR/NSG con la lista oficial de endpoints salientes requeridos por el workspace hacia el plano de control.",
-      "business_impact": "Bloquear dependencias salientes requeridas (Webapp, Control Plane NAT, Storage, Metastore, EventHub/ServiceBus) impide el arranque de clústeres.",
+      "title": "Visibility of outbound network dependencies (outboundNetworkDependenciesEndpoints)",
+      "recommendation": "Compare the firewall, UDR and NSG rules with the official list of outbound endpoints that the workspace needs to reach the control plane.",
+      "business_impact": "Blocking required outbound dependencies (Webapp, Control Plane NAT, Storage, Metastore, EventHub/ServiceBus) prevents clusters from starting.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/administration-guide/cloud-configurations/azure/udr"
     },
     {
@@ -445,9 +445,9 @@
       "pillar": "security",
       "severity": "high",
       "effort": "low",
-      "title": "Cuentas de almacenamiento asociadas con HTTPS, TLS 1.2+ y sin acceso público a blobs",
-      "recommendation": "Exigir supportsHttpsTrafficOnly=true, minimumTlsVersion=TLS1_2 y allowBlobPublicAccess=false en las cuentas ADLS Gen2 asociadas.",
-      "business_impact": "Permitir tráfico no cifrado o acceso anónimo a contenedores expone activos del lakehouse.",
+      "title": "Associated storage accounts with HTTPS, TLS 1.2+ and no public blob access",
+      "recommendation": "Require supportsHttpsTrafficOnly=true, minimumTlsVersion=TLS1_2 and allowBlobPublicAccess=false on the associated ADLS Gen2 accounts.",
+      "business_impact": "Allowing unencrypted traffic or anonymous container access exposes lakehouse assets.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/storage/blobs/security-recommendations"
     },
     {
@@ -459,9 +459,9 @@
       "pillar": "security",
       "severity": "medium",
       "effort": "medium",
-      "title": "Restricción de Shared Key y acceso de red en cuentas de almacenamiento asociadas",
-      "recommendation": "Evaluar la deshabilitación de allowSharedKeyAccess y restringir publicNetworkAccess en cuentas ADLS Gen2 gobernadas por Entra ID / Unity Catalog.",
-      "business_impact": "Las claves compartidas de cuenta eluden los controles granulares de identidad de Microsoft Entra y Unity Catalog.",
+      "title": "Shared key and network access restriction on associated storage accounts",
+      "recommendation": "Evaluate disabling allowSharedKeyAccess and restricting publicNetworkAccess on ADLS Gen2 accounts governed by Microsoft Entra ID / Unity Catalog.",
+      "business_impact": "Account shared keys bypass the granular identity controls of Microsoft Entra and Unity Catalog.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
     },
     {
@@ -473,9 +473,9 @@
       "pillar": "security",
       "severity": "medium",
       "effort": "medium",
-      "title": "Autorización RBAC y protección contra purga en Key Vaults asociados",
-      "recommendation": "Habilitar enableRbacAuthorization y enablePurgeProtection en los Key Vaults vinculados a Secret Scopes o claves CMK del workspace.",
-      "business_impact": "Sin protección contra purga, la eliminación accidental o maliciosa de una clave CMK o secreto puede ser irreversible.",
+      "title": "RBAC authorization and purge protection on associated key vaults",
+      "recommendation": "Enable enableRbacAuthorization and enablePurgeProtection on the key vaults linked to secret scopes or to the workspace CMK keys.",
+      "business_impact": "Without purge protection, accidental or malicious deletion of a CMK key or secret can be irreversible.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/key-vault/general/security-features"
     },
     {
@@ -487,9 +487,9 @@
       "pillar": "security",
       "severity": "high",
       "effort": "medium",
-      "title": "Exposición de puertos administrativos desde Internet en NSG asociados",
-      "recommendation": "Eliminar o restringir reglas Inbound Allow desde Internet (0.0.0.0/0, *, Internet) hacia SSH (22), RDP (3389) o todos los puertos en subredes del workspace.",
-      "business_impact": "Reglas de entrada abiertas desde Internet hacia las subredes de clúster violan el aislamiento del plano de datos.",
+      "title": "Administrative ports exposed to the internet on associated NSGs",
+      "recommendation": "Remove or restrict inbound Allow rules from the internet (0.0.0.0/0, *, Internet) to SSH (22), RDP (3389) or all ports on the workspace subnets.",
+      "business_impact": "Inbound rules open to the internet on cluster subnets break data-plane isolation.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/security/network/classic/vnet-inject"
     },
     {
@@ -501,9 +501,9 @@
       "pillar": "reliability",
       "severity": "medium",
       "effort": "low",
-      "title": "Estado aprobado en conexiones Private Endpoint asociadas",
-      "recommendation": "Confirmar que todas las conexiones Private Endpoint asociadas al workspace o recursos vinculados estén en estado Approved.",
-      "business_impact": "Un Private Endpoint en estado Pending, Rejected o Disconnected interrumpe la conectividad privada prevista.",
+      "title": "Approved state on associated private endpoint connections",
+      "recommendation": "Confirm that every private endpoint connection associated with the workspace or its linked resources is in the Approved state.",
+      "business_impact": "A private endpoint in the Pending, Rejected or Disconnected state breaks the intended private connectivity.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/security/network/classic/private-link"
     },
     {
@@ -515,9 +515,9 @@
       "pillar": "cost",
       "severity": "low",
       "effort": "medium",
-      "title": "Atribución de costes reales (ActualCost) y granularidad DBU por carga",
-      "recommendation": "Combinar los costes reales ARM observados con el etiquetado de clústeres/jobs y la tabla system.billing.usage para atribuir consumo DBU por equipo o pipeline.",
-      "business_impact": "ActualCost a nivel de ResourceId de Azure no desglosa por sí solo el consumo interno de cada Job, SQL Warehouse o usuario.",
+      "title": "Actual cost attribution (ActualCost) and DBU granularity by workload",
+      "recommendation": "Combine the observed ARM actual costs with cluster and job tagging and the system.billing.usage table to attribute DBU consumption by team or pipeline.",
+      "business_impact": "ActualCost at Azure ResourceId level doesn't break down, on its own, the internal consumption of each job, SQL warehouse or user.",
       "learn_url": "https://learn.microsoft.com/en-us/azure/databricks/admin/system-tables/billing"
     }
   ]
