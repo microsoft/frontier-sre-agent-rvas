@@ -1,0 +1,8 @@
+﻿project,cost_review_month,cost_previous_month,change,change_pct,share_pct,cost_month_to_date,savings_month,findings,resources,resource_groups,top_services,top_resource_groups,currency,project_tag
+Shared infrastructure,1953.66,1889.82,63.84,3.40,38.70,720.58,22.89,8,29,6,Azure Firewall; Azure Firewall Manager; Azure Bastion,rg-network-hubs-eus; rg-backup-prod; RG-BACKUP-ASR-WE,USD,Project
+E-commerce web,1494.95,1009.27,485.67,48.10,29.60,560.12,1.54,5,178,3,Foundry Tools; Virtual Machines; Application Gateway,MC_rg-aks-prod_aks-prod-swc_swedencentral; rg-retail-app-prod; rg-aks-prod,USD,Project
+Sandbox,771.02,753.65,17.37,2.30,15.30,274.96,80.35,17,61,3,Virtual Machines; Azure Bastion; Storage,rg-arc-servers-prod; rg-arc-onprem; rg-arc-management,USD,Project
+Observability,568.88,737.02,'-168.14,'-22.80,11.30,218.61,0.00,0,20,2,Foundry Tools; Microsoft Defender for Cloud; Azure Container Apps,rg-platform-shared; rg-observability-prod,USD,Project
+Data platform,159.06,153.90,5.15,3.30,3.10,58.63,0.00,0,13,2,Container Registry; Load Balancer; Virtual Network,rg-bu-workload; rg-aks-deveus-nodepools,USD,Project
+Security and identity,21.80,21.03,0.78,3.70,0.40,7.75,0.00,0,3,1,Azure Container Apps; Container Registry; Microsoft Defender for Cloud,rg-compliance,USD,Project
+Unallocated,81.95,74.33,7.62,10.30,1.60,30.16,0.00,0,10,4,Azure Grafana Service; Log Analytics; Microsoft Defender for Cloud,defaultresourcegroup-eus2; DefaultResourceGroup-SEC; (no resource group),USD,Project

@@ -1,0 +1,226 @@
+﻿date,capacity,meter,category,quantity,cost,currency
+2026-10-07,fabriccapprod,Compute Pool Capacity Usage CU,Idle running capacity (Compute Pool),304.6691,54.8404,USD
+2026-10-07,fabriccapprod,OneLake Cache Data Stored,Storage (GB-month),4.3179,1.1485,USD
+2026-10-07,fabriccapprod,Eventhouse Capacity Usage CU,Real-Time Intelligence,2.5042,0.4507,USD
+2026-10-07,fabriccapprod,Power BI Capacity Usage CU,Power BI,1.3367,0.2406,USD
+2026-10-07,fabriccapprod,Copilot and AI Capacity Usage CU,AI · Copilot and Data Agents,1.0424,0.1876,USD
+2026-10-07,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.6545,0.0151,USD
+2026-10-07,fabriccapprod,OneLake Write Operations Hot Capacity Usage CU,OneLake transactions,0.0136,0.0025,USD
+2026-10-07,fabriccapprod,OneLake Iterative Read Operations Hot Capacity Usage CU,OneLake transactions,0.0091,0.0016,USD
+2026-10-07,fabriccapprod,OneLake Read Operations Hot Capacity Usage CU,OneLake transactions,0.0064,0.0012,USD
+2026-10-07,fabriccapprod,OneLake Other Operations Hot Capacity Usage CU,OneLake transactions,0.0032,0.0006,USD
+2026-10-07,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-07,fabriccapprod,OneLake Write Operations Capacity Usage CU,OneLake transactions,0.0005,0.0001,USD
+2026-10-07,fabriccapprod,OneLake Other Operations Capacity Usage CU,OneLake transactions,0.0003,0.0001,USD
+2026-10-07,fabriccapprod,OneLake Read Operations Capacity Usage CU,OneLake transactions,0.0001,0.0000,USD
+2026-10-08,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.3630,0.0083,USD
+2026-10-08,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-09,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.3629,0.0083,USD
+2026-10-09,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-10,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.3629,0.0083,USD
+2026-10-10,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-11,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.3629,0.0083,USD
+2026-10-11,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-12,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.3629,0.0083,USD
+2026-10-12,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-13,fabriccapprod,Compute Pool Capacity Usage CU,Idle running capacity (Compute Pool),361.4102,65.0538,USD
+2026-10-13,fabriccapprod,OneLake Cache Data Stored,Storage (GB-month),3.3779,0.8985,USD
+2026-10-13,fabriccapprod,Data Warehouse Capacity Usage CU,Warehouse and SQL,2.3448,0.4221,USD
+2026-10-13,fabriccapprod,Eventhouse Capacity Usage CU,Real-Time Intelligence,0.7111,0.1280,USD
+2026-10-13,fabriccapprod,OneLake Iterative Read Operations Hot Capacity Usage CU,OneLake transactions,0.1101,0.0198,USD
+2026-10-13,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.6807,0.0157,USD
+2026-10-13,fabriccapprod,OneLake Write Operations Hot Capacity Usage CU,OneLake transactions,0.0729,0.0131,USD
+2026-10-13,fabriccapprod,Power BI Capacity Usage CU,Power BI,0.0333,0.0060,USD
+2026-10-13,fabriccapprod,OneLake Write Operations Capacity Usage CU,OneLake transactions,0.0323,0.0058,USD
+2026-10-13,fabriccapprod,OneLake Other Operations Capacity Usage CU,OneLake transactions,0.0216,0.0039,USD
+2026-10-13,fabriccapprod,OneLake Other Operations Hot Capacity Usage CU,OneLake transactions,0.0048,0.0009,USD
+2026-10-13,fabriccapprod,OneLake Read Operations Capacity Usage CU,OneLake transactions,0.0038,0.0007,USD
+2026-10-13,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-13,fabriccapprod,OneLake Read Operations Hot Capacity Usage CU,OneLake transactions,0.0004,0.0001,USD
+2026-10-14,fabriccapprod,Compute Pool Capacity Usage CU,Idle running capacity (Compute Pool),441.8666,79.5360,USD
+2026-10-14,fabriccapprod,Ontology Logic and Operations Capacity Usage CU,Fabric IQ · Ontology and Graph,55.0017,9.9003,USD
+2026-10-14,fabriccapprod,Copilot and AI Capacity Usage CU,AI · Copilot and Data Agents,46.7316,8.4117,USD
+2026-10-14,fabriccapprod,Eventhouse Capacity Usage CU,Real-Time Intelligence,6.6352,1.1943,USD
+2026-10-14,fabriccapprod,OneLake Cache Data Stored,Storage (GB-month),3.4661,0.9220,USD
+2026-10-14,fabriccapprod,Data Warehouse Capacity Usage CU,Warehouse and SQL,2.3310,0.4196,USD
+2026-10-14,fabriccapprod,Power BI Capacity Usage CU,Power BI,2.1145,0.3806,USD
+2026-10-14,fabriccapprod,Eventstream Processor Capacity Usage CU,Real-Time Intelligence,1.9435,0.3498,USD
+2026-10-14,fabriccapprod,Spark Memory Optimized Capacity Usage CU,Spark and notebooks,1.3153,0.2367,USD
+2026-10-14,fabriccapprod,Eventstream Data Traffic Capacity Usage CU,Real-Time Intelligence,1.1557,0.2080,USD
+2026-10-14,fabriccapprod,OneLake Other Operations Capacity Usage CU,OneLake transactions,0.9845,0.1772,USD
+2026-10-14,fabriccapprod,Ontology Modeling Capacity Usage CU,Fabric IQ · Ontology and Graph,0.9142,0.1646,USD
+2026-10-14,fabriccapprod,SQL database in Microsoft Fabric Capacity Usage CU,Warehouse and SQL,0.6690,0.1204,USD
+2026-10-14,fabriccapprod,Eventstream Flat Capacity Usage CU,Real-Time Intelligence,0.5548,0.0999,USD
+2026-10-14,fabriccapprod,OneLake Iterative Read Operations Hot Capacity Usage CU,OneLake transactions,0.2283,0.0411,USD
+2026-10-14,fabriccapprod,OneLake Write Operations Hot Capacity Usage CU,OneLake transactions,0.1306,0.0235,USD
+2026-10-14,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.8048,0.0185,USD
+2026-10-14,fabriccapprod,OneLake Write Operations Capacity Usage CU,OneLake transactions,0.0944,0.0170,USD
+2026-10-14,fabriccapprod,OneLake Read Operations Hot Capacity Usage CU,OneLake transactions,0.0119,0.0021,USD
+2026-10-14,fabriccapprod,OneLake Other Operations Hot Capacity Usage CU,OneLake transactions,0.0116,0.0021,USD
+2026-10-14,fabriccapprod,OneLake Read Operations Capacity Usage CU,OneLake transactions,0.0061,0.0011,USD
+2026-10-14,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-14,fabriccapprod,API for GraphQL Query Capacity Usage CU,APIs and functions,0.0000,0.0000,USD
+2026-10-15,fabriccapprod,Compute Pool Capacity Usage CU,Idle running capacity (Compute Pool),419.9943,75.5990,USD
+2026-10-15,fabriccapprod,Copilot and AI Capacity Usage CU,AI · Copilot and Data Agents,113.3041,20.3947,USD
+2026-10-15,fabriccapprod,Ontology Logic and Operations Capacity Usage CU,Fabric IQ · Ontology and Graph,62.8958,11.3212,USD
+2026-10-15,fabriccapprod,OneLake Cache Data Stored,Storage (GB-month),7.8960,2.1003,USD
+2026-10-15,fabriccapprod,Eventhouse Capacity Usage CU,Real-Time Intelligence,8.2042,1.4768,USD
+2026-10-15,fabriccapprod,Eventstream Data Traffic Capacity Usage CU,Real-Time Intelligence,3.5415,0.6375,USD
+2026-10-15,fabriccapprod,Eventstream Processor Capacity Usage CU,Real-Time Intelligence,3.4995,0.6299,USD
+2026-10-15,fabriccapprod,Spark Memory Optimized Capacity Usage CU,Spark and notebooks,2.6332,0.4740,USD
+2026-10-15,fabriccapprod,Data Warehouse Capacity Usage CU,Warehouse and SQL,2.5022,0.4504,USD
+2026-10-15,fabriccapprod,SQL database in Microsoft Fabric Capacity Usage CU,Warehouse and SQL,2.2969,0.4134,USD
+2026-10-15,fabriccapprod,Power BI Capacity Usage CU,Power BI,1.2916,0.2325,USD
+2026-10-15,fabriccapprod,OneLake Other Operations Capacity Usage CU,OneLake transactions,1.2201,0.2196,USD
+2026-10-15,fabriccapprod,Eventstream Flat Capacity Usage CU,Real-Time Intelligence,0.9990,0.1798,USD
+2026-10-15,fabriccapprod,OneLake Iterative Read Operations Hot Capacity Usage CU,OneLake transactions,0.3350,0.0603,USD
+2026-10-15,fabriccapprod,OneLake Write Operations Hot Capacity Usage CU,OneLake transactions,0.1878,0.0338,USD
+2026-10-15,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.8702,0.0200,USD
+2026-10-15,fabriccapprod,OneLake Read Operations Hot Capacity Usage CU,OneLake transactions,0.0338,0.0061,USD
+2026-10-15,fabriccapprod,OneLake Write Operations Capacity Usage CU,OneLake transactions,0.0337,0.0061,USD
+2026-10-15,fabriccapprod,OneLake Other Operations Hot Capacity Usage CU,OneLake transactions,0.0177,0.0032,USD
+2026-10-15,fabriccapprod,OneLake Read Operations Capacity Usage CU,OneLake transactions,0.0071,0.0013,USD
+2026-10-15,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-15,fabriccapprod,API for GraphQL Query Capacity Usage CU,APIs and functions,0.0000,0.0000,USD
+2026-10-16,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.3646,0.0084,USD
+2026-10-16,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-17,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.3646,0.0084,USD
+2026-10-17,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-18,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.3646,0.0084,USD
+2026-10-18,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-19,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.3646,0.0084,USD
+2026-10-19,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-20,fabriccapprod,Compute Pool Capacity Usage CU,Idle running capacity (Compute Pool),420.4152,75.6747,USD
+2026-10-20,fabriccapprod,Copilot and AI Capacity Usage CU,AI · Copilot and Data Agents,29.0344,5.2262,USD
+2026-10-20,fabriccapprod,OneLake Cache Data Stored,Storage (GB-month),4.1582,1.1061,USD
+2026-10-20,fabriccapprod,Eventhouse Capacity Usage CU,Real-Time Intelligence,1.2869,0.2316,USD
+2026-10-20,fabriccapprod,Ontology Modeling Capacity Usage CU,Fabric IQ · Ontology and Graph,1.2432,0.2238,USD
+2026-10-20,fabriccapprod,Ontology Logic and Operations Capacity Usage CU,Fabric IQ · Ontology and Graph,0.7371,0.1327,USD
+2026-10-20,fabriccapprod,Data Warehouse Capacity Usage CU,Warehouse and SQL,0.6546,0.1178,USD
+2026-10-20,fabriccapprod,OneLake Other Operations Capacity Usage CU,OneLake transactions,0.5217,0.0939,USD
+2026-10-20,fabriccapprod,OneLake Iterative Read Operations Hot Capacity Usage CU,OneLake transactions,0.1784,0.0321,USD
+2026-10-20,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.8160,0.0188,USD
+2026-10-20,fabriccapprod,OneLake Write Operations Hot Capacity Usage CU,OneLake transactions,0.0819,0.0147,USD
+2026-10-20,fabriccapprod,OneLake Read Operations Hot Capacity Usage CU,OneLake transactions,0.0231,0.0042,USD
+2026-10-20,fabriccapprod,OneLake Write Operations Capacity Usage CU,OneLake transactions,0.0131,0.0024,USD
+2026-10-20,fabriccapprod,Power BI Capacity Usage CU,Power BI,0.0129,0.0023,USD
+2026-10-20,fabriccapprod,OneLake Other Operations Hot Capacity Usage CU,OneLake transactions,0.0089,0.0016,USD
+2026-10-20,fabriccapprod,OneLake Read Operations Capacity Usage CU,OneLake transactions,0.0053,0.0010,USD
+2026-10-20,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-21,fabriccapprod,Compute Pool Capacity Usage CU,Idle running capacity (Compute Pool),408.5629,73.5413,USD
+2026-10-21,fabriccapprod,OneLake Cache Data Stored,Storage (GB-month),6.1915,1.6469,USD
+2026-10-21,fabriccapprod,Eventhouse Capacity Usage CU,Real-Time Intelligence,0.6373,0.1147,USD
+2026-10-21,fabriccapprod,OneLake Other Operations Capacity Usage CU,OneLake transactions,0.1094,0.0197,USD
+2026-10-21,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.7857,0.0181,USD
+2026-10-21,fabriccapprod,OneLake Iterative Read Operations Hot Capacity Usage CU,OneLake transactions,0.0740,0.0133,USD
+2026-10-21,fabriccapprod,Data Warehouse Capacity Usage CU,Warehouse and SQL,0.0733,0.0132,USD
+2026-10-21,fabriccapprod,Ontology Logic and Operations Capacity Usage CU,Fabric IQ · Ontology and Graph,0.0417,0.0075,USD
+2026-10-21,fabriccapprod,OneLake Write Operations Hot Capacity Usage CU,OneLake transactions,0.0186,0.0033,USD
+2026-10-21,fabriccapprod,OneLake Write Operations Capacity Usage CU,OneLake transactions,0.0057,0.0010,USD
+2026-10-21,fabriccapprod,OneLake Other Operations Hot Capacity Usage CU,OneLake transactions,0.0039,0.0007,USD
+2026-10-21,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-21,fabriccapprod,OneLake Read Operations Capacity Usage CU,OneLake transactions,0.0018,0.0003,USD
+2026-10-21,fabriccapprod,Power BI Capacity Usage CU,Power BI,0.0007,0.0001,USD
+2026-10-21,fabriccapprod,OneLake Read Operations Hot Capacity Usage CU,OneLake transactions,0.0003,0.0001,USD
+2026-10-22,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.3642,0.0084,USD
+2026-10-22,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-23,fabriccapprod,Compute Pool Capacity Usage CU,Idle running capacity (Compute Pool),427.3616,76.9251,USD
+2026-10-23,fabriccapprod,OneLake Cache Data Stored,Storage (GB-month),6.8765,1.8291,USD
+2026-10-23,fabriccapprod,Spark Memory Optimized Capacity Usage CU,Spark and notebooks,6.3639,1.1455,USD
+2026-10-23,fabriccapprod,Data Warehouse Capacity Usage CU,Warehouse and SQL,0.4663,0.0839,USD
+2026-10-23,fabriccapprod,OneLake Other Operations Capacity Usage CU,OneLake transactions,0.3848,0.0693,USD
+2026-10-23,fabriccapprod,OneLake Iterative Read Operations Hot Capacity Usage CU,OneLake transactions,0.1012,0.0182,USD
+2026-10-23,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.7860,0.0181,USD
+2026-10-23,fabriccapprod,Eventhouse Capacity Usage CU,Real-Time Intelligence,0.0833,0.0150,USD
+2026-10-23,fabriccapprod,OneLake Write Operations Hot Capacity Usage CU,OneLake transactions,0.0761,0.0137,USD
+2026-10-23,fabriccapprod,OneLake Read Operations Hot Capacity Usage CU,OneLake transactions,0.0085,0.0015,USD
+2026-10-23,fabriccapprod,OneLake Write Operations Capacity Usage CU,OneLake transactions,0.0070,0.0013,USD
+2026-10-23,fabriccapprod,OneLake Other Operations Hot Capacity Usage CU,OneLake transactions,0.0065,0.0012,USD
+2026-10-23,fabriccapprod,Power BI Capacity Usage CU,Power BI,0.0051,0.0009,USD
+2026-10-23,fabriccapprod,OneLake Read Operations Capacity Usage CU,OneLake transactions,0.0035,0.0006,USD
+2026-10-23,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-23,fabriccapprod,SQL Backup Storage Data Stored,Storage (GB-month),0.0001,0.0000,USD
+2026-10-24,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.3656,0.0084,USD
+2026-10-24,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-24,fabriccapprod,SQL Backup Storage Data Stored,Storage (GB-month),0.0002,0.0000,USD
+2026-10-25,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.3655,0.0084,USD
+2026-10-25,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-25,fabriccapprod,SQL Backup Storage Data Stored,Storage (GB-month),0.0002,0.0000,USD
+2026-10-26,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.3655,0.0084,USD
+2026-10-26,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-26,fabriccapprod,SQL Backup Storage Data Stored,Storage (GB-month),0.0002,0.0000,USD
+2026-10-27,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.3653,0.0084,USD
+2026-10-27,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-27,fabriccapprod,SQL Backup Storage Data Stored,Storage (GB-month),0.0002,0.0000,USD
+2026-10-28,fabriccapprod,Compute Pool Capacity Usage CU,Idle running capacity (Compute Pool),405.6126,73.0103,USD
+2026-10-28,fabriccapprod,OneLake Cache Data Stored,Storage (GB-month),7.4244,1.9749,USD
+2026-10-28,fabriccapprod,Ontology Logic and Operations Capacity Usage CU,Fabric IQ · Ontology and Graph,0.2292,0.0413,USD
+2026-10-28,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.7863,0.0181,USD
+2026-10-28,fabriccapprod,OneLake Iterative Read Operations Hot Capacity Usage CU,OneLake transactions,0.0650,0.0117,USD
+2026-10-28,fabriccapprod,Eventhouse Capacity Usage CU,Real-Time Intelligence,0.0625,0.0112,USD
+2026-10-28,fabriccapprod,OneLake Write Operations Hot Capacity Usage CU,OneLake transactions,0.0138,0.0025,USD
+2026-10-28,fabriccapprod,OneLake Other Operations Hot Capacity Usage CU,OneLake transactions,0.0038,0.0007,USD
+2026-10-28,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-28,fabriccapprod,OneLake Write Operations Capacity Usage CU,OneLake transactions,0.0005,0.0001,USD
+2026-10-28,fabriccapprod,OneLake Other Operations Capacity Usage CU,OneLake transactions,0.0003,0.0000,USD
+2026-10-28,fabriccapprod,SQL Backup Storage Data Stored,Storage (GB-month),0.0002,0.0000,USD
+2026-10-28,fabriccapprod,OneLake Read Operations Hot Capacity Usage CU,OneLake transactions,0.0001,0.0000,USD
+2026-10-28,fabriccapprod,OneLake Read Operations Capacity Usage CU,OneLake transactions,0.0001,0.0000,USD
+2026-10-29,fabriccapprod,Compute Pool Capacity Usage CU,Idle running capacity (Compute Pool),354.2477,63.7646,USD
+2026-10-29,fabriccapprod,OneLake Cache Data Stored,Storage (GB-month),5.1896,1.3804,USD
+2026-10-29,fabriccapprod,Ontology Modeling Capacity Usage CU,Fabric IQ · Ontology and Graph,1.2351,0.2223,USD
+2026-10-29,fabriccapprod,Data Warehouse Capacity Usage CU,Warehouse and SQL,0.2139,0.0385,USD
+2026-10-29,fabriccapprod,Eventhouse Capacity Usage CU,Real-Time Intelligence,0.1578,0.0284,USD
+2026-10-29,fabriccapprod,OneLake Iterative Read Operations Hot Capacity Usage CU,OneLake transactions,0.1213,0.0218,USD
+2026-10-29,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.7263,0.0167,USD
+2026-10-29,fabriccapprod,Ontology Logic and Operations Capacity Usage CU,Fabric IQ · Ontology and Graph,0.0417,0.0075,USD
+2026-10-29,fabriccapprod,OneLake Write Operations Hot Capacity Usage CU,OneLake transactions,0.0223,0.0040,USD
+2026-10-29,fabriccapprod,OneLake Read Operations Hot Capacity Usage CU,OneLake transactions,0.0159,0.0029,USD
+2026-10-29,fabriccapprod,OneLake Other Operations Capacity Usage CU,OneLake transactions,0.0128,0.0023,USD
+2026-10-29,fabriccapprod,OneLake Write Operations Capacity Usage CU,OneLake transactions,0.0119,0.0021,USD
+2026-10-29,fabriccapprod,OneLake Other Operations Hot Capacity Usage CU,OneLake transactions,0.0042,0.0008,USD
+2026-10-29,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-29,fabriccapprod,OneLake Read Operations Capacity Usage CU,OneLake transactions,0.0020,0.0004,USD
+2026-10-29,fabriccapprod,Power BI Capacity Usage CU,Power BI,0.0020,0.0004,USD
+2026-10-29,fabriccapprod,SQL Backup Storage Data Stored,Storage (GB-month),0.0002,0.0000,USD
+2026-10-30,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.3645,0.0084,USD
+2026-10-30,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-10-31,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.3639,0.0084,USD
+2026-10-31,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0020,0.0004,USD
+2026-11-01,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.3754,0.0086,USD
+2026-11-01,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0021,0.0005,USD
+2026-11-02,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.3754,0.0086,USD
+2026-11-02,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0021,0.0005,USD
+2026-11-03,fabriccapprod,Compute Pool Capacity Usage CU,Idle running capacity (Compute Pool),460.9863,82.9775,USD
+2026-11-03,fabriccapprod,OneLake Cache Data Stored,Storage (GB-month),10.0702,2.6787,USD
+2026-11-03,fabriccapprod,Data Warehouse Capacity Usage CU,Warehouse and SQL,0.4170,0.0751,USD
+2026-11-03,fabriccapprod,Eventhouse Capacity Usage CU,Real-Time Intelligence,0.1458,0.0262,USD
+2026-11-03,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.8569,0.0197,USD
+2026-11-03,fabriccapprod,OneLake Iterative Read Operations Hot Capacity Usage CU,OneLake transactions,0.0900,0.0162,USD
+2026-11-03,fabriccapprod,OneLake Write Operations Hot Capacity Usage CU,OneLake transactions,0.0536,0.0097,USD
+2026-11-03,fabriccapprod,Power BI Capacity Usage CU,Power BI,0.0137,0.0025,USD
+2026-11-03,fabriccapprod,OneLake Other Operations Hot Capacity Usage CU,OneLake transactions,0.0062,0.0011,USD
+2026-11-03,fabriccapprod,OneLake Write Operations Capacity Usage CU,OneLake transactions,0.0056,0.0010,USD
+2026-11-03,fabriccapprod,OneLake Other Operations Capacity Usage CU,OneLake transactions,0.0033,0.0006,USD
+2026-11-03,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0021,0.0005,USD
+2026-11-03,fabriccapprod,OneLake Read Operations Capacity Usage CU,OneLake transactions,0.0019,0.0003,USD
+2026-11-03,fabriccapprod,OneLake Read Operations Hot Capacity Usage CU,OneLake transactions,0.0002,0.0000,USD
+2026-11-04,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.3756,0.0086,USD
+2026-11-04,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0021,0.0005,USD
+2026-11-05,fabriccapprod,Compute Pool Capacity Usage CU,Idle running capacity (Compute Pool),383.7627,69.0773,USD
+2026-11-05,fabriccapprod,OneLake Cache Data Stored,Storage (GB-month),5.6221,1.4955,USD
+2026-11-05,fabriccapprod,Ontology Modeling Capacity Usage CU,Fabric IQ · Ontology and Graph,2.4882,0.4479,USD
+2026-11-05,fabriccapprod,Eventhouse Capacity Usage CU,Real-Time Intelligence,0.3208,0.0578,USD
+2026-11-05,fabriccapprod,OneLake Other Operations Capacity Usage CU,OneLake transactions,0.3100,0.0558,USD
+2026-11-05,fabriccapprod,Copilot and AI Capacity Usage CU,AI · Copilot and Data Agents,0.2642,0.0476,USD
+2026-11-05,fabriccapprod,Data Warehouse Capacity Usage CU,Warehouse and SQL,0.2630,0.0473,USD
+2026-11-05,fabriccapprod,OneLake Iterative Read Operations Hot Capacity Usage CU,OneLake transactions,0.1082,0.0195,USD
+2026-11-05,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.7667,0.0176,USD
+2026-11-05,fabriccapprod,OneLake Write Operations Hot Capacity Usage CU,OneLake transactions,0.0200,0.0036,USD
+2026-11-05,fabriccapprod,Power BI Capacity Usage CU,Power BI,0.0109,0.0020,USD
+2026-11-05,fabriccapprod,OneLake Write Operations Capacity Usage CU,OneLake transactions,0.0089,0.0016,USD
+2026-11-05,fabriccapprod,OneLake Other Operations Hot Capacity Usage CU,OneLake transactions,0.0041,0.0007,USD
+2026-11-05,fabriccapprod,OneLake Read Operations Hot Capacity Usage CU,OneLake transactions,0.0029,0.0005,USD
+2026-11-05,fabriccapprod,SQL Storage Data Stored,Storage (GB-month),0.0021,0.0005,USD
+2026-11-05,fabriccapprod,OneLake Read Operations Capacity Usage CU,OneLake transactions,0.0013,0.0002,USD
+2026-11-06,fabriccapprod,OneLake Storage Hot Data Stored,Storage (GB-month),0.0156,0.0004,USD

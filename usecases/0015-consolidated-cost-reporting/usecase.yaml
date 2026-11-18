@@ -1,11 +1,35 @@
 id: 0015-consolidated-cost-reporting
-status: idea
-title: "Consolidated cost reporting"
-summary: "Summarize spending across management groups, subscriptions, and services for a leadership review."
+status: validated
+title: "Monthly Azure FinOps review"
+summary: "Monthly read-only FinOps review: last month's cost and why it changed, cost per project, budgets and forecast, savings and a short action list."
 domain: billing-entra-tenant
-trigger: [schedule]
+trigger: [schedule, chat]
 frequency: "Monthly"
-timeSaved: Medium
+timeSaved: High
 topPick: false
-samplePrompt: "Generate a consolidated monthly cost report for all subscriptions under management group 'Production'. Include total spend, month-over-month change, top 10 services by cost, and top 5 fastest-growing resources. Format as a summary suitable for leadership."
-source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }
+products: [azure-cost-management, azure-advisor, azure-resource-graph, azure-sre-agent]
+autonomy: read-only
+samplePrompt: "Run the monthly Azure FinOps review and give me the report."
+source: { type: community, url: "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/15-azure-finops-monthly-review" }
+package:
+  version: 1.0.0
+  apiVersion: azuresre.ai/v1
+  requires:
+    connectors: []
+    roles:
+      - "Reader on each reviewed subscription, or on a management group (includes the Cost Management, budget, Advisor and Resource Graph reads)"
+      - "Optional: Cost Management Reader on the same scopes, when the cost role must be explicit"
+      - "SRE Agent Administrator for the person deploying"
+  parameters:
+    MANAGED_IDENTITY_CLIENT_ID: "Client ID of the agent user-assigned managed identity"
+    SUBSCRIPTION_IDS: "Subscriptions to review (or leave empty and set MANAGEMENT_GROUP_ID)"
+    MANAGEMENT_GROUP_ID: "Optional management group to review every subscription under it"
+    PROJECT_TAG_KEYS: "Optional tag names that identify a project, in priority order (empty means automatic detection)"
+    CLIENT_NAME: "Optional organization name in the report header"
+    LOGO_DATA_URI: "Optional logo for the report header"
+  contents:
+    tools: [manifests/tools/generate-azure-finops-review.yaml]
+    skills: [manifests/skills/azure-finops-review/SKILL.md]
+    subagents: [manifests/subagents/finops-reviewer.yaml]
+    scheduledTasks: [manifests/scheduled-tasks/monthly-azure-finops-review.yaml]
+    permissions: [permissions/grant-finops-review-permissions.ps1]

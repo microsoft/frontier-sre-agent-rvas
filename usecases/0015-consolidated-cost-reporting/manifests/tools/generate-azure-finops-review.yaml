@@ -1,0 +1,41 @@
+api_version: azuresre.ai/v1
+kind: Tool
+metadata:
+  name: generate-azure-finops-review
+spec:
+  type: PythonFunctionTool
+  description: 'Read-only monthly Azure FinOps review of the configured subscriptions (Cost Management
+    Query API, budgets, Azure Advisor and Azure Resource Graph, Reader only): last month''s cost and change,
+    month to date and forecast against the budget, where the money goes, cost per project (from a project
+    tag it detects or you set), unusual days and month-over-month jumps, idle and orphaned resources,
+    Advisor savings, commitment coverage and allocation readiness, with a prioritised action list. Writes
+    an offline HTML report with a project filter, a JSON snapshot and three CSV files. Never changes anything.'
+  timeoutSeconds: 600
+  code_file: ./generate-azure-finops-review.py
+  parameters:
+  - name: operation
+    type: string
+    required: false
+    description: 'report (default: HTML + JSON + findings CSV + cost-by-resource CSV + cost-by-project
+      CSV), query (bounded chat view, no files) or self_test (complete report from built-in SIMULATED
+      data, no network).'
+  - name: view
+    type: string
+    required: false
+    description: 'Only with operation=query: summary (default), actions, anomalies, budgets, savings,
+      resources, projects, allocation or coverage.'
+  - name: limit
+    type: int
+    required: false
+    description: 'Only with operation=query: maximum rows, 1-50 (default 15); answers are capped to 3,500
+      bytes.'
+  - name: project
+    type: string
+    required: false
+    description: 'Only with operation=query: one project name (case-insensitive, Unallocated accepted);
+      summary, actions, savings, resources and projects then show that project only.'
+  - name: project_tag
+    type: string
+    required: false
+    description: Optional tag name that names the project for this run (or up to 5 comma-separated, in
+      priority order), for example Proyecto. Overrides PROJECT_TAG_KEYS and the automatic detection.
