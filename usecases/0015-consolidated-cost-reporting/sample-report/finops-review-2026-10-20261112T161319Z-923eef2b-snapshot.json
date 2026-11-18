@@ -1090,8 +1090,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-14714071-vmss",
-   "name": "aks-nodepool1-14714071-vmss",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-10000001-vmss",
+   "name": "aks-nodepool1-10000001-vmss",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "VM scale set",
@@ -1192,8 +1192,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.servicenetworking/trafficcontrollers/alb-e8491c4c/associations/as-0c4d98ec",
-   "name": "as-0c4d98ec",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.servicenetworking/trafficcontrollers/alb-0a1b2c3d/associations/as-2b3c4d5e",
+   "name": "as-2b3c4d5e",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Associations",
@@ -1209,8 +1209,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-aks-prod/providers/microsoft.containerregistry/registries/acraksab",
-   "name": "acraksab",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-aks-prod/providers/microsoft.containerregistry/registries/acrakshub01",
+   "name": "acrakshub01",
    "rg": "rg-aks-prod",
    "sub": "Contoso Production",
    "type": "Container registry",
@@ -1260,8 +1260,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/defaultresourcegroup-eus2/providers/microsoft.dashboard/grafana/grafana-202625124851-eu",
-   "name": "grafana-202625124851-eu",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/defaultresourcegroup-eus2/providers/microsoft.dashboard/grafana/grafana-ops-eu",
+   "name": "grafana-ops-eu",
    "rg": "defaultresourcegroup-eus2",
    "sub": "Contoso Production",
    "type": "Managed Grafana",
@@ -1379,8 +1379,8 @@
    "project_source": "none"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.servicenetworking/trafficcontrollers/alb-e8491c4c",
-   "name": "alb-e8491c4c",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.servicenetworking/trafficcontrollers/alb-0a1b2c3d",
+   "name": "alb-0a1b2c3d",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Trafficcontrollers",
@@ -1430,8 +1430,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_23bf9478279555cfb494d78f77567aa0",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_23bf9478279555cfb494d78f77567aa0",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_23bf9478279555cfb494d78f77567aa0",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_23bf9478279555cfb494d78f77567aa0",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -1447,8 +1447,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_0577a2d8a51256e8a2915a37823aa17b",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_0577a2d8a51256e8a2915a37823aa17b",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_0577a2d8a51256e8a2915a37823aa17b",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_0577a2d8a51256e8a2915a37823aa17b",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -1464,8 +1464,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_7d06ffe97d2d5c7dbb841e835715dd75",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_7d06ffe97d2d5c7dbb841e835715dd75",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_7d06ffe97d2d5c7dbb841e835715dd75",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_7d06ffe97d2d5c7dbb841e835715dd75",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -1549,8 +1549,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-backup-prod/providers/microsoft.storage/storageaccounts/asrcache424929",
-   "name": "asrcache424929",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-backup-prod/providers/microsoft.storage/storageaccounts/asrcache100001",
+   "name": "asrcache100001",
    "rg": "rg-backup-prod",
    "sub": "Contoso Production",
    "type": "Storage account",
@@ -1583,8 +1583,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.storage/storageaccounts/ff817ced33bc0462d95e100",
-   "name": "ff817ced33bc0462d95e100",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.storage/storageaccounts/fa1c2e3d4b5a6978869a0b1",
+   "name": "fa1c2e3d4b5a6978869a0b1",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Storage account",
@@ -1617,8 +1617,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.storage/storageaccounts/arcmgmt7x4cves6mgeke",
-   "name": "arcmgmt7x4cves6mgeke",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.storage/storageaccounts/arcmgmtq2w3e4r5t6y7u",
+   "name": "arcmgmtq2w3e4r5t6y7u",
    "rg": "rg-arc-management",
    "sub": "Contoso Production",
    "type": "Storage account",
@@ -1736,8 +1736,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.servicenetworking/trafficcontrollers/alb-e8491c4c/frontends/fe-097a2170",
-   "name": "fe-097a2170",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.servicenetworking/trafficcontrollers/alb-0a1b2c3d/frontends/fe-1a2b3c4d",
+   "name": "fe-1a2b3c4d",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Frontends",
@@ -1804,8 +1804,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-aks-prod/providers/microsoft.network/privateendpoints/pe-c09-files",
-   "name": "pe-c09-files",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-aks-prod/providers/microsoft.network/privateendpoints/pe-files-share",
+   "name": "pe-files-share",
    "rg": "rg-aks-prod",
    "sub": "Contoso Production",
    "type": "Private endpoint",
@@ -2076,7 +2076,7 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-14714071-vmss/virtualmachines/1",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-10000001-vmss/virtualmachines/1",
    "name": "1",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
@@ -2093,7 +2093,7 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-14714071-vmss/virtualmachines/2",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-10000001-vmss/virtualmachines/2",
    "name": "2",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
@@ -2110,7 +2110,7 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-14714071-vmss/virtualmachines/3",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-10000001-vmss/virtualmachines/3",
    "name": "3",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
@@ -2484,8 +2484,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.network/publicipaddresses/arcmgmt-k3s-data-ee31-pip1",
-   "name": "arcmgmt-k3s-data-ee31-pip1",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.network/publicipaddresses/arcmgmt-k3s-data-0a1c-pip1",
+   "name": "arcmgmt-k3s-data-0a1c-pip1",
    "rg": "rg-arc-management",
    "sub": "Contoso Production",
    "type": "Public IP address",
@@ -2501,8 +2501,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.network/publicipaddresses/arcmgmt-k3s-data-ee31-pip2",
-   "name": "arcmgmt-k3s-data-ee31-pip2",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.network/publicipaddresses/arcmgmt-k3s-data-0a1c-pip2",
+   "name": "arcmgmt-k3s-data-0a1c-pip2",
    "rg": "rg-arc-management",
    "sub": "Contoso Production",
    "type": "Public IP address",
@@ -2518,8 +2518,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.network/publicipaddresses/arcmgmt-k3s-data-ee31-pip3",
-   "name": "arcmgmt-k3s-data-ee31-pip3",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.network/publicipaddresses/arcmgmt-k3s-data-0a1c-pip3",
+   "name": "arcmgmt-k3s-data-0a1c-pip3",
    "rg": "rg-arc-management",
    "sub": "Contoso Production",
    "type": "Public IP address",
@@ -2535,8 +2535,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.network/publicipaddresses/arcmgmt-k3s-data-ee31-pip4",
-   "name": "arcmgmt-k3s-data-ee31-pip4",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.network/publicipaddresses/arcmgmt-k3s-data-0a1c-pip4",
+   "name": "arcmgmt-k3s-data-0a1c-pip4",
    "rg": "rg-arc-management",
    "sub": "Contoso Production",
    "type": "Public IP address",
@@ -2552,8 +2552,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.network/publicipaddresses/arcmgmt-k3s-data-ee31-pip5",
-   "name": "arcmgmt-k3s-data-ee31-pip5",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.network/publicipaddresses/arcmgmt-k3s-data-0a1c-pip5",
+   "name": "arcmgmt-k3s-data-0a1c-pip5",
    "rg": "rg-arc-management",
    "sub": "Contoso Production",
    "type": "Public IP address",
@@ -2569,8 +2569,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.network/publicipaddresses/arcmgmt-k3s-ee31-pip1",
-   "name": "arcmgmt-k3s-ee31-pip1",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.network/publicipaddresses/arcmgmt-k3s-0a1c-pip1",
+   "name": "arcmgmt-k3s-0a1c-pip1",
    "rg": "rg-arc-management",
    "sub": "Contoso Production",
    "type": "Public IP address",
@@ -2586,8 +2586,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.network/publicipaddresses/arcmgmt-k3s-ee31-pip2",
-   "name": "arcmgmt-k3s-ee31-pip2",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.network/publicipaddresses/arcmgmt-k3s-0a1c-pip2",
+   "name": "arcmgmt-k3s-0a1c-pip2",
    "rg": "rg-arc-management",
    "sub": "Contoso Production",
    "type": "Public IP address",
@@ -2603,8 +2603,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.network/publicipaddresses/arcmgmt-k3s-ee31-pip3",
-   "name": "arcmgmt-k3s-ee31-pip3",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.network/publicipaddresses/arcmgmt-k3s-0a1c-pip3",
+   "name": "arcmgmt-k3s-0a1c-pip3",
    "rg": "rg-arc-management",
    "sub": "Contoso Production",
    "type": "Public IP address",
@@ -2620,8 +2620,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.network/publicipaddresses/arcmgmt-k3s-ee31-pip4",
-   "name": "arcmgmt-k3s-ee31-pip4",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.network/publicipaddresses/arcmgmt-k3s-0a1c-pip4",
+   "name": "arcmgmt-k3s-0a1c-pip4",
    "rg": "rg-arc-management",
    "sub": "Contoso Production",
    "type": "Public IP address",
@@ -2637,8 +2637,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.network/publicipaddresses/arcmgmt-k3s-ee31-pip5",
-   "name": "arcmgmt-k3s-ee31-pip5",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.network/publicipaddresses/arcmgmt-k3s-0a1c-pip5",
+   "name": "arcmgmt-k3s-0a1c-pip5",
    "rg": "rg-arc-management",
    "sub": "Contoso Production",
    "type": "Public IP address",
@@ -2756,8 +2756,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/disks/arcmgmt-k3s-data-ee31-node-00-osdisk",
-   "name": "arcmgmt-k3s-data-ee31-node-00-osdisk",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/disks/arcmgmt-k3s-data-0a1c-node-00-osdisk",
+   "name": "arcmgmt-k3s-data-0a1c-node-00-osdisk",
    "rg": "rg-arc-management",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -2773,8 +2773,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/disks/arcmgmt-k3s-data-ee31-node-01-osdisk",
-   "name": "arcmgmt-k3s-data-ee31-node-01-osdisk",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/disks/arcmgmt-k3s-data-0a1c-node-01-osdisk",
+   "name": "arcmgmt-k3s-data-0a1c-node-01-osdisk",
    "rg": "rg-arc-management",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -2790,8 +2790,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/disks/arcmgmt-k3s-data-ee31-node-02-osdisk",
-   "name": "arcmgmt-k3s-data-ee31-node-02-osdisk",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/disks/arcmgmt-k3s-data-0a1c-node-02-osdisk",
+   "name": "arcmgmt-k3s-data-0a1c-node-02-osdisk",
    "rg": "rg-arc-management",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -2807,8 +2807,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/disks/arcmgmt-k3s-data-ee31-osdisk",
-   "name": "arcmgmt-k3s-data-ee31-osdisk",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/disks/arcmgmt-k3s-data-0a1c-osdisk",
+   "name": "arcmgmt-k3s-data-0a1c-osdisk",
    "rg": "rg-arc-management",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -2824,8 +2824,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/disks/arcmgmt-k3s-ee31-node-00-osdisk",
-   "name": "arcmgmt-k3s-ee31-node-00-osdisk",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/disks/arcmgmt-k3s-0a1c-node-00-osdisk",
+   "name": "arcmgmt-k3s-0a1c-node-00-osdisk",
    "rg": "rg-arc-management",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -2841,8 +2841,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/disks/arcmgmt-k3s-ee31-node-01-osdisk",
-   "name": "arcmgmt-k3s-ee31-node-01-osdisk",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/disks/arcmgmt-k3s-0a1c-node-01-osdisk",
+   "name": "arcmgmt-k3s-0a1c-node-01-osdisk",
    "rg": "rg-arc-management",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -2858,8 +2858,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/disks/arcmgmt-k3s-ee31-node-02-osdisk",
-   "name": "arcmgmt-k3s-ee31-node-02-osdisk",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/disks/arcmgmt-k3s-0a1c-node-02-osdisk",
+   "name": "arcmgmt-k3s-0a1c-node-02-osdisk",
    "rg": "rg-arc-management",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -2875,8 +2875,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/disks/arcmgmt-k3s-ee31-osdisk",
-   "name": "arcmgmt-k3s-ee31-osdisk",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/disks/arcmgmt-k3s-0a1c-osdisk",
+   "name": "arcmgmt-k3s-0a1c-osdisk",
    "rg": "rg-arc-management",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -2909,8 +2909,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-platform-shared/providers/microsoft.insights/scheduledqueryrules/infra03-cpu-demo-arc",
-   "name": "infra03-cpu-demo-arc",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-platform-shared/providers/microsoft.insights/scheduledqueryrules/ops-cpu-demo-arc",
+   "name": "ops-cpu-demo-arc",
    "rg": "rg-platform-shared",
    "sub": "Contoso Production",
    "type": "Scheduledqueryrules",
@@ -3266,8 +3266,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/azurebackuprg_swedencentral_1/providers/microsoft.compute/restorepointcollections/azurebackup_vm1_7701947012567132111",
-   "name": "azurebackup_vm1_7701947012567132111",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/azurebackuprg_swedencentral_1/providers/microsoft.compute/restorepointcollections/azurebackup_vm1_1000000000000000001",
+   "name": "azurebackup_vm1_1000000000000000001",
    "rg": "AzureBackupRG_swedencentral_1",
    "sub": "Contoso Production",
    "type": "Restorepointcollections",
@@ -3368,8 +3368,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-aks-prod/providers/microsoft.keyvault/vaults/acraksab-vault",
-   "name": "acraksab-vault",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-aks-prod/providers/microsoft.keyvault/vaults/acrakshub01-vault",
+   "name": "acrakshub01-vault",
    "rg": "rg-aks-prod",
    "sub": "Contoso Production",
    "type": "Key Vault",
@@ -3402,8 +3402,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-servers-prod/providers/microsoft.keyvault/vaults/arcsrv4gdlor22q3k7m",
-   "name": "arcsrv4gdlor22q3k7m",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-servers-prod/providers/microsoft.keyvault/vaults/arcsrva1s2d3f4g5h6j",
+   "name": "arcsrva1s2d3f4g5h6j",
    "rg": "rg-arc-servers-prod",
    "sub": "Contoso Production",
    "type": "Key Vault",
@@ -3436,8 +3436,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.keyvault/vaults/arcmgmt7x4cves6mgeke",
-   "name": "arcmgmt7x4cves6mgeke",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.keyvault/vaults/arcmgmtq2w3e4r5t6y7u",
+   "name": "arcmgmtq2w3e4r5t6y7u",
    "rg": "rg-arc-management",
    "sub": "Contoso Production",
    "type": "Key Vault",
@@ -3453,8 +3453,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/azurebackuprg_swedencentral_1/providers/microsoft.compute/restorepointcollections/azurebackup_vm2_7701947011668453754",
-   "name": "azurebackup_vm2_7701947011668453754",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/azurebackuprg_swedencentral_1/providers/microsoft.compute/restorepointcollections/azurebackup_vm2_1000000000000000002",
+   "name": "azurebackup_vm2_1000000000000000002",
    "rg": "AzureBackupRG_swedencentral_1",
    "sub": "Contoso Production",
    "type": "Restorepointcollections",
@@ -3487,8 +3487,8 @@
    "project_source": "none"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-aks-prod/providers/microsoft.servicebus/namespaces/sb-frontier-13406",
-   "name": "sb-frontier-13406",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-aks-prod/providers/microsoft.servicebus/namespaces/sb-events-10001",
+   "name": "sb-events-10001",
    "rg": "rg-aks-prod",
    "sub": "Contoso Production",
    "type": "Namespaces",
@@ -3640,8 +3640,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-platform-shared/providers/microsoft.insights/metricalerts/alert-http-5xx-sre-lab",
-   "name": "alert-http-5xx-sre-lab",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-platform-shared/providers/microsoft.insights/metricalerts/alert-http-5xx-web",
+   "name": "alert-http-5xx-web",
    "rg": "rg-platform-shared",
    "sub": "Contoso Production",
    "type": "Metricalerts",
@@ -3708,8 +3708,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-platform-shared/providers/microsoft.insights/metricalerts/infra03-cpu-demo-native",
-   "name": "infra03-cpu-demo-native",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-platform-shared/providers/microsoft.insights/metricalerts/ops-cpu-demo-native",
+   "name": "ops-cpu-demo-native",
    "rg": "rg-platform-shared",
    "sub": "Contoso Production",
    "type": "Metricalerts",
@@ -4031,8 +4031,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407disk1_f1297d7e410056a7825c07a60d0ef5f1",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407disk1_f1297d7e410056a7825c07a60d0ef5f1",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000disk1_f1297d7e410056a7825c07a60d0ef5f1",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000disk1_f1297d7e410056a7825c07a60d0ef5f1",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4048,8 +4048,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407disk1_7b34190075705920884f65283c97a608",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407disk1_7b34190075705920884f65283c97a608",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000disk1_7b34190075705920884f65283c97a608",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000disk1_7b34190075705920884f65283c97a608",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4388,8 +4388,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_9bc6a94b64d95b76a54e2e6dd7fcc111",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_9bc6a94b64d95b76a54e2e6dd7fcc111",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_9bc6a94b64d95b76a54e2e6dd7fcc111",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_9bc6a94b64d95b76a54e2e6dd7fcc111",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4405,8 +4405,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_70aa017598825b0a8b3a909b5ae5dec5",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_70aa017598825b0a8b3a909b5ae5dec5",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_70aa017598825b0a8b3a909b5ae5dec5",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_70aa017598825b0a8b3a909b5ae5dec5",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4422,8 +4422,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_5ac68fbc61555c0b8124916e1f7d1672",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_5ac68fbc61555c0b8124916e1f7d1672",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_5ac68fbc61555c0b8124916e1f7d1672",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_5ac68fbc61555c0b8124916e1f7d1672",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4439,8 +4439,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_8613e403e1595cdebd4dd2157e17f0bb",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_8613e403e1595cdebd4dd2157e17f0bb",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_8613e403e1595cdebd4dd2157e17f0bb",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_8613e403e1595cdebd4dd2157e17f0bb",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4456,8 +4456,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_49c902b7e81d52a6bc24c31cc0141251",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_49c902b7e81d52a6bc24c31cc0141251",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_49c902b7e81d52a6bc24c31cc0141251",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_49c902b7e81d52a6bc24c31cc0141251",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4473,8 +4473,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_de05428e8d515cea8579a3cfcbc7bb81",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_de05428e8d515cea8579a3cfcbc7bb81",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_de05428e8d515cea8579a3cfcbc7bb81",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_de05428e8d515cea8579a3cfcbc7bb81",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4490,8 +4490,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_43d021daf8725eaf9bd9ace590f12ca4",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_43d021daf8725eaf9bd9ace590f12ca4",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_43d021daf8725eaf9bd9ace590f12ca4",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_43d021daf8725eaf9bd9ace590f12ca4",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4507,8 +4507,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_67c9e9a676ce50198e60dcf0586ff487",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_67c9e9a676ce50198e60dcf0586ff487",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_67c9e9a676ce50198e60dcf0586ff487",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_67c9e9a676ce50198e60dcf0586ff487",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4524,8 +4524,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_ee2d01b45c3457ee86ee42d66aa311d5",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_ee2d01b45c3457ee86ee42d66aa311d5",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_ee2d01b45c3457ee86ee42d66aa311d5",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_ee2d01b45c3457ee86ee42d66aa311d5",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4541,8 +4541,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_763c329461a4530f80959864c25d3965",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_763c329461a4530f80959864c25d3965",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_763c329461a4530f80959864c25d3965",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_763c329461a4530f80959864c25d3965",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4558,8 +4558,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_6d38c3131baa5f198bac735fd58afcff",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_6d38c3131baa5f198bac735fd58afcff",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_6d38c3131baa5f198bac735fd58afcff",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_6d38c3131baa5f198bac735fd58afcff",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4575,8 +4575,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_504027aa63d057e7bb471b4cd9e7b5fd",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_504027aa63d057e7bb471b4cd9e7b5fd",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_504027aa63d057e7bb471b4cd9e7b5fd",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_504027aa63d057e7bb471b4cd9e7b5fd",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4592,8 +4592,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_f738099cc9ac5a6ba950b90bbff3ac95",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_f738099cc9ac5a6ba950b90bbff3ac95",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_f738099cc9ac5a6ba950b90bbff3ac95",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_f738099cc9ac5a6ba950b90bbff3ac95",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4609,8 +4609,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_c0e15c4710d85f09ba3aa5df1b709799",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_c0e15c4710d85f09ba3aa5df1b709799",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_c0e15c4710d85f09ba3aa5df1b709799",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_c0e15c4710d85f09ba3aa5df1b709799",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4626,8 +4626,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_e9fbca57ca665e05bc1826206c4e6ae7",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_e9fbca57ca665e05bc1826206c4e6ae7",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_e9fbca57ca665e05bc1826206c4e6ae7",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_e9fbca57ca665e05bc1826206c4e6ae7",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4643,8 +4643,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_6842265cdd005a9785c0f206e0f2f9ab",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_6842265cdd005a9785c0f206e0f2f9ab",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_6842265cdd005a9785c0f206e0f2f9ab",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_6842265cdd005a9785c0f206e0f2f9ab",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4660,8 +4660,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_712003567b925d94b35381c2afc4f961",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_712003567b925d94b35381c2afc4f961",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_712003567b925d94b35381c2afc4f961",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_712003567b925d94b35381c2afc4f961",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4677,8 +4677,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_0fc40584ea9556cc95bbd49758c893c8",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_0fc40584ea9556cc95bbd49758c893c8",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_0fc40584ea9556cc95bbd49758c893c8",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_0fc40584ea9556cc95bbd49758c893c8",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4694,8 +4694,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_bcdd54e234e25eac80fd442bf91ba0f7",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_bcdd54e234e25eac80fd442bf91ba0f7",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_bcdd54e234e25eac80fd442bf91ba0f7",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_bcdd54e234e25eac80fd442bf91ba0f7",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4711,8 +4711,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_515355afd5e2585b89df9d92309a12cd",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_515355afd5e2585b89df9d92309a12cd",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_515355afd5e2585b89df9d92309a12cd",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_515355afd5e2585b89df9d92309a12cd",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4728,8 +4728,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_e5eb5a2e92995afc962b7d2d650552c3",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_e5eb5a2e92995afc962b7d2d650552c3",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_e5eb5a2e92995afc962b7d2d650552c3",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_e5eb5a2e92995afc962b7d2d650552c3",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4745,8 +4745,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_882c1a6a466956d588226bd0a3014053",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_882c1a6a466956d588226bd0a3014053",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_882c1a6a466956d588226bd0a3014053",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_882c1a6a466956d588226bd0a3014053",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4762,8 +4762,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_35be5fcb182b5b95b8b53f669ce72022",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_35be5fcb182b5b95b8b53f669ce72022",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_35be5fcb182b5b95b8b53f669ce72022",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_35be5fcb182b5b95b8b53f669ce72022",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4779,8 +4779,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_9c40f56f3dc354f0a46c91795795c0b8",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_9c40f56f3dc354f0a46c91795795c0b8",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_9c40f56f3dc354f0a46c91795795c0b8",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_9c40f56f3dc354f0a46c91795795c0b8",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -4983,7 +4983,7 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-14714071-vmss/virtualmachines/10",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-10000001-vmss/virtualmachines/10",
    "name": "10",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
@@ -5000,7 +5000,7 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-14714071-vmss/virtualmachines/11",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-10000001-vmss/virtualmachines/11",
    "name": "11",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
@@ -5017,7 +5017,7 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-14714071-vmss/virtualmachines/13",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-10000001-vmss/virtualmachines/13",
    "name": "13",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
@@ -5034,7 +5034,7 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-14714071-vmss/virtualmachines/15",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-10000001-vmss/virtualmachines/15",
    "name": "15",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
@@ -5051,7 +5051,7 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-14714071-vmss/virtualmachines/17",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-10000001-vmss/virtualmachines/17",
    "name": "17",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
@@ -5068,7 +5068,7 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-14714071-vmss/virtualmachines/18",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-10000001-vmss/virtualmachines/18",
    "name": "18",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
@@ -5085,7 +5085,7 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-14714071-vmss/virtualmachines/21",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-10000001-vmss/virtualmachines/21",
    "name": "21",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
@@ -5102,7 +5102,7 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-14714071-vmss/virtualmachines/22",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-10000001-vmss/virtualmachines/22",
    "name": "22",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
@@ -5119,7 +5119,7 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-14714071-vmss/virtualmachines/23",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-10000001-vmss/virtualmachines/23",
    "name": "23",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
@@ -5136,7 +5136,7 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-14714071-vmss/virtualmachines/27",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-10000001-vmss/virtualmachines/27",
    "name": "27",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
@@ -5153,7 +5153,7 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-14714071-vmss/virtualmachines/29",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-10000001-vmss/virtualmachines/29",
    "name": "29",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
@@ -5170,7 +5170,7 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-14714071-vmss/virtualmachines/30",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-10000001-vmss/virtualmachines/30",
    "name": "30",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
@@ -5221,8 +5221,8 @@
    "project_source": "rg"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/providers/microsoft.security/pricings/containers/images/sha256:074e154a9219e05a66df87ec5ac869594f47e6ade64deed7e3395635adeb7d71",
-   "name": "sha256:074e154a9219e05a66df87ec5ac869594f47e6ade64deed7e3395635adeb7d71",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/providers/microsoft.security/pricings/containers/images/sha256:5ad63c161849da7d5f18aa1b7af0d3b722720ec9d01e968a58b4dadc62f9f9e8",
+   "name": "sha256:5ad63c161849da7d5f18aa1b7af0d3b722720ec9d01e968a58b4dadc62f9f9e8",
    "rg": "",
    "sub": "Contoso Production",
    "type": "Images",
@@ -5238,8 +5238,8 @@
    "project_source": "none"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/providers/microsoft.security/pricings/containers/images/sha256:1e52e93c137730be71890edcd62b906cf2d1d13a0e27de3fdff3d4ee15d56aae",
-   "name": "sha256:1e52e93c137730be71890edcd62b906cf2d1d13a0e27de3fdff3d4ee15d56aae",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/providers/microsoft.security/pricings/containers/images/sha256:542179d12827417f1429e548b29d5c0ec6ebec5e0142944f18af98fe6bfa05d5",
+   "name": "sha256:542179d12827417f1429e548b29d5c0ec6ebec5e0142944f18af98fe6bfa05d5",
    "rg": "",
    "sub": "Contoso Production",
    "type": "Images",
@@ -5255,8 +5255,8 @@
    "project_source": "none"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/providers/microsoft.security/pricings/containers/images/sha256:a2d44e376537311c224134274d6bfca4014fdc97245265c42bd3be545da989ad",
-   "name": "sha256:a2d44e376537311c224134274d6bfca4014fdc97245265c42bd3be545da989ad",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/providers/microsoft.security/pricings/containers/images/sha256:b21c71755169515daf92375e15b17b6f77db9f81cda86fd11afd29862ee7588c",
+   "name": "sha256:b21c71755169515daf92375e15b17b6f77db9f81cda86fd11afd29862ee7588c",
    "rg": "",
    "sub": "Contoso Production",
    "type": "Images",
@@ -5272,8 +5272,8 @@
    "project_source": "none"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/providers/microsoft.security/pricings/containers/images/sha256:fc9940dcf3722b9567dcf78874e122de008cac9e51e4bf5d9338c1197e514cb1",
-   "name": "sha256:fc9940dcf3722b9567dcf78874e122de008cac9e51e4bf5d9338c1197e514cb1",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/providers/microsoft.security/pricings/containers/images/sha256:c765b569feb7cbf4c4ba78523cc7a6a517cb7d96e10faa67851d2f5c7145885e",
+   "name": "sha256:c765b569feb7cbf4c4ba78523cc7a6a517cb7d96e10faa67851d2f5c7145885e",
    "rg": "",
    "sub": "Contoso Production",
    "type": "Images",
@@ -5391,8 +5391,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_2ead4ed8568c598f870395e2ede994f1",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_2ead4ed8568c598f870395e2ede994f1",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_2ead4ed8568c598f870395e2ede994f1",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_2ead4ed8568c598f870395e2ede994f1",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -5408,8 +5408,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_131a6c16142b5facbaddf3d3d02ad65f",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_131a6c16142b5facbaddf3d3d02ad65f",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_131a6c16142b5facbaddf3d3d02ad65f",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_131a6c16142b5facbaddf3d3d02ad65f",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -5425,8 +5425,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_1ded50fe2aa05468b04917db8ae5ab8a",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_1ded50fe2aa05468b04917db8ae5ab8a",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_1ded50fe2aa05468b04917db8ae5ab8a",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_1ded50fe2aa05468b04917db8ae5ab8a",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -5442,8 +5442,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_0f8ec26764d2504f80cf2897b4b61257",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_0f8ec26764d2504f80cf2897b4b61257",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_0f8ec26764d2504f80cf2897b4b61257",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_0f8ec26764d2504f80cf2897b4b61257",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -5459,8 +5459,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_ceec0a57480a5126befdce06373ed2f3",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_ceec0a57480a5126befdce06373ed2f3",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_ceec0a57480a5126befdce06373ed2f3",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_ceec0a57480a5126befdce06373ed2f3",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -5476,8 +5476,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_32896d3e11465ed49f7d400945fb50f2",
-   "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_32896d3e11465ed49f7d400945fb50f2",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_32896d3e11465ed49f7d400945fb50f2",
+   "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_32896d3e11465ed49f7d400945fb50f2",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Managed disk",
@@ -5510,8 +5510,8 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachines/aks-challenge06-nap-2n6mq",
-   "name": "aks-challenge06-nap-2n6mq",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachines/aks-pool06-nap-2n6mq",
+   "name": "aks-pool06-nap-2n6mq",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
    "type": "Virtual machine",
@@ -5612,7 +5612,7 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-14714071-vmss/virtualmachines/0",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-10000001-vmss/virtualmachines/0",
    "name": "0",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
@@ -5629,7 +5629,7 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-14714071-vmss/virtualmachines/6",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-10000001-vmss/virtualmachines/6",
    "name": "6",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
@@ -5646,7 +5646,7 @@
    "project_source": "managed"
   },
   {
-   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-14714071-vmss/virtualmachines/7",
+   "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-10000001-vmss/virtualmachines/7",
    "name": "7",
    "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
    "sub": "Contoso Production",
@@ -5972,8 +5972,8 @@
    {
     "source": "idle",
     "check": "deallocated_vm",
-    "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-ee31",
-    "name": "arcmgmt-K3s-Data-ee31",
+    "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-0a1c",
+    "name": "arcmgmt-K3s-Data-0a1c",
     "rg": "rg-arc-management",
     "sub": "Contoso Production",
     "type": "Virtual machine",
@@ -5988,8 +5988,8 @@
    {
     "source": "idle",
     "check": "deallocated_vm",
-    "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-ee31-node-00",
-    "name": "arcmgmt-K3s-Data-ee31-Node-00",
+    "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-0a1c-node-00",
+    "name": "arcmgmt-K3s-Data-0a1c-Node-00",
     "rg": "rg-arc-management",
     "sub": "Contoso Production",
     "type": "Virtual machine",
@@ -6004,8 +6004,8 @@
    {
     "source": "idle",
     "check": "deallocated_vm",
-    "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-ee31-node-01",
-    "name": "arcmgmt-K3s-Data-ee31-Node-01",
+    "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-0a1c-node-01",
+    "name": "arcmgmt-K3s-Data-0a1c-Node-01",
     "rg": "rg-arc-management",
     "sub": "Contoso Production",
     "type": "Virtual machine",
@@ -6020,8 +6020,8 @@
    {
     "source": "idle",
     "check": "deallocated_vm",
-    "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-ee31-node-02",
-    "name": "arcmgmt-K3s-Data-ee31-Node-02",
+    "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-0a1c-node-02",
+    "name": "arcmgmt-K3s-Data-0a1c-Node-02",
     "rg": "rg-arc-management",
     "sub": "Contoso Production",
     "type": "Virtual machine",
@@ -6036,8 +6036,8 @@
    {
     "source": "idle",
     "check": "deallocated_vm",
-    "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-ee31",
-    "name": "arcmgmt-K3s-ee31",
+    "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-0a1c",
+    "name": "arcmgmt-K3s-0a1c",
     "rg": "rg-arc-management",
     "sub": "Contoso Production",
     "type": "Virtual machine",
@@ -6052,8 +6052,8 @@
    {
     "source": "idle",
     "check": "deallocated_vm",
-    "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-ee31-node-00",
-    "name": "arcmgmt-K3s-ee31-Node-00",
+    "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-0a1c-node-00",
+    "name": "arcmgmt-K3s-0a1c-Node-00",
     "rg": "rg-arc-management",
     "sub": "Contoso Production",
     "type": "Virtual machine",
@@ -6068,8 +6068,8 @@
    {
     "source": "idle",
     "check": "deallocated_vm",
-    "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-ee31-node-01",
-    "name": "arcmgmt-K3s-ee31-Node-01",
+    "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-0a1c-node-01",
+    "name": "arcmgmt-K3s-0a1c-Node-01",
     "rg": "rg-arc-management",
     "sub": "Contoso Production",
     "type": "Virtual machine",
@@ -6084,8 +6084,8 @@
    {
     "source": "idle",
     "check": "deallocated_vm",
-    "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-ee31-node-02",
-    "name": "arcmgmt-K3s-ee31-Node-02",
+    "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-0a1c-node-02",
+    "name": "arcmgmt-K3s-0a1c-Node-02",
     "rg": "rg-arc-management",
     "sub": "Contoso Production",
     "type": "Virtual machine",
@@ -6820,8 +6820,8 @@
       "project_source": "rg"
      },
      {
-      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-backup-prod/providers/microsoft.storage/storageaccounts/asrcache424929",
-      "name": "asrcache424929",
+      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-backup-prod/providers/microsoft.storage/storageaccounts/asrcache100001",
+      "name": "asrcache100001",
       "rg": "rg-backup-prod",
       "sub": "Contoso Production",
       "type": "Storage account",
@@ -7141,8 +7141,8 @@
       "project_source": "rg"
      },
      {
-      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-14714071-vmss",
-      "name": "aks-nodepool1-14714071-vmss",
+      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/virtualmachinescalesets/aks-nodepool1-10000001-vmss",
+      "name": "aks-nodepool1-10000001-vmss",
       "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
       "sub": "Contoso Production",
       "type": "VM scale set",
@@ -7175,8 +7175,8 @@
       "project_source": "rg"
      },
      {
-      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.servicenetworking/trafficcontrollers/alb-e8491c4c/associations/as-0c4d98ec",
-      "name": "as-0c4d98ec",
+      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.servicenetworking/trafficcontrollers/alb-0a1b2c3d/associations/as-2b3c4d5e",
+      "name": "as-2b3c4d5e",
       "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
       "sub": "Contoso Production",
       "type": "Associations",
@@ -7192,8 +7192,8 @@
       "project_source": "managed"
      },
      {
-      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-aks-prod/providers/microsoft.containerregistry/registries/acraksab",
-      "name": "acraksab",
+      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-aks-prod/providers/microsoft.containerregistry/registries/acrakshub01",
+      "name": "acrakshub01",
       "rg": "rg-aks-prod",
       "sub": "Contoso Production",
       "type": "Container registry",
@@ -7209,8 +7209,8 @@
       "project_source": "rg"
      },
      {
-      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.servicenetworking/trafficcontrollers/alb-e8491c4c",
-      "name": "alb-e8491c4c",
+      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.servicenetworking/trafficcontrollers/alb-0a1b2c3d",
+      "name": "alb-0a1b2c3d",
       "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
       "sub": "Contoso Production",
       "type": "Trafficcontrollers",
@@ -7260,8 +7260,8 @@
       "project_source": "managed"
      },
      {
-      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_23bf9478279555cfb494d78f77567aa0",
-      "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_23bf9478279555cfb494d78f77567aa0",
+      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_23bf9478279555cfb494d78f77567aa0",
+      "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_23bf9478279555cfb494d78f77567aa0",
       "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
       "sub": "Contoso Production",
       "type": "Managed disk",
@@ -7277,8 +7277,8 @@
       "project_source": "managed"
      },
      {
-      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-147140aks-nodepool1-1471407os__1_0577a2d8a51256e8a2915a37823aa17b",
-      "name": "aks-nodepool1-147140aks-nodepool1-1471407os__1_0577a2d8a51256e8a2915a37823aa17b",
+      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/MC_rg-aks-prod_aks-prod-swc_swedencentral/providers/microsoft.compute/disks/aks-nodepool1-100000aks-nodepool1-1000000os__1_0577a2d8a51256e8a2915a37823aa17b",
+      "name": "aks-nodepool1-100000aks-nodepool1-1000000os__1_0577a2d8a51256e8a2915a37823aa17b",
       "rg": "MC_rg-aks-prod_aks-prod-swc_swedencentral",
       "sub": "Contoso Production",
       "type": "Managed disk",
@@ -7536,8 +7536,8 @@
       "project_source": "rg"
      },
      {
-      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.storage/storageaccounts/arcmgmt7x4cves6mgeke",
-      "name": "arcmgmt7x4cves6mgeke",
+      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.storage/storageaccounts/arcmgmtq2w3e4r5t6y7u",
+      "name": "arcmgmtq2w3e4r5t6y7u",
       "rg": "rg-arc-management",
       "sub": "Contoso Production",
       "type": "Storage account",
@@ -7926,8 +7926,8 @@
       "project_source": "rg"
      },
      {
-      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-platform-shared/providers/microsoft.insights/scheduledqueryrules/infra03-cpu-demo-arc",
-      "name": "infra03-cpu-demo-arc",
+      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-platform-shared/providers/microsoft.insights/scheduledqueryrules/ops-cpu-demo-arc",
+      "name": "ops-cpu-demo-arc",
       "rg": "rg-platform-shared",
       "sub": "Contoso Production",
       "type": "Scheduledqueryrules",
@@ -8523,8 +8523,8 @@
     "actions": [],
     "top_resources": [
      {
-      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/defaultresourcegroup-eus2/providers/microsoft.dashboard/grafana/grafana-202625124851-eu",
-      "name": "grafana-202625124851-eu",
+      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/defaultresourcegroup-eus2/providers/microsoft.dashboard/grafana/grafana-ops-eu",
+      "name": "grafana-ops-eu",
       "rg": "defaultresourcegroup-eus2",
       "sub": "Contoso Production",
       "type": "Managed Grafana",
@@ -8574,8 +8574,8 @@
       "project_source": "none"
      },
      {
-      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/azurebackuprg_swedencentral_1/providers/microsoft.compute/restorepointcollections/azurebackup_vm1_7701947012567132111",
-      "name": "azurebackup_vm1_7701947012567132111",
+      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/azurebackuprg_swedencentral_1/providers/microsoft.compute/restorepointcollections/azurebackup_vm1_1000000000000000001",
+      "name": "azurebackup_vm1_1000000000000000001",
       "rg": "AzureBackupRG_swedencentral_1",
       "sub": "Contoso Production",
       "type": "Restorepointcollections",
@@ -8591,8 +8591,8 @@
       "project_source": "none"
      },
      {
-      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/azurebackuprg_swedencentral_1/providers/microsoft.compute/restorepointcollections/azurebackup_vm2_7701947011668453754",
-      "name": "azurebackup_vm2_7701947011668453754",
+      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/azurebackuprg_swedencentral_1/providers/microsoft.compute/restorepointcollections/azurebackup_vm2_1000000000000000002",
+      "name": "azurebackup_vm2_1000000000000000002",
       "rg": "AzureBackupRG_swedencentral_1",
       "sub": "Contoso Production",
       "type": "Restorepointcollections",
@@ -8625,8 +8625,8 @@
       "project_source": "none"
      },
      {
-      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/providers/microsoft.security/pricings/containers/images/sha256:074e154a9219e05a66df87ec5ac869594f47e6ade64deed7e3395635adeb7d71",
-      "name": "sha256:074e154a9219e05a66df87ec5ac869594f47e6ade64deed7e3395635adeb7d71",
+      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/providers/microsoft.security/pricings/containers/images/sha256:5ad63c161849da7d5f18aa1b7af0d3b722720ec9d01e968a58b4dadc62f9f9e8",
+      "name": "sha256:5ad63c161849da7d5f18aa1b7af0d3b722720ec9d01e968a58b4dadc62f9f9e8",
       "rg": "",
       "sub": "Contoso Production",
       "type": "Images",
@@ -8642,8 +8642,8 @@
       "project_source": "none"
      },
      {
-      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/providers/microsoft.security/pricings/containers/images/sha256:1e52e93c137730be71890edcd62b906cf2d1d13a0e27de3fdff3d4ee15d56aae",
-      "name": "sha256:1e52e93c137730be71890edcd62b906cf2d1d13a0e27de3fdff3d4ee15d56aae",
+      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/providers/microsoft.security/pricings/containers/images/sha256:542179d12827417f1429e548b29d5c0ec6ebec5e0142944f18af98fe6bfa05d5",
+      "name": "sha256:542179d12827417f1429e548b29d5c0ec6ebec5e0142944f18af98fe6bfa05d5",
       "rg": "",
       "sub": "Contoso Production",
       "type": "Images",
@@ -8659,8 +8659,8 @@
       "project_source": "none"
      },
      {
-      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/providers/microsoft.security/pricings/containers/images/sha256:a2d44e376537311c224134274d6bfca4014fdc97245265c42bd3be545da989ad",
-      "name": "sha256:a2d44e376537311c224134274d6bfca4014fdc97245265c42bd3be545da989ad",
+      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/providers/microsoft.security/pricings/containers/images/sha256:b21c71755169515daf92375e15b17b6f77db9f81cda86fd11afd29862ee7588c",
+      "name": "sha256:b21c71755169515daf92375e15b17b6f77db9f81cda86fd11afd29862ee7588c",
       "rg": "",
       "sub": "Contoso Production",
       "type": "Images",
@@ -8676,8 +8676,8 @@
       "project_source": "none"
      },
      {
-      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/providers/microsoft.security/pricings/containers/images/sha256:fc9940dcf3722b9567dcf78874e122de008cac9e51e4bf5d9338c1197e514cb1",
-      "name": "sha256:fc9940dcf3722b9567dcf78874e122de008cac9e51e4bf5d9338c1197e514cb1",
+      "id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/providers/microsoft.security/pricings/containers/images/sha256:c765b569feb7cbf4c4ba78523cc7a6a517cb7d96e10faa67851d2f5c7145885e",
+      "name": "sha256:c765b569feb7cbf4c4ba78523cc7a6a517cb7d96e10faa67851d2f5c7145885e",
       "rg": "",
       "sub": "Contoso Production",
       "type": "Images",
@@ -8983,13 +8983,13 @@
    "id": "649779aa",
    "severity": "low",
    "category": "savings",
-   "title": "Deallocated VM: arcmgmt-K3s-Data-ee31",
+   "title": "Deallocated VM: arcmgmt-K3s-Data-0a1c",
    "evidence": "Virtual machine · Standard_D4as_v7 · disks only · 3.01 USD a month",
    "action": "Confirm it is still needed; if not, delete the VM and its disks. Its disks keep billing while it is deallocated.",
    "scope": "rg-arc-management",
-   "resource_id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-ee31",
+   "resource_id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-0a1c",
    "saving": 3.01,
-   "link": "https://portal.azure.com/#@/resource/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-ee31",
+   "link": "https://portal.azure.com/#@/resource/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-0a1c",
    "project_id": "p2",
    "project": "Sandbox"
   },
@@ -8997,13 +8997,13 @@
    "id": "a0cc4ee9",
    "severity": "low",
    "category": "savings",
-   "title": "Deallocated VM: arcmgmt-K3s-Data-ee31-Node-00",
+   "title": "Deallocated VM: arcmgmt-K3s-Data-0a1c-Node-00",
    "evidence": "Virtual machine · Standard_D2as_v7 · disks only · 3.01 USD a month",
    "action": "Confirm it is still needed; if not, delete the VM and its disks. Its disks keep billing while it is deallocated.",
    "scope": "rg-arc-management",
-   "resource_id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-ee31-node-00",
+   "resource_id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-0a1c-node-00",
    "saving": 3.01,
-   "link": "https://portal.azure.com/#@/resource/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-ee31-node-00",
+   "link": "https://portal.azure.com/#@/resource/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-0a1c-node-00",
    "project_id": "p2",
    "project": "Sandbox"
   },
@@ -9011,13 +9011,13 @@
    "id": "c2d9e868",
    "severity": "low",
    "category": "savings",
-   "title": "Deallocated VM: arcmgmt-K3s-Data-ee31-Node-01",
+   "title": "Deallocated VM: arcmgmt-K3s-Data-0a1c-Node-01",
    "evidence": "Virtual machine · Standard_D2as_v7 · disks only · 3.01 USD a month",
    "action": "Confirm it is still needed; if not, delete the VM and its disks. Its disks keep billing while it is deallocated.",
    "scope": "rg-arc-management",
-   "resource_id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-ee31-node-01",
+   "resource_id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-0a1c-node-01",
    "saving": 3.01,
-   "link": "https://portal.azure.com/#@/resource/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-ee31-node-01",
+   "link": "https://portal.azure.com/#@/resource/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-0a1c-node-01",
    "project_id": "p2",
    "project": "Sandbox"
   },
@@ -9025,13 +9025,13 @@
    "id": "9c6c5816",
    "severity": "low",
    "category": "savings",
-   "title": "Deallocated VM: arcmgmt-K3s-Data-ee31-Node-02",
+   "title": "Deallocated VM: arcmgmt-K3s-Data-0a1c-Node-02",
    "evidence": "Virtual machine · Standard_D2as_v7 · disks only · 3.01 USD a month",
    "action": "Confirm it is still needed; if not, delete the VM and its disks. Its disks keep billing while it is deallocated.",
    "scope": "rg-arc-management",
-   "resource_id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-ee31-node-02",
+   "resource_id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-0a1c-node-02",
    "saving": 3.01,
-   "link": "https://portal.azure.com/#@/resource/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-ee31-node-02",
+   "link": "https://portal.azure.com/#@/resource/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-data-0a1c-node-02",
    "project_id": "p2",
    "project": "Sandbox"
   },
@@ -9039,13 +9039,13 @@
    "id": "c5b37a00",
    "severity": "low",
    "category": "savings",
-   "title": "Deallocated VM: arcmgmt-K3s-ee31",
+   "title": "Deallocated VM: arcmgmt-K3s-0a1c",
    "evidence": "Virtual machine · Standard_D4as_v7 · disks only · 3.01 USD a month",
    "action": "Confirm it is still needed; if not, delete the VM and its disks. Its disks keep billing while it is deallocated.",
    "scope": "rg-arc-management",
-   "resource_id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-ee31",
+   "resource_id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-0a1c",
    "saving": 3.01,
-   "link": "https://portal.azure.com/#@/resource/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-ee31",
+   "link": "https://portal.azure.com/#@/resource/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-0a1c",
    "project_id": "p2",
    "project": "Sandbox"
   },
@@ -9053,13 +9053,13 @@
    "id": "b703e9de",
    "severity": "low",
    "category": "savings",
-   "title": "Deallocated VM: arcmgmt-K3s-ee31-Node-00",
+   "title": "Deallocated VM: arcmgmt-K3s-0a1c-Node-00",
    "evidence": "Virtual machine · Standard_D2as_v7 · disks only · 3.01 USD a month",
    "action": "Confirm it is still needed; if not, delete the VM and its disks. Its disks keep billing while it is deallocated.",
    "scope": "rg-arc-management",
-   "resource_id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-ee31-node-00",
+   "resource_id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-0a1c-node-00",
    "saving": 3.01,
-   "link": "https://portal.azure.com/#@/resource/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-ee31-node-00",
+   "link": "https://portal.azure.com/#@/resource/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-0a1c-node-00",
    "project_id": "p2",
    "project": "Sandbox"
   },
@@ -9067,13 +9067,13 @@
    "id": "4403f56f",
    "severity": "low",
    "category": "savings",
-   "title": "Deallocated VM: arcmgmt-K3s-ee31-Node-01",
+   "title": "Deallocated VM: arcmgmt-K3s-0a1c-Node-01",
    "evidence": "Virtual machine · Standard_D2as_v7 · disks only · 3.01 USD a month",
    "action": "Confirm it is still needed; if not, delete the VM and its disks. Its disks keep billing while it is deallocated.",
    "scope": "rg-arc-management",
-   "resource_id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-ee31-node-01",
+   "resource_id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-0a1c-node-01",
    "saving": 3.01,
-   "link": "https://portal.azure.com/#@/resource/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-ee31-node-01",
+   "link": "https://portal.azure.com/#@/resource/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-0a1c-node-01",
    "project_id": "p2",
    "project": "Sandbox"
   },
@@ -9081,13 +9081,13 @@
    "id": "6ab13975",
    "severity": "low",
    "category": "savings",
-   "title": "Deallocated VM: arcmgmt-K3s-ee31-Node-02",
+   "title": "Deallocated VM: arcmgmt-K3s-0a1c-Node-02",
    "evidence": "Virtual machine · Standard_D2as_v7 · disks only · 3.01 USD a month",
    "action": "Confirm it is still needed; if not, delete the VM and its disks. Its disks keep billing while it is deallocated.",
    "scope": "rg-arc-management",
-   "resource_id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-ee31-node-02",
+   "resource_id": "/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-0a1c-node-02",
    "saving": 3.01,
-   "link": "https://portal.azure.com/#@/resource/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-ee31-node-02",
+   "link": "https://portal.azure.com/#@/resource/subscriptions/00000000-0000-4000-8000-4705efe088d6/resourcegroups/rg-arc-management/providers/microsoft.compute/virtualmachines/arcmgmt-k3s-0a1c-node-02",
    "project_id": "p2",
    "project": "Sandbox"
   },
