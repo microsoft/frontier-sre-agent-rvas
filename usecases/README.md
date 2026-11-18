@@ -178,4 +178,5 @@ Run the framework tests with `usecases/_framework/tests/run.sh`.
 | [0079-entra-credential-expiration-audit](0079-entra-credential-expiration-audit/) | Microsoft Entra credential expiration audit | identity-access | validated |
 | [0080-infrastructure-operations-health](0080-infrastructure-operations-health/) | Server health and capacity review | management | built |
 | [0084-operations-incidents-anomalies-digest](0084-operations-incidents-anomalies-digest/) | Monthly operations incidents and anomalies digest | management | validated |
+| [0087-sre-use-case-builder](0087-sre-use-case-builder/) | Azure SRE Agent use-case builder | platform-devops | validated |
 <!-- usecases:index:end -->

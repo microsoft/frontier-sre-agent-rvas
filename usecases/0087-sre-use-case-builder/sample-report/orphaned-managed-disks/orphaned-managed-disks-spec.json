@@ -1,0 +1,159 @@
+{
+  "name": "orphaned-managed-disks",
+  "title": "Orphaned managed disks (not attached to any VM)",
+  "language": "en",
+  "description": "Find managed disks not attached to any VM, with size, SKU and age, so storage waste can be reviewed and cleaned up before it keeps adding cost.",
+  "sources": [
+    {
+      "id": "disks",
+      "type": "resource_graph",
+      "query": "resources\n| where type =~ 'microsoft.compute/disks'\n| extend DiskState = tostring(properties.diskState), ManagedBy = tostring(managedBy)\n| where DiskState =~ 'Unattached' or (isempty(ManagedBy) and DiskState !~ 'Reserved' and DiskState !~ 'Attached')\n| extend SizeGB = toint(properties.diskSizeGB), Sku = tostring(sku.name), Tier = tostring(properties.tier), OsType = tostring(properties.osType), Created = todatetime(properties.timeCreated), LastOwnerChange = todatetime(properties.LastOwnershipUpdateTime)\n| extend UnattachedSince = coalesce(LastOwnerChange, Created)\n| extend DaysUnattached = datetime_diff('day', now(), UnattachedSince)\n| extend IsPremium = iff(Sku startswith 'Premium' or Sku startswith 'Ultra', 'yes', 'no')\n| project id, DiskName = name, subscriptionId, resourceGroup, location, Sku, Tier, SizeGB, DiskState, OsType, IsPremium, Created, UnattachedSince, DaysUnattached"
+    }
+  ],
+  "rules": [
+    {
+      "id": "premium_unattached_30d",
+      "dataset": "disks",
+      "severity": "high",
+      "title": "Premium/Ultra disk unattached 30+ days",
+      "when": {
+        "all": [
+          {
+            "field": "IsPremium",
+            "op": "eq",
+            "value": "yes"
+          },
+          {
+            "field": "DaysUnattached",
+            "op": "gte",
+            "value": 30
+          }
+        ]
+      },
+      "message": "{DiskName} ({Sku}, {SizeGB} GB) unattached for {DaysUnattached} days in {resourceGroup}"
+    },
+    {
+      "id": "large_unattached",
+      "dataset": "disks",
+      "severity": "medium",
+      "title": "Large disk (>=512 GB) unattached",
+      "when": {
+        "field": "SizeGB",
+        "op": "gte",
+        "value": 512
+      },
+      "message": "{DiskName} ({Sku}, {SizeGB} GB) unattached in {resourceGroup}"
+    },
+    {
+      "id": "unattached_30d",
+      "dataset": "disks",
+      "severity": "low",
+      "title": "Disk unattached 30+ days",
+      "when": {
+        "field": "DaysUnattached",
+        "op": "gte",
+        "value": 30
+      },
+      "message": "{DiskName} ({Sku}, {SizeGB} GB) unattached for {DaysUnattached} days in {resourceGroup}"
+    },
+    {
+      "id": "recently_unattached",
+      "dataset": "disks",
+      "severity": "info",
+      "title": "Recently unattached disk (<30 days) - verify owner",
+      "when": {
+        "field": "DaysUnattached",
+        "op": "lt",
+        "value": 30
+      },
+      "message": "{DiskName} ({Sku}, {SizeGB} GB) unattached for {DaysUnattached} days in {resourceGroup}"
+    }
+  ],
+  "kpis": [
+    {
+      "id": "orphaned",
+      "label": "Orphaned disks",
+      "dataset": "disks",
+      "good": "down"
+    },
+    {
+      "id": "total_gb",
+      "label": "Orphaned capacity (GB)",
+      "dataset": "disks",
+      "agg": "sum",
+      "field": "SizeGB",
+      "good": "down"
+    },
+    {
+      "id": "premium",
+      "label": "Premium/Ultra orphaned",
+      "dataset": "disks",
+      "good": "down",
+      "where": {
+        "field": "IsPremium",
+        "op": "eq",
+        "value": "yes"
+      }
+    },
+    {
+      "id": "stale",
+      "label": "Unattached 30+ days",
+      "dataset": "disks",
+      "good": "down",
+      "where": {
+        "field": "DaysUnattached",
+        "op": "gte",
+        "value": 30
+      }
+    }
+  ],
+  "tables": [
+    {
+      "title": "Orphaned managed disks",
+      "dataset": "disks",
+      "columns": [
+        "DiskName",
+        "subscriptionId",
+        "resourceGroup",
+        "location",
+        "Sku",
+        "SizeGB",
+        "DiskState",
+        "OsType",
+        "DaysUnattached",
+        "Created"
+      ],
+      "sort": "SizeGB"
+    }
+  ],
+  "keys": {
+    "disks": [
+      "id"
+    ]
+  },
+  "lookback_days": 7,
+  "schedule": "weekly",
+  "charts": [
+    {
+      "title": "Orphaned capacity by resource group (GB)",
+      "dataset": "disks",
+      "by": "resourceGroup",
+      "agg": "sum",
+      "field": "SizeGB"
+    },
+    {
+      "title": "Orphaned disks by SKU",
+      "dataset": "disks",
+      "by": "Sku"
+    }
+  ],
+  "labels": {
+    "DiskName": "Disk",
+    "subscriptionId": "Subscription",
+    "resourceGroup": "Resource group",
+    "SizeGB": "Size (GB)",
+    "DaysUnattached": "Days unattached",
+    "OsType": "OS",
+    "Sku": "SKU"
+  }
+}
