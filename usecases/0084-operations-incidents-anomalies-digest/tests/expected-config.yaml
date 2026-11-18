@@ -1,0 +1,5 @@
+# What `usecases.sh verify` should find on the live agent after deploying this package.
+skills: [operations-digest-live]
+subagents: [operations-digest-live]
+tools: [generate-operations-digest-report]
+scheduledTasks: [monthly-operations-incidents-anomalies-digest]

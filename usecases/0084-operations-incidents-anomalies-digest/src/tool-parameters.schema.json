@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "generate-operations-digest-report parameters",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "operation": {
+      "type": "string",
+      "enum": ["report", "query"],
+      "default": "report",
+      "description": "report writes four complete artifacts (HTML, snapshot JSON, incidents/anomalies CSV, recommended actions CSV); query filters a fresh collection under the 3500-byte JSON budget."
+    },
+    "period": {
+      "type": "string",
+      "enum": ["previous_month", "last_30d", "last_7d", "last_24h"],
+      "default": "previous_month",
+      "description": "Evaluation window. Scheduled monthly executions (30 8 1 * *) default to previous_month; last_30d, last_7d, and last_24h are available on demand."
+    },
+    "view": {
+      "type": "string",
+      "enum": ["summary", "incidents", "anomalies", "actions", "resources", "advisor", "coverage"],
+      "default": "summary",
+      "description": "Projection view for operation=query: summary, incidents, anomalies, actions, resources, advisor, or coverage."
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "all",
+        "native_alert",
+        "service_health",
+        "extension_failure",
+        "connectivity_posture",
+        "telemetry_anomaly",
+        "advisor_recommendation"
+      ],
+      "default": "all",
+      "description": "Evidence stream filter for operation=query."
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["all", "critical", "high", "medium", "low"],
+      "default": "all",
+      "description": "Severity filter for operation=query."
+    },
+    "resource_name": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_.-]{0,128}$",
+      "default": "",
+      "description": "Optional bounded resource name filter for operation=query; never a path, URL, or command."
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 25,
+      "description": "Requested row count for operation=query; capped automatically to fit the 3500-byte JSON transport budget."
+    },
+    "offset": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 500000,
+      "default": 0,
+      "description": "Zero-based offset in the fresh collection."
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "operation": { "const": "report" } } },
+      "then": {
+        "properties": {
+          "view": { "const": "summary" },
+          "category": { "const": "all" },
+          "severity": { "const": "all" },
+          "resource_name": { "const": "" },
+          "limit": { "const": 25 },
+          "offset": { "const": 0 }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+api_version: azuresre.ai/v1
+kind: ScheduledTask
+metadata:
+  name: monthly-operations-incidents-anomalies-digest
+spec:
+  description: Monthly Operations Incidents and Anomalies Digest. Day 1 of every month at 08:30 UTC, previous
+    calendar month, read-only.
+  schedule: "30 8 1 * *"
+  time_zone: UTC
+  enabled: false
+  agent: operations-digest-live
+  mode: Autonomous
+  prompt: |-
+    Use operations-digest-live and ONLY generate-operations-digest-report.
+    Make EXACTLY ONE call: operation="report", period="previous_month", all other parameters at their defaults.
+    If status="error", stop and report the sanitized error.code and error.source_id without inventing files.
+    Otherwise immediately deliver all four generated files. When sharing_mode="native_ui", render report_url, snapshot_url, incidents_csv_url, and actions_csv_url as native Markdown links/file widgets EXACTLY as returned.
+    Summarize, in the user's language (English by default), the window evaluated, native alerts vs. Service Health communications, control-plane/extension anomalies, Log Analytics telemetry anomalies, and the top prioritized recommended actions (Immediate <24h, Short term 1-7 days, Monthly cycle) citing exact IDs and affected resources. Do not modify any cloud resource.

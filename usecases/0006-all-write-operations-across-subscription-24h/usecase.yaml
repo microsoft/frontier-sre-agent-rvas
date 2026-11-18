@@ -1,11 +1,36 @@
 id: 0006-all-write-operations-across-subscription-24h
-status: idea
-title: "All write operations across subscription (24h)"
-summary: "Provides a daily digest of all infrastructure changes for operational awareness and audit trail."
+status: validated
+title: "Daily relevant Azure changes digest"
+summary: "Every evening, a read-only digest of the Azure changes that matter, with noise filtered out and who, when, how and the old and new values."
 domain: management
-trigger: [schedule]
-frequency: "Daily digest"
-timeSaved: Medium
+trigger: [schedule, chat]
+frequency: "Daily"
+timeSaved: High
 topPick: false
-samplePrompt: "Summarize all write and delete operations in subscription '{subscription_name}' in the last 24 hours. Group by resource type, show total operations count, and flag any failed operations. Exclude read-only and diagnostic operations."
-source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }
+products: [azure-resource-graph, azure-monitor-activity-log, azure-resource-manager, azure-sre-agent]
+autonomy: read-only
+samplePrompt: "Run the daily relevant Azure changes digest for the last 24 hours and give me the report."
+source: { type: community, url: "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/14-azure-relevant-changes-digest" }
+package:
+  version: 1.0.0
+  apiVersion: azuresre.ai/v1
+  requires:
+    connectors: []
+    roles:
+      - "Reader on each watched subscription, or on a management group"
+      - "Optional: Microsoft Graph Application.Read.All, to show application names (off by default)"
+      - "SRE Agent Administrator for the person deploying"
+  parameters:
+    MANAGED_IDENTITY_CLIENT_ID: "Client ID of the agent user-assigned managed identity"
+    SUBSCRIPTION_IDS: "Subscriptions to watch (or leave empty and set MANAGEMENT_GROUP_ID)"
+    MANAGEMENT_GROUP_ID: "Optional management group to watch instead of a subscription list"
+    BUSINESS_TIMEZONE: "IANA time zone for local times and the after-hours flag"
+    PROD_TAGS: "Tags that mark production resource groups or resources"
+    EXPECTED_AUTOMATION: "Known pipeline identities whose changes are one level lower"
+    CLIENT_NAME: "Optional organization name in the report header"
+  contents:
+    tools: [manifests/tools/generate-azure-change-digest.yaml]
+    skills: [manifests/skills/azure-change-digest/SKILL.md]
+    subagents: [manifests/subagents/change-digest-reviewer.yaml]
+    scheduledTasks: [manifests/scheduled-tasks/daily-relevant-changes-digest.yaml]
+    permissions: [permissions/grant-change-digest-reader.ps1]
