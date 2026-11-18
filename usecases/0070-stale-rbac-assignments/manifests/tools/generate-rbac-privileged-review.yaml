@@ -1,0 +1,12 @@
+api_version: azuresre.ai/v1
+kind: Tool
+metadata:
+  name: generate-rbac-privileged-review
+spec:
+  type: PythonFunctionTool
+  description: Read-only Azure RBAC privileged access review (Reader + Microsoft Graph read) that classifies
+    Owner, User Access Administrator, Contributor and administrative role assignments as orphaned, redundant,
+    individual review or compliant, and writes an HTML report plus CSV and JSON. Never changes anything.
+  timeoutSeconds: 300
+  code_file: ./generate-rbac-privileged-review.py
+  parameters: []

@@ -1,4 +1,5 @@
+# What `usecases.sh verify` should find on the live agent after deploying this package.
 skills: [databricks-dependency-live]
 subagents: [databricks-dependency-live]
-tools: [generate-databricks-dependency-report]
+tools: [databricks-dependency-report]
 scheduledTasks: []

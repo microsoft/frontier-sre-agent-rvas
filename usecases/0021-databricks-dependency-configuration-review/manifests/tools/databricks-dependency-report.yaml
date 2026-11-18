@@ -1,0 +1,90 @@
+api_version: azuresre.ai/v1
+kind: Tool
+metadata:
+  name: databricks-dependency-report
+spec:
+  type: PythonFunctionTool
+  description: Read-only Azure Databricks dependency mapping, configuration, security, cost attribution
+    and optimization review of every workspace the agent identity can read, auto-discovered with one fixed
+    Azure Resource Graph query in the same tenant (all, one subscription or named workspaces, up to 50
+    per report). operation=report writes four files (HTML with a fleet overview and Subscription and Workspace
+    filters, snapshot JSON, findings CSV, dependencies CSV); query filters a fresh collection of one to
+    five workspaces; list_workspaces lists the discovered workspaces with their subscriptions; self_test
+    writes the same four files from a built-in SIMULATED workspace, without authentication or network.
+  timeoutSeconds: 900
+  code_file: ./generate-databricks-dependency-report.py
+  parameters:
+  - name: operation
+    type: string
+    required: false
+    description: 'report writes one report (HTML, JSON and two CSVs) for the selected workspaces; with
+      no selection it reviews every visible workspace (at most 50 per report, after the subscription filter).
+      list_workspaces returns the inventory discovered live with Azure Resource Graph (plus APPROVED_WORKSPACES
+      entries), paged with limit/offset. query returns filtered rows of a fresh collection of 1 to 5 workspaces.
+      self_test writes the same four files from a built-in SIMULATED workspace without authentication
+      or network (demos only, labelled SIMULATED). Default: report. Allowed: report, query, list_workspaces,
+      self_test.'
+  - name: view
+    type: string
+    required: false
+    description: 'Only for operation=query. findings exposes all checks; report findings contains failed
+      checks only. costs exposes the Databricks cost model (headline, DBU vs infrastructure, attribution
+      rows and optimisation signals). coverage exposes scoped source receipts. dependencies exposes OBSERVED,
+      INFERRED and UNKNOWN nodes, edges and blind spots. Default: summary. Allowed: summary, workspace,
+      compute, jobs, pipelines, warehouses, unity_catalog, resources, findings, finops, costs, coverage,
+      actions, dependencies.'
+  - name: workspace_name
+    type: string
+    required: false
+    description: Exactly one workspace_name as returned by list_workspaces (detailed single-workspace
+      report). When the same name exists in several subscriptions, use the prefixed key (first 8 characters
+      of the subscription ID + '-' + name) or add subscription. "all" means every visible workspace. Mutually
+      exclusive with workspace_names.
+  - name: workspace_names
+    type: string
+    required: false
+    description: '"all" (every visible workspace) or 1 to 50 distinct exact workspace names from list_workspaces,
+      comma-separated without spaces, e.g. dbw-a,dbw-b,dbw-c. Mutually exclusive with workspace_name.'
+  - name: workload_name
+    type: string
+    required: false
+    description: 'Only for operation=query: exact local filter for cluster, job, pipeline, SQL warehouse,
+      Unity Catalog object or resource name; no URL/path/query/command.'
+  - name: classification
+    type: string
+    required: false
+    description: 'Local provenance filter for view=dependencies: OBSERVED native ID/key joins, INFERRED
+      URI/host references, or UNKNOWN blind spots. Default: all. Allowed: all, OBSERVED, INFERRED, UNKNOWN.'
+  - name: area
+    type: string
+    required: false
+    description: 'Default: all. Allowed: all, best_practices, security, finops, optimization.'
+  - name: level
+    type: string
+    required: false
+    description: 'Default: all. Allowed: all, workspace, workload, resource.'
+  - name: severity
+    type: string
+    required: false
+    description: 'Default: all. Allowed: all, critical, high, medium, low.'
+  - name: status
+    type: string
+    required: false
+    description: 'Default: all. Allowed: all, passed, failed, not_evaluated, not_applicable, complete,
+      partial, denied, error, not_configured.'
+  - name: limit
+    type: int
+    required: false
+    description: 'Requested row count for query and list_workspaces; the 3500-byte default-JSON budget
+      may return fewer whole rows with exact paging disclosure (next_offset). Default: 25.'
+  - name: offset
+    type: int
+    required: false
+    description: 'Local offset for query and list_workspaces (use the returned next_offset); not a persistent
+      cursor. Default: 0.'
+  - name: subscription
+    type: string
+    required: false
+    description: 'Optional subscription filter: a subscription ID or exact display name (case-insensitive)
+      as shown by list_workspaces. Filters list_workspaces and the report/query selection. Empty = every
+      visible subscription. Not used by self_test.'

@@ -579,11 +579,11 @@ class EngineTests(unittest.TestCase):
         arm_denied_raw["workspace"]["custom_virtual_network_id"] = None
         arm_denied_raw["inventory"]["uc_storage_credentials"] = []
         arm_denied_raw["inventory"]["uc_external_locations"] = [{
-            "id": "external_location:gestamp_browse",
-            "name": "gestamp_browse",
-            "workload_name": "gestamp_browse",
+            "id": "external_location:retail_browse",
+            "name": "retail_browse",
+            "workload_name": "retail_browse",
             "kind": "ExternalLocation",
-            "url": "abfss://unity-catalog-storage@dbstoragecliente01.dfs.core.windows.net/123",
+            "url": "abfss://unity-catalog-storage@dbstoragecontoso01.dfs.core.windows.net/123",
             "credential_name": None,
             "credential_id": None,
             "read_only": None,

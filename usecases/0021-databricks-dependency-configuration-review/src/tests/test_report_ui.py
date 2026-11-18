@@ -116,7 +116,7 @@ class ReportUiTests(unittest.TestCase):
                 page.on("pageerror", lambda exc: errors.append(str(exc)))
                 page.set_content(html, wait_until="load")
                 self.assertEqual(errors, [])
-                self.assertEqual(page.locator("#client-name-label").inner_text(), "CLIENTE")
+                self.assertEqual(page.locator("#client-name-label").inner_text(), "Customer")
                 total_edges = int(page.locator("#dep-edges-count").inner_text())
                 self.assertGreater(total_edges, 15)
 

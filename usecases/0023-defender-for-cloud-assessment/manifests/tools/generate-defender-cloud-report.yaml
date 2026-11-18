@@ -1,0 +1,82 @@
+api_version: azuresre.ai/v1
+kind: Tool
+metadata:
+  name: generate-defender-cloud-report
+spec:
+  type: PythonFunctionTool
+  description: 'Read-only general Defender for Cloud evidence for one configured subscription: inventory,
+    native risk, posture, attack paths, resource details, software/CVEs and guarded artifact exports.
+    Supports bounded deterministic questions.'
+  timeoutSeconds: 240
+  code_file: ./generate-defender-cloud-report.py
+  parameters:
+  - name: operation
+    type: string
+    required: false
+    description: 'report exports the complete fixed scope; query returns filtered structured evidence.
+      Default: report. Allowed: report, query.'
+  - name: view
+    type: string
+    required: false
+    description: 'Default: inventory. Allowed: inventory, findings, actions, resource_details, posture,
+      attack_paths, software, controls, compliance, vulnerabilities.'
+  - name: provider
+    type: string
+    required: false
+    description: 'Default: all. Allowed: all, onprem, gcp, azure, aws, unknown.'
+  - name: environment
+    type: string
+    required: false
+    description: 'Default: all. Allowed: all, Production, Preproduction, Dev, DMZ, Backup, Unknown.'
+  - name: resource_group
+    type: string
+    required: false
+    description: Case-insensitive exact resource-group match, evaluated locally.
+  - name: server_name
+    type: string
+    required: false
+    description: Case-insensitive resource-name substring, evaluated locally; not KQL or a URL. The legacy
+      parameter name is retained.
+  - name: connectivity
+    type: string
+    required: false
+    description: 'Default: all. Allowed: all, Connected, Disconnected, Expired, Unknown.'
+  - name: mde
+    type: string
+    required: false
+    description: 'Installation and sensor health are distinct. healthy requires independent sensor evidence.
+      Default: all. Allowed: all, failed-extension, missing-extension, unverified, healthy, unhealthy.'
+  - name: severity
+    type: string
+    required: false
+    description: 'Default: all. Allowed: all, Critical, High, Medium, Low, Informational, Unknown.'
+  - name: limit
+    type: int
+    required: false
+    description: 'Requested query page size. The 3500-byte serialized transport budget can return fewer
+      rows; responses disclose total_matched, returned, has_more and transport_capped. Default: 25.'
+  - name: offset
+    type: int
+    required: false
+    description: 'Query page offset. A later tool call collects a new snapshot, not a stored cursor. Default:
+      0.'
+  - name: risk
+    type: string
+    required: false
+    description: 'Native Defender risk.level / observed path risk, never metadata.severity. Default: all.
+      Allowed: all, Critical, High, Medium, Low, Not evaluated, Unknown.'
+  - name: status
+    type: string
+    required: false
+    description: 'Default: all. Allowed: all, Unhealthy, Healthy, NotApplicable, Active, Resolved, Dismissed,
+      Unknown.'
+  - name: association
+    type: string
+    required: false
+    description: 'For attack_paths/software: all context, exact Arc-related rows or other subscription
+      resources. Default: all. Allowed: all, arc, context.'
+  - name: resource_type
+    type: string
+    required: false
+    description: Exact case-insensitive provider/type or native assessed kind, e.g. Microsoft.KeyVault/vaults
+      or sqlOnMachineDatabase. Fixed local filter, not arbitrary KQL.

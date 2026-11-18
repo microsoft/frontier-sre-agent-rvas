@@ -1,0 +1,30 @@
+id: 0079-entra-credential-expiration-audit
+status: validated
+title: "Microsoft Entra credential expiration audit"
+summary: "Monthly read-only audit of expired and expiring secrets and certificates of every Microsoft Entra app registration and service principal."
+domain: identity-access
+trigger: [schedule, chat]
+frequency: "Monthly"
+timeSaved: High
+topPick: false
+products: [entra-id, microsoft-graph, azure-sre-agent]
+autonomy: read-only
+samplePrompt: "Run the full Microsoft Entra credential expiration audit and deliver the HTML report with the coverage and risk summary."
+source: { type: community, url: "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/01-entra-credential-expiration-audit" }
+package:
+  version: 1.0.0
+  apiVersion: azuresre.ai/v1
+  requires:
+    connectors: []
+    roles:
+      - "Microsoft Graph Application.Read.All (application permission) for the agent managed identity"
+      - "Privileged Role Administrator (Microsoft Entra), once, to grant that permission"
+      - "SRE Agent Author and Standard User, or SRE Agent Administrator, for the person deploying"
+  parameters:
+    MANAGED_IDENTITY_CLIENT_ID: "Client ID of the agent user-assigned managed identity, set in the tool and in grant-graph-permission.ps1"
+  contents:
+    tools: [manifests/tools/generate-entra-credential-expiration.yaml]
+    skills: [manifests/skills/entra-full-credential-inventory/SKILL.md]
+    subagents: [manifests/subagents/credential-monitor-full.yaml]
+    scheduledTasks: [manifests/scheduled-tasks/monthly-entra-credential-expiration-audit.yaml]
+    permissions: [permissions/grant-graph-permission.ps1]

@@ -117,9 +117,9 @@ Run the framework tests with `usecases/_framework/tests/run.sh`.
 | [0018-cross-period-cost-comparison-mg-level](0018-cross-period-cost-comparison-mg-level/) | Cross-period cost comparison (MG level) | billing-entra-tenant | idea |
 | [0019-custom-policy-generation](0019-custom-policy-generation/) | Custom Policy generation | governance | idea |
 | [0020-data-collection-rules-audit](0020-data-collection-rules-audit/) | Data collection rules audit | management | idea |
-| [0021-databricks-dependency-configuration-review](0021-databricks-dependency-configuration-review/) | Azure Databricks dependency and configuration review | platform-devops | built |
+| [0021-databricks-dependency-configuration-review](0021-databricks-dependency-configuration-review/) | Azure Databricks dependency and configuration review | platform-devops | validated |
 | [0022-ddos-protection-coverage-audit](0022-ddos-protection-coverage-audit/) | DDoS protection coverage audit | network-topology | idea |
-| [0023-defender-for-cloud-assessment](0023-defender-for-cloud-assessment/) | Defender for Cloud assessment | security | idea |
+| [0023-defender-for-cloud-assessment](0023-defender-for-cloud-assessment/) | Security posture from Defender for Cloud | security | built |
 | [0024-diagnostic-settings-coverage-audit](0024-diagnostic-settings-coverage-audit/) | Diagnostic settings coverage audit | management | idea |
 | [0025-disk-tier-down-opportunities](0025-disk-tier-down-opportunities/) | Disk tier-down opportunities | billing-entra-tenant | idea |
 | [0026-dns-vpn-troubleshooting](0026-dns-vpn-troubleshooting/) | DNS/VPN troubleshooting | network-topology | idea |
@@ -166,7 +166,7 @@ Run the framework tests with `usecases/_framework/tests/run.sh`.
 | [0067-service-health-incidents-resource-impact](0067-service-health-incidents-resource-impact/) | Azure Service Health incidents and planned maintenance review | management | validated |
 | [0068-sku-reliability-assessment](0068-sku-reliability-assessment/) | SKU reliability assessment | management | idea |
 | [0069-ssl-tls-certificate-expiration-tracking](0069-ssl-tls-certificate-expiration-tracking/) | SSL/TLS certificate expiration tracking | network-topology | idea |
-| [0070-stale-rbac-assignments](0070-stale-rbac-assignments/) | Stale RBAC assignments | identity-access | idea |
+| [0070-stale-rbac-assignments](0070-stale-rbac-assignments/) | Azure RBAC privileged access review | identity-access | validated |
 | [0071-subscription-hygiene-score](0071-subscription-hygiene-score/) | Subscription hygiene score | resource-organization | idea |
 | [0072-subscription-limits-approaching](0072-subscription-limits-approaching/) | Subscription limits approaching | resource-organization | idea |
 | [0073-support-ticket-creation-pre-populated](0073-support-ticket-creation-pre-populated/) | Support ticket creation (pre-populated) | management | idea |
@@ -175,6 +175,7 @@ Run the framework tests with `usecases/_framework/tests/run.sh`.
 | [0076-vm-performance-anomaly-detection](0076-vm-performance-anomaly-detection/) | VM performance anomaly detection | management | idea |
 | [0077-vnet-peering-health-check](0077-vnet-peering-health-check/) | VNet peering health check | network-topology | idea |
 | [0078-workbook-auto-generation](0078-workbook-auto-generation/) | Workbook auto-generation | management | idea |
+| [0079-entra-credential-expiration-audit](0079-entra-credential-expiration-audit/) | Microsoft Entra credential expiration audit | identity-access | validated |
 | [0080-infrastructure-operations-health](0080-infrastructure-operations-health/) | Server health and capacity review | management | built |
 | [0084-operations-incidents-anomalies-digest](0084-operations-incidents-anomalies-digest/) | Monthly operations incidents and anomalies digest | management | validated |
 <!-- usecases:index:end -->
