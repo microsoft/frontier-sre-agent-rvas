@@ -1,11 +1,31 @@
 id: 0023-defender-for-cloud-assessment
-status: idea
-title: "Defender for Cloud assessment"
-summary: "Provides a security posture snapshot from Defender for Cloud, highlighting critical findings and score trends."
+status: built
+title: "Security posture from Defender for Cloud"
+summary: "Monthly read-only report of the live Defender for Cloud evidence of a subscription that shows what to review first, with grounded follow-up questions."
 domain: security
-trigger: [schedule]
-frequency: "Weekly"
+trigger: [schedule, chat]
+frequency: "Monthly"
 timeSaved: High
 topPick: false
-samplePrompt: "Pull Defender for Cloud assessment for all subscriptions: (1) secure score current and 30-day trend, (2) unhealthy resources by severity (high/medium/low), (3) top 10 recommendations by impacted resource count, (4) new recommendations in last 7 days. Prioritize by exploitability and blast radius."
-source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }
+products: [defender-for-cloud, azure-resource-graph, azure-arc, azure-sre-agent]
+autonomy: read-only
+samplePrompt: "Use defender-cloud-live and only generate-defender-cloud-report with operation=\"report\" and deliver the four files with what to review first."
+source: { type: community, url: "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/02-arc-defender-posture-audit" }
+package:
+  version: 1.0.0
+  apiVersion: azuresre.ai/v1
+  requires:
+    connectors: []
+    roles:
+      - "Reader on the monitored subscription (Security Reader alone does not cover the whole pipeline)"
+      - "SRE Agent Author and Standard User, or SRE Agent Administrator, for the person deploying"
+  parameters:
+    SUBSCRIPTION_ID: "Monitored subscription"
+    TENANT_ID: "Tenant of the monitored subscription"
+    MANAGED_IDENTITY_CLIENT_ID: "Client ID of the agent user-assigned managed identity"
+  contents:
+    tools: [manifests/tools/generate-defender-cloud-report.yaml]
+    skills: [manifests/skills/defender-cloud-live/SKILL.md]
+    subagents: [manifests/subagents/defender-cloud-live.yaml]
+    scheduledTasks: [manifests/scheduled-tasks/monthly-defender-cloud-evidence-audit.yaml]
+    permissions: [permissions/grant-defender-evidence-reader.ps1]

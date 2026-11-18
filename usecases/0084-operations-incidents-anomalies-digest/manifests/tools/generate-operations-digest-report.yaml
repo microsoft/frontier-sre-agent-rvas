@@ -1,0 +1,54 @@
+api_version: azuresre.ai/v1
+kind: Tool
+metadata:
+  name: generate-operations-digest-report
+spec:
+  type: PythonFunctionTool
+  description: Read-only periodic Azure operations digest that consolidates native alerts, Service Health
+    events, control-plane and extension anomalies, Log Analytics telemetry anomalies and Azure Advisor
+    recommendations into prioritized actions. operation=report writes four files (HTML, snapshot JSON,
+    incidents and anomalies CSV, actions CSV); query returns bounded views.
+  timeoutSeconds: 900
+  code_file: ./generate-operations-digest-report.py
+  parameters:
+  - name: operation
+    type: string
+    required: false
+    description: 'report writes four complete artifacts (HTML, snapshot JSON, incidents/anomalies CSV,
+      recommended actions CSV); query filters a fresh collection under the 3500-byte JSON budget. Default:
+      report. Allowed: report, query.'
+  - name: period
+    type: string
+    required: false
+    description: 'Evaluation window. Scheduled monthly executions (30 8 1 * *) default to previous_month;
+      last_30d, last_7d, and last_24h are available on demand. Default: previous_month. Allowed: previous_month,
+      last_30d, last_7d, last_24h.'
+  - name: view
+    type: string
+    required: false
+    description: 'Projection view for operation=query: summary, incidents, anomalies, actions, resources,
+      advisor, or coverage. Default: summary. Allowed: summary, incidents, anomalies, actions, resources,
+      advisor, coverage.'
+  - name: category
+    type: string
+    required: false
+    description: 'Evidence stream filter for operation=query. Default: all. Allowed: all, native_alert,
+      service_health, extension_failure, connectivity_posture, telemetry_anomaly, advisor_recommendation.'
+  - name: severity
+    type: string
+    required: false
+    description: 'Severity filter for operation=query. Default: all. Allowed: all, critical, high, medium,
+      low.'
+  - name: resource_name
+    type: string
+    required: false
+    description: Optional bounded resource name filter for operation=query; never a path, URL, or command.
+  - name: limit
+    type: int
+    required: false
+    description: 'Requested row count for operation=query; capped automatically to fit the 3500-byte JSON
+      transport budget. Default: 25.'
+  - name: offset
+    type: int
+    required: false
+    description: 'Zero-based offset in the fresh collection. Default: 0.'

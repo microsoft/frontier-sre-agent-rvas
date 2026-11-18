@@ -1,11 +1,34 @@
 id: 0070-stale-rbac-assignments
-status: idea
-title: "Stale RBAC assignments"
-summary: "Find assignments to deleted or inactive principals for an access review."
+status: validated
+title: "Azure RBAC privileged access review"
+summary: "Monthly read-only review of privileged Azure role assignments: what can be removed today without anybody losing access, and what needs an owner."
 domain: identity-access
-trigger: [schedule]
-frequency: "Weekly"
+trigger: [schedule, chat]
+frequency: "Monthly"
 timeSaved: High
 topPick: true
-samplePrompt: "List all role assignments where: (1) the principal object no longer exists in Entra ID (orphaned SIDs), (2) the user principal hasn't signed in for > 90 days, (3) the service principal has no recent activity. Show assignment scope, role, principal display name/ID, and last sign-in date. Recommend removal."
-source: { type: community, url: "https://github.com/alsanch/azure-sre-agent-scenarios" }
+products: [azure-rbac, entra-id, microsoft-graph, azure-resource-manager, azure-sre-agent]
+autonomy: read-only
+samplePrompt: "Run the monthly Azure RBAC privileged access review and give me the links to the HTML report, CSV and JSON with the executive summary, Owner decisions, coverage and required actions."
+source: { type: community, url: "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/13-rbac-privileged-access-review" }
+package:
+  version: 1.0.0
+  apiVersion: azuresre.ai/v1
+  requires:
+    connectors: []
+    roles:
+      - "Reader on each reviewed subscription, or on a management group"
+      - "Microsoft Graph User.Read.All, Application.Read.All, GroupMember.Read.All and AuditLog.Read.All (application permissions)"
+      - "Privileged Role Administrator (Microsoft Entra), once, to grant the Graph permissions"
+      - "SRE Agent Administrator for the person deploying"
+  parameters:
+    MANAGED_IDENTITY_CLIENT_ID: "Client ID of the agent user-assigned managed identity"
+    SUBSCRIPTION_IDS: "Subscriptions to review (role assignments inherited from management groups are included)"
+    ORGANIZATION_NAME: "Optional organization name in the report title and footer"
+    LOGO_DATA_URI: "Optional data URI of the organization logo"
+  contents:
+    tools: [manifests/tools/generate-rbac-privileged-review.yaml]
+    skills: [manifests/skills/rbac-privileged-access-review/SKILL.md]
+    subagents: [manifests/subagents/rbac-access-reviewer.yaml]
+    scheduledTasks: [manifests/scheduled-tasks/monthly-rbac-privileged-access-review.yaml]
+    permissions: [permissions/grant-rbac-review-permissions.ps1]

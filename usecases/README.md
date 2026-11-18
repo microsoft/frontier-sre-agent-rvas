@@ -102,7 +102,7 @@ Run the framework tests with `usecases/_framework/tests/run.sh`.
 | [0003-ai-model-inventory-retirement-lifecycle](0003-ai-model-inventory-retirement-lifecycle/) | AI model inventory & retirement lifecycle | resource-organization | idea |
 | [0004-alert-fatigue-analysis](0004-alert-fatigue-analysis/) | Alert fatigue analysis | management | idea |
 | [0005-alert-rules-best-practice-audit](0005-alert-rules-best-practice-audit/) | Alert rules best-practice audit | management | idea |
-| [0006-all-write-operations-across-subscription-24h](0006-all-write-operations-across-subscription-24h/) | All write operations across subscription (24h) | management | idea |
+| [0006-all-write-operations-across-subscription-24h](0006-all-write-operations-across-subscription-24h/) | Daily relevant Azure changes digest | management | validated |
 | [0007-automated-compliance-remediation-tasks](0007-automated-compliance-remediation-tasks/) | Automated compliance remediation tasks | governance | idea |
 | [0008-azure-firewall-rule-generation](0008-azure-firewall-rule-generation/) | Azure Firewall rule generation | network-topology | idea |
 | [0009-azure-policy-assignment-assessment](0009-azure-policy-assignment-assessment/) | Azure Policy assignment assessment | governance | idea |
@@ -117,9 +117,9 @@ Run the framework tests with `usecases/_framework/tests/run.sh`.
 | [0018-cross-period-cost-comparison-mg-level](0018-cross-period-cost-comparison-mg-level/) | Cross-period cost comparison (MG level) | billing-entra-tenant | idea |
 | [0019-custom-policy-generation](0019-custom-policy-generation/) | Custom Policy generation | governance | idea |
 | [0020-data-collection-rules-audit](0020-data-collection-rules-audit/) | Data collection rules audit | management | idea |
-| [0021-databricks-dependency-configuration-review](0021-databricks-dependency-configuration-review/) | Azure Databricks dependency and configuration review | platform-devops | built |
+| [0021-databricks-dependency-configuration-review](0021-databricks-dependency-configuration-review/) | Azure Databricks dependency and configuration review | platform-devops | validated |
 | [0022-ddos-protection-coverage-audit](0022-ddos-protection-coverage-audit/) | DDoS protection coverage audit | network-topology | idea |
-| [0023-defender-for-cloud-assessment](0023-defender-for-cloud-assessment/) | Defender for Cloud assessment | security | idea |
+| [0023-defender-for-cloud-assessment](0023-defender-for-cloud-assessment/) | Security posture from Defender for Cloud | security | built |
 | [0024-diagnostic-settings-coverage-audit](0024-diagnostic-settings-coverage-audit/) | Diagnostic settings coverage audit | management | idea |
 | [0025-disk-tier-down-opportunities](0025-disk-tier-down-opportunities/) | Disk tier-down opportunities | billing-entra-tenant | idea |
 | [0026-dns-vpn-troubleshooting](0026-dns-vpn-troubleshooting/) | DNS/VPN troubleshooting | network-topology | idea |
@@ -163,10 +163,10 @@ Run the framework tests with `usecases/_framework/tests/run.sh`.
 | [0064-resources-with-highest-cost-increase](0064-resources-with-highest-cost-increase/) | Resources with highest cost increase | billing-entra-tenant | idea |
 | [0065-rollback-command-generation-for-bad-changes](0065-rollback-command-generation-for-bad-changes/) | Rollback command generation for bad changes | management | idea |
 | [0066-rto-rpo-gap-analysis](0066-rto-rpo-gap-analysis/) | RTO/RPO gap analysis | management | idea |
-| [0067-service-health-incidents-resource-impact](0067-service-health-incidents-resource-impact/) | Service Health incidents & resource impact | management | idea |
+| [0067-service-health-incidents-resource-impact](0067-service-health-incidents-resource-impact/) | Azure Service Health incidents and planned maintenance review | management | validated |
 | [0068-sku-reliability-assessment](0068-sku-reliability-assessment/) | SKU reliability assessment | management | idea |
 | [0069-ssl-tls-certificate-expiration-tracking](0069-ssl-tls-certificate-expiration-tracking/) | SSL/TLS certificate expiration tracking | network-topology | idea |
-| [0070-stale-rbac-assignments](0070-stale-rbac-assignments/) | Stale RBAC assignments | identity-access | idea |
+| [0070-stale-rbac-assignments](0070-stale-rbac-assignments/) | Azure RBAC privileged access review | identity-access | validated |
 | [0071-subscription-hygiene-score](0071-subscription-hygiene-score/) | Subscription hygiene score | resource-organization | idea |
 | [0072-subscription-limits-approaching](0072-subscription-limits-approaching/) | Subscription limits approaching | resource-organization | idea |
 | [0073-support-ticket-creation-pre-populated](0073-support-ticket-creation-pre-populated/) | Support ticket creation (pre-populated) | management | idea |
@@ -175,7 +175,11 @@ Run the framework tests with `usecases/_framework/tests/run.sh`.
 | [0076-vm-performance-anomaly-detection](0076-vm-performance-anomaly-detection/) | VM performance anomaly detection | management | idea |
 | [0077-vnet-peering-health-check](0077-vnet-peering-health-check/) | VNet peering health check | network-topology | idea |
 | [0078-workbook-auto-generation](0078-workbook-auto-generation/) | Workbook auto-generation | management | idea |
+| [0079-entra-credential-expiration-audit](0079-entra-credential-expiration-audit/) | Microsoft Entra credential expiration audit | identity-access | validated |
+| [0080-infrastructure-operations-health](0080-infrastructure-operations-health/) | Server health and capacity review | management | built |
 | [0082-azure-backup-operations-review](0082-azure-backup-operations-review/) | Azure Backup jobs review | management | validated |
 | [0083-update-manager-patching-failure-investigation](0083-update-manager-patching-failure-investigation/) | Patching results and failed machines investigation | management | validated |
+| [0084-operations-incidents-anomalies-digest](0084-operations-incidents-anomalies-digest/) | Monthly operations incidents and anomalies digest | management | validated |
 | [0086-sqlmi-maintenance-resilience](0086-sqlmi-maintenance-resilience/) | Azure SQL Managed Instance maintenance resilience | management | validated |
+| [0087-sre-use-case-builder](0087-sre-use-case-builder/) | Azure SRE Agent use-case builder | platform-devops | validated |
 <!-- usecases:index:end -->

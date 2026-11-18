@@ -1,127 +1,101 @@
 # Test prompts
 
-Adapted from the upstream `subagent-instructions-and-prompts.md`. Replace `<APPROVED_DATABRICKS_WORKSPACE_NAME>` with an approved workspace. Before the tool is configured, report and query prompts return `configuration_required`.
+In a new chat, type `/agent`, select `databricks-dependency-live` and send one prompt at a time. Replace `<WORKSPACE_NAME>` with a name returned by `list_workspaces` and `<SUBSCRIPTION_NAME_OR_ID>` with a subscription display name or ID. Until the tenant and identity constants are set, report, query and `list_workspaces` calls return `configuration_required` and make no network call; `self_test` works without configuration.
 
-## Copy-ready chat prompts (Spanish & English)
-
-Use the actual approved workspace name privately once configured. Before the
-colleague session is completed, running any report/query prompt will honestly
-return `configuration_required` without making network calls.
-
-### 1. List configured workspaces (no authentication or network calls)
-
-```json
-{"operation":"list_workspaces"}
-```
-
-### 2. Full dependency & configuration report (Spanish)
+## 1. One report for every workspace
 
 ```text
-@databricks-dependency-live Genera la revisión completa de dependencias y
-configuración de Azure Databricks para <APPROVED_DATABRICKS_WORKSPACE_NAME> con
-operation=report. Profundiza en el mapa de dependencias (OBSERVED, INFERRED y
-UNKNOWN) entre el workspace ARM, VNet/NSG/Private Link, Access Connector,
-clústeres, pools, políticas, jobs y DAG de tareas, pipelines Lakeflow/DLT, SQL
-Warehouses, Unity Catalog (metastore, catálogos, esquemas, storage credentials,
-external locations, conexiones) y Key Vault / Storage asociados. Cubre buenas
-prácticas, seguridad, FinOps y optimización con los cinco pilares WAF. Entrega
-inmediatamente los cuatro archivos (HTML, JSON completo, CSV de hallazgos y CSV
-de dependencias). No inicies clústeres ni SQL Warehouses ni cambies nada.
+Generate the complete Azure Databricks dependency and configuration report for every workspace in every subscription (operation=report, workspace_names=all). Cover the dependency graph (OBSERVED native joins, explicit INFERRED URI targets and UNKNOWN runtime lineage blind spots), best practices, security, FinOps and optimization. Deliver the four files (HTML, full snapshot JSON, findings CSV and dependencies CSV) and tell me which workspaces have no in-workspace access and why. Do not start compute or modify any resource.
 ```
+
+Tool call:
 
 ```json
-{"operation":"report","workspace_name":"<APPROVED_DATABRICKS_WORKSPACE_NAME>"}
+{"operation": "report", "workspace_names": "all"}
 ```
 
-### 3. Full dependency & configuration report (English)
+**Expected:** One report call. The answer renders report_url, snapshot_url, findings_csv_url and dependencies_csv_url unchanged as file links and summarizes the workspaces collected, partial and failed, those without in-workspace access and the reason, the main findings and the cost. The HTML opens on a fleet overview with Subscription and Workspace filters; a workspace without in-workspace access keeps its Azure-side review and is never shown as empty or healthy. No cluster or SQL warehouse is started.
+
+## 2. Which workspaces the agent can see
 
 ```text
-@databricks-dependency-live Run the complete Azure Databricks dependency map
-and configuration review for <APPROVED_DATABRICKS_WORKSPACE_NAME> using
-operation=report. Cover the deep dependency graph (OBSERVED native joins,
-explicit INFERRED URI targets and UNKNOWN runtime lineage blind spots), best
-practices, security, FinOps and optimization across the five WAF pillars.
-Deliver all four generated files (HTML, full snapshot JSON, findings CSV and
-dependencies CSV) and disclose source coverage and limitations. Do not start
-compute or modify any resource.
+List every Azure Databricks workspace you can see, grouped by subscription, with region and SKU (operation=list_workspaces, limit=100, following next_offset until it is null).
 ```
+
+Tool call:
 
 ```json
-{"operation":"report","workspace_name":"<APPROVED_DATABRICKS_WORKSPACE_NAME>"}
+{"operation": "list_workspaces", "limit": 100}
 ```
 
-### 4. Multi-workspace report
+**Expected:** The workspaces returned by the fixed, read-only Azure Resource Graph discovery query (or the configured list for cross-tenant workspaces), with subscription names, paged with next_offset. It is inventory, not health; a workspace the identity cannot read is not listed.
 
-```json
-{"operation":"report","workspace_names":"<APPROVED_DATABRICKS_WORKSPACE_NAME>,<APPROVED_SECOND_WORKSPACE_NAME>"}
-```
-
-### 5. Grounded questions on the dependency map (`view="dependencies"`)
+## 3. One report for one subscription
 
 ```text
-@databricks-dependency-live Usa query con view=dependencies y
-classification=OBSERVED para <APPROVED_DATABRICKS_WORKSPACE_NAME>. ¿Qué
-relaciones exactas están confirmadas entre tareas de Jobs, clústeres, SQL
-Warehouses, pipelines declarativos, Storage Credentials, External Locations y
-recursos ARM asociados? Indica los campos de join y las fuentes de cada arista.
+Generate the Azure Databricks report for every workspace of subscription <SUBSCRIPTION_NAME_OR_ID> (operation=report, subscription=<SUBSCRIPTION_NAME_OR_ID>) and summarize the most important findings per workspace.
 ```
 
+Tool call:
+
 ```json
-{"operation":"query","view":"dependencies","workspace_name":"<APPROVED_DATABRICKS_WORKSPACE_NAME>","classification":"OBSERVED","limit":25}
+{"operation": "report", "subscription": "<SUBSCRIPTION_NAME_OR_ID>"}
 ```
+
+**Expected:** One report for the workspaces of that subscription only. More than 50 workspaces returns too_many_workspaces; the detailed cost analysis runs only for reports of up to 5 workspaces.
+
+## 4. Demo without a workspace
 
 ```text
-@databricks-dependency-live Usa query con view=dependencies y
-classification=INFERRED. ¿Qué cuentas de almacenamiento ADLS Gen2 o Key Vaults
-están referenciados por URI/hostname en Unity Catalog o en el workspace pero no
-tienen lectura directa en el inventario ARM?
+Run operation=self_test to demonstrate the review with the built-in simulated workspace and deliver the four files, making clear that the data is SIMULATED.
 ```
 
+Tool call:
+
 ```json
-{"operation":"query","view":"dependencies","workspace_name":"<APPROVED_DATABRICKS_WORKSPACE_NAME>","classification":"INFERRED","limit":25}
+{"operation": "self_test"}
 ```
+
+**Expected:** Four files labelled SIMULATED (banner, provenance chip and simulated-* file names), written without authentication or network.
+
+## 5. Where the Databricks cost comes from
 
 ```text
-@databricks-dependency-live Usa query con view=dependencies y
-classification=UNKNOWN. ¿Qué dependencias quedan explícitamente como UNKNOWN
-(por ejemplo linaje dinámico de tablas/columnas en system.access.table_lineage
-o código interno de notebooks) y por qué no se infieren ni se arranca un SQL
-Warehouse para consultarlas?
+Use query with view=costs for <WORKSPACE_NAME>. How much did Databricks cost in the last closed month compared with the previous one, how much is DBU and how much infrastructure, which clusters, jobs, SQL warehouses and pools concentrate the cost, what share no tag explains, and which changes would save the most? Say how each saving is estimated and do not add two savings for the same object.
 ```
+
+Tool call:
 
 ```json
-{"operation":"query","view":"dependencies","workspace_name":"<APPROVED_DATABRICKS_WORKSPACE_NAME>","classification":"UNKNOWN","limit":25}
+{"operation": "query", "view": "costs", "workspace_name": "<WORKSPACE_NAME>", "limit": 25}
 ```
 
-### 6. Grounded questions on findings, coverage and FinOps
+**Expected:** Observed Cost Management rows with currency, the DBU and infrastructure split and the attribution by object and tag. Savings are estimates with their basis, counted once per object; nothing is invented when the cost source is denied.
+
+## 6. Confirmed dependencies only
 
 ```text
-@databricks-dependency-live Usa query/findings con area=security y
-status=failed. Prioriza únicamente los riesgos observados con su recurso,
-configuración, fuente, hora UTC y recomendación oficial de Microsoft Learn.
+Use query with view=dependencies and classification=OBSERVED for <WORKSPACE_NAME>. Which exact relationships are confirmed between job tasks, clusters, SQL warehouses, declarative pipelines, storage credentials, external locations and associated ARM resources? Give the join fields and the source of each edge.
 ```
 
+Tool call:
+
 ```json
-{"operation":"query","view":"findings","area":"security","status":"failed","limit":15}
+{"operation": "query", "view": "dependencies", "workspace_name": "<WORKSPACE_NAME>", "classification": "OBSERVED", "limit": 25}
 ```
+
+**Expected:** Only OBSERVED edges with their join fields and sources, with exact paging totals. No lineage is inferred from job or notebook names.
+
+## 7. Source coverage and in-workspace access
 
 ```text
-@databricks-dependency-live Usa query/findings con area=finops y query/finops.
-¿Qué jobs productivos están atados a clústeres All-Purpose (existing_cluster_id),
-qué clústeres o SQL Warehouses carecen de autoterminación acotada y qué costes
-ARM reales tienen moneda y ResourceId verificados sin inventar ahorros DBU?
+Use query with view=coverage for <WORKSPACE_NAME> to show which ARM, workspace REST and Unity Catalog sources answered complete, partial, denied or not_configured, whether the agent has access inside the workspace, and what the Azure-side review still covers when it does not.
 ```
+
+Tool call:
 
 ```json
-{"operation":"query","view":"finops","limit":15}
+{"operation": "query", "view": "coverage", "workspace_name": "<WORKSPACE_NAME>", "limit": 25}
 ```
 
-```text
-@databricks-dependency-live Usa query/coverage para comprobar qué fuentes ARM,
-Workspace REST y Unity Catalog respondieron complete, partial, denied o
-not_configured, incluyendo el modo de autenticación cross-tenant configurado.
-```
-
-```json
-{"operation":"query","view":"coverage","limit":25}
-```
+**Expected:** Per-source receipts with HTTP status. Without in-workspace access the response gives the reason (denied with HTTP 401/403, unreachable, token_failed, disabled or not_collected) while the ARM review still runs; denied sources are never reported as healthy zeros.

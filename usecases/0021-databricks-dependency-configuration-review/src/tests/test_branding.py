@@ -93,12 +93,12 @@ class BrandingTests(unittest.TestCase):
         identity.assert_not_called()
 
     def test_public_files_have_generic_client_branding_invariants(self):
-        self.assertEqual(self.e.CLIENT_NAME, "CLIENTE")
+        self.assertEqual(self.e.CLIENT_NAME, "Customer")
         self.assertEqual(self.e.CLIENT_LOGO_DATA_URI, "")
-        self.assertEqual(self.e.CLIENT_LOGO_ALT, "Logotipo autorizado del cliente")
+        self.assertEqual(self.e.CLIENT_LOGO_ALT, "Authorized customer logo")
         for rel in ("engine.py", "../manifests/tools/generate-databricks-dependency-report.py"):
             content = (ROOT / rel).read_text(encoding="utf-8")
-            self.assertIn('CLIENT_NAME = "CLIENTE"', content)
+            self.assertIn('CLIENT_NAME = "Customer"', content)
             self.assertIn('CLIENT_LOGO_DATA_URI = ""', content)
             self.assertNotIn("data:image/png;base64,", content)
             self.assertNotIn("data:image/jpeg;base64,", content)
