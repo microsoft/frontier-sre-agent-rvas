@@ -1,0 +1,19 @@
+api_version: azuresre.ai/v1
+kind: Tool
+metadata:
+  name: generate-azure-backup-report
+spec:
+  type: PythonFunctionTool
+  description: Read-only Azure Backup jobs, JobDetails, protected items and source/history coverage for
+    fixed approved Recovery Services vaults. Produces complete HTML, JSON, jobs CSV and items/coverage
+    CSV; no Azure or incident writes.
+  timeoutSeconds: 900
+  code_file: ./generate-azure-backup-report.py
+  parameters:
+  - name: period
+    type: string
+    required: false
+    description: 'One full read-only report for the fixed approved vaults. UTC half-open job-start window
+      [collection reference minus 14 days or 24 hours, reference). Monthly is schedule cadence, not a
+      full-month history claim. Source history availability remains independently qualified. No previous_month,
+      identity, scope, path or URL overrides. Default: last_14d. Allowed: last_14d, last_24h.'

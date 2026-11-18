@@ -177,6 +177,9 @@ Run the framework tests with `usecases/_framework/tests/run.sh`.
 | [0078-workbook-auto-generation](0078-workbook-auto-generation/) | Workbook auto-generation | management | idea |
 | [0079-entra-credential-expiration-audit](0079-entra-credential-expiration-audit/) | Microsoft Entra credential expiration audit | identity-access | validated |
 | [0080-infrastructure-operations-health](0080-infrastructure-operations-health/) | Server health and capacity review | management | built |
+| [0082-azure-backup-operations-review](0082-azure-backup-operations-review/) | Azure Backup jobs review | management | validated |
+| [0083-update-manager-patching-failure-investigation](0083-update-manager-patching-failure-investigation/) | Patching results and failed machines investigation | management | validated |
 | [0084-operations-incidents-anomalies-digest](0084-operations-incidents-anomalies-digest/) | Monthly operations incidents and anomalies digest | management | validated |
+| [0086-sqlmi-maintenance-resilience](0086-sqlmi-maintenance-resilience/) | Azure SQL Managed Instance maintenance resilience | management | validated |
 | [0087-sre-use-case-builder](0087-sre-use-case-builder/) | Azure SRE Agent use-case builder | platform-devops | validated |
 <!-- usecases:index:end -->

@@ -1,0 +1,21 @@
+api_version: azuresre.ai/v1
+kind: ScheduledTask
+metadata:
+  name: monthly-update-manager-patching-investigation
+spec:
+  description: Monthly Azure Update Manager patching & failure investigation. Day 1 of every month, read-only
+    review of the last patching cycles.
+  schedule: "0 8 1 * *"
+  time_zone: UTC
+  enabled: false
+  agent: patching-investigation-live
+  mode: Autonomous
+  prompt: |-
+    Use ONLY patching-investigation-report.
+    Execute EXACTLY ONE tool call with operation="report" and period="last_30d" (keep all other parameters at defaults).
+    If status="error", report the sanitized error.code and error.source_id and stop without inventing files.
+    Otherwise, immediately render all four native artifact links unchanged (report_url, snapshot_url, machines_csv_url, patches_csv_url) as Markdown links, followed by a concise English executive summary covering:
+    1. Total machines (Azure VMs vs Azure Arc) and assessment coverage.
+    2. Maintenance cycle executions in the 30-day window (UpdateSuccessfullyApplied vs ShutdownOrUnresponsive) and installation runs.
+    3. Per-machine root-cause breakdown across maintenance_window_unresponsive, arc_agent_expired_or_disconnected, assessment_stuck_or_readiness_undetermined, hotpatch_or_patch_extension_error, pending_security_patches_unscheduled, and unassessed_no_update_manager_telemetry, naming the affected machines, KBs, correlation IDs, and guest log paths.
+    Do not run a second tool call or modify any Azure resource.
