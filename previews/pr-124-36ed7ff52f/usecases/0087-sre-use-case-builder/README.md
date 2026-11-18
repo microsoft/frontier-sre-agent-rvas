@@ -16,7 +16,7 @@ The language model writes only a declarative JSON spec; a fixed, tested engine g
 |---|---|
 | **Runs** | On demand, from chat |
 | **Reads** | Whatever the idea needs (Log Analytics, Azure Resource Graph, ARM, Cost Management, Microsoft Graph, Azure Data Explorer, SharePoint or Blob files), read-only |
-| **Changes** | Nothing. The use cases it builds are read-only too |
+| **Changes** | Nothing in your resources. The use cases it builds are read-only too; with `publish=yes` a generated use case only saves its own report to the SharePoint folder or Blob container you choose |
 | **Delivers** | A tested tool, skill, subagent and scheduled task, with a branded HTML and PDF report, the permissions and a setup guide |
 | **Agent pieces** | Tool `sre-usecase-builder-kit` · skill `sre-usecase-builder` · subagent `sre-usecase-builder` |
 | **Access** | None of its own; live checks use only what the agent identity can already read |
