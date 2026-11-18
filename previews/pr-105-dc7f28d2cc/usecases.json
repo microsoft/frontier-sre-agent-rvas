@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-11-16T17:03:03Z",
-  "count": 79,
+  "generatedAt": "2026-11-18T17:55:35Z",
+  "count": 80,
   "domains": [
     {
       "slug": "billing-entra-tenant",
@@ -740,9 +740,9 @@
     },
     {
       "id": "0021-databricks-dependency-configuration-review",
-      "status": "built",
+      "status": "validated",
       "title": "Azure Databricks dependency and configuration review",
-      "summary": "Read-only review of a fixed Azure Databricks scope: dependency map (observed, inferred, unknown), security, FinOps and optimization findings, delivered as HTML, JSON and two CSVs.",
+      "summary": "Read-only review of every Azure Databricks workspace the agent can read: dependency map, where the cost comes from, and 36 best-practice checks.",
       "domain": "platform-devops",
       "trigger": [
         "chat"
@@ -752,38 +752,45 @@
       "topPick": false,
       "products": [
         "azure-databricks",
-        "azure-sre-agent",
+        "unity-catalog",
+        "azure-resource-graph",
+        "azure-cost-management",
         "azure-resource-manager",
-        "unity-catalog"
+        "azure-sre-agent"
       ],
       "autonomy": "read-only",
-      "samplePrompt": "Run the complete Azure Databricks dependency map and configuration review for <APPROVED_DATABRICKS_WORKSPACE_NAME> using operation=report and deliver all four files.",
+      "samplePrompt": "Generate the complete dependency and configuration report for every Azure Databricks workspace in every subscription (operation=report, workspace_names=all) and deliver all four files.",
       "source": {
         "type": "community",
         "url": "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/08-databricks-dependency-configuration-review"
       },
       "package": {
-        "version": "0.1.0",
+        "version": "1.1.0",
         "apiVersion": "azuresre.ai/v1",
         "requires": {
           "connectors": [],
           "roles": [
-            "Reader on the Databricks resource group (ARM)",
-            "CAN VIEW on in-scope jobs, pipelines, SQL warehouses and compute (Databricks)",
-            "BROWSE, USE CATALOG, USE SCHEMA on in-scope Unity Catalog objects"
+            "Reader on the management group (recommended) or on each subscription with Databricks workspaces (Resource Graph discovery and the ARM reads of each workspace and its managed resource group)",
+            "Cost Management Reader on the same scope, for the cost section",
+            "Inside each workspace, the identity as a service principal with workspace-access and databricks-sql-access (never admin) and CAN VIEW on jobs, pipelines and SQL warehouses",
+            "BROWSE, USE CATALOG and USE SCHEMA on the Unity Catalog catalogs (metadata only)"
           ]
         },
         "parameters": {
-          "SUBSCRIPTION_ID": "Subscription of the Databricks workspace",
-          "SRE_TENANT_ID": "Tenant of the SRE Agent",
-          "TARGET_TENANT_ID": "Tenant of the Databricks workspace",
-          "MANAGED_IDENTITY_CLIENT_ID": "Client ID of the agent user-assigned managed identity",
-          "FEDERATED_APP_CLIENT_ID": "App registration used for cross-tenant federation, if any",
-          "APPROVED_WORKSPACES": "Allowlist of workspace names, resource groups and hosts"
+          "SRE_TENANT_ID": "Tenant of the SRE Agent (required)",
+          "TARGET_TENANT_ID": "Tenant of the workspaces (required): the same value as SRE_TENANT_ID in the same tenant, which turns on auto-discovery",
+          "MANAGED_IDENTITY_CLIENT_ID": "Client ID of the agent user-assigned managed identity (required)",
+          "SUBSCRIPTION_ID": "Optional: subscription for APPROVED_WORKSPACES entries without their own subscription_id",
+          "APPROVED_WORKSPACES": "Optional per-workspace overrides (environment, cost scope, requirements); the list of workspaces only for cross-tenant access",
+          "DISCOVERY_SUBSCRIPTION_IDS": "Optional: limit discovery to these subscription IDs (empty: every subscription the identity can read)",
+          "FEDERATED_APP_CLIENT_ID": "Multi-tenant app registration used for cross-tenant access (cross-tenant only)",
+          "CROSS_TENANT_CERT_KEYVAULT_URL": "Key Vault that holds the cross-tenant app certificate (cross-tenant only)",
+          "CROSS_TENANT_CERT_NAME": "Name of that certificate in Key Vault (cross-tenant only)",
+          "CLIENT_NAME": "Optional organization name on the report cover"
         },
         "contents": {
           "tools": [
-            "manifests/tools/generate-databricks-dependency-report.yaml"
+            "manifests/tools/databricks-dependency-report.yaml"
           ],
           "skills": [
             "manifests/skills/databricks-dependency-live/SKILL.md"
@@ -792,6 +799,7 @@
             "manifests/subagents/databricks-dependency-live.yaml"
           ],
           "permissions": [
+            "permissions/grant-databricks-permissions.ps1",
             "permissions/grant-databricks-reader.ps1"
           ]
         }
@@ -800,37 +808,29 @@
       "components": {
         "skill": true,
         "subagent": true,
-        "tool": "generate-databricks-dependency-report.yaml",
+        "tool": "databricks-dependency-report.yaml",
         "task": false,
         "permissions": true,
         "tests": true,
-        "sampleReport": false,
+        "sampleReport": true,
         "images": false
       },
       "readme": "usecases/0021-databricks-dependency-configuration-review/README.md",
       "images": [
-        "docs/images/01-saved-tool-and-12-parameters.png",
-        "docs/images/02-private-code-and-timeout.png",
-        "docs/images/03-identity-access-off.png",
-        "docs/images/04-native-unconfigured-test.png",
-        "docs/images/05-saved-runtime-skill.png",
-        "docs/images/06-saved-restricted-specialist.png",
-        "docs/images/07-saved-explicit-allowlists.png",
-        "docs/images/08-create-drop-down-arrow.png",
-        "docs/images/09-native-no-source-no-files.png",
-        "docs/images/10-select-registered-specialist.png",
-        "docs/images/11-selected-specialist-composer.png",
-        "docs/images/12-live-chat-four-files.png",
-        "docs/images/13-report-overview-and-pillars.png",
-        "docs/images/14-report-dependency-graph.png",
-        "docs/images/15-report-controls-and-reference.png",
-        "docs/images/16-report-source-coverage-ledger.png"
+        "docs/images/report-databricks-costs.png",
+        "docs/images/report-dependency-graph.png",
+        "docs/images/report-preview.png",
+        "docs/images/report-workspace-summary.png",
+        "docs/images/setup-chat.png",
+        "docs/images/setup-skill.png",
+        "docs/images/setup-subagent.png",
+        "docs/images/setup-tool.png"
       ],
       "page": "usecases/0021-databricks-dependency-configuration-review/",
       "download": {
         "url": "downloads/0021-databricks-dependency-configuration-review.zip",
         "sha256Url": "downloads/0021-databricks-dependency-configuration-review.zip.sha256",
-        "version": "0.1.0"
+        "version": "1.1.0"
       }
     },
     {
@@ -868,36 +868,89 @@
     },
     {
       "id": "0023-defender-for-cloud-assessment",
-      "status": "idea",
-      "title": "Defender for Cloud assessment",
-      "summary": "Provides a security posture snapshot from Defender for Cloud, highlighting critical findings and score trends.",
+      "status": "built",
+      "title": "Security posture from Defender for Cloud",
+      "summary": "Monthly read-only report of the live Defender for Cloud evidence of a subscription that shows what to review first, with grounded follow-up questions.",
       "domain": "security",
       "trigger": [
-        "schedule"
+        "schedule",
+        "chat"
       ],
-      "frequency": "Weekly",
+      "frequency": "Monthly",
       "timeSaved": "High",
       "topPick": false,
-      "samplePrompt": "Pull Defender for Cloud assessment for all subscriptions: (1) secure score current and 30-day trend, (2) unhealthy resources by severity (high/medium/low), (3) top 10 recommendations by impacted resource count, (4) new recommendations in last 7 days. Prioritize by exploitability and blast radius.",
+      "products": [
+        "defender-for-cloud",
+        "azure-resource-graph",
+        "azure-arc",
+        "azure-sre-agent"
+      ],
+      "autonomy": "read-only",
+      "samplePrompt": "Use defender-cloud-live and only generate-defender-cloud-report with operation=\"report\" and deliver the four files with what to review first.",
       "source": {
         "type": "community",
-        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+        "url": "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/02-arc-defender-posture-audit"
+      },
+      "package": {
+        "version": "1.0.0",
+        "apiVersion": "azuresre.ai/v1",
+        "requires": {
+          "connectors": [],
+          "roles": [
+            "Reader on the monitored subscription (Security Reader alone does not cover the whole pipeline)",
+            "SRE Agent Author and Standard User, or SRE Agent Administrator, for the person deploying"
+          ]
+        },
+        "parameters": {
+          "SUBSCRIPTION_ID": "Monitored subscription",
+          "TENANT_ID": "Tenant of the monitored subscription",
+          "MANAGED_IDENTITY_CLIENT_ID": "Client ID of the agent user-assigned managed identity"
+        },
+        "contents": {
+          "tools": [
+            "manifests/tools/generate-defender-cloud-report.yaml"
+          ],
+          "skills": [
+            "manifests/skills/defender-cloud-live/SKILL.md"
+          ],
+          "subagents": [
+            "manifests/subagents/defender-cloud-live.yaml"
+          ],
+          "scheduledTasks": [
+            "manifests/scheduled-tasks/monthly-defender-cloud-evidence-audit.yaml"
+          ],
+          "permissions": [
+            "permissions/grant-defender-evidence-reader.ps1"
+          ]
+        }
       },
       "path": "usecases/0023-defender-for-cloud-assessment",
       "components": {
-        "skill": false,
-        "subagent": false,
-        "tool": false,
-        "task": false,
-        "permissions": false,
-        "tests": false,
+        "skill": true,
+        "subagent": true,
+        "tool": "generate-defender-cloud-report.yaml",
+        "task": true,
+        "permissions": true,
+        "tests": true,
         "sampleReport": false,
         "images": false
       },
-      "readme": null,
-      "images": [],
-      "page": null,
-      "download": null
+      "readme": "usecases/0023-defender-for-cloud-assessment/README.md",
+      "images": [
+        "docs/images/report-preview.png",
+        "docs/images/report-resource-details.png",
+        "docs/images/setup-chat.png",
+        "docs/images/setup-skill.png",
+        "docs/images/setup-subagent.png",
+        "docs/images/setup-task.png",
+        "docs/images/setup-tool.png"
+      ],
+      "page": "usecases/0023-defender-for-cloud-assessment/",
+      "download": {
+        "url": "downloads/0023-defender-for-cloud-assessment.zip",
+        "sha256Url": "downloads/0023-defender-for-cloud-assessment.zip.sha256",
+        "version": "1.0.0"
+      }
     },
     {
       "id": "0024-diagnostic-settings-coverage-audit",
@@ -2422,36 +2475,94 @@
     },
     {
       "id": "0070-stale-rbac-assignments",
-      "status": "idea",
-      "title": "Stale RBAC assignments",
-      "summary": "Find assignments to deleted or inactive principals for an access review.",
+      "status": "validated",
+      "title": "Azure RBAC privileged access review",
+      "summary": "Monthly read-only review of privileged Azure role assignments: what can be removed today without anybody losing access, and what needs an owner.",
       "domain": "identity-access",
       "trigger": [
-        "schedule"
+        "schedule",
+        "chat"
       ],
-      "frequency": "Weekly",
+      "frequency": "Monthly",
       "timeSaved": "High",
       "topPick": true,
-      "samplePrompt": "List all role assignments where: (1) the principal object no longer exists in Entra ID (orphaned SIDs), (2) the user principal hasn't signed in for > 90 days, (3) the service principal has no recent activity. Show assignment scope, role, principal display name/ID, and last sign-in date. Recommend removal.",
+      "products": [
+        "azure-rbac",
+        "entra-id",
+        "microsoft-graph",
+        "azure-resource-manager",
+        "azure-sre-agent"
+      ],
+      "autonomy": "read-only",
+      "samplePrompt": "Run the monthly Azure RBAC privileged access review and give me the links to the HTML report, CSV and JSON with the executive summary, Owner decisions, coverage and required actions.",
       "source": {
         "type": "community",
-        "url": "https://github.com/alsanch/azure-sre-agent-scenarios"
+        "url": "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/13-rbac-privileged-access-review"
+      },
+      "package": {
+        "version": "1.0.0",
+        "apiVersion": "azuresre.ai/v1",
+        "requires": {
+          "connectors": [],
+          "roles": [
+            "Reader on each reviewed subscription, or on a management group",
+            "Microsoft Graph User.Read.All, Application.Read.All, GroupMember.Read.All and AuditLog.Read.All (application permissions)",
+            "Privileged Role Administrator (Microsoft Entra), once, to grant the Graph permissions",
+            "SRE Agent Administrator for the person deploying"
+          ]
+        },
+        "parameters": {
+          "MANAGED_IDENTITY_CLIENT_ID": "Client ID of the agent user-assigned managed identity",
+          "SUBSCRIPTION_IDS": "Subscriptions to review (role assignments inherited from management groups are included)",
+          "ORGANIZATION_NAME": "Optional organization name in the report title and footer",
+          "LOGO_DATA_URI": "Optional data URI of the organization logo"
+        },
+        "contents": {
+          "tools": [
+            "manifests/tools/generate-rbac-privileged-review.yaml"
+          ],
+          "skills": [
+            "manifests/skills/rbac-privileged-access-review/SKILL.md"
+          ],
+          "subagents": [
+            "manifests/subagents/rbac-access-reviewer.yaml"
+          ],
+          "scheduledTasks": [
+            "manifests/scheduled-tasks/monthly-rbac-privileged-access-review.yaml"
+          ],
+          "permissions": [
+            "permissions/grant-rbac-review-permissions.ps1"
+          ]
+        }
       },
       "path": "usecases/0070-stale-rbac-assignments",
       "components": {
-        "skill": false,
-        "subagent": false,
-        "tool": false,
-        "task": false,
-        "permissions": false,
-        "tests": false,
-        "sampleReport": false,
+        "skill": true,
+        "subagent": true,
+        "tool": "generate-rbac-privileged-review.yaml",
+        "task": true,
+        "permissions": true,
+        "tests": true,
+        "sampleReport": true,
         "images": false
       },
-      "readme": null,
-      "images": [],
-      "page": null,
-      "download": null
+      "readme": "usecases/0070-stale-rbac-assignments/README.md",
+      "images": [
+        "docs/images/report-preview.png",
+        "docs/images/report-top-identities.png",
+        "docs/images/setup-chat.png",
+        "docs/images/setup-configure.png",
+        "docs/images/setup-skill.png",
+        "docs/images/setup-subagent.png",
+        "docs/images/setup-task.png",
+        "docs/images/setup-tool.png"
+      ],
+      "page": "usecases/0070-stale-rbac-assignments/",
+      "download": {
+        "url": "downloads/0070-stale-rbac-assignments.zip",
+        "sha256Url": "downloads/0070-stale-rbac-assignments.zip.sha256",
+        "version": "1.0.0"
+      }
     },
     {
       "id": "0071-subscription-hygiene-score",
@@ -2717,6 +2828,90 @@
       "images": [],
       "page": null,
       "download": null
+    },
+    {
+      "id": "0079-entra-credential-expiration-audit",
+      "status": "validated",
+      "title": "Microsoft Entra credential expiration audit",
+      "summary": "Monthly read-only audit of expired and expiring secrets and certificates of every Microsoft Entra app registration and service principal.",
+      "domain": "identity-access",
+      "trigger": [
+        "schedule",
+        "chat"
+      ],
+      "frequency": "Monthly",
+      "timeSaved": "High",
+      "topPick": false,
+      "products": [
+        "entra-id",
+        "microsoft-graph",
+        "azure-sre-agent"
+      ],
+      "autonomy": "read-only",
+      "samplePrompt": "Run the full Microsoft Entra credential expiration audit and deliver the HTML report with the coverage and risk summary.",
+      "source": {
+        "type": "community",
+        "url": "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/01-entra-credential-expiration-audit"
+      },
+      "package": {
+        "version": "1.0.0",
+        "apiVersion": "azuresre.ai/v1",
+        "requires": {
+          "connectors": [],
+          "roles": [
+            "Microsoft Graph Application.Read.All (application permission) for the agent managed identity",
+            "Privileged Role Administrator (Microsoft Entra), once, to grant that permission",
+            "SRE Agent Author and Standard User, or SRE Agent Administrator, for the person deploying"
+          ]
+        },
+        "parameters": {
+          "MANAGED_IDENTITY_CLIENT_ID": "Client ID of the agent user-assigned managed identity, set in the tool and in grant-graph-permission.ps1"
+        },
+        "contents": {
+          "tools": [
+            "manifests/tools/generate-entra-credential-expiration.yaml"
+          ],
+          "skills": [
+            "manifests/skills/entra-full-credential-inventory/SKILL.md"
+          ],
+          "subagents": [
+            "manifests/subagents/credential-monitor-full.yaml"
+          ],
+          "scheduledTasks": [
+            "manifests/scheduled-tasks/monthly-entra-credential-expiration-audit.yaml"
+          ],
+          "permissions": [
+            "permissions/grant-graph-permission.ps1"
+          ]
+        }
+      },
+      "path": "usecases/0079-entra-credential-expiration-audit",
+      "components": {
+        "skill": true,
+        "subagent": true,
+        "tool": "generate-entra-credential-expiration.yaml",
+        "task": true,
+        "permissions": true,
+        "tests": true,
+        "sampleReport": true,
+        "images": false
+      },
+      "readme": "usecases/0079-entra-credential-expiration-audit/README.md",
+      "images": [
+        "docs/images/report-inventory.png",
+        "docs/images/report-preview.png",
+        "docs/images/setup-chat.png",
+        "docs/images/setup-skill.png",
+        "docs/images/setup-subagent.png",
+        "docs/images/setup-task.png",
+        "docs/images/setup-tool.png"
+      ],
+      "page": "usecases/0079-entra-credential-expiration-audit/",
+      "download": {
+        "url": "downloads/0079-entra-credential-expiration-audit.zip",
+        "sha256Url": "downloads/0079-entra-credential-expiration-audit.zip.sha256",
+        "version": "1.0.0"
+      }
     }
   ]
 }
