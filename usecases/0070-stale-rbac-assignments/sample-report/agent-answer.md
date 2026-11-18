@@ -1,8 +1,8 @@
 # Azure RBAC privileged access review: 2026-11-03 (partial coverage)
 
-- HTML report: [rbac-privileged-access-review-2026-11-03.html](/api/files/tmp/ThreadFiles/00000000-0000-4000-8000-148c248f3b91/rbac-privileged-access-review-2026-11-03.html) (path: /root/sreagent/terminalRoot/tmp/ThreadFiles/00000000-0000-4000-8000-148c248f3b91/rbac-privileged-access-review-2026-11-03.html)
-- CSV for Excel: [rbac-privileged-access-review-2026-11-03.csv](/api/files/tmp/ThreadFiles/00000000-0000-4000-8000-148c248f3b91/rbac-privileged-access-review-2026-11-03.csv) (path: /root/sreagent/terminalRoot/tmp/ThreadFiles/00000000-0000-4000-8000-148c248f3b91/rbac-privileged-access-review-2026-11-03.csv)
-- JSON for automation: [rbac-privileged-access-review-2026-11-03.json](/api/files/tmp/ThreadFiles/00000000-0000-4000-8000-148c248f3b91/rbac-privileged-access-review-2026-11-03.json) (path: /root/sreagent/terminalRoot/tmp/ThreadFiles/00000000-0000-4000-8000-148c248f3b91/rbac-privileged-access-review-2026-11-03.json)
+- HTML report: [rbac-privileged-access-review-2026-11-03.html](rbac-privileged-access-review-2026-11-03.html) (path: /root/sreagent/terminalRoot/tmp/ThreadFiles/00000000-0000-4000-8000-148c248f3b91/rbac-privileged-access-review-2026-11-03.html)
+- CSV for Excel: [rbac-privileged-access-review-2026-11-03.csv](rbac-privileged-access-review-2026-11-03.csv) (path: /root/sreagent/terminalRoot/tmp/ThreadFiles/00000000-0000-4000-8000-148c248f3b91/rbac-privileged-access-review-2026-11-03.csv)
+- JSON for automation: [rbac-privileged-access-review-2026-11-03.json](rbac-privileged-access-review-2026-11-03.json) (path: /root/sreagent/terminalRoot/tmp/ThreadFiles/00000000-0000-4000-8000-148c248f3b91/rbac-privileged-access-review-2026-11-03.json)
 
 ## Executive summary
 - **175** role assignments were inventoried. **69** are privileged, held by 46 distinct identities: Tier 0 (access control) 35, Tier 1 (full control) 10, Tier 2 (service admin) 24.
@@ -68,6 +68,6 @@ All five are Owner at the root management group held by identities that no longe
 3. **Removals and changes:** this review is read only. Removing the 17 assignments flagged as removable, and moving permanent Tier 0 and Tier 1 access to PIM eligibility, must be done by a person through an approved change.
 
 ## Artifacts & links
-- [rbac-privileged-access-review-2026-11-03.html](/api/files/tmp/ThreadFiles/00000000-0000-4000-8000-148c248f3b91/rbac-privileged-access-review-2026-11-03.html)
-- [rbac-privileged-access-review-2026-11-03.csv](/api/files/tmp/ThreadFiles/00000000-0000-4000-8000-148c248f3b91/rbac-privileged-access-review-2026-11-03.csv)
-- [rbac-privileged-access-review-2026-11-03.json](/api/files/tmp/ThreadFiles/00000000-0000-4000-8000-148c248f3b91/rbac-privileged-access-review-2026-11-03.json)
+- [rbac-privileged-access-review-2026-11-03.html](rbac-privileged-access-review-2026-11-03.html)
+- [rbac-privileged-access-review-2026-11-03.csv](rbac-privileged-access-review-2026-11-03.csv)
+- [rbac-privileged-access-review-2026-11-03.json](rbac-privileged-access-review-2026-11-03.json)
