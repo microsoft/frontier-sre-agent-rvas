@@ -1,0 +1,34 @@
+id: 0080-infrastructure-operations-health
+status: built
+title: "Server health and capacity review"
+summary: "Monthly read-only review of CPU, memory, capacity, health and alerts of Azure VMs and Arc servers, saying clearly where data is missing."
+domain: management
+trigger: [schedule, chat]
+frequency: "Monthly"
+timeSaved: High
+topPick: false
+products: [azure-monitor, log-analytics, azure-arc, azure-resource-graph, azure-sre-agent]
+autonomy: read-only
+samplePrompt: "Use infra-ops-live and infrastructure-operations-report with operation=report and period=previous_month, and deliver the four files."
+source: { type: community, url: "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/03-infrastructure-operations-health" }
+package:
+  version: 1.0.0
+  apiVersion: azuresre.ai/v1
+  requires:
+    connectors: []
+    roles:
+      - "Reader on the monitored subscription"
+      - "Log Analytics Reader on the approved workspaces (workspace-context reads of InsightsMetrics, Perf and Heartbeat)"
+      - "SRE Agent Author and Standard User, or SRE Agent Administrator, for the person deploying"
+  parameters:
+    SUBSCRIPTION_ID: "Monitored subscription"
+    TENANT_ID: "Tenant of the monitored subscription"
+    MANAGED_IDENTITY_CLIENT_ID: "Client ID of the agent user-assigned managed identity"
+    LOG_WORKSPACE_IDS: "Approved Log Analytics workspace IDs (customer IDs) for guest metrics"
+    COMPANY_LOGO_DATA_URI: "Optional PNG or JPEG logo as a data URI"
+  contents:
+    tools: [manifests/tools/infrastructure-operations-report.yaml]
+    skills: [manifests/skills/infra-ops-live/SKILL.md]
+    subagents: [manifests/subagents/infra-ops-live.yaml]
+    scheduledTasks: [manifests/scheduled-tasks/monthly-infrastructure-operations-review.yaml]
+    permissions: [permissions/grant-infrastructure-operations-reader.ps1]

@@ -1,0 +1,41 @@
+api_version: azuresre.ai/v1
+kind: ScheduledTask
+metadata:
+  name: monthly-azure-backup-operations-review
+spec:
+  description: Monthly Azure Backup operations review. Backup jobs of the last 14 days for the approved
+    vaults, read-only; the monthly cadence leaves gaps between runs.
+  schedule: "30 10 1 * *"
+  time_zone: UTC
+  enabled: false
+  agent: azure-backup-live
+  mode: Autonomous
+  prompt: |-
+    Use azure-backup-live and ONLY generate-azure-backup-report.
+    Make EXACTLY ONE tool call with period="last_14d".
+    Use the complete fixed approved vault scope and other tool defaults.
+    Do not add query, previous_month, scope/path/identity overrides or parameters.
+    Do not collect a second report, page, refresh or retry with narrower coverage.
+    If status="error", show the sanitized source/code, state no valid report was
+    produced, and stop. Do not invent files/counts or work around a size failure by
+    dropping rows/fields/details, shortening the period, splitting vaults or storage.
+    Otherwise immediately deliver all four files. For sharing_mode="native_ui",
+    render report_url, snapshot_url, jobs_csv_url and coverage_csv_url unchanged
+    as native relative Markdown links/file widgets. Do not invent or prepend a host,
+    thread UUID or sandbox prefix. The four corresponding *_path values are real
+    guarded paths. For local_files_only, disclose that native aliases are unavailable
+    and show only those actual paths.
+    artifact_status="written" is not HTTP/download validation. http_verified=false
+    does not suppress returned links or require another tool call.
+    status="partial" is an evidence-coverage qualification, not a file-write failure.
+    After the links, provide one short paragraph grounded only in the returned
+    UTC reference/window, observed counts and unknown/source coverage. Detail is
+    already in the HTML/JSON; do not recollect to explain it.
+    Keep native Failed/warnings/InProgress/Completed/Cancelled/unknown states
+    separate, and Backup separate from Restore/Delete/other operations.
+    Monthly is cadence, not full-month coverage. No jobs is not all backups
+    successful; observed items are not expected protection; no friendly-name joins,
+    invented missed occurrences, recovery/integrity/RPO/RTO claims or SLA score.
+    Human review is not incident creation, attachment or closure. No backup,
+    restore, cancel/retry, policy/protection/IAM/resource/log changes, CLI/shell,
+    new diagnostics, ticket writes, alerts/load or other tools.

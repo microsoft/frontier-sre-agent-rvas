@@ -10,7 +10,9 @@ import math
 import os
 import re
 import ssl
+import queue
 import tempfile
+import threading
 import time
 import warnings
 from collections import Counter
@@ -23,6 +25,10 @@ from urllib.request import HTTPRedirectHandler, HTTPSHandler, Request, build_ope
 from uuid import UUID, uuid4
 
 
+# Required: SRE_TENANT_ID, TARGET_TENANT_ID and MANAGED_IDENTITY_CLIENT_ID. With AUTO_DISCOVERY = True (below) and the same
+# tenant for the agent and Databricks, every workspace the agent identity can read (Reader on a management group or on
+# subscriptions) is discovered on each run: no workspace list to maintain. SUBSCRIPTION_ID is only needed by an
+# APPROVED_WORKSPACES entry that has no "subscription_id" of its own.
 SUBSCRIPTION_ID = "<YOUR_TARGET_SUBSCRIPTION_ID>"
 SRE_TENANT_ID = "<YOUR_SRE_AGENT_TENANT_ID>"
 TARGET_TENANT_ID = "<YOUR_TARGET_DATABRICKS_TENANT_ID>"
@@ -41,9 +47,13 @@ CLIENT_NAME = "Customer"
 # data URI. Keep generic Git source empty. Use adjacent strings <10K per line.
 CLIENT_LOGO_DATA_URI = ""
 CLIENT_LOGO_ALT = "Authorized customer logo"
+# Optional per-workspace overrides (and the only list when AUTO_DISCOVERY is False or the tenants differ). Key = exact
+# workspace name; entries whose key starts with "<" are ignored. Missing fields come from WORKSPACE_DEFAULTS; an entry
+# wins over the discovered workspace with the same resource ID. Add "subscription_id" when it is not SUBSCRIPTION_ID.
 APPROVED_WORKSPACES = {
     "<APPROVED_DATABRICKS_WORKSPACE_NAME>": {
         "resource_group": "<APPROVED_DATABRICKS_RESOURCE_GROUP>",
+        "subscription_id": "<WORKSPACE_SUBSCRIPTION_ID>",
         "workspace_host": "<APPROVED_WORKSPACE_HOST_ADB_NET>",
         "environment": "UNSPECIFIED",
         "auth_mode": "same_tenant_uami",
@@ -65,6 +75,27 @@ APPROVED_WORKSPACES = {
         "requirements": {},
     }
 }
+# Settings used for every discovered workspace (and for APPROVED_WORKSPACES entries that omit a field).
+WORKSPACE_DEFAULTS = {
+    "environment": "UNSPECIFIED",              # LAB / PRODUCTION / UNSPECIFIED
+    "auth_mode": "same_tenant_uami",           # the agent's managed identity, same tenant
+    "workspace_api_enabled": True,             # read the workspace REST APIs (clusters, jobs, pipelines, warehouses...)
+    "unity_catalog_enabled": True,             # read Unity Catalog metadata (catalogs, schemas, credentials, locations)
+    "include_managed_resource_group": True,    # review the managed resource group (VNet, NSG, DBFS storage)
+    "advisor_enabled": True,                   # cached Azure Advisor recommendations (read-only)
+    "approved_related_resource_ids": [],
+    "approved_cost_resource_ids": [],
+    "cost_scope": "workspace_and_managed_resource_group",  # period cost: workspace DBUs + managed resource group infrastructure
+    "cost_timeframe": "month_to_date",         # month_to_date / last_30_days
+    "cost_analysis_enabled": True,             # report section 6 (skipped automatically in fleet reports above 5 workspaces)
+    "system_tables_warehouse_id": "",          # OFF; see APPROVED_WORKSPACES
+    "requirements": {},
+}
+# Automatic discovery: one fixed read-only Azure Resource Graph query per run lists every Databricks workspace the agent
+# identity can read. Applies when SRE_TENANT_ID == TARGET_TENANT_ID; cross-tenant setups keep using APPROVED_WORKSPACES.
+AUTO_DISCOVERY = True
+# Optional: limit discovery to these subscription IDs. Empty = every subscription the identity can read.
+DISCOVERY_SUBSCRIPTION_IDS = []
 # Databricks cost analysis settings (shared by all approved workspaces).
 COST_METRIC = "AmortizedCost"  # AmortizedCost spreads Databricks commit units and reservations; ActualCost is the invoice view
 COST_ALLOCATION_TAGS = ["team", "project", "cost_center"]  # your own cluster, job, pool and warehouse tags (up to 3 keys)
@@ -93,7 +124,7 @@ ENTRA_TOKEN_EXCHANGE_AUDIENCES = (
 )
 DATABRICKS_ARM_API = "2024-05-01"
 TRANSPORT_BYTES = 3500
-ARTIFACT_BYTES = 4_800_000
+ARTIFACT_BYTES = 40_000_000
 HTTP_BYTES = 8_000_000
 MAX_PAGES = 50
 MAX_ROWS = 15000
@@ -102,6 +133,33 @@ MAX_DETAIL_GETS = 100
 MAX_COLLECTION_SECONDS = 420
 MAX_HTTP_ATTEMPTS = 360
 OUTPUT_DIRECTORY = "databricks-dependency-reports"
+ARG_API = "2022-10-01"
+MAX_DISCOVERED_WORKSPACES = 500
+MAX_DISCOVERY_PAGES = 5
+MAX_REPORT_WORKSPACES = 50
+MAX_QUERY_WORKSPACES = 5
+FLEET_WORKERS = 6
+FLEET_COLLECTION_SECONDS = 720
+FLEET_HARD_STOP_SECONDS = 800
+FLEET_COST_ANALYSIS_MAX_WORKSPACES = 5
+COST_CONCURRENCY = 2
+COST_SEMAPHORE = threading.BoundedSemaphore(COST_CONCURRENCY)
+ROSTER = None
+DISCOVERY_INFO = {}
+BRANDING_CHECKED = set()
+SAFE_LOCAL_NAME = re.compile(r"[A-Za-z0-9_.()-]+")
+GUID_TEXT = re.compile(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}")
+DISCOVERY_QUERY = (
+    "resources | where type =~ 'microsoft.databricks/workspaces' "
+    "| extend workspaceUrl = tostring(properties.workspaceUrl), managedResourceGroupId = tostring(properties.managedResourceGroupId), "
+    "publicNetworkAccess = tostring(properties.publicNetworkAccess), customVnet = tostring(properties.parameters.customVirtualNetworkId.value), "
+    "skuName = tostring(sku.name) "
+    "| join kind=leftouter (resourcecontainers | where type =~ 'microsoft.resources/subscriptions' "
+    "| project subscriptionId, subscriptionName = name) on subscriptionId "
+    "| project id, name, resourceGroup, subscriptionId, subscriptionName, tenantId, location, skuName, workspaceUrl, "
+    "managedResourceGroupId, publicNetworkAccess, customVnet "
+    "| order by subscriptionId asc, name asc"
+)
 COST_API_VERSION = "2025-03-01"
 COST_QUERY_RESERVE_SECONDS = 20
 MAX_COST_ROWS = 20000
@@ -499,1591 +557,1745 @@ HTML_TEMPLATE = (
     '}\n.band-in{max-width:1400px;margin:0 auto;padding:12px clamp(14px,3vw,40px);display:flex;flex-wrap:w'
     'rap;gap:10px 24px;align-items:center;justify-content:space-between;font-size:14px}\n.band-in p{margin'
     ':0;color:var(--muted)}\n.band-in b{color:var(--ink)}\n.ws-select{display:flex;align-items:center;gap:1'
-    '0px;font-weight:600}\n.hero{position:relative;background:linear-gradient(150deg,var(--hero-a) 0%,var('
-    '--hero-b) 100%);color:#ffffff;padding:clamp(28px,4.2vw,52px) clamp(14px,3vw,40px) 104px}\n.hero-in{ma'
-    'x-width:1320px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:24px 52px;al'
-    'ign-items:start}\n.hero h1{margin:0 0 14px;font-size:clamp(28px,3vw,44px);line-height:1.12;font-weigh'
-    't:700;letter-spacing:-.02em;text-wrap:balance;color:#ffffff}\n.lead{margin:0;max-width:72ch;font-size'
-    ':17px;line-height:1.55;color:var(--hero-muted)}\n.lead b{color:#ffffff;font-weight:700}\n.meta{display'
-    ':flex;flex-wrap:wrap;gap:8px;margin-top:20px}\n.meta span{font-size:12.5px;padding:5px 11px;border-ra'
-    'dius:999px;border:1px solid var(--hero-line);color:var(--hero-muted);white-space:nowrap}\n.meta b{col'
-    'or:#ffffff;font-weight:600}\n.meta span.on{background:rgba(255,255,255,.12);border-color:rgba(255,255'
-    ',255,.45);color:#ffffff;font-weight:700;letter-spacing:.02em}\n.hero-side{display:grid;gap:14px}\n.pla'
-    'que-k{margin:0 0 6px;font-size:12.5px;color:var(--hero-muted)}\n.brand-plaque{color-scheme:only light'
-    ';display:flex;align-items:center;justify-content:center;min-height:64px;padding:10px 16px;border-rad'
-    'ius:12px;background:#ffffff;color:#334155}\n.brand-plaque img{display:block;max-width:100%;max-height'
-    ':44px;object-fit:contain}\n.brand-placeholder{font-size:14px;font-weight:700;letter-spacing:.16em;col'
-    'or:#334155}\n.client-name{margin:6px 0 0;font-size:14px;font-weight:600;color:#ffffff}\n.signal{paddin'
-    'g:18px 20px;border-radius:16px;background:rgba(255,255,255,.07);border:1px solid var(--sig-line)}\n.s'
-    'ignal .k{font-size:13px;font-weight:600;color:var(--hero-muted)}\n.signal b{display:block;margin-top:'
-    '4px;font-size:26px;line-height:1.15;font-weight:700;color:var(--sig-ink)}\n.signal p{margin:8px 0 0;f'
-    'ont-size:14px;color:var(--hero-muted)}\n.signal.crit{--sig-ink:#ffb4ab;--sig-line:rgba(255,180,171,.5'
-    '5)}\n.signal.warn{--sig-ink:#fedf89;--sig-line:rgba(254,223,137,.5)}\n.signal.act{--sig-ink:#fdb022;--'
-    'sig-line:rgba(253,176,34,.5)}\n.signal.ok{--sig-ink:#a6f4c5;--sig-line:rgba(166,244,197,.45)}\n.signal'
-    '.info{--sig-ink:#e4e7ec;--sig-line:rgba(255,255,255,.35)}\n.dist{grid-column:1 / -1}\n.dist-head{displ'
-    'ay:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 16px;margin-bottom:8px;font-size:13.5px'
-    ';color:var(--hero-muted)}\n.dist-head b,.legend b{color:#ffffff}\n.track{display:flex;height:14px;bord'
-    'er-radius:999px;overflow:hidden;background:rgba(255,255,255,.16)}\n.track i{display:block;height:100%'
-    '}\n.legend{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:10px;font-size:13.5px;color:var(--hero'
-    '-muted)}\n.legend span{display:inline-flex;align-items:center;gap:7px}\n.legend i{display:inline-block'
-    ';width:10px;height:10px;border-radius:3px}\n.page{max-width:1400px;margin:0 auto;padding:0 clamp(14px'
-    ',3vw,40px) 56px}\n.kpis{position:relative;z-index:2;display:grid;grid-template-columns:repeat(auto-fi'
-    't,minmax(min(100%,178px),1fr));gap:14px;margin-top:-62px}\n.kpi{min-width:0;padding:18px 20px;backgro'
-    'und:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}\n.kpi .v'
-    '{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 5px;font-size:33px;line-height:1.05;font-wei'
-    'ght:700;letter-spacing:-.02em;color:var(--title)}\n.kpi .v small{font-size:15px;font-weight:600;lette'
-    'r-spacing:0;color:var(--muted)}\n.kpi .l{margin-top:9px;font-size:14px;font-weight:600}\n.kpi .s{margi'
-    'n-top:3px;font-size:13px;color:var(--muted)}\n.sim,.note{display:flex;gap:10px;align-items:flex-start'
-    ';margin-top:16px;padding:11px 16px;border-radius:12px;font-size:14px}\n.sim{background:repeating-line'
-    'ar-gradient(135deg,#fffaeb 0 12px,#fef0c7 12px 24px);border:1px solid #fedf89;color:#7a2e0e;font-wei'
-    'ght:600}\n.note{background:var(--surface);border:1px solid var(--line);color:var(--ink)}\n.sim svg.i,.'
-    'note svg.i{width:18px;height:18px;margin-top:1px}\n.note svg.i{color:var(--med-bar)}\n.chapter{margin-'
-    'top:48px;scroll-margin-top:78px}\n.sh{margin-bottom:16px}\n.sh h2{margin:0;font-size:23px;line-height:'
-    '1.3;font-weight:700;letter-spacing:-.01em;color:var(--title);text-wrap:balance}\n.sh p{margin:6px 0 0'
-    ';max-width:75ch;font-size:14.5px;color:var(--muted)}\n.grid2{display:grid;grid-template-columns:repea'
-    't(auto-fit,minmax(min(100%,440px),1fr));gap:16px}\n.stack-gap>* + *{margin-top:16px}\n.card{min-width:'
-    '0;padding:20px 22px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-sh'
-    'adow:var(--shadow)}\n.card h3{margin:0 0 4px;font-size:17px;line-height:1.3;font-weight:700;color:var'
-    '(--title)}\n.card .sub{margin:0 0 14px;font-size:13.5px;color:var(--muted)}\n.card.flat{padding:0;over'
-    'flow:hidden}\n.card-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-betwe'
-    'en;gap:4px 16px;padding:18px 22px 12px}\n.card-head h3{margin:0}\n.card-head p{margin:0;font-size:13.5'
-    'px;color:var(--muted)}\n.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250'
-    'px),1fr));gap:16px 28px;margin:0}\n.facts dt{margin-bottom:3px;font-size:12.5px;color:var(--muted)}\n.'
-    'facts dd{margin:0;font-size:14.5px;font-weight:600;min-width:0}\n.facts dd small{display:block;font-w'
-    'eight:400;color:var(--muted);font-size:12.5px}\n.plist,.msgs{list-style:none;margin:0;padding:0}\n.msg'
-    's li{position:relative;padding:9px 0 9px 18px;border-top:1px solid var(--line);font-size:14.5px}\n.ms'
-    'gs li:first-child{border-top:0;padding-top:2px}\n.msgs li::before{content:"";position:absolute;left:2'
-    'px;top:17px;width:6px;height:6px;border-radius:50%;background:var(--chart)}\n.msgs li:first-child::be'
-    'fore{top:10px}\n.plist li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;padding:'
-    '12px 0;border-top:1px solid var(--line)}\n.plist li:first-child{border-top:0;padding-top:0}\n.plist .p'
-    't{font-weight:600}\n.plist .pm{grid-column:2;font-size:13.5px;color:var(--muted)}\n.bars{display:grid;'
-    'gap:12px}\n.brow{display:grid;grid-template-columns:minmax(120px,36%) minmax(0,1fr) auto;gap:12px;ali'
-    'gn-items:center;font-size:14px}\n.brow .bl{min-width:0}\n.brow .bl small,.brow .bv small{display:block'
-    ';font-size:12.5px;font-weight:400;color:var(--muted)}\n.bt{height:10px;border-radius:999px;overflow:h'
-    'idden;background:var(--soft)}\n.bt i{display:block;height:100%;min-width:2px;border-radius:999px;back'
-    'ground:var(--chart)}\n.brow .bv{text-align:right;font-weight:700;white-space:nowrap}\n.brow.na .bv{fon'
-    't-weight:600;color:var(--muted)}\n#check-status .brow{grid-template-columns:minmax(150px,46%) minmax('
-    '0,1fr) auto}\n.wrap,.graph{overflow-x:auto;border-top:1px solid var(--line);background:linear-gradien'
-    't(90deg,var(--surface) 30%,rgba(255,255,255,0)) left / 36px 100% no-repeat local,linear-gradient(270'
-    'deg,var(--surface) 30%,rgba(255,255,255,0)) right / 36px 100% no-repeat local,radial-gradient(farthe'
-    'st-side at 0 50%,rgba(16,24,40,.18),rgba(16,24,40,0)) left / 14px 100% no-repeat scroll,radial-gradi'
-    'ent(farthest-side at 100% 50%,rgba(16,24,40,.18),rgba(16,24,40,0)) right / 14px 100% no-repeat scrol'
-    'l}\ntable{width:100%;border-collapse:collapse;font-size:14px;text-align:left}\nth{padding:10px 14px;ba'
-    'ckground:var(--soft);color:var(--title);font-size:12px;font-weight:700;letter-spacing:.04em;text-tra'
-    'nsform:uppercase;white-space:nowrap;border-bottom:1px solid var(--line);vertical-align:bottom}\ntd{pa'
-    'dding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}\ntbody tr:last-child td{borde'
-    'r-bottom:0}\ntbody tr:hover{background:var(--hover)}\ntable.dense{font-size:13.5px}\n.dense td,.dense t'
-    'h{padding-left:11px;padding-right:11px}\ntd.n,th.n{text-align:right;white-space:nowrap}\ntd.nw{white-s'
-    'pace:nowrap}\ntd.w{min-width:240px}\ntd.empty-cell{color:var(--muted)}\ntr.pg{display:none}\n.th-sort{al'
-    'l:unset;display:inline-flex;align-items:center;gap:4px;cursor:pointer}\n.th-sort:focus-visible{outlin'
-    'e:3px solid var(--focus);outline-offset:2px;border-radius:4px}\n.th-sort::after{content:"";width:0;he'
-    'ight:0;border:4px solid transparent;border-top-color:currentColor;opacity:.35;margin-top:4px}\nth[ari'
-    'a-sort="ascending"] .th-sort::after{border-top-color:transparent;border-bottom-color:currentColor;ma'
-    'rgin-top:-4px;opacity:1}\nth[aria-sort="descending"] .th-sort::after{opacity:1}\n.more-row{display:fle'
-    'x;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 12px;padding:12px;border-top:1px '
-    'solid var(--line)}\n.more-note{font-size:13px;color:var(--muted)}\n.stack b{display:block;font-weight:'
-    '600}\n.stack small{display:block;font-size:12.5px;color:var(--muted)}\n.mono{font-family:ui-monospace,'
-    '"Cascadia Mono",Consolas,monospace;font-size:12.5px}\n.nw{white-space:nowrap}\n.muted{color:var(--mute'
-    'd)}\n.fd p,.fr p{margin:3px 0 0}\n.fd p{font-size:13.5px;color:var(--muted)}\n.res b{display:block;font'
-    '-weight:600}\n.res small{display:block;font-size:12.5px;color:var(--muted)}\n.ext{display:inline-flex;'
-    'align-items:center;gap:4px;margin-top:3px;font-size:13px;font-weight:600;white-space:nowrap}\n.ext sv'
-    'g.i{width:13px;height:13px}\n.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}\n.chips span{p'
-    'adding:1px 8px;border-radius:7px;background:var(--soft);color:var(--muted);font-size:12px}\n.chips b{'
-    'color:var(--ink);font-weight:600}\ndetails.json{margin-top:6px;font-size:12.5px}\ndetails.json summary'
-    '{cursor:pointer;color:var(--link);font-weight:600}\ndetails.json pre{max-width:620px;max-height:260px'
-    ';overflow:auto;margin:6px 0 0;padding:10px;border-radius:8px;background:var(--soft);font:12px/1.45 u'
-    'i-monospace,"Cascadia Mono",Consolas,monospace;white-space:pre}\n.pill{display:inline-flex;align-item'
-    's:center;gap:6px;padding:2px 10px;border-radius:999px;font-size:12.5px;font-weight:700;line-height:1'
-    '.6;white-space:nowrap}\n.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:va'
-    'r(--d,currentColor)}\n.sev-critical{color:var(--crit-ink);background:var(--crit-bg);--d:var(--crit-ba'
-    'r)}\n.sev-high{color:var(--high-ink);background:var(--high-bg);--d:var(--high-bar)}\n.sev-medium{color'
-    ':var(--med-ink);background:var(--med-bg);--d:var(--med-bar)}\n.sev-low{color:var(--low-ink);backgroun'
-    'd:var(--low-bg);--d:var(--low-bar)}\n.sev-info,.tone-info{color:var(--info-ink);background:var(--info'
-    '-bg);--d:var(--info-bar)}\n.tone-ok{color:var(--ok-ink);background:var(--ok-bg);--d:var(--ok-bar)}\n.t'
-    'one-warn{color:var(--med-ink);background:var(--med-bg);--d:var(--med-bar)}\n.tone-crit{color:var(--cr'
-    'it-ink);background:var(--crit-bg);--d:var(--crit-bar)}\n.cls-OBSERVED{color:var(--obs-ink);background'
-    ':var(--obs-bg);--d:var(--obs-line)}\n.cls-INFERRED{color:var(--inf-ink);background:var(--inf-bg);--d:'
-    'var(--inf-line);outline:1px dashed var(--inf-line);outline-offset:-1px}\n.cls-UNKNOWN{color:var(--unk'
-    '-ink);background:var(--unk-bg);--d:transparent}\n.cls-UNKNOWN::before{box-shadow:inset 0 0 0 1.5px va'
-    'r(--unk-line)}\n.st{display:inline-flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600;w'
-    'hite-space:nowrap}\n.st::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--d)'
-    '}\n.st-failed{--d:var(--crit-bar)}\n.st-passed{--d:var(--ok-bar)}\n.st-not_evaluated{--d:var(--info-bar'
-    ')}\n.st-not_applicable{--d:transparent;color:var(--muted)}\n.st-not_applicable::before{box-shadow:inse'
-    't 0 0 0 2px var(--info-bar)}\n.tools{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:flex-end;p'
-    'adding:0 22px 16px}\n.field{display:grid;gap:4px;min-width:0;font-size:12.5px;font-weight:600;color:v'
-    'ar(--muted)}\n.field select,.field input{color:var(--ink);font-size:14px;font-weight:400}\n.field.grow'
-    '{flex:1 1 220px}\n.field.grow input{width:100%}\n.cls-sum{display:flex;flex-wrap:wrap;gap:8px;margin:-'
-    '4px 0 16px}\n.tabs{display:inline-flex;flex-wrap:wrap;gap:4px;margin:0 0 16px;padding:4px;background:'
-    'var(--soft);border:1px solid var(--line);border-radius:12px}\n.tabs button{min-height:40px;padding:0 '
-    '16px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-size:14px;font-weight'
-    ':600;cursor:pointer}\n.tabs button:hover{color:var(--title)}\n.tabs button[aria-selected="true"]{backg'
-    'round:var(--surface);color:var(--title);box-shadow:0 1px 2px rgba(16,24,40,.1),0 0 0 1px var(--line)'
-    '}\n.graph{padding:4px 22px 6px}\n.graph svg{display:block;width:100%;min-width:760px;height:auto}\n.g-c'
-    'ol{fill:var(--muted);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}\n.'
-    'g-node rect{fill:var(--surface);stroke:var(--line2);stroke-width:1.2}\n.g-node.ws rect{stroke:var(--b'
-    'rand-steel);stroke-width:2}\n.g-node.inf rect{fill:var(--inf-bg);stroke:var(--inf-line);stroke-dashar'
-    'ray:5 4}\n.g-l1{fill:var(--ink);font-size:12.5px;font-weight:600}\n.g-l2{fill:var(--muted);font-size:1'
-    '1px}\n.edge{fill:none;stroke:var(--edge);stroke-width:1.3;opacity:.75}\n.edge.inf{stroke:var(--inf-lin'
-    'e);stroke-dasharray:6 5;opacity:1}\n.arr.obs{fill:var(--edge)}\n.arr.inf{fill:var(--inf-line)}\n.g-lege'
-    'nd{display:flex;flex-wrap:wrap;gap:6px 20px;align-items:center;padding:10px 22px 16px;font-size:13px'
-    ';color:var(--muted)}\n.g-legend span{display:inline-flex;align-items:center;gap:8px}\n.g-legend svg{wi'
-    'dth:34px;height:10px}\n.ref-box rect{fill:var(--soft);stroke:var(--brand-steel);stroke-width:1.5;stro'
-    'ke-dasharray:6 4}\n.ref-t{fill:var(--title);font-size:13px;font-weight:700}\n.ref-s{fill:var(--muted);'
-    'font-size:11.5px}\n.ref-link{stroke:var(--brand-lava);stroke-width:2}\n.ref-flag rect{fill:var(--high-'
-    'bg)}\n.ref-flag text{fill:var(--high-ink);font-size:11px;font-weight:700;letter-spacing:.05em}\n.ref-n'
-    'ote{fill:var(--high-ink);font-size:12.5px;font-weight:600}\n.stat{font-size:34px;line-height:1.1;font'
-    '-weight:700;letter-spacing:-.02em;color:var(--title);margin:6px 0 4px}\n.stat small{font-size:15px;fo'
-    'nt-weight:600;color:var(--muted);letter-spacing:0}\n.stat.na{font-size:24px}\n.notes{margin:12px 0 0;p'
-    'adding-left:18px;font-size:13px;color:var(--muted)}\n.notes li + li{margin-top:4px}\n.plan{display:gri'
-    'd;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:16px;align-items:start}\n.st'
-    'eps{list-style:none;margin:12px 0 0;padding:0}\n.steps li{display:grid;grid-template-columns:28px min'
-    'max(0,1fr);gap:4px 12px;padding:12px 0;border-top:1px solid var(--line)}\n.steps .no{display:grid;pla'
-    'ce-items:center;width:28px;height:28px;border-radius:50%;background:var(--btn);color:var(--btn-ink);'
-    'font-size:13px;font-weight:700}\n.steps .sx{min-width:0}\n.steps .sx p{margin:4px 0 0;font-size:14px}\n'
-    '.steps .sm{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;margin-top:6px;font-size:12.5'
-    'px;color:var(--muted)}\n.steps .sm .ext{margin-top:0}\n.empty{display:flex;gap:12px;align-items:center'
-    ';color:var(--muted);font-size:14px}\n.empty svg.i{width:22px;height:22px;color:var(--ok-bar)}\n.dl2{di'
-    'splay:grid;grid-template-columns:minmax(150px,220px) minmax(0,1fr);gap:10px 20px;margin:0;font-size:'
-    '14px}\n.dl2 dt{color:var(--muted)}\n.dl2 dd{margin:0}\n.dl2 ul{margin:0;padding-left:18px}\n.state-card{'
-    'max-width:1320px;margin:28px auto;padding:20px 22px;border:1px solid var(--crit-bar);border-radius:1'
-    '6px;background:var(--crit-bg);color:var(--crit-ink)}\n.state-card h2{margin:0 0 6px;font-size:20px}\n.'
-    'state-card p{margin:0;color:var(--ink)}\n.state-card dl{margin:12px 0 0;color:var(--ink)}\n.hero h1,.s'
-    'h h2,.signal b{font-family:var(--display,inherit)}\nhtml.brand-font .hero h1{font-weight:600;letter-s'
-    'pacing:0;font-size:clamp(32px,3.6vw,48px);line-height:1.08}\nhtml.brand-font .sh h2{font-weight:600;l'
-    'etter-spacing:0;font-size:27px}\nhtml.brand-font .signal b{font-weight:600;letter-spacing:0;font-size'
-    ':28px}\n.client-logo{display:none}\nhtml.brand-bar .brand .mark,html.brand-bar .wordmark{display:none}'
-    '\nhtml.brand-bar .client-logo{display:block;height:30px;width:auto;max-width:200px}\nhtml.brand-bar .p'
-    'roduct{padding-left:16px;border-left-color:var(--line)}\nhtml.brand-bar .brand-ribbon,html.brand-bar '
-    '#plaque-block{display:none}\nhtml.brand-bar .bar{box-shadow:none;border-bottom:3px solid var(--brand-'
-    'rule,var(--btn))}\nhtml.branded .foot{max-width:none;margin:0;padding:18px clamp(14px,3vw,40px) 28px;'
-    'border-top:0;background:var(--foot-bg,transparent);color:var(--foot-ink,var(--muted))}\n.cost-head{di'
-    'splay:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:22px 40px;align-items:start}\n.cst'
-    'ats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 28px}\n.cstat .k{font-size:13'
-    'px;font-weight:600;color:var(--muted)}\n.cstat .n{margin-top:4px;font-size:30px;line-height:1.08;font'
-    '-weight:700;letter-spacing:-.02em;color:var(--title);white-space:nowrap}\n.cstat .n small{margin-left'
-    ':5px;font-size:14px;font-weight:600;letter-spacing:0;color:var(--muted)}\n.cstat .d{margin-top:5px;fo'
-    'nt-size:13px;color:var(--muted)}\n.up{color:var(--up-ink);font-weight:600}\n.down{color:var(--down-ink'
-    ');font-weight:600}\n.cost-trend h4{margin:0 0 10px;font-size:13px;font-weight:600;color:var(--muted)}'
-    '\n.mrow{display:grid;grid-template-columns:minmax(92px,auto) minmax(0,1fr) auto;gap:12px;align-items:'
-    'center;padding:6px 0;font-size:13.5px}\n.mrow .ml{font-weight:600;white-space:nowrap}\n.mrow .ml small'
-    '{display:block;font-size:12px;font-weight:400;color:var(--muted)}\n.mrow .mv{text-align:right;font-we'
-    'ight:700;white-space:nowrap}\n.strack{display:flex;height:14px;border-radius:999px;overflow:hidden;ba'
-    'ckground:var(--soft)}\n.strack i{display:block;height:100%}\n.seg-dbu{background:var(--chart)}\n.seg-in'
-    'fra{background:var(--chart-2)}\n.mrow.partial .strack i{background-image:repeating-linear-gradient(13'
-    '5deg,rgba(255,255,255,.5) 0 4px,rgba(255,255,255,0) 4px 8px)}\n.keys{display:flex;flex-wrap:wrap;gap:'
-    '4px 16px;margin-top:8px;font-size:12.5px;color:var(--muted)}\n.keys span{display:inline-flex;align-it'
-    'ems:center;gap:6px}\n.keys i{display:inline-block;width:10px;height:10px;border-radius:3px}\n.vm-sizes'
-    '{margin-top:16px;padding-top:12px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)'
-    '}\n.vm-sizes .chips{margin-top:6px}\n.cost-tabs{margin:0 22px 14px}\n.movers{display:grid;grid-template'
-    '-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:0 36px}\n.movers h4{margin:4px 0 2px;font-s'
-    'ize:13px;font-weight:600;color:var(--muted)}\n.mover{display:grid;grid-template-columns:minmax(0,1fr)'
-    ' auto;gap:2px 14px;padding:10px 0;border-top:1px solid var(--line);font-size:14px}\n.mover b{font-wei'
-    'ght:600;overflow-wrap:anywhere}\n.mover .dv{text-align:right;font-weight:700;white-space:nowrap}\n.mov'
-    'er small{font-size:12.5px;color:var(--muted)}\n.gapn{display:flex;flex-wrap:wrap;align-items:baseline'
-    ';gap:4px 12px;margin:2px 0 14px}\n.gapn b{font-size:30px;line-height:1.1;font-weight:700;letter-spaci'
-    'ng:-.02em;color:var(--title)}\n.gapn span{font-size:14px;color:var(--muted)}\n.sav{font-weight:700;whi'
-    'te-space:nowrap}\n.sav small{display:block;font-size:12px;font-weight:400;color:var(--muted);white-sp'
-    'ace:normal}\n.sav.nc{font-weight:600;color:var(--muted)}\n.legacy-sum{display:flex;flex-wrap:wrap;gap:'
-    '6px 28px;align-items:baseline;padding:0 22px 14px}\n.legacy-sum .stat{margin:0}\n.legacy-sum .notes{ma'
-    'rgin:0;max-width:80ch}\n.sys-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px'
-    ' 40px;margin-top:20px}\n.sys-grid h4,.sys-h{margin:0 0 8px;font-size:13px;font-weight:600;color:var(-'
-    '-muted)}\n.sys-h{margin-top:14px}\n.sys-wrap{margin:0 -22px;border-bottom:1px solid var(--line)}\n#sec-'
-    'finops .bars{grid-template-columns:minmax(120px,36%) minmax(0,1fr) auto;column-gap:12px}\n#sec-finops'
-    ' .bars>*{grid-column:1 / -1}\n#sec-finops .bars>.brow{grid-template-columns:subgrid}\n.h3row{display:f'
-    'lex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-bottom:4px}\n.h3row h3{margin:0}\n@media (ma'
-    'x-width:1400px){#workspace-error-view,#opening-state{margin:28px clamp(14px,3vw,40px)}}\n.foot{max-wi'
-    'dth:1320px;margin:0 auto;padding:20px 0 40px;border-top:1px solid var(--line);color:var(--muted);fon'
-    't-size:13px}\n@media (max-width:1400px){.foot{margin:0 clamp(14px,3vw,40px)}}\n@media (max-width:1360p'
-    'x){.bar-nav,.tag{display:none} .toc{display:block}}\n@media (max-width:1040px){.hero-in{grid-template'
-    '-columns:1fr} .hero-side{grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))} .produc'
-    't{display:none} .cost-head,.sys-grid{grid-template-columns:minmax(0,1fr)}}\n@media (max-width:720px){'
-    '\n.btn .lbl{display:none}\n.btn{padding:0 11px}\n.acts{gap:6px}\n.hero{padding-bottom:92px}\n.lead{font-s'
-    'ize:16px}\n.brand-plaque{min-height:52px}\n.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10p'
-    'x}\n.kpi{padding:14px 16px}\n.kpi .v{font-size:27px}\n.brow,#check-status .brow{grid-template-columns:m'
-    'inmax(0,1fr) auto}\n.brow .bt{grid-column:1 / -1;grid-row:2}\n.tools,.card-head,.g-legend{padding-left'
-    ':16px;padding-right:16px}\n.graph{padding-left:16px;padding-right:16px}\n.card{padding:16px}\n.card.fla'
-    't{padding:0}\n.dl2{grid-template-columns:1fr;gap:2px 0}\n.dl2 dd + dt{margin-top:10px}\n.cost-tabs{marg'
-    'in-left:16px;margin-right:16px}\n.sys-wrap{margin:0 -16px}\n#sec-finops .bars{grid-template-columns:mi'
-    'nmax(0,1fr) auto}\n.legacy-sum{padding-left:16px;padding-right:16px}\n.cstats{gap:16px 18px}\n.cstat .n'
-    '{font-size:25px}\nhtml.brand-font .hero h1{font-size:30px}\nhtml.brand-font .sh h2{font-size:24px}\n}\n@'
-    'media (max-width:420px){.wordmark{font-size:15px} .brand .mark{width:26px;height:26px} .btn.icon,.ac'
-    'ts .btn{width:38px;min-height:38px;padding:0}}\n@media (max-width:360px){.bar{gap:8px} .acts{gap:4px}'
-    ' .brand{flex:0 1 auto;min-width:0} .wordmark{overflow:hidden;text-overflow:ellipsis}}\n@media (prefer'
-    's-reduced-motion:reduce){*{transition:none !important;scroll-behavior:auto !important}}\n@page{size:A'
-    '4;margin:14mm 12mm 16mm}\n@media print{\n*{-webkit-print-color-adjust:exact;print-color-adjust:exact}\n'
-    'html,body{background:#ffffff;font-size:12px}\n.bar,.skip,.tools,.more-row,.tabs,.ws-select,details.js'
-    'on{display:none !important}\n.multi-band{border:0}\n.hero{padding:22px 24px 74px;border-radius:14px}\n.'
-    'hero-in{grid-template-columns:minmax(0,1fr) 210px;gap:14px 26px}\n.hero-side{grid-template-columns:1f'
-    'r}\n.hero h1{font-size:25px}\n.lead{font-size:12.5px}\n.signal b{font-size:19px}\n.page{padding:0}\n.kpis'
-    '{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:-54px}\n.kpi{padding:12px 14px;box'
-    '-shadow:none}\n.kpi .v{font-size:24px}\n.card{box-shadow:none;break-inside:avoid}\n.card.flat{break-ins'
-    'ide:auto}\n.grid2{grid-template-columns:1fr 1fr}\n.plan{grid-template-columns:1fr}\n.plan .card{break-i'
-    'nside:auto}\n.steps .sx b,.plist .pt{font-size:12px}\n.steps .sx p,.msgs li,.brow{font-size:11.5px}\n.p'
-    'list .pm,.steps .sm,.brow small,.facts dt,.facts dd small{font-size:10.5px}\n.facts dd{font-size:12px'
-    '}\n.chapter{margin-top:24px}\n.sh{break-after:avoid;break-inside:avoid}\n.card-head{display:block;break'
-    '-after:avoid;break-inside:avoid}\n.card-head p{margin-top:2px}\n.sh::after,.card-head::after{content:"'
-    '";display:block;height:150px;margin-bottom:-150px}\n.sh p{font-size:12px}\ntr,.kpi,.signal,.brow,.step'
-    's li,.plist li{break-inside:avoid}\nthead{display:table-header-group}\ntr.pg{display:table-row !import'
-    'ant}\n.wrap,.graph{overflow:visible;background:none}\ntable,table.dense{font-size:10.5px}\ntd,th,.dense'
-    ' td,.dense th{padding:5px 7px}\ntd{overflow-wrap:break-word}\ntd .mono,td.w,.chips span{overflow-wrap:'
-    'anywhere}\ntd small,td p,td .ext,td .st,td .pill,.chips span,.card td small,.card td p{font-size:9.5p'
-    'x}\nth[data-label] .th-sort{display:none}\nth[data-label]::before{content:attr(data-label)}\ntd .pill{p'
-    'adding:1px 7px;gap:4px}\ntd .pill::before{width:5px;height:5px}\n.sh h2{font-size:18px}\n.card h3{font-'
-    'size:13.5px}\n.card .sub,.card-head p,.notes,.dl2{font-size:10.5px}\nth{font-size:9px;white-space:norm'
-    'al}\ntd.nw,td .nw{white-space:normal}\ntd.w{min-width:0}\n.mono{font-size:9.5px}\n.graph svg{min-width:0'
-    '}\n[hidden].print-show{display:block !important}\na{color:inherit;text-decoration:none}\n.foot{padding:'
-    '14px 0 0}\n.cost-head{grid-template-columns:1.25fr 1fr;gap:12px 24px}\n.cstat .n{font-size:20px}\n.csta'
-    't .d,.mrow,.mover,.keys,.vm-sizes{font-size:10.5px}\n.gapn b{font-size:20px}\n.sys-grid{grid-template-'
-    'columns:1fr 1fr}\n.brow .bl small,.brow .bv small{font-size:10.5px}\n.mrow,.mover,.cstat{break-inside:'
-    'avoid}\nhtml.brand-font .hero h1{font-size:28px}\nhtml.brand-font .sh h2{font-size:20px}\nhtml.branded '
-    '.foot{background:none;color:#475467}\n}\n</style>\n</head>\n<body>\n<a class="skip" href="#main-document"'
-    '>Skip to main content</a>\n<header class="bar">\n  <a class="brand" href="#sec-cover">\n    <svg class='
-    '"mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" '
-    'fill="#003865"/><path d="M16 7.5l9 4.6-9 4.6-9-4.6z" fill="#ff3621"/><path d="M7 16.4l9 4.6 9-4.6M7 '
-    '20.8l9 4.6 9-4.6" fill="none" stroke="#ffffff" stroke-width="1.9" stroke-linejoin="round"/></svg>\n  '
-    '  <span class="wordmark">Azure SRE Agent</span>\n    <span class="product" id="bar-product">Azure Dat'
-    'abricks dependencies</span>\n  </a>\n  <nav class="bar-nav" aria-label="Report contents" id="bar-nav">'
-    '\n    <a href="#sec-dependencies">Dependencies</a>\n    <a href="#sec-inventory">Inventory</a>\n    <a '
-    'href="#sec-findings">Findings</a>\n    <a href="#sec-finops">Costs</a>\n    <a href="#sec-actions">Pla'
-    'n</a>\n    <a href="#sec-sources">Sources</a>\n  </nav>\n  <div class="acts">\n    <details class="menu '
-    'toc">\n      <summary class="btn ghost" aria-label="Contents"><svg class="i" viewBox="0 0 24 24" aria'
-    '-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="lbl">Contents'
-    '</span></summary>\n      <nav class="menu-pop" aria-label="Contents" id="toc-menu">\n        <a href="'
-    '#sec-cover">1. Cover and provenance</a>\n        <a href="#sec-executive">2. Executive summary and WA'
-    'F</a>\n        <a href="#sec-dependencies">3. Dependency map</a>\n        <a href="#sec-inventory">4. '
-    'Lakehouse and ARM inventory</a>\n        <a href="#sec-findings">5. Findings and rules</a>\n        <a'
-    ' href="#sec-finops">6. Databricks costs</a>\n        <a href="#sec-actions">7. Action plan</a>\n      '
-    '  <a href="#sec-sources">8. Sources and methodology</a>\n      </nav>\n    </details>\n    <span class='
-    '"tag">Read-only</span>\n    <button type="button" class="btn ghost icon" id="theme-toggle" aria-press'
-    'ed="false" title="Dark mode"><svg class="i moon" viewBox="0 0 24 24" aria-hidden="true" focusable="f'
-    'alse"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg><svg class="i sun" viewBox="0 0 2'
-    '4 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4'
-    '.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span clas'
-    's="sr">Dark mode</span></button>\n    <details class="menu" id="export-menu">\n      <summary class="b'
-    'tn ghost" aria-label="Export"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false'
-    '"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span class="lbl">Export</span></summary>\n      <di'
-    'v class="menu-pop">\n        <button type="button" id="export-json-btn">Full snapshot (JSON)<small>No'
-    'rmalized model embedded in this report</small></button>\n        <button type="button" id="export-dep'
-    's-csv-btn">Dependencies (CSV)<small>Workspace nodes, relationships and blind spots</small></button>\n'
-    '        <button type="button" id="export-findings-csv-btn">Checks (CSV)<small>Every evaluated rule w'
-    'ith its evidence</small></button>\n        <button type="button" id="export-costs-csv-btn">Cost by wo'
-    "rkload (CSV)<small>The month's clusters, jobs, warehouses, pools and tags</small></button>\n        <"
-    'button type="button" id="export-signals-csv-btn">Optimization signals (CSV)<small>Each signal with i'
-    'ts cost and estimated savings</small></button>\n      </div>\n    </details>\n    <button type="button"'
-    ' class="btn" id="print-btn"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'
-    '<path d="M7 9V3h10v6M7 18H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M7 14h'
-    '10v7H7z"/></svg><span class="lbl">Print / PDF</span></button>\n  </div>\n</header>\n<div class="brand-r'
-    'ibbon" aria-hidden="true"><span class="navy"></span><span class="lava"></span><span class="steel"></'
-    'span><span class="teal"></span></div>\n<div class="multi-band" id="multi-overview" hidden>\n  <div cla'
-    'ss="band-in">\n    <p id="multi-summary"></p>\n    <label class="ws-select" id="workspace-selector-wra'
-    'p" hidden>Workspace\n      <select id="workspace-selector" aria-label="Select workspace"></select>\n  '
-    '  </label>\n  </div>\n</div>\n<main id="main-document" tabindex="-1">\n  <div id="opening-state" class="'
-    'state-card" role="alert" hidden></div>\n  <div id="workspace-error-view" class="state-card" role="ale'
-    'rt" hidden></div>\n  <div id="report-body" hidden>\n    <section class="hero" id="sec-cover" aria-labe'
-    'lledby="cover-title">\n      <div class="hero-in">\n        <div>\n          <h1 id="cover-title">Azure'
-    ' Databricks architecture, dependency and configuration review</h1>\n          <p class="lead" id="cov'
-    'er-lead"></p>\n          <div class="meta" id="cover-badges"></div>\n        </div>\n        <aside cla'
-    'ss="hero-side" aria-label="Customer and verdict">\n          <div id="plaque-block">\n            <p c'
-    'lass="plaque-k">Prepared for</p>\n            <div class="brand-plaque" id="brand-plaque"></div>\n    '
-    '        <p class="client-name" id="client-name-label"></p>\n          </div>\n          <div class="si'
-    'gnal" id="verdict"></div>\n        </aside>\n        <div class="dist" id="severity-dist"></div>\n     '
-    ' </div>\n    </section>\n    <div class="page">\n      <div class="kpis" id="kpis"></div>\n      <div id'
-    '="notices"></div>\n\n      <section class="chapter" id="sec-identity" aria-labelledby="h-identity">\n  '
-    '      <div class="sh"><h2 id="h-identity">1. Workspace, identity and provenance</h2><p>Which workspa'
-    'ce was reviewed, with which identity and from which tenant: the context behind every figure in this '
-    'report.</p></div>\n        <div class="card"><dl class="facts" id="cover-facts"></dl></div>\n      </s'
-    'ection>\n\n      <section class="chapter" id="sec-executive" aria-labelledby="h-exec">\n        <div cl'
-    'ass="sh"><h2 id="h-exec">2. Executive summary, coverage and local indicators</h2><p>The local index '
-    'measures only the rules evaluated on observed evidence. It never replaces an official Microsoft Well'
-    '-Architected assessment or hides sources that weren\'t evaluated.</p></div>\n        <div class="grid2'
-    '">\n          <div class="card"><h3>Executive summary</h3><p class="sub">The key points of this revie'
-    'w, starting with cost.</p><ul class="msgs" id="executive-messages"></ul></div>\n          <div class='
-    '"card"><h3>Check distribution</h3><p class="sub">Status of each local rule against the observed evid'
-    'ence.</p><div class="bars" id="check-status"></div></div>\n          <div class="card"><h3>Breakdown '
-    'by area</h3><p class="sub">Local index by review area, beside its evaluated coverage.</p><div class='
-    '"bars" id="area-scores"></div></div>\n          <div class="card"><h3>Breakdown by Well-Architected p'
-    'illar</h3><p class="sub">The same calculation grouped by pillar; not an official WAF score.</p><div '
-    'class="bars" id="pillar-scores"></div></div>\n        </div>\n        <div class="card" style="margin-'
-    'top:16px"><h3>Observed critical and high-severity priorities</h3><p class="sub">Failed checks with c'
-    'ritical or high severity, with the affected object and its evidence.</p><ul class="plist" id="priori'
-    'ty-findings"></ul></div>\n      </section>\n\n      <section class="chapter" id="sec-dependencies" aria'
-    '-labelledby="h-deps">\n        <div class="sh"><h2 id="h-deps">3. Dependency map and Lakehouse archit'
-    'ecture</h2><p>Each relationship is explicitly classified as <strong>OBSERVED</strong> (exact native '
-    'ID/key join confirmed in the APIs), <strong>INFERRED</strong> (explicit URI/host reference to a reso'
-    "urce not collected in ARM) or <strong>UNKNOWN</strong> (runtime lineage, or a scope that can't be re"
-    'ad without starting compute).</p></div>\n        <div class="cls-sum" id="dep-class-summary"></div>\n '
-    '       <div class="tabs" role="tablist" aria-label="Architecture and dependency views">\n          <b'
-    'utton type="button" role="tab" id="tab-dep-observed" aria-selected="true" aria-controls="panel-dep-o'
-    'bserved">Observed and inferred dependency map</button>\n          <button type="button" role="tab" id'
-    '="tab-dep-reference" aria-selected="false" aria-controls="panel-dep-reference" tabindex="-1">Referen'
-    'ce proposal - NOT deployed</button>\n        </div>\n        <div id="panel-dep-observed" class="print'
-    '-show" role="tabpanel" aria-labelledby="tab-dep-observed">\n          <div class="card flat">\n       '
-    '     <div class="card-head"><h3>Neighborhood graph</h3><p id="dep-graph-note"></p></div>\n           '
-    ' <div class="tools">\n              <label class="field">Layer\n                <select id="dep-layer-'
-    'filter">\n                  <option value="all">All layers</option>\n                  <option value="'
-    'control_plane">Control plane (ARM)</option>\n                  <option value="compute">Compute (clust'
-    'ers / pools / warehouses)</option>\n                  <option value="orchestration">Orchestration (jo'
-    'bs / tasks / pipelines)</option>\n                  <option value="governance">Governance (Unity Cata'
-    'log / secret scopes)</option>\n                  <option value="associated_resource">Associated Azure'
-    ' resources</option>\n                </select>\n              </label>\n              <label class="fie'
-    'ld">Classification\n                <select id="dep-class-filter">\n                  <option value="a'
-    'll">All (OBSERVED / INFERRED / UNKNOWN)</option>\n                  <option value="OBSERVED">OBSERVED'
-    ' (exact native join)</option>\n                  <option value="INFERRED">INFERRED (URI/host referenc'
-    'e)</option>\n                  <option value="UNKNOWN">UNKNOWN (explicit blind spot)</option>\n       '
-    '         </select>\n              </label>\n              <label class="field grow">Search node / work'
-    'load\n                <input type="search" id="dep-search-filter" placeholder="Job, cluster, catalog,'
-    ' ADLS account…">\n              </label>\n              <button type="button" class="btn ghost" id="de'
-    'p-clear">Clear filters</button>\n            </div>\n            <div class="graph" id="dep-graph-box"'
-    '></div>\n            <div class="g-legend" aria-hidden="true">\n              <span><svg viewBox="0 0 '
-    '34 10"><line x1="1" y1="5" x2="33" y2="5" class="edge"/></svg>OBSERVED · native join</span>\n        '
-    '      <span><svg viewBox="0 0 34 10"><line x1="1" y1="5" x2="33" y2="5" class="edge inf"/></svg>INFE'
-    'RRED · URI/host not in the ARM inventory</span>\n              <span id="dep-graph-caption"></span>\n '
-    '           </div>\n          </div>\n          <div class="stack-gap" style="margin-top:16px">\n       '
-    '     <div class="card flat"><div class="card-head"><h3>Dependency relationships (<span id="dep-edges'
-    '-count">0</span>)</h3><p>Source, relationship and target with the exact join fields.</p></div><div c'
-    'lass="wrap"><table class="dense" id="dep-edges-table"></table></div></div>\n            <div class="c'
-    'ard flat"><div class="card-head"><h3>Graph nodes (<span id="dep-nodes-count">0</span>)</h3><p>Each o'
-    'bject with its source and an evidence summary.</p></div><div class="wrap"><table class="dense" id="d'
-    'ep-nodes-table"></table></div></div>\n            <div class="card flat"><div class="card-head"><h3>U'
-    'NKNOWN blind spots and scopes (<span id="dep-unknowns-count">0</span>)</h3><p>What this review can\'t'
-    ' see without running compute or reading code.</p></div><div class="wrap"><table class="dense" id="de'
-    'p-unknowns-table"></table></div></div>\n            <div class="card flat"><div class="card-head"><h3'
-    '>Broken references found (<span id="dep-broken-count">0</span>)</h3><p>Referenced identifiers that d'
-    'on\'t exist in the observed inventory.</p></div><div class="wrap"><table class="dense" id="dep-broken'
-    '-table"></table></div></div>\n          </div>\n        </div>\n        <div id="panel-dep-reference" c'
-    'lass="print-show" role="tabpanel" aria-labelledby="tab-dep-reference" hidden>\n          <div class="'
-    'card flat">\n            <div class="card-head"><h3>Azure Databricks Lakehouse reference architecture'
-    ' — proposal NOT deployed</h3><p>Baseline recommended by Microsoft and the Databricks Well-Architecte'
-    "d Lakehouse. <strong>It doesn't represent resources deployed in the customer's environment.</strong>"
-    '</p></div>\n            <div class="graph" id="ref-arch-box"></div>\n            <div class="wrap"><ta'
-    'ble id="ref-arch-table"></table></div>\n          </div>\n        </div>\n      </section>\n\n      <sect'
-    'ion class="chapter" id="sec-inventory" aria-labelledby="h-inv">\n        <div class="sh"><h2 id="h-in'
-    'v">4. Workspace, compute, orchestration, Unity Catalog and associated resource inventory</h2><p>The '
-    'objects the rules are evaluated on. Each row comes from an API read recorded in section 8.</p></div>'
-    '\n        <div class="stack-gap">\n          <div class="card flat"><div class="card-head"><h3>All-pur'
-    'pose clusters, job clusters, instance pools and cluster policies</h3><p id="inv-compute-count"></p><'
-    '/div><div class="wrap"><table class="dense" id="inv-compute-table"></table></div></div>\n          <d'
-    'iv class="card flat"><div class="card-head"><h3>Jobs, task DAGs, declarative pipelines (Lakeflow / D'
-    'LT) and SQL warehouses</h3><p id="inv-orchestration-count"></p></div><div class="wrap"><table class='
-    '"dense" id="inv-orchestration-table"></table></div></div>\n          <div class="card flat"><div clas'
-    's="card-head"><h3>Unity Catalog (metastore, catalogs, schemas, storage credentials, external locatio'
-    'ns, connections) and secret scopes</h3><p id="inv-uc-count"></p></div><div class="wrap"><table class'
-    '="dense" id="inv-uc-table"></table></div></div>\n          <div class="card flat"><div class="card-he'
-    'ad"><h3>Associated Azure resources and control-plane outbound dependency endpoints</h3><p id="inv-re'
-    'sources-count"></p></div><div class="wrap"><table class="dense" id="inv-resources-table"></table></d'
-    'iv></div>\n        </div>\n      </section>\n\n      <section class="chapter" id="sec-findings" aria-lab'
-    'elledby="h-find">\n        <div class="sh"><h2 id="h-find">5. Findings and detailed rule evaluation</'
-    'h2><p>Each local check with its status, the observed evidence and the recommendation. Failed checks '
-    'come first; filter, sort by column and export.</p></div>\n        <div class="card flat">\n          <'
-    'div class="card-head"><h3>Check register</h3><p id="findings-count-label"></p></div>\n          <div '
-    'class="tools">\n            <label class="field">Area\n              <select id="find-area-filter">\n  '
-    '              <option value="all">All</option>\n                <option value="best_practices">Best p'
-    'ractices</option>\n                <option value="security">Security</option>\n                <option'
-    ' value="finops">FinOps</option>\n                <option value="optimization">Optimization</option>\n '
-    '             </select>\n            </label>\n            <label class="field">Level\n              <se'
-    'lect id="find-level-filter">\n                <option value="all">All</option>\n                <optio'
-    'n value="workspace">Workspace / governance</option>\n                <option value="workload">Workloa'
-    'd (compute / jobs / SQL)</option>\n                <option value="resource">Associated Azure resource'
-    '</option>\n              </select>\n            </label>\n            <label class="field">Severity\n   '
-    '           <select id="find-sev-filter">\n                <option value="all">All</option>\n          '
-    '      <option value="critical">Critical</option>\n                <option value="high">High</option>\n'
-    '                <option value="medium">Medium</option>\n                <option value="low">Low</opti'
-    'on>\n              </select>\n            </label>\n            <label class="field">Status\n           '
-    '   <select id="find-status-filter">\n                <option value="all">All</option>\n               '
-    ' <option value="failed">Failed</option>\n                <option value="passed">Passed</option>\n     '
-    '           <option value="not_evaluated">Not evaluated</option>\n                <option value="not_a'
-    'pplicable">Not applicable</option>\n              </select>\n            </label>\n            <label c'
-    'lass="field grow">Search resource / workload\n              <input type="search" id="find-search-filt'
-    'er" placeholder="Filter by rule, job, cluster…">\n            </label>\n            <button type="butt'
-    'on" class="btn ghost" id="find-clear">Clear</button>\n            <button type="button" class="btn gh'
-    'ost" id="find-export-btn"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><p'
-    'ath d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Filtered CSV</button>\n          </div>\n          <div c'
-    'lass="wrap"><table class="dense" id="findings-table"></table></div>\n        </div>\n      </section>\n'
-    '\n      <section class="chapter" id="sec-finops" aria-labelledby="h-finops">\n        <div class="sh">'
-    '<h2 id="h-finops">6. Databricks costs: where they come from and how to optimize them</h2><p id="cost'
-    '-intro">The month\'s cost in Cost Management, split by the tags Databricks puts on each cluster, job,'
-    ' SQL warehouse and pool, and the configuration changes that would reduce it.</p></div>\n        <div '
-    'id="cost-empty" hidden></div>\n        <div id="cost-body">\n          <div id="cost-data">\n          '
-    '<div class="card cost-head">\n            <div class="cstats" id="cost-stats"></div>\n            <div'
-    ' class="cost-trend" id="cost-trend"></div>\n          </div>\n          <div class="grid2" style="marg'
-    'in-top:16px">\n            <div class="card"><h3>DBU by compute type</h3><p class="sub" id="cost-dbu-'
-    'sub">What Databricks bills per processing unit, by workload type.</p><div class="bars" id="cost-dbu-'
-    'bars"></div></div>\n            <div class="card"><h3>Infrastructure by service</h3><p class="sub" id'
-    '="cost-infra-sub">Virtual machines, disks and network that the workspace uses in your subscription.<'
-    '/p><div class="bars" id="cost-infra-bars"></div><div class="vm-sizes" id="cost-vm-sizes"></div></div'
-    '>\n          </div>\n          <div class="card flat" style="margin-top:16px">\n            <div class='
-    '"card-head"><h3>Who consumes it</h3><p id="cost-attr-note"></p></div>\n            <div class="tabs c'
-    'ost-tabs" role="tablist" aria-label="Cost attribution" id="cost-tabs"></div>\n            <div class='
-    '"tools">\n              <label class="field grow">Search\n                <input type="search" id="cos'
-    't-attr-search" placeholder="Cluster, job, warehouse, pool or tag value…">\n              </label>\n   '
-    '           <button type="button" class="btn ghost" id="cost-attr-export"><svg class="i" viewBox="0 0'
-    ' 24 24" aria-hidden="true" focusable="false"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Attribut'
-    'ion CSV</button>\n            </div>\n            <div class="wrap" role="tabpanel" id="cost-attr-pane'
-    'l" aria-labelledby="cost-tab-cluster"><table class="dense" id="cost-attr-table"></table></div>\n     '
-    '     </div>\n          <div class="grid2" style="margin-top:16px">\n            <div class="card"><h3>'
-    'What no tag explains</h3><p class="sub">Cost without the <span class="mono">Vendor</span> tag that D'
-    'atabricks puts on all classic compute: shared workspace services and serverless compute.</p><div id='
-    '"cost-gap"></div></div>\n            <div class="card"><h3>Coverage of your tags</h3><p class="sub" i'
-    'd="cost-tags-sub">Share of the month\'s cost that carries each configured allocation tag.</p><div cla'
-    'ss="bars" id="cost-tag-bars"></div><ul class="notes" id="cost-tag-notes"></ul></div>\n          </div'
-    '>\n          <div class="card" style="margin-top:16px"><h3>What changed from the previous month</h3><'
-    'p class="sub" id="cost-movers-sub">Clusters, jobs, SQL warehouses and pools with the largest change.'
-    '</p><div class="movers" id="cost-movers"></div></div>\n          </div>\n          <div class="card fl'
-    'at" style="margin-top:16px">\n            <div class="card-head"><h3>How to optimize it</h3><p id="co'
-    'st-signals-count"></p></div>\n            <div class="tools">\n              <label class="field">Seve'
-    'rity\n                <select id="cost-sig-sev">\n                  <option value="all">All</option>\n '
-    '                 <option value="high">High</option>\n                  <option value="medium">Medium<'
-    '/option>\n                  <option value="low">Low</option>\n                </select>\n              '
-    '</label>\n              <label class="field">Savings\n                <select id="cost-sig-saving">\n  '
-    '                <option value="all">All signals</option>\n                  <option value="with">With'
-    ' estimated savings</option>\n                </select>\n              </label>\n              <label cl'
-    'ass="field grow">Search\n                <input type="search" id="cost-sig-search" placeholder="Signa'
-    'l, cluster, job, warehouse…">\n              </label>\n              <button type="button" class="btn '
-    'ghost" id="cost-sig-export"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'
-    '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Filtered CSV</button>\n            </div>\n            '
-    '<div class="wrap"><table class="dense" id="cost-signals-table"></table></div>\n          </div>\n     '
-    '     <div class="card" style="margin-top:16px" id="cost-system"></div>\n          <div class="card" s'
-    'tyle="margin-top:16px">\n            <h3>Method, assumptions and cost sources</h3>\n            <p cla'
-    'ss="sub">How each figure in this section is calculated. No query starts compute or changes anything.'
-    '</p>\n            <dl class="dl2" id="cost-method"></dl>\n          </div>\n        </div>\n        <div'
-    ' class="card flat legacy-cost" style="margin-top:16px" id="finops-legacy">\n          <div class="car'
-    'd-head"><h3>ARM cost of the approved scope (<span class="mono">cost_scope</span>)</h3><p id="finops-'
-    'cost-window"></p></div>\n          <div class="legacy-sum"><div class="stat" id="finops-actual-cost">'
-    '</div><ul class="notes" id="finops-cost-note"></ul></div>\n          <div class="wrap"><table class="'
-    'dense" id="finops-cost-table"></table></div>\n        </div>\n      </section>\n\n      <section class="'
-    'chapter" id="sec-actions" aria-labelledby="h-actions">\n        <div class="sh"><h2 id="h-actions">7.'
-    ' Prioritized action plan for human review</h2><p>The Quick win (&lt;1 week), Short term (1-3 months)'
-    ' and Medium term horizons are indicative planning categories, not delivery commitments or automatic '
-    'changes.</p></div>\n        <div class="plan" id="actions-plan"></div>\n      </section>\n\n      <secti'
-    'on class="chapter" id="sec-sources" aria-labelledby="h-sources">\n        <div class="sh"><h2 id="h-s'
-    'ources">8. Source ledger, HTTP receipts and methodological limits</h2><p>Which sources were read, wi'
-    'th what result, and what is out of scope. Read the local index only together with this coverage.</p>'
-    '</div>\n        <div class="card flat">\n          <div class="card-head"><h3>Source coverage</h3><p i'
-    'd="sources-summary"></p></div>\n          <div class="bars" id="sources-bars" style="padding:0 22px 1'
-    '6px"></div>\n          <div class="wrap"><table class="dense" id="sources-table"></table></div>\n     '
-    '   </div>\n        <div class="card" style="margin-top:16px">\n          <h3>Method and interpretation'
-    '</h3>\n          <p class="sub">How each indicator is calculated and what this review can\'t claim.</p'
-    '>\n          <dl class="dl2" id="method-notes"></dl>\n          <h3 style="margin-top:18px">Limitation'
-    's and interpretation rules</h3>\n          <ul class="notes" id="methodology-limitations"></ul>\n     '
-    '   </div>\n      </section>\n    </div>\n  </div>\n</main>\n<footer class="foot" id="report-footer"></foo'
-    'ter>\n<script type="application/json" id="report-data">__REPORT_DATA_JSON__</script>\n<script>\n(functi'
-    'on () {\n  "use strict";\n  var SVGNS = "http://www.w3.org/2000/svg";\n  var LAYERS = ["control_plane",'
-    ' "compute", "orchestration", "governance", "associated_resource"];\n  var SEVS = ["critical", "high",'
-    ' "medium", "low"];\n  var STATUS_ORDER = { failed: 0, not_evaluated: 1, passed: 2, not_applicable: 3 '
-    '};\n  var L = {\n    status: { passed: "Passed", failed: "Failed", not_evaluated: "Not evaluated", not'
-    '_applicable: "Not applicable" },\n    sev: { critical: "Critical", high: "High", medium: "Medium", lo'
-    'w: "Low" },\n    area: { best_practices: "Best practices", security: "Security", finops: "FinOps", op'
-    'timization: "Optimization" },\n    pillar: { reliability: "Reliability", security: "Security", cost: '
-    '"Cost optimization", operations: "Operational excellence", performance: "Performance efficiency" },\n'
-    '    level: { workspace: "Workspace", workload: "Workload", resource: "Azure resource" },\n    layer: '
-    '{ control_plane: "Control plane", compute: "Compute", orchestration: "Orchestration", governance: "G'
-    'overnance", associated_resource: "Associated resources" },\n    src: { complete: "Complete", partial:'
-    ' "Partial", denied: "Denied", error: "Error", not_configured: "Not configured", not_applicable: "Not'
-    ' applicable" },\n    effort: { L: "low effort", M: "medium effort", H: "high effort" },\n    kind: {\n '
-    '     databricks_workspace: "Workspace", managed_resource_group: "Managed resource group", outbound_d'
-    'ependency_category: "Outbound endpoint",\n      all_purpose_cluster: "All-purpose cluster", job_clust'
-    'er_spec: "Job cluster", instance_pool: "Instance pool", cluster_policy: "Cluster policy",\n      sql_'
-    'warehouse: "SQL warehouse", job: "Job", job_task: "Job task", dlt_pipeline: "DLT pipeline", secret_s'
-    'cope: "Secret scope",\n      uc_metastore: "UC metastore", uc_catalog: "UC catalog", uc_schema: "UC s'
-    'chema", uc_storage_credential: "Storage credential",\n      uc_external_location: "External location"'
-    ', uc_connection: "UC connection", external_storage_target: "External storage",\n      external_key_va'
-    'ult_target: "External key vault", "microsoft.network/virtualnetworks": "Virtual network", "microsoft'
-    '.network/virtualnetworks/subnets": "Subnet",\n      "microsoft.network/networksecuritygroups": "NSG",'
-    ' "microsoft.network/privateendpoints": "Private endpoint", "microsoft.databricks/accessconnectors": '
-    '"Access connector",\n      "microsoft.managedidentity/userassignedidentities": "Managed identity", "m'
-    'icrosoft.storage/storageaccounts": "Storage account",\n      "microsoft.keyvault/vaults": "Key vault"'
-    ', AllPurposeCluster: "All-purpose cluster", InstancePool: "Instance pool", ClusterPolicy: "Cluster p'
-    'olicy",\n      "microsoft.network/routetables": "Route table", "microsoft.network/natgateways": "NAT '
-    'gateway", "microsoft.network/publicipaddresses": "Public IP address",\n      "microsoft.network/loadb'
-    'alancers": "Load balancer", "microsoft.network/privatednszones": "Private DNS zone", "microsoft.even'
-    'thub/namespaces": "Event Hubs",\n      external_access_connector_target: "External access connector",'
-    ' external_arm_target: "External ARM resource",\n      inferred_adls_storage_uri_target: "Inferred ADL'
-    'S URI", inferred_catalog_storage_uri_target: "Inferred catalog storage",\n      inferred_pipeline_sto'
-    'rage_uri_target: "Inferred pipeline storage", permission_filtered_absence_or_deleted_target: "Target'
-    ' not visible or deleted",\n      GlobalInitScript: "Global init script", OutboundDependency: "Outboun'
-    'd endpoint"\n    }\n  };\n  var SEV_WORD = { critical: ["critical", "critical"], high: ["high", "high"]'
-    ', medium: ["medium", "medium"], low: ["low", "low"] };\n  var SEV_BAR = { critical: "var(--crit-bar)"'
-    ', high: "var(--high-bar)", medium: "var(--med-bar)", low: "var(--low-bar)" };\n  var NF = new Intl.Nu'
-    'mberFormat("en-US", { maximumFractionDigits: 2 });\n  var NF2 = new Intl.NumberFormat("en-US", { mini'
-    'mumFractionDigits: 2, maximumFractionDigits: 2 });\n  var ICON = {\n    ext: ["M14 4h6v6", "M20 4l-9 9'
-    '", "M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"],\n    check: ["M20 6L9 17l-5-5"],\n    '
-    'alert: ["M12 3.5l9 16H3z", "M12 10v4", "M12 17.2v.3"],\n    info: ["M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0'
-    ' 18z", "M12 11v5", "M12 7.8v.3"]\n  };\n\n  function el(tag, attrs, children) {\n    var node = document'
-    '.createElement(tag);\n    if (attrs) {\n      Object.keys(attrs).forEach(function (k) {\n        if (k '
-    '=== "text") { node.textContent = String(attrs[k]); }\n        else if (k === "className") { if (attrs'
-    '[k]) { node.className = attrs[k]; } }\n        else if (attrs[k] !== null && attrs[k] !== undefined) '
-    '{ node.setAttribute(k, String(attrs[k])); }\n      });\n    }\n    if (children) {\n      children.forEa'
-    'ch(function (c) {\n        if (typeof c === "string" || typeof c === "number") { node.appendChild(doc'
-    'ument.createTextNode(String(c))); }\n        else if (c) { node.appendChild(c); }\n      });\n    }\n   '
-    ' return node;\n  }\n  function svg(tag, attrs, text) {\n    var node = document.createElementNS(SVGNS, '
-    'tag);\n    Object.keys(attrs || {}).forEach(function (k) { node.setAttribute(k, String(attrs[k])); })'
-    ';\n    if (text !== undefined) { node.textContent = String(text); }\n    return node;\n  }\n  function c'
-    'lear(node) { while (node.firstChild) { node.removeChild(node.firstChild); } }\n  function icon(name) '
-    '{\n    var s = svg("svg", { "class": "i", viewBox: "0 0 24 24", "aria-hidden": "true", focusable: "fa'
-    'lse" });\n    ICON[name].forEach(function (d) { s.appendChild(svg("path", { d: d })); });\n    return '
-    's;\n  }\n  function lab(map, key) {\n    if (key === null || key === undefined || key === "") { return '
-    '"—"; }\n    return Object.prototype.hasOwnProperty.call(map, key) ? map[key] : String(key);\n  }\n  fun'
-    'ction isNum(v) { return typeof v === "number" && isFinite(v); }\n  function num(v) { return isNum(v) '
-    '? NF.format(v) : (v === null || v === undefined || v === "" ? "—" : String(v)); }\n  function pct(v) '
-    '{ return isNum(v) ? NF.format(v) + "%" : "Not evaluated"; }\n  function utc(s) {\n    if (!s) { return'
-    ' "—"; }\n    var m = /^(\\d{4}-\\d{2}-\\d{2})T(\\d{2}:\\d{2})/.exec(String(s));\n    return m ? m[1] + " " '
-    '+ m[2] + " UTC" : String(s);\n  }\n  function day(s) { var m = /^(\\d{4}-\\d{2}-\\d{2})/.exec(String(s ||'
-    ' "")); return m ? m[1] : "—"; }\n  function plural(n, one, many) { return n === 1 ? one : many; }\n  f'
-    'unction yesNo(v) { return v === true ? "Yes" : v === false ? "No" : "Not observed"; }\n  function acc'
-    'ess(v) { return v === "Disabled" ? "Disabled" : v === "Enabled" ? "Enabled" : (v || "Not observed");'
-    ' }\n  function rich(node, parts) {\n    clear(node);\n    parts.forEach(function (p) { if (p !== "" && '
-    'p !== null) { node.appendChild(Array.isArray(p) ? el("b", { text: p[0] }) : document.createTextNode('
-    'String(p))); } });\n    return node;\n  }\n  function brk(text, cls) {\n    var span = el("span", { clas'
-    'sName: cls === undefined ? "mono" : cls });\n    var s = String(text === null || text === undefined |'
-    '| text === "" ? "—" : text), buf = "";\n    if (s.length <= 24) { span.textContent = s; span.classNam'
-    'e += " nw"; return span; }\n    for (var i = 0; i < s.length; i++) {\n      buf += s.charAt(i);\n      '
-    'if ("/_.-:,".indexOf(s.charAt(i)) >= 0 && i < s.length - 1) {\n        span.appendChild(document.crea'
-    'teTextNode(buf));\n        span.appendChild(document.createElement("wbr"));\n        buf = "";\n      }'
-    '\n    }\n    if (buf) { span.appendChild(document.createTextNode(buf)); }\n    return span;\n  }\n  funct'
-    'ion mono(text) { return el("span", { className: "mono nw", text: text === null || text === undefined'
-    ' || text === "" ? "—" : text }); }\n  function stack(main, sub) {\n    var d = el("div", { className: '
-    '"stack" });\n    var b = el("b");\n    if (main instanceof Node) { b.appendChild(main); } else { b.tex'
-    'tContent = main === null || main === undefined || main === "" ? "—" : String(main); }\n    d.appendCh'
-    'ild(b);\n    if (sub instanceof Node) { var w = el("small"); w.appendChild(sub); d.appendChild(w); }\n'
-    '    else if (sub) { d.appendChild(el("small", { text: sub })); }\n    return d;\n  }\n  function pill(c'
-    'ls, text, title) { return el("span", { className: "pill " + cls, text: text, title: title || null })'
-    '; }\n  function sevPill(sev, label) { return pill(SEVS.indexOf(sev) >= 0 ? "sev-" + sev : "sev-info",'
-    ' label || lab(L.sev, sev)); }\n  function clsPill(c) { return pill("cls-" + (c === "OBSERVED" || c =='
-    '= "INFERRED" ? c : "UNKNOWN"), c || "UNKNOWN"); }\n  function statusTag(st) { return el("span", { cla'
-    'ssName: "st st-" + (STATUS_ORDER[st] !== undefined ? st : "not_evaluated"), title: st, text: lab(L.s'
-    'tatus, st) }); }\n  function srcTone(st) { return st === "complete" ? "tone-ok" : st === "partial" ? '
-    '"tone-warn" : (st === "denied" || st === "error") ? "tone-crit" : "tone-info"; }\n  function srcPill('
-    'st) { return pill(srcTone(st), lab(L.src, st), st); }\n  function kindLabel(kind) { var t = lab(L.kin'
-    'd, kind); return el("span", { text: t, title: kind && t !== kind ? kind : null }); }\n  function empt'
-    'yState(text) { return el("div", { className: "empty" }, [icon("check"), el("span", { text: text })])'
-    '; }\n  function safeLearnUrl(u) {\n    if (typeof u !== "string") { return null; }\n    try {\n      var'
-    ' parsed = new URL(u);\n      return (parsed.protocol === "https:" && (parsed.hostname === "learn.micr'
-    'osoft.com" || parsed.hostname === "docs.databricks.com")) ? u : null;\n    } catch (e) { return null;'
-    ' }\n  }\n  function extLink(href, text) { return el("a", { className: "ext", href: href, target: "_bla'
-    'nk", rel: "noopener noreferrer" }, [text, icon("ext")]); }\n  var ARM_RE = /^\\/subscriptions\\/[0-9a-f'
-    '-]{36}\\/resourcegroups\\/([^\\/]+)\\/providers\\/(microsoft\\.[a-z0-9]+\\/[a-z0-9]+)\\/([^\\/]+)(?:\\/([a-z0-'
-    '9]+)\\/([^\\/]+))?$/i;\n  function armCell(id, name) {\n    var m = ARM_RE.exec(String(id || ""));\n    i'
-    'f (!m) { return brk(id); }\n    var box = el("div", { className: "res" });\n    box.appendChild(el("b"'
-    ', { text: name || m[5] || m[3] }));\n    box.appendChild(el("small", null, [brk(m[1] + " · " + m[2] +'
-    ' (m[4] ? "/" + m[4] : ""), "")]));\n    var a = extLink("https://portal.azure.com/#@/resource" + id, '
-    '"Portal");\n    a.setAttribute("title", id);\n    box.appendChild(a);\n    return box;\n  }\n  function k'
-    'vChips(obj, max) {\n    var wrap = el("div", { className: "chips" }), shown = 0;\n    Object.keys(obj '
-    '|| {}).forEach(function (k) {\n      var v = obj[k];\n      if (v === null || v === undefined || v ==='
-    ' "" || typeof v === "object" || shown >= max) { return; }\n      var s = String(v);\n      if (s.index'
-    'Of("/subscriptions/") === 0 || s.length > 70) { return; }\n      wrap.appendChild(el("span", null, [k'
-    ' + ": ", el("b", { text: s })]));\n      shown++;\n    });\n    return shown ? wrap : null;\n  }\n  funct'
-    'ion evidenceCell(obj) {\n    var box = el("div"), chips = kvChips(obj, 4), json = JSON.stringify(obj '
-    '|| {}, null, 1);\n    if (chips) { box.appendChild(chips); }\n    if (json && json.length > 2) {\n     '
-    ' var d = el("details", { className: "json" });\n      d.appendChild(el("summary", { text: "Full JSON"'
-    ' }));\n      d.appendChild(el("pre", { text: json }));\n      box.appendChild(d);\n    }\n    if (!box.f'
-    'irstChild) { box.textContent = "—"; }\n    return box;\n  }\n\n  var TSTATE = {};\n  function spec(c) { r'
-    'eturn (c !== null && typeof c === "object" && !(c instanceof Node) && Object.prototype.hasOwnPropert'
-    'y.call(c, "v")) ? c : { v: c }; }\n  function sortValue(c) {\n    if (c.s !== undefined) { return c.s;'
-    ' }\n    return c.v instanceof Node ? c.v.textContent : (c.v === null || c.v === undefined ? "" : c.v)'
-    ';\n  }\n  function renderTable(tableNode, headers, rows, opts) {\n    var st = TSTATE[tableNode.id] || '
-    '(TSTATE[tableNode.id] = { sort: -1, dir: 1 });\n    st.headers = headers.map(function (h) { return ty'
-    'peof h === "string" ? { t: h } : h; });\n    st.rows = rows.map(function (r) { return r.map(spec); })'
-    ';\n    st.opts = opts || {};\n    st.limit = st.opts.page || 0;\n    drawTable(tableNode, st, null);\n  '
-    '}\n  function drawTable(tableNode, st, focus) {\n    var headers = st.headers, opts = st.opts, rows = '
-    'st.rows;\n    if (st.sort >= 0) {\n      var i = st.sort, dir = st.dir;\n      rows = rows.map(function'
-    ' (r, idx) { return { r: r, idx: idx }; }).sort(function (a, b) {\n        var x = sortValue(a.r[i]), '
-    'y = sortValue(b.r[i]);\n        var d = (isNum(x) && isNum(y)) ? x - y : String(x).localeCompare(Stri'
-    'ng(y), "en", { numeric: true, sensitivity: "base" });\n        return d * dir || a.idx - b.idx;\n     '
-    ' }).map(function (o) { return o.r; });\n    }\n    clear(tableNode);\n    var thead = el("thead"), trh '
-    '= el("tr");\n    headers.forEach(function (h, hi) {\n      var th = el("th", { className: h.c || null,'
-    ' scope: "col" });\n      if (opts.sortable && h.s !== false) {\n        var b = el("button", { type: "'
-    'button", className: "th-sort", text: h.t });\n        th.setAttribute("data-label", h.t);\n        if '
-    '(st.sort === hi) { th.setAttribute("aria-sort", st.dir === 1 ? "ascending" : "descending"); }\n      '
-    '  b.addEventListener("click", function () {\n          if (st.sort === hi) { st.dir = -st.dir; } else'
-    ' { st.sort = hi; st.dir = 1; }\n          drawTable(tableNode, st, "th" + hi);\n        });\n        th'
-    '.appendChild(b);\n      } else { th.textContent = h.t; }\n      trh.appendChild(th);\n    });\n    thead'
-    '.appendChild(trh);\n    tableNode.appendChild(thead);\n    var tbody = el("tbody");\n    if (!rows.leng'
-    'th) {\n      var tr0 = el("tr");\n      tr0.appendChild(el("td", { colspan: headers.length, className:'
-    ' "empty-cell", text: opts.empty || "No records in this scope or filter." }));\n      tbody.appendChil'
-    'd(tr0);\n    }\n    rows.forEach(function (cells, ri) {\n      var tr = el("tr", { className: st.limit '
-    '&& ri >= st.limit ? "pg" : null });\n      cells.forEach(function (c, ci) {\n        var td = el("td",'
-    ' { className: [headers[ci] && headers[ci].c, c.c].filter(Boolean).join(" ") || null });\n        if ('
-    'c.v instanceof Node) { td.appendChild(c.v); }\n        else { td.textContent = c.v === null || c.v =='
-    '= undefined || c.v === "" ? "—" : String(c.v); }\n        tr.appendChild(td);\n      });\n      tbody.a'
-    'ppendChild(tr);\n    });\n    tableNode.appendChild(tbody);\n    var wrap = tableNode.parentNode, more '
-    '= wrap.nextElementSibling;\n    if (!more || !more.classList.contains("more-row")) {\n      more = el('
-    '"div", { className: "more-row" });\n      wrap.parentNode.insertBefore(more, wrap.nextSibling);\n    }'
-    '\n    clear(more);\n    var hiddenRows = st.limit ? Math.max(0, rows.length - st.limit) : 0;\n    more.'
-    'hidden = hiddenRows === 0;\n    if (hiddenRows) {\n      var step = opts.page;\n      var b1 = el("butt'
-    'on", { type: "button", className: "btn ghost sm", "data-k": "more", text: "Show " + Math.min(step, h'
-    'iddenRows) + " more" });\n      b1.addEventListener("click", function () { st.limit += step; drawTabl'
-    'e(tableNode, st, "more"); });\n      var b2 = el("button", { type: "button", className: "btn ghost sm'
-    '", "data-k": "all", text: "Show all (" + rows.length + ")" });\n      b2.addEventListener("click", fu'
-    'nction () { st.limit = 0; drawTable(tableNode, st, "table"); });\n      more.appendChild(el("span", {'
-    ' className: "more-note", text: "Showing " + st.limit + " of " + rows.length + " rows" }));\n      mor'
-    'e.appendChild(b1);\n      more.appendChild(b2);\n    }\n    if (focus) {\n      var target = focus.index'
-    'Of("th") === 0 ? tableNode.querySelectorAll(".th-sort")[Number(focus.slice(2))] : focus === "more" ?'
-    ' more.querySelector("[data-k=more]") : null;\n      if (target) { target.focus(); }\n      else if (fo'
-    'cus === "more" || focus === "table") { tableNode.setAttribute("tabindex", "-1"); tableNode.focus(); '
-    '}\n    }\n  }\n\n  var rawText = document.getElementById("report-data").textContent;\n  var rootData;\n  t'
-    'ry {\n    rootData = JSON.parse(rawText);\n  } catch (e) {\n    var openErr = document.getElementById("'
-    'opening-state");\n    openErr.hidden = false;\n    openErr.textContent = "Couldn\'t load the report\'s e'
-    'mbedded JSON model.";\n    return;\n  }\n\n  var isMulti = rootData && rootData.schema_version === "data'
-    'bricks-dep-multi-workspace-v1";\n  var currentSnap = null;\n\n  var themeBtn = document.getElementById('
-    '"theme-toggle");\n  themeBtn.addEventListener("click", function () {\n    var dark = document.document'
-    'Element.getAttribute("data-theme") === "dark";\n    if (dark) { document.documentElement.removeAttrib'
-    'ute("data-theme"); }\n    else { document.documentElement.setAttribute("data-theme", "dark"); }\n    t'
-    'hemeBtn.setAttribute("aria-pressed", dark ? "false" : "true");\n  });\n  document.getElementById("prin'
-    't-btn").addEventListener("click", function () { window.print(); });\n  var themeBeforePrint = null;\n '
-    ' window.addEventListener("beforeprint", function () {\n    themeBeforePrint = document.documentElemen'
-    't.getAttribute("data-theme");\n    document.documentElement.removeAttribute("data-theme");\n  });\n  wi'
-    'ndow.addEventListener("afterprint", function () {\n    if (themeBeforePrint) { document.documentEleme'
-    'nt.setAttribute("data-theme", themeBeforePrint); }\n    themeBeforePrint = null;\n  });\n\n  function cl'
-    'oseMenus(except) {\n    [].forEach.call(document.querySelectorAll("details.menu[open]"), function (d)'
-    ' { if (d !== except) { d.removeAttribute("open"); } });\n  }\n  document.addEventListener("click", fun'
-    'ction (ev) {\n    var inside = ev.target.closest ? ev.target.closest("details.menu") : null;\n    clos'
-    'eMenus(inside);\n    if (inside && ev.target.closest("a, button") && !ev.target.closest("summary")) {'
-    ' inside.removeAttribute("open"); }\n  });\n  document.addEventListener("keydown", function (ev) {\n    '
-    'if (ev.key !== "Escape") { return; }\n    var open = document.querySelector("details.menu[open]");\n  '
-    '  if (open) { open.removeAttribute("open"); open.querySelector("summary").focus(); }\n  });\n\n  functi'
-    'on downloadBlob(filename, content, mime) {\n    var blob = new Blob([content], { type: mime });\n    v'
-    'ar url = URL.createObjectURL(blob);\n    var a = el("a", { href: url, download: filename });\n    docu'
-    'ment.body.appendChild(a);\n    a.click();\n    document.body.removeChild(a);\n    URL.revokeObjectURL(u'
-    'rl);\n  }\n  function csvEscape(v) {\n    if (v === null || v === undefined) { return ""; }\n    var s ='
-    ' typeof v === "object" ? JSON.stringify(v) : String(v);\n    if (/^[=+\\-@\\t\\r\\n]/.test(s.trimLeft()))'
-    ' { s = "\'" + s; }\n    return \'"\' + s.replace(/"/g, \'""\') + \'"\';\n  }\n  var CHECK_COLS = ["check_id", '
-    '"rule_id", "title", "status", "level", "area", "pillar", "severity", "workload_name", "reason", "rec'
-    'ommendation", "learn_url"];\n  function checksCsv(list) {\n    var lines = [CHECK_COLS.join(",")];\n   '
-    ' list.forEach(function (r) { lines.push(CHECK_COLS.map(function (c) { return csvEscape(r[c]); }).joi'
-    'n(",")); });\n    return "\\uFEFF" + lines.join("\\r\\n");\n  }\n  document.getElementById("export-json-bt'
-    'n").addEventListener("click", function () {\n    downloadBlob("databricks-dependency-snapshot.json", '
-    'JSON.stringify(rootData, null, 2), "application/json;charset=utf-8");\n  });\n  document.getElementByI'
-    'd("export-deps-csv-btn").addEventListener("click", function () {\n    if (!currentSnap) { return; }\n '
-    '   var cols = ["record_type", "classification", "layer", "id", "kind", "label", "from", "to", "relat'
-    'ion", "join_fields", "source_ids"];\n    var lines = [cols.join(",")];\n    var dep = currentSnap.depe'
-    'ndencies;\n    [].concat(dep.nodes || [], dep.edges || [], dep.unknowns || []).forEach(function (r) {'
-    '\n      lines.push(cols.map(function (c) { return csvEscape(r[c]); }).join(","));\n    });\n    downloa'
-    'dBlob("databricks-dependencies.csv", "\\uFEFF" + lines.join("\\r\\n"), "text/csv;charset=utf-8");\n  });'
-    '\n  document.getElementById("export-findings-csv-btn").addEventListener("click", function () {\n    if'
-    ' (!currentSnap) { return; }\n    downloadBlob("databricks-findings.csv", checksCsv(currentSnap.checks'
-    ' || []), "text/csv;charset=utf-8");\n  });\n\n  var tabObs = document.getElementById("tab-dep-observed"'
-    ');\n  var tabRef = document.getElementById("tab-dep-reference");\n  var panelObs = document.getElement'
-    'ById("panel-dep-observed");\n  var panelRef = document.getElementById("panel-dep-reference");\n  funct'
-    'ion selectTab(ref) {\n    tabObs.setAttribute("aria-selected", ref ? "false" : "true");\n    tabRef.se'
-    'tAttribute("aria-selected", ref ? "true" : "false");\n    tabObs.setAttribute("tabindex", ref ? "-1" '
-    ': "0");\n    tabRef.setAttribute("tabindex", ref ? "0" : "-1");\n    panelObs.hidden = ref;\n    panelR'
-    'ef.hidden = !ref;\n  }\n  tabObs.addEventListener("click", function () { selectTab(false); });\n  tabRe'
-    'f.addEventListener("click", function () { selectTab(true); });\n  [tabObs, tabRef].forEach(function ('
-    't) {\n    t.addEventListener("keydown", function (ev) {\n      if (ev.key === "ArrowRight" || ev.key ='
-    '== "ArrowLeft") {\n        var ref = t === tabObs;\n        selectTab(ref);\n        (ref ? tabRef : ta'
-    'bObs).focus();\n        ev.preventDefault();\n      }\n    });\n  });\n\n  function fitText(s, max) { s = '
-    'String(s || ""); return s.length > max ? s.slice(0, Math.max(1, max - 1)) + "…" : s; }\n  function no'
-    'deLines(n) {\n    var label = String(n.label || n.name || n.id), kind = lab(L.kind, n.kind), cut = la'
-    'bel.indexOf(" :: ");\n    if (cut < 0) { cut = label.indexOf(" / "); }\n    if (cut > 0) { return [lab'
-    'el.slice(label.indexOf(" ", cut + 1) + 1), kind + " · " + label.slice(0, cut)]; }\n    return [label,'
-    ' kind + (n.classification === "INFERRED" ? " · INFERRED" : "")];\n  }\n  function renderNeighborhoodSv'
-    'g(nodes, edges) {\n    var box = document.getElementById("dep-graph-box");\n    var caption = document'
-    '.getElementById("dep-graph-caption");\n    clear(box);\n    if (!nodes.length) { box.appendChild(empty'
-    'State("No node matches this filter.")); caption.textContent = ""; return; }\n    var deg = {};\n    ed'
-    'ges.forEach(function (e) { deg[e.from] = (deg[e.from] || 0) + 1; deg[e.to] = (deg[e.to] || 0) + 1; }'
-    ');\n    var subset = nodes.map(function (n, i) {\n      return { n: n, i: i, r: (n.kind === "databrick'
-    's_workspace" ? 1000 : 0) + (n.classification === "INFERRED" ? 500 : 0) + (deg[n.id] || 0) };\n    }).'
-    'sort(function (a, b) { return b.r - a.r || a.i - b.i; }).slice(0, 13).map(function (x) { return x.n;'
-    ' });\n    var order = LAYERS.slice();\n    subset.forEach(function (n) { if (order.indexOf(n.layer) < '
-    '0) { order.push(n.layer); } });\n    var cols = [];\n    order.forEach(function (layer) {\n      var ns'
-    ' = subset.filter(function (n) { return n.layer === layer; });\n      for (var i = 0; i < ns.length; i'
-    ' += 5) { cols.push({ layer: layer, nodes: ns.slice(i, i + 5), head: i === 0 }); }\n    });\n    var W '
-    '= 1200, colW = W / cols.length, bw = Math.min(214, colW - 30), bh = 50, gy = 20, top = 34;\n    var r'
-    'ows = Math.max.apply(null, cols.map(function (c) { return c.nodes.length; }));\n    var H = top + row'
-    's * (bh + gy);\n    var pos = {};\n    cols.forEach(function (c, ci) {\n      var off = (rows - c.nodes'
-    '.length) * (bh + gy) / 2;\n      c.nodes.forEach(function (n, ri) { pos[n.id] = { x: colW * ci + colW'
-    ' / 2, y: top + off + ri * (bh + gy) + bh / 2, c: ci }; });\n    });\n    var s = svg("svg", { viewBox:'
-    ' "0 0 " + W + " " + H, role: "img", "aria-label": "Dependency graph: " + subset.length + " of " + no'
-    'des.length + " filtered nodes, grouped by layer." });\n    var defs = svg("defs");\n    ["obs", "inf"]'
-    '.forEach(function (k) {\n      var m = svg("marker", { id: "dep-arrow-" + k, viewBox: "0 0 10 10", re'
-    'fX: 9, refY: 5, markerWidth: 6, markerHeight: 6, orient: "auto" });\n      m.appendChild(svg("path", '
-    '{ d: "M0 0L10 5L0 10z", "class": "arr " + k }));\n      defs.appendChild(m);\n    });\n    s.appendChil'
-    'd(defs);\n    cols.forEach(function (c, ci) {\n      if (c.head) { s.appendChild(svg("text", { x: colW'
-    ' * ci + colW / 2 - bw / 2, y: 16, "class": "g-col" }, fitText(lab(L.layer, c.layer), Math.floor(bw /'
-    ' 7.5)))); }\n    });\n    var drawn = 0;\n    edges.forEach(function (e) {\n      var a = pos[e.from], b'
-    ' = pos[e.to];\n      if (!a || !b || e.from === e.to) { return; }\n      var sx, ex, c1, c2;\n      if '
-    '(a.c < b.c) { sx = a.x + bw / 2; ex = b.x - bw / 2 - 2; c1 = sx + (ex - sx) / 2; c2 = ex - (ex - sx)'
-    ' / 2; }\n      else if (a.c > b.c) { sx = a.x - bw / 2; ex = b.x + bw / 2 + 2; c1 = sx - (sx - ex) / '
-    '2; c2 = ex + (sx - ex) / 2; }\n      else { sx = a.x + bw / 2; ex = b.x + bw / 2 + 2; c1 = sx + 26; c'
-    '2 = ex + 26; }\n      var k = e.classification === "INFERRED" ? "inf" : "obs";\n      s.appendChild(sv'
-    'g("path", { d: "M" + sx + " " + a.y + " C" + c1 + " " + a.y + " " + c2 + " " + b.y + " " + ex + " " '
-    '+ b.y, "class": "edge " + k, "marker-end": "url(#dep-arrow-" + k + ")" }));\n      drawn++;\n    });\n '
-    '   var maxChars = Math.floor((bw - 22) / 6.9);\n    subset.forEach(function (n) {\n      var p = pos[n'
-    '.id], lines = nodeLines(n);\n      var g = svg("g", { "class": "g-node" + (n.classification === "INFE'
-    'RRED" ? " inf" : "") + (n.kind === "databricks_workspace" ? " ws" : "") });\n      g.appendChild(svg('
-    '"title", {}, (n.label || n.id) + " · " + (n.kind || "") + " · " + (n.classification || "")));\n      '
-    'g.appendChild(svg("rect", { x: p.x - bw / 2, y: p.y - bh / 2, width: bw, height: bh, rx: 8 }));\n    '
-    '  g.appendChild(svg("text", { x: p.x - bw / 2 + 11, y: p.y - 3, "class": "g-l1" }, fitText(lines[0],'
-    ' maxChars)));\n      g.appendChild(svg("text", { x: p.x - bw / 2 + 11, y: p.y + 14, "class": "g-l2" }'
-    ', fitText(lines[1], Math.floor((bw - 22) / 6))));\n      s.appendChild(g);\n    });\n    box.appendChil'
-    'd(s);\n    caption.textContent = "Showing " + subset.length + " of " + nodes.length + " filtered node'
-    's and " + drawn + " relationships between them (limited to 13 nodes: the workspace, INFERRED referen'
-    'ces and the most connected nodes). The tables list every node, edge and blind spot.";\n  }\n\n  functio'
-    'n renderReferenceArchitecture() {\n    var box = document.getElementById("ref-arch-box");\n    clear(b'
-    'ox);\n    var s = svg("svg", { viewBox: "0 0 1200 236", role: "img", "aria-label": "Azure Databricks '
-    'Lakehouse reference architecture - proposal NOT deployed" });\n    var flag = svg("g", { "class": "re'
-    'f-flag" });\n    flag.appendChild(svg("rect", { x: 0, y: 4, width: 300, height: 24, rx: 12 }));\n    f'
-    'lag.appendChild(svg("text", { x: 14, y: 20 }, "REFERENCE PROPOSAL · NOT DEPLOYED"));\n    s.appendChi'
-    'ld(flag);\n    var boxes = [\n      ["Network and perimeter (ARM)", "VNet injection + SCC + Private Li'
-    'nk"],\n      ["Identity and secrets", "Entra SP/UAMI + Key Vault scopes"],\n      ["Compute and orches'
-    'tration", "Cluster policies + job/serverless"],\n      ["Unity Catalog & ADLS", "Access connector UAM'
-    'I + lineage"]\n    ];\n    var bw = 262, gap = (1200 - 4 * bw) / 3;\n    boxes.forEach(function (b, i) '
-    '{\n      var x = i * (bw + gap);\n      if (i < boxes.length - 1) { s.appendChild(svg("line", { x1: x '
-    '+ bw, y1: 92, x2: x + bw + gap, y2: 92, "class": "ref-link" })); }\n      var g = svg("g", { "class":'
-    ' "ref-box" });\n      g.appendChild(svg("rect", { x: x + 1, y: 52, width: bw - 2, height: 80, rx: 10 '
-    '}));\n      g.appendChild(svg("text", { x: x + 18, y: 86, "class": "ref-t" }, b[0]));\n      g.appendC'
-    'hild(svg("text", { x: x + 18, y: 108, "class": "ref-s" }, b[1]));\n      s.appendChild(g);\n    });\n  '
-    '  s.appendChild(svg("text", { x: 0, y: 176, "class": "ref-note" }, "REFERENCE PROPOSAL (NOT DEPLOYED'
-    '): cross-tenant integration through an Entra multi-tenant FIC or Lighthouse + Databricks OIDC."));\n '
-    '   s.appendChild(svg("text", { x: 0, y: 204, "class": "ref-s" }, "Recommended components to compare '
-    'with the observed map; none was detected or created in the reviewed workspace."));\n    box.appendChi'
-    'ld(s);\n    renderTable(document.getElementById("ref-arch-table"),\n      ["Reference component", "Mic'
-    'rosoft / Databricks recommended practice", "Trade-off"],\n      [\n        ["VNet injection + secure c'
-    'luster connectivity", "Deploy into your own VNet with enableNoPublicIp=true and delegated host/conta'
-    'iner subnets with an NSG.", "Needs IPAM planning and outbound routes to the control-plane endpoints.'
-    '"],\n        ["Private Link (front-end / back-end / WebAuth)", "Isolate user and data-plane traffic w'
-    'ith approved private endpoints and private DNS zones.", "Needs the Premium SKU and private DNS manag'
-    'ement across hub-spoke networks."],\n        ["Unity Catalog + access connector (UAMI)", "Govern cata'
-    'logs and external locations with storage credentials based on a managed identity.", "Replaces shared'
-    ' keys and legacy DBFS mounts."],\n        ["Jobs on job compute / serverless + service principal", "R'
-    'un production jobs as a service principal (run_as) on ephemeral job compute or serverless.", "Lowers'
-    ' DBU cost compared with all-purpose compute and avoids failures when users leave."],\n        ["Cross'
-    '-tenant integration without secrets", "Use a multi-tenant app with a federated identity credential ('
-    'UAMI) or Azure Lighthouse (ARM) + Databricks OIDC federation.", "Needs consent and assignments from '
-    'administrators in both tenants."]\n      ].map(function (r) { return [{ v: el("b", { text: r[0] }) },'
-    ' r[1], r[2]]; })\n    );\n  }\n\n  function applyDependencyFilters() {\n    if (!currentSnap) { return; }'
-    '\n    var layer = document.getElementById("dep-layer-filter").value;\n    var cls = document.getElemen'
-    'tById("dep-class-filter").value;\n    var q = (document.getElementById("dep-search-filter").value || '
-    '"").toLowerCase().trim();\n    var dep = currentSnap.dependencies || { nodes: [], edges: [], unknowns'
-    ': [], broken_references: [] };\n    function keep(r) {\n      if (layer !== "all" && r.layer !== layer'
-    ') { return false; }\n      if (cls !== "all" && r.classification !== cls) { return false; }\n      if '
-    '(q && JSON.stringify(r).toLowerCase().indexOf(q) === -1) { return false; }\n      return true;\n    }\n'
-    '    var nodes = (dep.nodes || []).filter(keep);\n    var edges = (dep.edges || []).filter(keep);\n    '
-    'var unknowns = (dep.unknowns || []).filter(keep);\n    var byId = {};\n    (dep.nodes || []).forEach(f'
-    'unction (n) { byId[n.id] = n; });\n    function nodeCell(id) {\n      var n = byId[id];\n      return n'
-    ' ? { v: stack(brk(n.label || n.id, ""), lab(L.kind, n.kind)), s: n.label || n.id } : { v: brk(id) };'
-    '\n    }\n    renderNeighborhoodSvg(nodes, edges);\n    document.getElementById("dep-edges-count").textC'
-    'ontent = String(edges.length);\n    renderTable(document.getElementById("dep-edges-table"),\n      ["C'
-    'lassification", "Layer", "Source", "Relationship", "Target", "Join fields", "Sources"],\n      edges.'
-    'map(function (e) {\n        return [\n          { v: clsPill(e.classification), s: e.classification },'
-    '\n          lab(L.layer, e.layer),\n          nodeCell(e.from),\n          { v: brk(e.relation), s: e.r'
-    'elation },\n          nodeCell(e.to),\n          { v: brk((e.join_fields || []).join(", ")) },\n       '
-    '   { v: brk((e.source_ids || []).join(", ")) }\n        ];\n      }), { page: 12, sortable: true }\n   '
-    ' );\n    document.getElementById("dep-nodes-count").textContent = String(nodes.length);\n    renderTab'
-    'le(document.getElementById("dep-nodes-table"),\n      ["Classification", "Layer", "Type", "Name / lab'
-    'el", "Source", { t: "Evidence", s: false, c: "w" }],\n      nodes.map(function (n) {\n        return ['
-    '\n          { v: clsPill(n.classification), s: n.classification },\n          lab(L.layer, n.layer),\n '
-    '         { v: kindLabel(n.kind) },\n          { v: brk(n.label || n.id, ""), s: n.label },\n          '
-    '{ v: mono(n.source_id) },\n          { v: evidenceCell(n.evidence) }\n        ];\n      }), { page: 12,'
-    ' sortable: true }\n    );\n    var broken = dep.broken_references || [];\n    document.getElementById("'
-    'dep-broken-count").textContent = String(broken.length);\n    renderTable(document.getElementById("dep'
-    '-broken-table"),\n      ["Source object", "Broken reference type", "Target ID not found"],\n      brok'
-    'en.map(function (b) { return [b.source_object, b.kind, { v: brk(b.target_id) }]; }),\n      { empty: '
-    '"No broken references between tasks, clusters, pools, policies, pipelines, warehouses and credential'
-    's." }\n    );\n    document.getElementById("dep-unknowns-count").textContent = String(unknowns.length)'
-    ';\n    renderTable(document.getElementById("dep-unknowns-table"),\n      ["Layer", "Code", "Blind spot'
-    ' description", "Sources"],\n      unknowns.map(function (u) {\n        return [lab(L.layer, u.layer), '
-    '{ v: brk(u.code) }, u.message, { v: brk((u.source_ids || []).join(", ")) }];\n      })\n    );\n  }\n\n  '
-    'function observedValues(evidence) {\n    var merged = {};\n    (Array.isArray(evidence) ? evidence : ['
-    ']).forEach(function (ev) {\n      if (ev && ev.value && typeof ev.value === "object" && !Array.isArra'
-    'y(ev.value)) {\n        Object.keys(ev.value).forEach(function (k) { merged[k] = ev.value[k]; });\n   '
-    '   }\n    });\n    return kvChips(merged, 3);\n  }\n  function filteredChecks() {\n    var area = documen'
-    't.getElementById("find-area-filter").value;\n    var level = document.getElementById("find-level-filt'
-    'er").value;\n    var sev = document.getElementById("find-sev-filter").value;\n    var st = document.ge'
-    'tElementById("find-status-filter").value;\n    var q = (document.getElementById("find-search-filter")'
-    '.value || "").toLowerCase().trim();\n    return (currentSnap.checks || []).filter(function (c) {\n    '
-    '  if (area !== "all" && c.area !== area) { return false; }\n      if (level !== "all" && c.level !== '
-    'level) { return false; }\n      if (sev !== "all" && c.severity !== sev) { return false; }\n      if ('
-    'st !== "all" && c.status !== st) { return false; }\n      if (q && JSON.stringify(c).toLowerCase().in'
-    'dexOf(q) === -1) { return false; }\n      return true;\n    });\n  }\n  function applyFindingFilters() {'
-    '\n    if (!currentSnap) { return; }\n    var all = currentSnap.checks || [];\n    var filtered = filter'
-    'edChecks().slice().sort(function (a, b) {\n      return (STATUS_ORDER[a.status] - STATUS_ORDER[b.stat'
-    'us]) || (SEVS.indexOf(a.severity) - SEVS.indexOf(b.severity)) || String(a.rule_id).localeCompare(Str'
-    'ing(b.rule_id), "en", { numeric: true });\n    });\n    var failed = filtered.filter(function (c) { re'
-    'turn c.status === "failed"; }).length;\n    document.getElementById("findings-count-label").textConte'
-    'nt = "Showing " + filtered.length + " of " + all.length + " checks · " + failed + plural(failed, " f'
-    'ailed", " failed") + ".";\n    renderTable(document.getElementById("findings-table"),\n      [{ t: "St'
-    'atus" }, { t: "Severity" }, { t: "Rule" }, { t: "Area / pillar" }, { t: "Object" }, { t: "Finding an'
-    'd evidence", c: "w" }, { t: "Recommendation", c: "w" }],\n      filtered.map(function (c) {\n        v'
-    'ar link = safeLearnUrl(c.learn_url);\n        var detail = el("div", { className: "fd" });\n        de'
-    'tail.appendChild(el("b", { text: c.title }));\n        detail.appendChild(el("p", { text: c.reason })'
-    ');\n        var chips = observedValues(c.evidence);\n        if (chips) { detail.appendChild(chips); }'
-    '\n        var rec = el("div", { className: "fr" });\n        rec.appendChild(el("p", { text: c.recomme'
-    'ndation }));\n        if (link) { rec.appendChild(extLink(link, "Official documentation")); }\n       '
-    ' return [\n          { v: statusTag(c.status), s: STATUS_ORDER[c.status] },\n          { v: sevPill(c.'
-    'severity, c.severity_label), s: SEVS.indexOf(c.severity) },\n          { v: stack(c.rule_id, mono(c.r'
-    'eference_id)), s: c.rule_id },\n          { v: stack(lab(L.area, c.area), lab(L.pillar, c.pillar)), s'
-    ': lab(L.area, c.area) },\n          { v: stack(brk(c.workload_name || c.resource_name || c.workspace_'
-    'name, ""), lab(L.level, c.level)), s: c.workload_name || c.resource_name || "" },\n          { v: det'
-    'ail, s: c.title },\n          { v: rec, s: c.recommendation }\n        ];\n      }), { page: 15, sortab'
-    'le: true }\n    );\n  }\n\n  ["dep-layer-filter", "dep-class-filter", "dep-search-filter"].forEach(funct'
-    'ion (id) {\n    document.getElementById(id).addEventListener("input", applyDependencyFilters);\n    do'
-    'cument.getElementById(id).addEventListener("change", applyDependencyFilters);\n  });\n  ["find-area-fi'
-    'lter", "find-level-filter", "find-sev-filter", "find-status-filter", "find-search-filter"].forEach(f'
-    'unction (id) {\n    document.getElementById(id).addEventListener("input", applyFindingFilters);\n    d'
-    'ocument.getElementById(id).addEventListener("change", applyFindingFilters);\n  });\n  document.getElem'
-    'entById("dep-clear").addEventListener("click", function () {\n    document.getElementById("dep-layer-'
-    'filter").value = "all";\n    document.getElementById("dep-class-filter").value = "all";\n    document.'
-    'getElementById("dep-search-filter").value = "";\n    applyDependencyFilters();\n  });\n  document.getEl'
-    'ementById("find-clear").addEventListener("click", function () {\n    ["find-area-filter", "find-level'
-    '-filter", "find-sev-filter", "find-status-filter"].forEach(function (id) { document.getElementById(i'
-    'd).value = "all"; });\n    document.getElementById("find-search-filter").value = "";\n    applyFinding'
-    'Filters();\n  });\n  document.getElementById("find-export-btn").addEventListener("click", function () '
-    '{\n    if (!currentSnap) { return; }\n    downloadBlob("databricks-findings-filtered.csv", checksCsv(f'
-    'ilteredChecks()), "text/csv;charset=utf-8");\n  });\n\n  function barRow(label, sub, width, value, valu'
-    'eSub, color, na) {\n    var row = el("div", { className: "brow" + (na ? " na" : "") });\n    var bl = '
-    'el("div", { className: "bl" }, [label]);\n    if (sub) { bl.appendChild(el("small", { text: sub })); '
-    '}\n    row.appendChild(bl);\n    var bar = el("i");\n    bar.style.width = Math.max(0, Math.min(100, wi'
-    'dth)) + "%";\n    if (color) { bar.style.background = color; }\n    if (na || !width) { bar.style.minW'
-    'idth = "0"; }\n    row.appendChild(el("div", { className: "bt" }, [bar]));\n    var bv = el("div", { c'
-    'lassName: "bv", text: value });\n    if (valueSub) { bv.appendChild(el("small", { text: valueSub }));'
-    ' }\n    row.appendChild(bv);\n    return row;\n  }\n  function scoreBars(id, map, labels) {\n    var hold'
-    'er = document.getElementById(id);\n    clear(holder);\n    Object.keys(map || {}).forEach(function (k)'
-    ' {\n      var it = map[k] || {}, na = !isNum(it.score);\n      holder.appendChild(barRow(lab(labels, k'
-    '), null, na ? 0 : it.score, na ? "Not evaluated" : pct(it.score),\n        "coverage " + (isNum(it.co'
-    'verage_percent) ? pct(it.coverage_percent) : "0%"), null, na));\n    });\n  }\n  function kpi(value, un'
-    'it, label, sub) {\n    var v = el("div", { className: "v" }, [String(value)]);\n    if (unit) { v.appe'
-    'ndChild(el("small", { text: unit })); }\n    return el("div", { className: "kpi" }, [v, el("div", { c'
-    'lassName: "l", text: label }), sub ? el("div", { className: "s", text: sub }) : null]);\n  }\n  functi'
-    'on pctParts(v) { return isNum(v) ? [NF.format(v), "%"] : ["—", ""]; }\n  function sourcePlane(id) {\n '
-    '   id = String(id || "");\n    if (id.indexOf("arm_") === 0 || id === "azure_cost") { return "Plane 1'
-    ' · ARM"; }\n    if (id.indexOf("dbx_") === 0) { return "Plane 2 · Databricks REST"; }\n    if (id.inde'
-    'xOf("uc_") === 0) { return "Plane 2 · Unity Catalog"; }\n    return "Internal";\n  }\n  var SRC_COLOR ='
-    ' { complete: "var(--ok-bar)", partial: "var(--med-bar)", denied: "var(--crit-bar)", error: "var(--cr'
-    'it-bar)", not_configured: "var(--info-bar)", not_applicable: "var(--line2)" };\n\n  function renderHer'
-    'o(snap, g, counts) {\n    var ws = snap.workspace || {}, sc = (snap.dependencies && snap.dependencies'
-    '.summary_counts) || {};\n    var fails = (snap.findings || []).length, ev = g.evaluated || 0;\n    var'
-    ' sevText = SEVS.filter(function (s) { return counts[s]; }).map(function (s) { return counts[s] + " "'
-    ' + plural(counts[s], SEV_WORD[s][0], SEV_WORD[s][1]); }).join(" · ");\n    var depParts = [" The depe'
-    'ndency map holds ", [num(sc.nodes_total || 0)], " nodes and ", [num(sc.edges_total || 0)], " relatio'
-    'nships, with ", [num(sc.edges_inferred || 0)], " INFERRED references and ", [num(sc.unknowns_total |'
-    '| 0)], " UNKNOWN blind spots."];\n    var ch = (snap.databricks_costs && snap.databricks_costs.headli'
-    'ne) || {};\n    if (isNum(ch.review_total)) {\n      costCurrency = snap.databricks_costs.currency || '
-    '"";\n      depParts = depParts.concat([" Databricks cost ", [money(ch.review_total)], " in " + monthN'
-    'ame(ch.review_month)].concat(\n        isNum(ch.estimated_monthly_savings) ? ["; estimated savings ",'
-    ' ["≈ " + money(ch.estimated_monthly_savings)], " a month (cost section)."] : ["."]));\n    }\n    rich'
-    '(document.getElementById("cover-lead"), ev ? [[num(fails)], plural(fails, " failed", " failed"), sev'
-    'Text ? " (" + sevText + ")" : "", " of ", [num(ev)], " evaluated checks; local index ", [pct(g.score'
-    ')], " with ", [pct(g.coverage_percent)], " coverage."].concat(depParts)\n      : ["No check could be '
-    'evaluated with the available sources; review the coverage in section 8."].concat(depParts));\n    var'
-    ' meta = document.getElementById("cover-badges");\n    clear(meta);\n    function chip(parts, on, title'
-    ') { meta.appendChild(rich(el("span", { className: on ? "on" : null, title: title || null }), parts))'
-    '; }\n    chip(["Generated ", [utc(snap.reference_utc)]]);\n    chip(["Workspace ", [ws.name || "—"]]);'
-    '\n    chip([[ws.cross_tenant ? "Cross-tenant" : "Same tenant"], " · " + (ws.auth_mode || "—")], false'
-    ', ws.cross_tenant ? (ws.sre_tenant_id || "—") + " → " + (ws.target_tenant_id || "—") : ws.target_ten'
-    'ant_id);\n    chip(["Environment ", [snap.environment || "—"]]);\n    chip([snap.provenance === "SIMUL'
-    'ATED" ? "SIMULATED DATA" : (snap.provenance || "LIVE") + " DATA"], true);\n\n    var tone = "ok", titl'
-    'e = counts.low ? "No relevant deviations" : "No observed deviations";\n    if (!ev) { tone = "info"; '
-    'title = "Not evaluated"; }\n    else if (counts.critical) { tone = "crit"; title = "Action required";'
-    ' }\n    else if (counts.high || counts.medium) { tone = "warn"; title = "Needs attention"; }\n    var '
-    'lowCov = isNum(g.coverage_percent) && g.coverage_percent < 50;\n    if (lowCov && tone === "ok") { to'
-    'ne = "warn"; title = "Insufficient coverage"; }\n    var verdict = document.getElementById("verdict")'
-    ';\n    verdict.className = "signal " + tone;\n    clear(verdict);\n    verdict.appendChild(el("div", { '
-    'className: "k", text: "Verdict" }));\n    verdict.appendChild(el("b", { text: title }));\n    verdict.'
-    'appendChild(el("p", { text: (ev ? (sevText || "No findings") + " · coverage " + pct(g.coverage_perce'
-    'nt) : "No checks evaluated") + (lowCov ? " · only " + ev + " of " + (ev + (g.not_evaluated || 0)) + '
-    '" evaluated" : "") }));\n\n    var dist = document.getElementById("severity-dist");\n    clear(dist);\n '
-    '   dist.hidden = !fails;\n    if (fails) {\n      dist.appendChild(rich(el("div", { className: "dist-h'
-    'ead" }), ["Findings by severity", ""]));\n      dist.firstChild.appendChild(rich(el("span"), [[num(fa'
-    'ils)], " of " + num(g.total || 0) + " checks failed"]));\n      var track = el("div", { className: "t'
-    'rack", role: "img", "aria-label": sevText });\n      var legend = el("div", { className: "legend" });'
-    '\n      SEVS.forEach(function (s) {\n        if (!counts[s]) { return; }\n        var seg = el("i", { t'
-    'itle: L.sev[s] + ": " + counts[s] });\n        seg.style.width = (100 * counts[s] / fails) + "%";\n   '
-    '     seg.style.background = SEV_BAR[s];\n        track.appendChild(seg);\n        var key = el("i");\n '
-    '       key.style.background = SEV_BAR[s];\n        legend.appendChild(el("span", null, [key, L.sev[s]'
-    ' + " ", el("b", { text: String(counts[s]) })]));\n      });\n      dist.appendChild(track);\n      dist'
-    '.appendChild(legend);\n    }\n\n    var client = snap.client || { name: "Customer", logo_data_uri: "", '
-    'logo_alt: "Authorized customer logo" };\n    var plaque = document.getElementById("brand-plaque");\n  '
-    '  clear(plaque);\n    var hasLogo = client.logo_data_uri && /^data:image\\/(png|jpeg);base64,[A-Za-z0-'
-    '9+/=]+$/.test(client.logo_data_uri);\n    if (hasLogo) { plaque.appendChild(el("img", { src: client.l'
-    'ogo_data_uri, alt: client.logo_alt || client.name || "Customer" })); }\n    else { plaque.appendChild'
-    '(el("span", { className: "brand-placeholder", text: client.name || "Customer" })); }\n    var nameLab'
-    'el = document.getElementById("client-name-label");\n    nameLabel.textContent = client.name || "Custo'
-    'mer";\n    nameLabel.hidden = !hasLogo;\n  }\n\n  function renderKpis(snap, g, counts) {\n    var sc = (s'
-    'nap.dependencies && snap.dependencies.summary_counts) || {}, fin = snap.finops || {};\n    var fails '
-    '= (snap.findings || []).length, ev = g.evaluated || 0;\n    var holder = document.getElementById("kpi'
-    's");\n    clear(holder);\n    var sevText = SEVS.filter(function (s) { return counts[s]; }).map(functi'
-    'on (s) { return counts[s] + " " + plural(counts[s], SEV_WORD[s][0], SEV_WORD[s][1]); }).join(" · ");'
-    '\n    var sp = pctParts(g.score), cp = pctParts(g.coverage_percent);\n    var hasCost = isNum(fin.actu'
-    'al_cost);\n    var win = fin.window ? day(fin.window.start).slice(5) + " → " + day(fin.window.end).sl'
-    'ice(5) : null;\n    var cm = snap.databricks_costs || {}, ch = cm.headline || {};\n    costCurrency = '
-    'cm.currency || "";\n    var costKpi = isNum(ch.review_total)\n      ? kpi(NF0.format(ch.review_total),'
-    ' cm.currency || "", "Databricks cost", monthName(ch.review_month).split(" ")[0] + (isNum(ch.dbu_shar'
-    'e) ? " · " + NF0.format(ch.dbu_share) + "% DBU" : "") + (isNum(ch.estimated_monthly_savings) ? " · s'
-    'avings ≈ " + money(ch.estimated_monthly_savings) + "/month" : " · " + signedPct(ch.change_pct) + " v'
-    's previous month"))\n      : kpi(hasCost ? NF2.format(fin.actual_cost) : "—", hasCost ? (fin.currency'
-    ' || "") : "", "Observed cost", hasCost ? "ActualCost · " + (win || "period to date") : "Not evaluate'
-    'd");\n    var list = FOCUS === "costs" && isNum(ch.review_total) ? [\n      kpi(NF0.format(ch.review_t'
-    'otal), cm.currency || "", "Cost in " + monthName(ch.review_month).split(" ")[0], signedPct(ch.change'
-    '_pct) + " vs " + monthName(ch.previous_month).split(" ")[0]),\n      kpi(NF0.format(ch.mtd_total), cm'
-    '.currency || "", "Current month", "through " + ch.mtd_days + " " + monthName(ch.current_month).split'
-    '(" ")[0]),\n      kpi(NF0.format(ch.dbu_share || 0), "%", "DBU", NF0.format(100 - (ch.dbu_share || 0)'
-    ') + "% infrastructure (" + money(ch.infra_total) + ")"),\n      kpi(isNum(ch.unattributed_share) ? NF'
-    '1.format(ch.unattributed_share) : "—", isNum(ch.unattributed_share) ? "%" : "", "Without a compute t'
-    'ag", isNum(ch.unattributed_total) ? money(ch.unattributed_total) + " unattributed" : "Not evaluated"'
-    '),\n      kpi(isNum(ch.estimated_monthly_savings) ? NF0.format(ch.estimated_monthly_savings) : "—", i'
-    'sNum(ch.estimated_monthly_savings) ? cm.currency || "" : "", "Estimated monthly savings", ch.savings'
-    '_signals + " of " + ch.signals + " signals, nothing counted twice"),\n      kpi(num(fails), "", "Conf'
-    'iguration findings", sevText || "No observed deviations")\n    ] : [\n      kpi(num(fails), "", "Findi'
-    'ngs", sevText || "No observed deviations"),\n      kpi(sp[0], sp[1], "Local index", ev ? "Based on " '
-    '+ ev + " evaluated" : "No evaluated checks"),\n      kpi(cp[0], cp[1], "Evaluated coverage", ev + " o'
-    'f " + (ev + (g.not_evaluated || 0)) + " applicable"),\n      kpi(num(sc.edges_total || 0), "", "Relat'
-    'ionships", num(sc.edges_observed || 0) + " OBSERVED · " + num(sc.edges_inferred || 0) + " INFERRED")'
-    ',\n      kpi(num(sc.unknowns_total || 0), "", "UNKNOWN blind spots", num(sc.broken_references_total |'
-    '| 0) + plural(sc.broken_references_total || 0, " broken reference", " broken references")),\n      co'
-    'stKpi\n    ];\n    list.forEach(function (k) { holder.appendChild(k); });\n\n    var notices = document.'
-    'getElementById("notices");\n    clear(notices);\n    if (snap.provenance === "SIMULATED") {\n      noti'
-    'ces.appendChild(el("div", { className: "sim", role: "note" }, [icon("alert"), el("span", { text: "Si'
-    "mulated data: this report comes from a synthetic test dataset; the figures don't describe a real wor"
-    'kspace." })]));\n    }\n    var gaps = (snap.sources || []).filter(function (s) { return s.status !== '
-    '"complete" && s.status !== "not_applicable"; });\n    if (gaps.length) {\n      var listed = gaps.slic'
-    'e(0, 6).map(function (s) { return s.id + " (" + lab(L.src, s.status).toLowerCase() + ")"; }).join(",'
-    ' ") + (gaps.length > 6 ? " and " + (gaps.length - 6) + " more" : "");\n      notices.appendChild(el("'
-    'div", { className: "note", role: "note" }, [icon("info"), el("span", { text: gaps.length + plural(ga'
-    'ps.length, " source without complete data: ", " sources without complete data: ") + listed + ". Chec'
-    'ks that depend on them show as Not evaluated (section 8)." })]));\n    }\n  }\n\n  function renderFacts('
-    'snap) {\n    var ws = snap.workspace || {};\n    var facts = document.getElementById("cover-facts");\n '
-    '   clear(facts);\n    function fact(label, main, sub) {\n      var dd = el("dd");\n      if (main insta'
-    'nceof Node) { dd.appendChild(main); } else { dd.textContent = main === null || main === undefined ||'
-    ' main === "" ? "—" : String(main); }\n      if (sub instanceof Node) { var w = el("small"); w.appendC'
-    'hild(sub); dd.appendChild(w); } else if (sub) { dd.appendChild(el("small", { text: sub })); }\n      '
-    'facts.appendChild(el("div", null, [el("dt", { text: label }), dd]));\n    }\n    fact("Workspace", ws.'
-    'name, brk(ws.workspace_url || "—"));\n    fact("ARM resource", armCell(ws.id, ws.name));\n    fact("Ma'
-    'naged resource group", brk(ws.managed_resource_group || "—", ""));\n    fact("Region · SKU", (ws.regi'
-    'on || "—") + " · " + (ws.sku_name || "—"), ws.sku_tier ? "Tier " + ws.sku_tier : null);\n    fact("Ne'
-    'twork", "Public access: " + access(ws.public_network_access), "No public IP (NPIP): " + yesNo(ws.ena'
-    'ble_no_public_ip) + (ws.custom_virtual_network_id ? " · VNet injection" : ""));\n    fact("Authentica'
-    'tion", ws.auth_mode || "—", ws.cross_tenant ? "Cross-tenant" : "Same tenant");\n    var tenants = el('
-    '"span");\n    if (ws.cross_tenant) { tenants.appendChild(mono(ws.sre_tenant_id)); tenants.appendChild'
-    '(el("br")); tenants.appendChild(mono("→ " + (ws.target_tenant_id || "—"))); }\n    else { tenants.app'
-    'endChild(mono(ws.target_tenant_id)); }\n    fact(ws.cross_tenant ? "SRE tenant → target tenant" : "Te'
-    'nant", tenants);\n    fact("Default Unity Catalog catalog", ws.default_catalog_name || "—", ws.defaul'
-    't_catalog_type || null);\n  }\n\n  function renderExecutive(snap, g) {\n    var msgList = document.getEl'
-    'ementById("executive-messages");\n    clear(msgList);\n    (snap.executive_messages || []).forEach(fun'
-    'ction (m) { msgList.appendChild(el("li", { text: m })); });\n    var total = Math.max(1, g.total || 0'
-    ');\n    var status = document.getElementById("check-status");\n    clear(status);\n    [\n      ["passed'
-    '", "Observed configuration meets the local rule.", "var(--ok-bar)"],\n      ["failed", "Observed devi'
-    'ation or broken reference.", "var(--crit-bar)"],\n      ["not_evaluated", "Source not available, requ'
-    'irement not confirmed or scope that needs compute.", "var(--info-bar)"],\n      ["not_applicable", "E'
-    'xcluded from the denominator by object type or a false requirement.", "var(--line2)"]\n    ].forEach('
-    'function (r) {\n      var n = g[r[0]] || 0;\n      status.appendChild(barRow(el("span", { className: "'
-    'st st-" + r[0], text: L.status[r[0]] }), r[1], 100 * n / total, num(n), NF.format(100 * n / total) +'
-    ' "%", r[2], !n));\n    });\n    scoreBars("area-scores", snap.scores && snap.scores.areas, L.area);\n  '
-    '  scoreBars("pillar-scores", snap.scores && snap.scores.pillars, L.pillar);\n    var list = document.'
-    'getElementById("priority-findings");\n    clear(list);\n    var priorities = (snap.findings || []).fil'
-    'ter(function (f) { return f.severity === "critical" || f.severity === "high"; })\n      .sort(functio'
-    'n (a, b) { return SEVS.indexOf(a.severity) - SEVS.indexOf(b.severity); });\n    if (!priorities.lengt'
-    'h) { list.appendChild(el("li", null, [emptyState("No critical or high-severity findings in the evalu'
-    'ated checks.")])); }\n    priorities.forEach(function (f) {\n      list.appendChild(el("li", null, [\n '
-    '       sevPill(f.severity, f.severity_label),\n        el("div", { className: "pt", text: f.title }),'
-    '\n        el("div", { className: "pm", text: f.rule_id + " · " + lab(L.level, f.level) + (f.workload_'
-    'name ? ": " + f.workload_name : "") + " — " + (f.business_impact || f.reason || "") })\n      ]));\n  '
-    '  });\n  }\n\n  function renderInventory(snap) {\n    var inv = snap.inventory || {};\n    function count'
-    '(id, n, word) { document.getElementById(id).textContent = n + " " + word; }\n    var computeRows = []'
-    '.concat(inv.clusters || [], inv.instance_pools || [], inv.cluster_policies || [], inv.global_init_sc'
-    'ripts || []);\n    count("inv-compute-count", computeRows.length, plural(computeRows.length, "object"'
-    ', "objects"));\n    renderTable(document.getElementById("inv-compute-table"),\n      ["Type", "Name / '
-    'ID", "State / runtime", "Access / auto-termination", "Policy / pool"],\n      computeRows.map(functio'
-    'n (r) {\n        return [\n          { v: kindLabel(r.kind) },\n          { v: stack(r.name || "—", mon'
-    'o(r.id)), s: r.name },\n          { v: stack(r.state || "—", r.spark_version ? mono(r.spark_version) '
-    ': null), s: r.state },\n          (r.data_security_mode || "—") + (r.autotermination_minutes !== unde'
-    'fined && r.autotermination_minutes !== null ? " · " + r.autotermination_minutes + " min" : ""),\n    '
-    '      { v: stack(r.policy_id ? mono(r.policy_id) : "—", r.instance_pool_id ? mono("Pool: " + r.insta'
-    'nce_pool_id) : null) }\n        ];\n      }), { sortable: true }\n    );\n    var orchRows = [];\n    (in'
-    'v.jobs || []).forEach(function (j) {\n      var tasks = el("div", { className: "chips" });\n      (j.t'
-    'asks || []).forEach(function (t) { tasks.appendChild(el("span", { text: t.task_key })); });\n      or'
-    'chRows.push([{ v: kindLabel("Job") }, { v: stack(j.name, mono(j.id)), s: j.name }, j.scheduled ? "Sc'
-    'heduled" : "Not scheduled",\n        { v: stack(j.run_as_service_principal ? "Service principal" : "U'
-    'ser (no SP)", j.run_as_service_principal ? mono(j.run_as_service_principal) : null) },\n        { v: '
-    '(j.tasks || []).length ? tasks : "—" }]);\n    });\n    (inv.pipelines || []).forEach(function (p) {\n '
-    '     orchRows.push([{ v: kindLabel("dlt_pipeline") }, { v: stack(p.name, mono(p.id)), s: p.name }, p'
-    '.state || "—", "Serverless: " + yesNo(p.serverless),\n        "Catalog " + (p.catalog || "hive_metast'
-    'ore") + " · target " + (p.target || "—")]);\n    });\n    (inv.sql_warehouses || []).forEach(function '
-    '(w) {\n      orchRows.push([{ v: kindLabel("sql_warehouse") }, { v: stack(w.name, mono(w.id)), s: w.n'
-    'ame }, (w.state || "—") + " · " + (w.cluster_size || "—"),\n        "Serverless: " + yesNo(w.enable_s'
-    'erverless_compute) + " · auto-stop " + (isNum(w.auto_stop_mins) ? w.auto_stop_mins + " min" : "—"), '
-    'w.warehouse_type || "—"]);\n    });\n    count("inv-orchestration-count", orchRows.length, plural(orch'
-    'Rows.length, "object", "objects"));\n    renderTable(document.getElementById("inv-orchestration-table'
-    '"),\n      ["Type", "Name / ID", "State / schedule", "Identity / mode", "Tasks / target"], orchRows, '
-    '{ sortable: true });\n    var ucRows = [];\n    if (inv.uc_metastore) {\n      ucRows.push([L.kind.uc_m'
-    'etastore, { v: brk(inv.uc_metastore.name, "") }, { v: mono(inv.uc_metastore.id) }, { v: brk(inv.uc_m'
-    'etastore.storage_root || "—") }, "Region " + (inv.uc_metastore.region || "—")]);\n    }\n    (inv.uc_c'
-    'atalogs || []).forEach(function (c) { ucRows.push([L.kind.uc_catalog, { v: brk(c.name, "") }, c.cata'
-    'log_type || "—", { v: brk(c.storage_root || "—") }, "Isolation " + (c.isolation_mode || "—")]); });\n'
-    '    (inv.uc_schemas || []).forEach(function (s) { ucRows.push([L.kind.uc_schema, { v: brk(s.full_nam'
-    'e, "") }, s.catalog_name, { v: brk(s.storage_root || "—") }, "—"]); });\n    (inv.uc_storage_credenti'
-    'als || []).forEach(function (cr) { ucRows.push([L.kind.uc_storage_credential, { v: brk(cr.name, "") '
-    '}, cr.uses_managed_identity ? "Managed identity" : "Service principal", { v: cr.access_connector_id '
-    '? armCell(cr.access_connector_id) : "—" }, "Read-only: " + yesNo(cr.read_only)]); });\n    (inv.uc_ex'
-    'ternal_locations || []).forEach(function (loc) { ucRows.push([L.kind.uc_external_location, { v: brk('
-    'loc.name, "") }, "Credential " + (loc.credential_name || "—"), { v: brk(loc.url || "—") }, "Read-onl'
-    'y: " + yesNo(loc.read_only)]); });\n    (inv.uc_connections || []).forEach(function (cn) { ucRows.pus'
-    'h([L.kind.uc_connection, { v: brk(cn.name, "") }, cn.connection_type || "—", { v: brk(cn.host || "—"'
-    ') }, "Credential " + (cn.credential_type || "—")]); });\n    (inv.secret_scopes || []).forEach(functi'
-    'on (sc) { ucRows.push([L.kind.secret_scope, { v: brk(sc.name, "") }, sc.backend_type || "—", { v: sc'
-    '.keyvault_resource_id ? armCell(sc.keyvault_resource_id) : brk(sc.keyvault_dns_name || "—") }, "Valu'
-    'es never read"]); });\n    count("inv-uc-count", ucRows.length, plural(ucRows.length, "object", "obje'
-    'cts"));\n    renderTable(document.getElementById("inv-uc-table"), ["Object", "Name", "Type / credenti'
-    'al", { t: "URI / resource", c: "w" }, "Detail"], ucRows, { sortable: true });\n    var resRows = [];\n'
-    '    (inv.related_resources || []).forEach(function (r) {\n      var a = r.association || {};\n      re'
-    'sRows.push([{ v: kindLabel(r.resource_kind) }, { v: armCell(r.id, r.name), s: r.name },\n        { v:'
-    ' stack(a.type || "—", brk([a.source_id, a.field].filter(Boolean).join(" · "))) }, { v: evidenceCell('
-    'r.configuration) }]);\n    });\n    (inv.outbound_endpoints || []).forEach(function (o) {\n      var ch'
-    'ips = el("div", { className: "chips" });\n      (o.endpoints || []).forEach(function (ep) {\n        v'
-    'ar ports = (ep.details || []).map(function (d) { return d.port; }).filter(Boolean).join(", ");\n     '
-    '   chips.appendChild(el("span", { text: (ep.domain_name || ep.domainName || "—") + (ports ? ":" + po'
-    'rts : "") }));\n      });\n      resRows.push([{ v: kindLabel("OutboundDependency") }, { v: stack(o.ca'
-    'tegory || "—", null), s: o.category }, { v: stack("outboundNetworkDependenciesEndpoints", null) }, {'
-    ' v: chips.firstChild ? chips : "—" }]);\n    });\n    count("inv-resources-count", resRows.length, plu'
-    'ral(resRows.length, "resource or endpoint", "resources and endpoints"));\n    renderTable(document.ge'
-    'tElementById("inv-resources-table"), ["Type", "Resource", "Association", { t: "Observed configuratio'
-    'n", c: "w", s: false }], resRows, { sortable: true });\n  }\n\n  function renderFinops(snap) {\n    var '
-    'fin = snap.finops || {};\n    var legacy = document.getElementById("finops-legacy");\n    var configur'
-    'ed = (fin.cost_rows || []).length > 0 || fin.cost_source_complete;\n    var amount = document.getElem'
-    'entById("finops-actual-cost");\n    clear(amount);\n    amount.hidden = !configured;\n    if (isNum(fin'
-    '.actual_cost)) { amount.className = "stat"; amount.appendChild(document.createTextNode(NF2.format(fi'
-    'n.actual_cost) + " ")); amount.appendChild(el("small", { text: fin.currency || "" })); }\n    else { '
-    'amount.className = "stat na"; amount.textContent = "Not evaluated"; }\n    document.getElementById("f'
-    'inops-cost-window").textContent = fin.window && configured ? "Window " + day(fin.window.start) + " →'
-    ' " + day(fin.window.end) + " · azure_cost source " + (fin.cost_source_complete ? "complete" : "incom'
-    'plete") : "Off (cost_scope = disabled). Optional: amounts by approved ResourceId, with no split by w'
-    'orkload.";\n    var notes = document.getElementById("finops-cost-note");\n    clear(notes);\n    (confi'
-    'gured ? fin.notes || [] : []).forEach(function (n) { notes.appendChild(el("li", { text: n })); });\n '
-    '   var table = document.getElementById("finops-cost-table");\n    table.parentNode.hidden = !configur'
-    'ed;\n    renderTable(table,\n      ["Resource", "Date", { t: "Amount", c: "n" }, "Currency", "Basis"],'
-    '\n      (fin.cost_rows || []).map(function (r) {\n        return [{ v: armCell(r.resource_id) }, r.usa'
-    'ge_date ? day(r.usage_date) : "Period to date", { v: isNum(r.amount) ? NF2.format(r.amount) : num(r.'
-    'amount), s: r.amount }, r.currency, r.basis];\n      }), { empty: "No billing rows observed in the ap'
-    'proved scope." }\n    );\n    legacy.hidden = false;\n  }\n\n  var NF0 = new Intl.NumberFormat("en-US", {'
-    ' maximumFractionDigits: 0, useGrouping: "always" });\n  var NF1 = new Intl.NumberFormat("en-US", { mi'
-    'nimumFractionDigits: 1, maximumFractionDigits: 1 });\n  var MONTHS = ["January", "February", "March",'
-    ' "April", "May", "June", "July", "August", "September", "October", "November", "December"];\n  var C '
-    '= {\n    family: { all_purpose: "All-purpose (interactive)", jobs: "Jobs", jobs_light: "Jobs Light", '
-    'sql: "Pro and classic SQL warehouses", sql_serverless: "Serverless SQL warehouses",\n      pipelines:'
-    ' "Pipelines (DLT)", serverless: "Serverless (notebooks and jobs)", ai: "AI and model serving", other'
-    ': "Other DBUs" },\n    category: { "virtual machines": "Virtual machines", storage: "Storage and disk'
-    's", bandwidth: "Data transfer", "virtual network": "Virtual network (NAT, public IPs)",\n      "load '
-    'balancer": "Load balancer", "azure databricks": "DBU", "nat gateway": "NAT gateway" },\n    gapWhy: {'
-    ' storage: "Workspace root storage (DBFS) and disks without a cluster", "azure databricks": "They car'
-    'ry no Azure tags: split them with serverless usage policies or system tables",\n      bandwidth: "Out'
-    'bound data transfer", "virtual network": "Workspace NAT gateway and public IP addresses", "load bala'
-    'ncer": "Workspace load balancer",\n      "virtual machines": "Virtual machines without Databricks tag'
-    's" },\n    dim: { cluster: "Clusters", job: "Jobs", warehouse: "SQL warehouses", pool: "Pools", creat'
-    'ors: "Creators" },\n    kind: { all_purpose: "Interactive cluster", job_run: "Job cluster", job_runs:'
-    ' "Ephemeral job clusters", pipeline: "Pipeline cluster", pipeline_runs: "Pipeline clusters (DLT)",\n '
-    '     not_in_inventory: "Not in the inventory (deleted or another type)", job: "Job", warehouse: "SQL'
-    ' warehouse", pool: "Pool" },\n    objKind: { AllPurposeCluster: "Interactive cluster", Job: "Job", In'
-    'stancePool: "Pool", SqlWarehouse: "SQL warehouse", ClusterPolicy: "Compute policy", Runtime: "Runtim'
-    'e", NodeType: "VM type" },\n    saving: { lower_bound: "at least", upper_bound: "up to", estimate: "≈'
-    '" },\n    basis: { weekend_cost: "the month\'s Saturday and Sunday cost", jobs_dbu_ratio: "cluster DBU'
-    ' × (1 − jobs/all-purpose ratio)", spot_discount: "worker VMs × spot discount",\n      daily_floor: "m'
-    'inimum daily cost × days in the month", always_on_weekends: "cost × weekend days / days in the month'
-    '" },\n    ev: { autotermination_minutes: "auto-termination (min)", state: "state", uptime_hours: "run'
-    'ning (h)", active_days: "days with cost", weekend_cost: "weekend cost",\n      jobs: "jobs", jobs_cou'
-    'nt: "job count", dbu_cost: "DBU cost", availability: "availability", workers: "workers", vm_cost: "V'
-    'M cost", continuous: "continuous",\n      max_workers: "max workers", min_idle_instances: "min idle",'
-    ' idle_now: "idle now", idle_autotermination_minutes: "idle release (min)",\n      daily_floor: "daily'
-    ' floor", auto_stop_mins: "auto-stop (min)", serverless: "serverless", warehouse_type: "type", cluste'
-    'r_size: "size", objects: "objects",\n      allocation_tags: "tags", supported_list_checked: "official'
-    ' list checked", deprecated: "retired" },\n    status: { complete: "Complete", partial: "Partial", den'
-    'ied: "Denied", error: "Error", skipped: "Skipped (time limit)", not_configured: "Not configured", no'
-    't_collected: "Not collected" }\n  };\n  var costCurrency = "";\n  function monthName(label, short) {\n  '
-    '  var m = /^(\\d{4})-(\\d{2})$/.exec(String(label || ""));\n    if (!m) { return String(label || "—"); '
-    '}\n    var name = MONTHS[Number(m[2]) - 1] || m[2];\n    return short ? name.slice(0, 3) + " " + m[1] '
-    ': name + " " + m[1];\n  }\n  function money(v, cur) {\n    if (!isNum(v)) { return "—"; }\n    return (v'
-    ' === 0 ? "0" : Math.abs(v) < 10 ? NF2.format(v) : NF0.format(v)) + (cur === "" ? "" : "\\u00a0" + (cu'
-    'r || costCurrency));\n  }\n  function signedPct(v) { return isNum(v) ? (v > 0 ? "+" : v < 0 ? "−" : ""'
-    ') + NF1.format(Math.abs(v)) + "%" : "—"; }\n  function deltaNode(pct, abs, cur) {\n    if (!isNum(pct)'
-    ' && !isNum(abs)) { return el("span", { className: "muted", text: "no previous month" }); }\n    var u'
-    'p = (isNum(abs) ? abs : pct) > 0;\n    var text = isNum(pct) ? signedPct(pct) : (abs > 0 ? "+" : "−")'
-    ' + money(Math.abs(abs), cur);\n    return el("span", { className: up ? "up" : "down", text: text });\n'
-    '  }\n  function sh(v) { return isNum(v) ? NF1.format(v) + "%" : "—"; }\n  function lowerKey(s) { retur'
-    'n String(s || "").toLowerCase(); }\n  function costRows(m) { return (m && m.attribution && m.attribut'
-    'ion.rows) || []; }\n  function rowName(r) {\n    if (r.kind === "job_runs") { return "Ephemeral job cl'
-    'usters (" + r.count + plural(r.count, " run", " runs") + ")"; }\n    if (r.kind === "pipeline_runs") '
-    '{ return "Pipeline clusters (DLT)"; }\n    return r.name;\n  }\n  function tagChips(tags) {\n    var key'
-    's = Object.keys(tags || {});\n    if (!keys.length) { return el("span", { className: "muted", text: "'
-    'No tags" }); }\n    var wrap = el("div", { className: "chips" });\n    keys.forEach(function (k) { wra'
-    'p.appendChild(el("span", null, [k + ": ", el("b", { text: String(tags[k]) })])); });\n    return wrap'
-    ';\n  }\n  function evText(v) {\n    if (Array.isArray(v)) { return v.join(", "); }\n    if (v === true) '
-    '{ return "Yes"; }\n    if (v === false) { return "No"; }\n    return isNum(v) ? NF.format(v) : String('
-    'v);\n  }\n  function sigChips(ev) {\n    var wrap = el("div", { className: "chips" }), n = 0;\n    Objec'
-    't.keys(ev || {}).forEach(function (k) {\n      var v = ev[k];\n      if (v === null || v === undefined'
-    ' || v === "" || (Array.isArray(v) && !v.length) || n >= 4) { return; }\n      var shown = /cost|floor'
-    '/.test(k) && isNum(v) ? money(v) : evText(v);\n      wrap.appendChild(el("span", null, [(C.ev[k] || k'
-    ') + ": ", el("b", { text: shown })]));\n      n++;\n    });\n    return n ? wrap : null;\n  }\n  function'
-    ' savingCell(s) {\n    if (!isNum(s.estimated_monthly_saving)) { return { v: el("span", { className: "'
-    'muted", text: s.monthly_cost === null ? "—" : "No estimate" }), s: -1 }; }\n    var box = el("div", {'
-    ' className: "sav" + (s.counted ? "" : " nc") }, [(C.saving[s.saving_kind] || "≈") + " " + money(s.es'
-    'timated_monthly_saving)]);\n    box.appendChild(el("small", { text: s.counted ? C.basis[s.saving_basi'
-    's] || "" : "Not counted: same object as a larger saving" }));\n    return { v: box, s: s.counted ? s.'
-    'estimated_monthly_saving : s.estimated_monthly_saving / 1000 };\n  }\n  var COST_TAB = "cluster";\n  fu'
-    'nction costTabs(m) {\n    var tabs = [];\n    ((m.attribution && m.attribution.dimensions) || []).forE'
-    'ach(function (d) { tabs.push({ id: d.key, label: C.dim[d.key] || d.key }); });\n    if (m.attribution'
-    ' && (m.attribution.creators || []).length) { tabs.push({ id: "creators", label: C.dim.creators }); }'
-    '\n    ((m.attribution && m.attribution.custom_tags) || []).forEach(function (t) { tabs.push({ id: "ta'
-    'g:" + t.tag, label: "Tag " + t.tag }); });\n    return tabs;\n  }\n  function drawCostTabs(m) {\n    var'
-    ' holder = document.getElementById("cost-tabs");\n    clear(holder);\n    var tabs = costTabs(m);\n    i'
-    'f (!tabs.some(function (t) { return t.id === COST_TAB; })) { COST_TAB = tabs.length ? tabs[0].id : "'
-    'cluster"; }\n    tabs.forEach(function (t, i) {\n      var b = el("button", { type: "button", role: "t'
-    'ab", id: "cost-tab-" + i, "aria-selected": t.id === COST_TAB ? "true" : "false", "aria-controls": "c'
-    'ost-attr-panel", tabindex: t.id === COST_TAB ? "0" : "-1", text: t.label });\n      b.addEventListene'
-    'r("click", function () { COST_TAB = t.id; drawCostTabs(m); renderAttribution(m); });\n      b.addEven'
-    'tListener("keydown", function (ev) {\n        if (ev.key !== "ArrowRight" && ev.key !== "ArrowLeft") '
-    '{ return; }\n        var next = tabs[(i + (ev.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.len'
-    'gth];\n        COST_TAB = next.id;\n        drawCostTabs(m);\n        renderAttribution(m);\n        var'
-    ' focusBtn = document.querySelector(\'#cost-tabs [aria-selected="true"]\');\n        if (focusBtn) { foc'
-    'usBtn.focus(); }\n        ev.preventDefault();\n      });\n      if (t.id === COST_TAB) { document.getE'
-    'lementById("cost-attr-panel").setAttribute("aria-labelledby", "cost-tab-" + i); }\n      holder.appen'
-    'dChild(b);\n    });\n  }\n  function attributionView(m) {\n    var head = m.headline || {}, q = (documen'
-    't.getElementById("cost-attr-search").value || "").toLowerCase().trim();\n    var prev = monthName(hea'
-    'd.previous_month, true), view = { headers: [], rows: [], note: "" };\n    function keep(text) { retur'
-    'n !q || String(text).toLowerCase().indexOf(q) >= 0; }\n    var deltaHead = { t: "vs " + prev, c: "n" '
-    '};\n    if (COST_TAB === "creators") {\n      view.headers = ["Creator", { t: "Month cost", c: "n" }, '
-    '{ t: "% of month", c: "n" }];\n      view.rows = (m.attribution.creators || []).filter(function (r) {'
-    ' return keep(r.creator); }).map(function (r) {\n        return [{ v: brk(r.creator === "—" ? "No know'
-    'n creator" : r.creator, ""), s: r.creator }, { v: money(r.total), s: r.total, c: "n" }, { v: sh(r.sh'
-    'are), s: r.share, c: "n" }];\n      });\n      view.note = "By who created each cluster, job and SQL w'
-    'arehouse in the current inventory; deleted objects have no creator.";\n      return view;\n    }\n    i'
-    'f (COST_TAB.indexOf("tag:") === 0) {\n      var t = (m.attribution.custom_tags || []).filter(function'
-    ' (x) { return "tag:" + x.tag === COST_TAB; })[0] || { values: [] };\n      view.headers = ["Tag value'
-    ' · " + t.tag, { t: "DBU", c: "n" }, { t: "Infrastructure", c: "n" }, { t: "Total", c: "n" }, { t: "%'
-    ' of month", c: "n" }, deltaHead];\n      view.rows = (t.values || []).filter(function (r) { return ke'
-    'ep(r.value); }).map(function (r) {\n        return [{ v: el("b", { text: r.value }), s: r.value }, { '
-    'v: money(r.dbu), s: r.dbu, c: "n" }, { v: money(r.infra), s: r.infra, c: "n" }, { v: money(r.total),'
-    ' s: r.total, c: "n" },\n          { v: sh(r.share), s: r.share, c: "n" }, { v: deltaNode(r.previous_t'
-    'otal ? 100 * (r.total - r.previous_total) / r.previous_total : null, r.total - r.previous_total), s:'
-    ' r.total - r.previous_total, c: "n" }];\n      });\n      if (isNum(t.untagged_total) && keep("untagge'
-    'd")) {\n        var why = (t.untagged_categories || []).slice(0, 3).map(function (c) { return lab(C.c'
-    'ategory, lowerKey(c.category)) + " " + money(c.review); }).join(" · ");\n        view.rows.push([{ v:'
-    ' stack("Untagged · " + t.tag, why || null), s: "~" }, { v: "—", c: "n", s: -1 }, { v: "—", c: "n", s'
-    ': -1 }, { v: money(t.untagged_total), s: t.untagged_total, c: "n" },\n          { v: sh(isNum(head.re'
-    'view_total) && head.review_total ? 100 * t.untagged_total / head.review_total : null), s: t.untagged'
-    '_total, c: "n" }, { v: "—", c: "n", s: 0 }]);\n      }\n      view.note = isNum(t.tagged_share) ? "The'
-    ' " + t.tag + " tag is on " + sh(t.tagged_share) + " of the month\'s cost; without it, " + money(t.unt'
-    'agged_total) + " remain." : "Query of tag " + t.tag + ": " + lab(C.status, t.status) + ".";\n      re'
-    'turn view;\n    }\n    var d = ((m.attribution && m.attribution.dimensions) || []).filter(function (x)'
-    ' { return x.key === COST_TAB; })[0] || {};\n    view.headers = ["Name", { t: "DBU", c: "n" }, { t: "I'
-    'nfrastructure", c: "n" }, { t: "Total", c: "n" }, { t: "% of month", c: "n" }, deltaHead, "Allocatio'
-    'n tags"];\n    view.rows = costRows(m).filter(function (r) { return r.dimension === COST_TAB && keep('
-    'rowName(r) + " " + JSON.stringify(r.tags) + " " + (r.creator || "")); }).map(function (r) {\n      va'
-    'r grouped = r.kind === "job_runs" || r.kind === "pipeline_runs";\n      var sub = grouped ? (r.kind ='
-    '== "job_runs" ? "Detail by job on the Jobs tab" : "Tags in each pipeline definition") : lab(C.kind, '
-    'r.kind) + (r.creator ? " · " + r.creator : "");\n      return [{ v: stack(brk(rowName(r), ""), sub), '
-    's: rowName(r) }, { v: money(r.dbu), s: r.dbu, c: "n" }, { v: money(r.infra), s: r.infra, c: "n" }, {'
-    ' v: el("b", { text: money(r.total) }), s: r.total, c: "n" },\n        { v: sh(r.share), s: r.share, c'
-    ': "n" }, { v: deltaNode(r.change_pct, r.change), s: r.change, c: "n" }, { v: grouped ? el("span", { '
-    'className: "muted", text: "—" }) : tagChips(r.tags) }];\n    });\n    if (isNum(d.untagged_total) && k'
-    'eep("untagged")) {\n      view.rows.push([{ v: stack("Untagged · " + d.tag, "Cost that this tag doesn'
-    '\'t explain"), s: "~" }, { v: "—", c: "n", s: -1 }, { v: "—", c: "n", s: -1 }, { v: money(d.untagged_'
-    'total), s: d.untagged_total, c: "n" },\n        { v: sh(isNum(d.tagged_share) ? 100 - d.tagged_share '
-    ': null), s: d.untagged_total, c: "n" }, { v: "—", c: "n", s: 0 }, { v: "—" }]);\n    }\n    var why = '
-    '{ cluster: "Jobs are grouped; their detail is on the Jobs tab.", job: "Only job compute carries JobI'
-    'd: a job that runs on an interactive cluster counts on that cluster.",\n      warehouse: "Each SQL wa'
-    'rehouse with its DBUs and, if it isn\'t serverless, its VMs.", pool: "A pool\'s VMs carry only the poo'
-    'l tags, never the tags of the cluster that uses them." }[COST_TAB] || "";\n    view.note = isNum(d.ta'
-    'gged_share) ? "The " + d.tag + " tag explains " + sh(d.tagged_share) + " of the month\'s cost. " + wh'
-    'y : "Query " + (d.tag || "") + ": " + lab(C.status, d.status) + ".";\n    return view;\n  }\n  function'
-    ' renderAttribution(m) {\n    var view = attributionView(m);\n    document.getElementById("cost-attr-no'
-    'te").textContent = view.note;\n    renderTable(document.getElementById("cost-attr-table"), view.heade'
-    'rs, view.rows, { sortable: true, page: 12, empty: "No cost in this view." });\n  }\n  function filtere'
-    'dSignals(m) {\n    var sev = document.getElementById("cost-sig-sev").value, sav = document.getElement'
-    'ById("cost-sig-saving").value;\n    var q = (document.getElementById("cost-sig-search").value || "").'
-    'toLowerCase().trim();\n    return (m.signals || []).filter(function (s) {\n      if (sev !== "all" && '
-    's.severity !== sev) { return false; }\n      if (sav === "with" && !isNum(s.estimated_monthly_saving)'
-    ') { return false; }\n      return !q || JSON.stringify(s).toLowerCase().indexOf(q) >= 0;\n    });\n  }\n'
-    '  function renderSignals(m) {\n    var all = m.signals || [], list = filteredSignals(m), head = m.hea'
-    'dline || {};\n    var counted = all.filter(function (s) { return s.counted; });\n    document.getEleme'
-    'ntById("cost-signals-count").textContent = "Showing " + list.length + " of " + all.length + plural(a'
-    'll.length, " signal", " signals") +\n      (counted.length ? " · " + counted.length + " with estimate'
-    'd savings that add up to " + money(head.estimated_monthly_savings) + " a month (only the largest per'
-    ' object counts)." : ".");\n    renderTable(document.getElementById("cost-signals-table"),\n      [{ t:'
-    ' "Severity" }, { t: "Signal and evidence", c: "w" }, { t: "Object" }, { t: "Month cost", c: "n" }, {'
-    ' t: "Estimated savings / month", c: "n" }, { t: "What to do", c: "w" }],\n      list.map(function (s)'
-    ' {\n        var d = el("div", { className: "fd" }, [el("b", { text: s.title })]);\n        var chips ='
-    ' sigChips(s.evidence);\n        if (chips) { d.appendChild(chips); }\n        var rec = el("div", { cl'
-    'assName: "fr" }, [el("p", { text: s.recommendation })]);\n        var link = safeLearnUrl(s.learn_url'
-    ');\n        if (link) { rec.appendChild(extLink(link, "Microsoft Learn")); }\n        return [\n       '
-    '   { v: sevPill(s.severity), s: ["high", "medium", "low"].indexOf(s.severity) },\n          { v: d, s'
-    ': s.title },\n          { v: stack(brk(s.object_name, ""), lab(C.objKind, s.object_kind)), s: s.objec'
-    't_name },\n          { v: money(s.monthly_cost), s: isNum(s.monthly_cost) ? s.monthly_cost : -1, c: "'
-    'n" },\n          savingCell(s),\n          { v: rec, s: s.recommendation }\n        ];\n      }), { sort'
-    'able: true, page: 12, empty: "No signal matches the filter." }\n    );\n  }\n  function costBars(holder'
-    ', items, total, color, cur) {\n    clear(holder);\n    var max = Math.max.apply(null, [1].concat(items'
-    '.map(function (i) { return i.value; })));\n    items.forEach(function (i) { holder.appendChild(barRow'
-    '(i.label, i.sub, 100 * i.value / max, money(i.value, cur), i.valueSub, color, false)); });\n    if (!'
-    'items.length) { holder.appendChild(emptyState("No cost in the reviewed month.")); }\n  }\n  function r'
-    'enderCostStats(m) {\n    var head = m.headline || {}, stats = document.getElementById("cost-stats");\n'
-    '    clear(stats);\n    function stat(k, n, unit, d) {\n      var nv = el("div", { className: "n" }, [S'
-    'tring(n)]);\n      if (unit) { nv.appendChild(el("small", { text: unit })); }\n      stats.appendChild'
-    '(el("div", { className: "cstat" }, [el("div", { className: "k", text: k }), nv, d ? (d instanceof No'
-    'de ? el("div", { className: "d" }, [d]) : el("div", { className: "d", text: d })) : null]));\n    }\n '
-    '   var delta = el("span", null, [deltaNode(head.change_pct, head.change), " vs " + monthName(head.pr'
-    'evious_month) + " (" + money(head.previous_total) + ")"]);\n    stat("Cost in " + monthName(head.revi'
-    'ew_month), money(head.review_total, ""), costCurrency, delta);\n    stat("DBU · infrastructure", isNu'
-    'm(head.dbu_share) ? NF0.format(head.dbu_share) + " · " + NF0.format(100 - head.dbu_share) : "—", "%"'
-    ', money(head.dbu_total) + " DBU · " + money(head.infra_total) + " infrastructure");\n    stat("Withou'
-    't a compute tag", isNum(head.unattributed_share) ? NF1.format(head.unattributed_share) : "—", isNum('
-    'head.unattributed_share) ? "%" : "",\n      isNum(head.unattributed_total) ? money(head.unattributed_'
-    'total) + " in shared services and serverless" : "Not evaluated");\n    stat("Estimated monthly saving'
-    's", isNum(head.estimated_monthly_savings) ? "≈ " + money(head.estimated_monthly_savings, "") : "—", '
-    'isNum(head.estimated_monthly_savings) ? costCurrency : "",\n      isNum(head.estimated_monthly_saving'
-    's) ? head.savings_signals + " of " + head.signals + " signals, nothing counted twice" : "No cost dat'
-    'a to estimate it");\n    var trend = document.getElementById("cost-trend");\n    clear(trend);\n    tre'
-    'nd.appendChild(el("h4", { text: "Monthly trend" }));\n    var maxTotal = Math.max.apply(null, [1].con'
-    'cat((m.monthly || []).map(function (r) { return r.total; })));\n    (m.monthly || []).forEach(functio'
-    'n (r) {\n      var row = el("div", { className: "mrow" + (r.partial ? " partial" : "") });\n      row.'
-    'appendChild(el("div", { className: "ml" }, [monthName(r.month, true), r.partial ? el("small", { text'
-    ': "through day " + (head.mtd_days || "—") }) : r.month === head.review_month ? el("small", { text: "'
-    'reviewed month" }) : null]));\n      var track = el("div", { className: "strack", role: "img", "aria-'
-    'label": monthName(r.month) + ": " + money(r.dbu) + " DBU and " + money(r.infra) + " infrastructure" '
-    '});\n      [["seg-dbu", r.dbu], ["seg-infra", r.infra]].forEach(function (p) { var seg = el("i", { cl'
-    'assName: p[0] }); seg.style.width = (100 * p[1] / maxTotal) + "%"; track.appendChild(seg); });\n     '
-    ' row.appendChild(track);\n      row.appendChild(el("div", { className: "mv", text: money(r.total) }))'
-    ';\n      trend.appendChild(row);\n    });\n    trend.appendChild(el("div", { className: "keys" }, [el("'
-    'span", null, [el("i", { className: "seg-dbu" }), "DBU"]), el("span", null, [el("i", { className: "se'
-    'g-infra" }), "Infrastructure"])]));\n  }\n  function renderCostSplit(m) {\n    var split = m.split || {'
-    '}, head = m.headline || {};\n    costBars(document.getElementById("cost-dbu-bars"), (split.dbu_famili'
-    'es || []).map(function (f) {\n      return { label: lab(C.family, f.key), sub: (f.meters || []).slice'
-    '(0, 2).map(function (x) { return x.meter; }).join(" · "), value: f.review,\n        valueSub: sh(f.sh'
-    'are) + (isNum(f.previous) && f.previous ? " · " + signedPct(100 * (f.review - f.previous) / f.previo'
-    'us) : "") };\n    }), head.dbu_total, "var(--chart)");\n    var ap = (split.dbu_families || []).filter'
-    '(function (f) { return f.key === "all_purpose"; })[0];\n    document.getElementById("cost-dbu-sub").t'
-    'extContent = ap && isNum(ap.share) && ap.share >= 25\n      ? "Interactive compute is " + sh(ap.share'
-    ') + " of DBU spend, and its DBU costs almost twice as much as a jobs DBU."\n      : "What Databricks '
-    'bills per processing unit, by workload type.";\n    costBars(document.getElementById("cost-infra-bars'
-    '"), (split.infra_categories || []).map(function (c) {\n      return { label: lab(C.category, lowerKey'
-    '(c.category)), sub: null, value: c.review, valueSub: sh(c.share) };\n    }), head.infra_total, "var(-'
-    '-chart-2)");\n    var sizes = document.getElementById("cost-vm-sizes");\n    clear(sizes);\n    if ((sp'
-    'lit.vm_sizes || []).length) {\n      sizes.appendChild(document.createTextNode("VM sizes with the hig'
-    'hest cost"));\n      var chips = el("div", { className: "chips" });\n      split.vm_sizes.slice(0, 6).'
-    'forEach(function (v) { chips.appendChild(el("span", null, [v.meter + " · ", el("b", { text: money(v.'
-    'review) })])); });\n      sizes.appendChild(chips);\n    }\n  }\n  function renderGapAndTags(m) {\n    va'
-    'r gapBox = document.getElementById("cost-gap"), gap = m.attribution && m.attribution.gap;\n    clear('
-    'gapBox);\n    if (!gap) { gapBox.appendChild(el("p", { className: "muted", text: "Not evaluated: the '
-    'query by the Vendor tag isn\'t available." })); }\n    else {\n      gapBox.appendChild(el("div", { cla'
-    'ssName: "gapn" }, [el("b", { text: NF1.format(gap.share || 0) + "%" }), el("span", { text: money(gap'
-    '.total) + " this month" })]));\n      var bars = el("div", { className: "bars" });\n      gapBox.appen'
-    'dChild(bars);\n      costBars(bars, (gap.categories || []).map(function (c) {\n        var key = lower'
-    'Key(c.category);\n        return { label: key === "azure databricks" ? "Serverless DBU" : lab(C.categ'
-    'ory, key), sub: C.gapWhy[key] || null, value: c.review, valueSub: sh(c.share) };\n      }), gap.total'
-    ', "var(--info-bar)");\n    }\n    var tags = (m.attribution && m.attribution.custom_tags) || [], holde'
-    'r = document.getElementById("cost-tag-bars");\n    clear(holder);\n    tags.forEach(function (t) {\n   '
-    '   holder.appendChild(barRow(el("span", { className: "mono", text: t.tag }), isNum(t.untagged_total)'
-    ' ? "Without it: " + money(t.untagged_total) : lab(C.status, t.status),\n        isNum(t.tagged_share)'
-    ' ? t.tagged_share : 0, isNum(t.tagged_share) ? sh(t.tagged_share) : "—", null, "var(--chart)", !isNu'
-    'm(t.tagged_share)));\n    });\n    if (!tags.length) { holder.appendChild(el("p", { className: "muted"'
-    ', text: "No allocation tags configured (COST_ALLOCATION_TAGS)." })); }\n    var notes = document.getE'
-    'lementById("cost-tag-notes");\n    clear(notes);\n    (m.signals || []).filter(function (s) { return s'
-    '.code === "MISSING_ALLOCATION_TAGS" || s.code === "POLICY_TAGS"; }).slice(0, 5).forEach(function (s)'
-    ' {\n      notes.appendChild(el("li", { text: s.title + ": " + ((s.evidence && s.evidence.objects) || '
-    '[]).slice(0, 4).join("; ") }));\n    });\n  }\n  function renderMovers(m) {\n    var holder = document.g'
-    'etElementById("cost-movers"), mv = m.movers || {}, head = m.headline || {};\n    clear(holder);\n    d'
-    'ocument.getElementById("cost-movers-sub").textContent = "Clusters, jobs, SQL warehouses and pools wi'
-    'th the largest change from " + monthName(head.previous_month) + " to " + monthName(head.review_month'
-    ') + ".";\n    [["Up", mv.up || []], ["Down", mv.down || []]].forEach(function (g) {\n      var col = e'
-    'l("div", null, [el("h4", { text: g[0] })]);\n      if (!g[1].length) { col.appendChild(el("p", { clas'
-    'sName: "muted", text: "No relevant changes." })); }\n      g[1].forEach(function (r) {\n        col.ap'
-    'pendChild(el("div", { className: "mover" }, [\n          el("b", { text: rowName(r) }),\n          el('
-    '"span", { className: "dv " + (r.change > 0 ? "up" : "down"), text: (r.change > 0 ? "+" : "−") + mone'
-    'y(Math.abs(r.change)) }),\n          el("small", { text: lab(C.kind, r.kind) + " · " + money(r.total)'
-    ' + " in " + monthName(head.review_month, true) }),\n          el("small", { className: "dv", text: r.'
-    'previous_total ? signedPct(r.change_pct) : "new" })\n        ]));\n      });\n      holder.appendChild('
-    'col);\n    });\n  }\n  function renderSystemTables(m) {\n    var box = document.getElementById("cost-sys'
-    'tem"), st = m.system_tables || { status: "not_configured" };\n    clear(box);\n    var on = st.status '
-    '=== "complete";\n    box.appendChild(el("div", { className: "h3row" }, [el("h3", { text: "Detail by r'
-    'un and user (system tables)" }),\n      pill(on ? "tone-warn" : st.status === "not_configured" ? "ton'
-    'e-info" : "tone-crit", on ? "On · consumes DBUs" : st.status === "not_configured" ? "Off" : lab(C.st'
-    'atus, st.status))]));\n    if (!on) {\n      box.appendChild(el("p", { className: "sub", text: st.stat'
-    'us === "not_configured"\n        ? "Optional and off by default because it consumes DBUs (and starts '
-    "the SQL warehouse if it's stopped). With system_tables_warehouse_id (an existing SQL warehouse), the"
-    ' tool runs one read-only query on system.billing.usage and system.billing.list_prices and shows the '
-    'cost per job run and per user here."\n        : "The system tables query didn\'t finish: check the dbx'
-    '_system_billing source in section 8." }));\n      return;\n    }\n    var cur = st.currency || "USD";\n '
-    '   var ws = String(st.window && st.window.start || ""), we = String(st.window && st.window.end || ""'
-    ');\n    var wy = +ws.slice(0, 4), wm = +ws.slice(5, 7), nextMonth = wm === 12 ? (wy + 1) + "-01" : wy'
-    ' + "-" + String(wm + 1).padStart(2, "0");\n    var wholeMonth = /^\\d{4}-\\d{2}-01/.test(ws) && we.slic'
-    'e(0, 10) === nextMonth + "-01";\n    box.appendChild(el("p", { className: "sub", text: "Cost at list '
-    'price (" + cur + ", no discounts) " + (wholeMonth ? "for " + monthName(ws.slice(0, 7)) : "from " + d'
-    'ay(ws) + " to " + day(we)) + ", from system.billing.usage." }));\n    box.appendChild(el("h4", { clas'
-    'sName: "sys-h", text: "Runs and workloads with the highest cost" }));\n    var wrap = el("div", { cla'
-    'ssName: "wrap sys-wrap" }), table = el("table", { className: "dense", id: "cost-system-table" });\n  '
-    '  wrap.appendChild(table);\n    box.appendChild(wrap);\n    var grid = el("div", { className: "sys-gri'
-    'd" }), left = el("div"), right = el("div");\n    left.appendChild(el("h4", { text: "By user or servic'
-    'e principal" }));\n    var ub = el("div", { className: "bars" });\n    left.appendChild(ub);\n    right'
-    '.appendChild(el("h4", { text: "By product" }));\n    var pb = el("div", { className: "bars" });\n    r'
-    'ight.appendChild(pb);\n    grid.appendChild(left);\n    grid.appendChild(right);\n    box.appendChild(g'
-    'rid);\n    function sku(s) { return s ? String(s).replace(/_/g, " ").toLowerCase() : null; }\n    func'
-    'tion product(p) {\n      var known = { ALL_PURPOSE: "All-purpose (interactive)", JOBS: "Jobs", SQL: "'
-    'SQL warehouses", DLT: "Pipelines (DLT)", INTERACTIVE: "Serverless notebooks",\n        MODEL_SERVING:'
-    ' "Model serving", VECTOR_SEARCH: "Vector Search", LAKEHOUSE_MONITORING: "Lakehouse Monitoring", PRED'
-    'ICTIVE_OPTIMIZATION: "Predictive optimization" };\n      return p ? known[String(p).toUpperCase()] ||'
-    ' String(p).charAt(0) + String(p).slice(1).replace(/_/g, " ").toLowerCase() : "—";\n    }\n    renderTa'
-    'ble(table, ["Product", "Job · run / resource", "Run by", { t: "DBU", c: "n" }, { t: "List cost", c: '
-    '"n" }],\n      (st.runs || []).map(function (r) {\n        var what = r.job_id ? "Job " + r.job_id + ('
-    'r.job_run_id ? " · run " + r.job_run_id : "") : r.warehouse_id ? "Warehouse " + r.warehouse_id : r.c'
-    'luster_id ? "Cluster " + r.cluster_id : r.pipeline_id ? "Pipeline " + r.pipeline_id : "—";\n        r'
-    'eturn [{ v: stack(product(r.product), sku(r.sku)), s: r.product }, { v: brk(what, "") }, { v: brk(r.'
-    'run_as || "—", "") }, { v: NF0.format(r.dbus || 0), s: r.dbus, c: "n" }, { v: money(r.list_cost, cur'
-    '), s: r.list_cost, c: "n" }];\n      }), { sortable: true, page: 8 });\n    costBars(ub, (st.users || '
-    '[]).slice(0, 8).map(function (u) { return { label: brk(u.run_as || "—", ""), value: u.list_cost || 0'
-    ' }; }), null, "var(--chart)", cur);\n    costBars(pb, (st.products || []).slice(0, 8).map(function (p'
-    ') { return { label: product(p.product), sub: sku(p.sku), value: p.list_cost || 0 }; }), null, "var(-'
-    '-chart-2)", cur);\n  }\n  function renderCostMethod(m) {\n    var dl = document.getElementById("cost-me'
-    'thod"), a = m.assumptions || {}, scope = m.scope || {}, p = m.periods || {};\n    clear(dl);\n    func'
-    'tion row(term, node) { dl.appendChild(el("dt", { text: term })); var dd = el("dd"); dd.appendChild(n'
-    'ode instanceof Node ? node : document.createTextNode(node)); dl.appendChild(dd); }\n    row("Scope", '
-    '"Workspace resource (DBU)" + (scope.managed_resource_group ? " and its managed resource group " + sc'
-    'ope.managed_resource_group + " (VMs, disks and network)" : "") +\n      ((scope.resource_ids || []).l'
-    'ength > 1 ? ", plus " + (scope.resource_ids.length - 1) + " approved resources" : "") + "; " + (m.me'
-    'tric === "ActualCost" ? "actual cost (invoice view)" : "amortized cost") + " in " + (m.currency || "'
-    'the billing currency") + ".");\n    row("Months", "Reviewed month " + monthName(p.review) + " (closed'
-    '), compared with " + monthName(p.previous) + "; " + monthName(p.current) + " through day " + (p.mtd_'
-    'days || "—") + ". The cost of the last two days can still change.");\n    row("Attribution", "Cost Ma'
-    'nagement grouped by the tags Databricks puts on compute (ClusterName, JobId, SqlEndpointId, Databric'
-    'ksInstancePoolId, Vendor) and by " +\n      ((a.allocation_tags || []).length ? (a.allocation_tags ||'
-    ' []).join(", ") : "none of your own tags") + ", each with its service (DBU vs infrastructure).");\n  '
-    '  var rules = el("ul");\n    [\n      "Auto-termination off: what the cluster cost on Saturdays and Su'
-    'ndays (a lower bound, if nobody uses it at weekends).",\n      "Jobs on an interactive cluster: clust'
-    'er DBU × (1 − " + NF.format(a.jobs_to_all_purpose_dbu_ratio) + ") (an upper bound, if those jobs are'
-    ' all of its use).",\n      "Workers without spot: VM cost × workers / (workers + 1) × " + NF0.format('
-    '100 * (a.spot_discount || 0)) + "% conservative discount.",\n      "Pool with minimum idle instances:'
-    ' the pool\'s minimum daily cost × days in the month.",\n      "SQL warehouse without auto-stop: cost ×'
-    ' " + NF1.format(100 * (a.weekend_share || 0)) + "% (weekend days in the month).",\n      "Only the la'
-    'rgest saving per object counts; the others show as \\u201cNot counted\\u201d. The other signals have n'
-    'o cost data that would allow an estimate without inventing one."\n    ].forEach(function (t) { rules.'
-    'appendChild(el("li", { text: t })); });\n    row("Estimated savings", rules);\n    var chips = el("div'
-    '", { className: "chips" });\n    Object.keys(m.query_status || {}).forEach(function (k) { chips.appen'
-    'dChild(el("span", null, [k + ": ", el("b", { text: lab(C.status, m.query_status[k]) })])); });\n    r'
-    'ow("Queries", chips.firstChild ? chips : "No cost queries (" + lab(C.status, m.status) + ").");\n    '
-    'var sys = m.system_tables || {};\n    var gaps = (sys.status === "complete" ? "" : "Usage per run and'
-    ' per user (system tables, off by default); ") +\n      "storage and network outside the managed resou'
-    'rce group, except the resources in approved_cost_resource_ids" +\n      (sys.status === "complete" ? '
-    '"; the system tables detail is at list price, without your discounts." : ".");\n    row("Not covered"'
-    ', gaps.charAt(0).toUpperCase() + gaps.slice(1));\n  }\n  function renderCosts(snap) {\n    var m = snap'
-    '.databricks_costs, emptyBox = document.getElementById("cost-empty");\n    var body = document.getElem'
-    'entById("cost-body"), data = document.getElementById("cost-data");\n    clear(emptyBox);\n    if (!m) '
-    '{\n      body.hidden = true;\n      emptyBox.hidden = false;\n      emptyBox.appendChild(el("div", { cl'
-    'assName: "note", role: "note" }, [icon("info"), el("span", { text: "This snapshot doesn\'t include th'
-    'e Databricks cost analysis." })]));\n      return;\n    }\n    body.hidden = false;\n    costCurrency = '
-    'm.currency || "";\n    var head = m.headline || {}, hasData = isNum(head.review_total);\n    data.hidd'
-    'en = !hasData;\n    if (!hasData) {\n      emptyBox.hidden = false;\n      var why = { not_configured: '
-    '"Cost analysis is off in the configuration (cost_analysis_enabled = False).",\n        denied: "The i'
-    "dentity can't read costs: grant Cost Management Reader (or Reader) on the subscription and run the r"
-    'eview again.",\n        not_collected: "This run didn\'t collect costs from Cost Management." }[m.stat'
-    'us] || "Cost Management returned no usable data (" + lab(C.status, m.status) + "); see the azure_cos'
-    't_databricks source in section 8.";\n      emptyBox.appendChild(el("div", { className: "note", role: '
-    '"note" }, [icon("info"), el("span", { text: why + " The configuration signals follow below, without '
-    'estimated savings." })]));\n    } else {\n      emptyBox.hidden = true;\n      renderCostStats(m);\n    '
-    '  renderCostSplit(m);\n      drawCostTabs(m);\n      renderAttribution(m);\n      renderGapAndTags(m);\n'
-    '      renderMovers(m);\n    }\n    renderSignals(m);\n    renderSystemTables(m);\n    renderCostMethod(m'
-    ');\n  }\n  ["cost-sig-sev", "cost-sig-saving", "cost-sig-search"].forEach(function (id) {\n    var node'
-    ' = document.getElementById(id);\n    ["input", "change"].forEach(function (evName) { node.addEventLis'
-    'tener(evName, function () { if (currentSnap && currentSnap.databricks_costs) { renderSignals(current'
-    'Snap.databricks_costs); } }); });\n  });\n  document.getElementById("cost-attr-search").addEventListen'
-    'er("input", function () { if (currentSnap && currentSnap.databricks_costs) { renderAttribution(curre'
-    'ntSnap.databricks_costs); } });\n  function csvLines(cols, rows) { return "\\uFEFF" + [cols.join(",")]'
-    '.concat(rows.map(function (r) { return cols.map(function (c) { return csvEscape(r[c]); }).join(",");'
-    ' })).join("\\r\\n"); }\n  function costCsv() {\n    var m = currentSnap && currentSnap.databricks_costs;'
-    '\n    if (!m) { return csvLines(["dimension"], []); }\n    var rows = costRows(m).map(function (r) { r'
-    'eturn { dimension: r.dimension, name: rowName(r), kind: r.kind, creator: r.creator, dbu: r.dbu, infr'
-    'a: r.infra, total: r.total, previous_total: r.previous_total, share: r.share, tags: r.tags, currency'
-    ': m.currency, month: m.periods && m.periods.review }; });\n    ((m.attribution && m.attribution.custo'
-    'm_tags) || []).forEach(function (t) {\n      (t.values || []).forEach(function (v) { rows.push({ dime'
-    'nsion: "tag:" + t.tag, name: v.value, kind: "tag_value", dbu: v.dbu, infra: v.infra, total: v.total,'
-    ' previous_total: v.previous_total, share: v.share, currency: m.currency, month: m.periods && m.perio'
-    'ds.review }); });\n      if (isNum(t.untagged_total)) { rows.push({ dimension: "tag:" + t.tag, name: '
-    '"(untagged)", kind: "untagged", total: t.untagged_total, currency: m.currency, month: m.periods && m'
-    '.periods.review }); }\n    });\n    return csvLines(["month", "dimension", "name", "kind", "creator", '
-    '"dbu", "infra", "total", "previous_total", "share", "tags", "currency"], rows);\n  }\n  function signa'
-    'lsCsv(list) {\n    var cur = currentSnap && currentSnap.databricks_costs ? currentSnap.databricks_cos'
-    'ts.currency : "";\n    return csvLines(["id", "code", "severity", "title", "object_kind", "object_nam'
-    'e", "monthly_cost", "estimated_monthly_saving", "saving_kind", "saving_basis", "counted", "currency"'
-    ', "recommendation", "learn_url", "evidence"],\n      list.map(function (s) { return Object.assign({ c'
-    'urrency: cur }, s); }));\n  }\n  document.getElementById("cost-attr-export").addEventListener("click",'
-    ' function () { downloadBlob("databricks-cost-by-workload.csv", costCsv(), "text/csv;charset=utf-8");'
-    ' });\n  document.getElementById("export-costs-csv-btn").addEventListener("click", function () { downl'
-    'oadBlob("databricks-cost-by-workload.csv", costCsv(), "text/csv;charset=utf-8"); });\n  document.getE'
-    'lementById("cost-sig-export").addEventListener("click", function () { if (currentSnap && currentSnap'
-    '.databricks_costs) { downloadBlob("databricks-signals-filtered.csv", signalsCsv(filteredSignals(curr'
-    'entSnap.databricks_costs)), "text/csv;charset=utf-8"); } });\n  document.getElementById("export-signa'
-    'ls-csv-btn").addEventListener("click", function () { if (currentSnap && currentSnap.databricks_costs'
-    ') { downloadBlob("databricks-optimization-signals.csv", signalsCsv(currentSnap.databricks_costs.sign'
-    'als || []), "text/csv;charset=utf-8"); } });\n\n  var PRESENTATION = (rootData && rootData.presentatio'
-    'n) || {};\n  var FOCUS = PRESENTATION.focus === "costs" ? "costs" : "configuration";\n  function renum'
-    'berSections() {\n    var short = { "sec-finops": "Databricks costs", "sec-identity": "Workspace and i'
-    'dentity", "sec-executive": "Executive summary and WAF", "sec-dependencies": "Dependency map",\n      '
-    '"sec-inventory": "Lakehouse and ARM inventory", "sec-findings": "Findings and rules", "sec-actions":'
-    ' "Action plan", "sec-sources": "Sources and methodology" };\n    var toc = document.getElementById("t'
-    'oc-menu");\n    clear(toc);\n    toc.appendChild(el("a", { href: "#sec-cover", text: "Cover and verdic'
-    't" }));\n    [].slice.call(document.querySelectorAll(".page > .chapter")).forEach(function (c, i) {\n '
-    '     var h = c.querySelector(".sh h2");\n      if (h) { h.textContent = h.textContent.replace(/^\\d+\\.'
-    '\\s*/, (i + 1) + ". "); }\n      toc.appendChild(el("a", { href: "#" + c.id, text: (i + 1) + ". " + (s'
-    'hort[c.id] || c.id) }));\n    });\n  }\n  function applyPresentation() {\n    var p = PRESENTATION, root'
-    ' = document.documentElement, css = "";\n    var theme = p.theme && typeof p.theme === "object" ? p.th'
-    'eme : {};\n    var rules = Object.keys(theme).filter(function (k) {\n      return /^--[a-z0-9-]{1,32}$'
-    '/.test(k) && /^(#[0-9a-fA-F]{6}|rgba\\([0-9.,\\s]{7,40}\\))$/.test(String(theme[k]));\n    }).map(functi'
-    'on (k) { return k + ":" + theme[k]; });\n    if (rules.length) { css += ":root{" + rules.join(";") + '
-    '"}"; root.classList.add("branded"); themeBtn.hidden = true; }\n    if (typeof p.display_font === "str'
-    'ing" && /^data:font\\/woff2;base64,[A-Za-z0-9+\\/=]+$/.test(p.display_font)) {\n      css += "@font-fac'
-    'e{font-family:\\"Brand Display\\";src:url(" + p.display_font + ") format(\\"woff2\\");font-weight:600;fo'
-    'nt-style:normal;font-display:swap}" +\n        ":root{--display:\\"Brand Display\\",Didot,\\"Bodoni 72\\"'
-    ',\\"Bodoni MT\\",Georgia,serif}";\n      root.classList.add("brand-font");\n    }\n    if (css) { var sty'
-    'le = el("style", { id: "brand-style" }); style.textContent = css; document.head.appendChild(style); '
-    '}\n    var client = rootData.client || {};\n    var barLogo = p.logo_placement === "bar" && client.log'
-    'o_data_uri && /^data:image\\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(client.logo_data_uri);\n    if ('
-    'barLogo) {\n      root.classList.add("brand-bar");\n      var brand = document.querySelector(".bar .br'
-    'and");\n      brand.insertBefore(el("img", { className: "client-logo", src: client.logo_data_uri, alt'
-    ': client.logo_alt || client.name || "" }), brand.firstChild);\n    }\n    document.getElementById("bar'
-    '-product").textContent = (FOCUS === "costs" ? "Azure Databricks costs and configuration" : "Azure Da'
-    'tabricks dependencies") +\n      (barLogo && client.name ? " · " + client.name : "");\n    if (FOCUS ='
-    '== "costs") {\n      document.querySelector(".page").insertBefore(document.getElementById("sec-finops'
-    '"), document.getElementById("sec-identity"));\n      var nav = document.getElementById("bar-nav");\n  '
-    '    nav.insertBefore(nav.querySelector(\'a[href="#sec-finops"]\'), nav.firstChild);\n      renumberSect'
-    'ions();\n    }\n  }\n  function renderCostHero(snap) {\n    var m = snap.databricks_costs || {}, h = m.h'
-    'eadline || {}, ws = snap.workspace || {};\n    if (FOCUS !== "costs" || !isNum(h.review_total)) { ret'
-    'urn; }\n    costCurrency = m.currency || "";\n    var month = monthName(h.review_month).split(" ")[0],'
-    ' prev = monthName(h.previous_month).split(" ")[0];\n    document.getElementById("cover-title").textCo'
-    'ntent = "Azure Databricks costs: " + monthName(h.review_month);\n    var parts = ["Databricks cost ",'
-    ' [money(h.review_total)], " in " + month + ", ", [signedPct(h.change_pct)], " vs " + prev + ": ", [N'
-    'F0.format(h.dbu_share || 0) + "%"],\n      " is DBU and ", [NF0.format(100 - (h.dbu_share || 0)) + "%'
-    '"], " infrastructure."];\n    if (isNum(h.unattributed_share)) { parts = parts.concat([" ", [sh(h.una'
-    'ttributed_share)], " isn\'t explained by any compute tag"]).concat(h.first_tag && isNum(h.first_tag.t'
-    'agged_share) ? ["; your ", [h.first_tag.tag], " tag covers ", [sh(h.first_tag.tagged_share)], "."] :'
-    ' ["."]); }\n    if (isNum(h.estimated_monthly_savings)) { parts = parts.concat([" ", [String(h.saving'
-    's_signals)], plural(h.savings_signals, " change would save", " changes would save"), " about ", [mon'
-    'ey(h.estimated_monthly_savings)], " a month."]); }\n    rich(document.getElementById("cover-lead"), p'
-    'arts);\n    var meta = document.getElementById("cover-badges");\n    clear(meta);\n    function chip(p,'
-    ' on) { meta.appendChild(rich(el("span", { className: on ? "on" : null }), p)); }\n    chip(["Generate'
-    'd ", [utc(snap.reference_utc)]]);\n    chip(["Workspace ", [ws.name || "—"]]);\n    chip([m.metric ==='
-    ' "ActualCost" ? "Actual cost · " : "Amortized cost · ", [m.currency || "—"]]);\n    chip(["Environmen'
-    't ", [snap.environment || "—"]]);\n    chip([snap.provenance === "SIMULATED" ? "SIMULATED DATA" : (sn'
-    'ap.provenance || "LIVE") + " DATA"], true);\n    var sev = h.signals_by_severity || {}, tone = "ok", '
-    'title = "On track";\n    if (sev.high) { tone = "act"; title = "Action needed"; } else if (sev.medium'
-    ') { tone = "warn"; title = "Review recommended"; }\n    var verdict = document.getElementById("verdic'
-    't");\n    verdict.className = "signal " + tone;\n    clear(verdict);\n    verdict.appendChild(el("div",'
-    ' { className: "k", text: "Verdict" }));\n    verdict.appendChild(el("b", { text: title }));\n    verdi'
-    'ct.appendChild(el("p", { text: [isNum(h.estimated_monthly_savings) ? "Estimated savings ≈ " + money('
-    'h.estimated_monthly_savings) + "/month" : null,\n      isNum(h.unattributed_share) ? sh(h.unattribute'
-    'd_share) + " unattributed" : null, h.signals + plural(h.signals, " signal", " signals")].filter(Bool'
-    'ean).join(" · ") }));\n    var dist = document.getElementById("severity-dist");\n    clear(dist);\n    '
-    'dist.hidden = !h.signals;\n    if (!h.signals) { return; }\n    var head = el("div", { className: "dis'
-    't-head" }, [el("span", { text: "Optimization signals by severity" })]);\n    head.appendChild(rich(el'
-    '("span"), [[num(h.signals)], plural(h.signals, " signal", " signals") + " in " + month]));\n    dist.'
-    'appendChild(head);\n    var track = el("div", { className: "track", role: "img", "aria-label": ["high'
-    '", "medium", "low"].map(function (s) { return (sev[s] || 0) + " " + L.sev[s].toLowerCase(); }).join('
-    '", ") });\n    var legend = el("div", { className: "legend" });\n    ["high", "medium", "low"].forEach'
-    '(function (s) {\n      if (!sev[s]) { return; }\n      var seg = el("i", { title: L.sev[s] + ": " + se'
-    'v[s] });\n      seg.style.width = (100 * sev[s] / h.signals) + "%";\n      seg.style.background = SEV_'
-    'BAR[s];\n      track.appendChild(seg);\n      var key = el("i");\n      key.style.background = SEV_BAR['
-    's];\n      legend.appendChild(el("span", null, [key, L.sev[s] + " ", el("b", { text: String(sev[s]) }'
-    ')]));\n    });\n    dist.appendChild(track);\n    dist.appendChild(legend);\n  }\n\n  function renderActio'
-    'ns(snap) {\n    var holder = document.getElementById("actions-plan");\n    clear(holder);\n    var acti'
-    'ons = snap.actions || [];\n    if (!actions.length) { holder.appendChild(el("div", { className: "card'
-    '" }, [emptyState("No actions: no evaluated check needs changes.")])); return; }\n    [["quick_win", "'
-    'Quick win", "Less than 1 week"], ["short_term", "Short term", "1-3 months"], ["medium_term", "Medium'
-    ' term", "Later planning"]].forEach(function (h) {\n      var items = actions.filter(function (a) { re'
-    'turn a.horizon === h[0]; });\n      var card = el("div", { className: "card" }, [el("h3", { text: h[1'
-    '] }), el("p", { className: "sub", text: h[2] + " · " + items.length + plural(items.length, " action"'
-    ', " actions") })]);\n      if (!items.length) { card.appendChild(el("p", { className: "muted", text: '
-    '"No actions in this horizon." })); }\n      else {\n        var ol = el("ol", { className: "steps" });'
-    '\n        items.forEach(function (a, i) {\n          var link = safeLearnUrl(a.learn_url);\n          v'
-    'ar meta = el("div", { className: "sm" }, [sevPill(a.severity, a.severity_label), el("span", { text: '
-    'a.rule_id + " · " + lab(L.effort, a.effort_label) })]);\n          if (link) { meta.appendChild(extLi'
-    'nk(link, "Documentation")); }\n          ol.appendChild(el("li", null, [\n            el("span", { cla'
-    'ssName: "no", text: String(i + 1) }),\n            el("div", { className: "sx" }, [el("b", { text: a.'
-    'title }), el("div", { className: "muted", text: lab(L.level, a.level) + ": " + (a.workload_name || a'
-    '.resource_id || "—") }), el("p", { text: a.recommendation }), meta])\n          ]));\n        });\n    '
-    '    card.appendChild(ol);\n      }\n      holder.appendChild(card);\n    });\n  }\n\n  function renderSour'
-    'ces(snap) {\n    var sources = snap.sources || [];\n    var byStatus = {};\n    sources.forEach(functio'
-    'n (s) { byStatus[s.status] = (byStatus[s.status] || 0) + 1; });\n    var complete = byStatus.complete'
-    ' || 0;\n    document.getElementById("sources-summary").textContent = complete + " of " + sources.leng'
-    'th + plural(sources.length, " source complete", " sources complete");\n    var bars = document.getEle'
-    'mentById("sources-bars");\n    clear(bars);\n    Object.keys(L.src).forEach(function (k) {\n      if (!'
-    'byStatus[k]) { return; }\n      bars.appendChild(barRow(srcPill(k), null, 100 * byStatus[k] / Math.ma'
-    'x(1, sources.length), num(byStatus[k]), null, SRC_COLOR[k], false));\n    });\n    renderTable(documen'
-    't.getElementById("sources-table"),\n      ["Source", "Plane", "Status", { t: "Pages", c: "n" }, { t: '
-    '"Records", c: "n" }, "UTC time", { t: "Note / errors", c: "w" }],\n      sources.map(function (s) {\n '
-    '       var note = el("div");\n        if (s.note) { note.appendChild(el("span", { text: s.note })); }'
-    '\n        (s.errors || []).forEach(function (e) {\n          note.appendChild(el("div", { className: "'
-    'muted", text: [e.http_status ? "HTTP " + e.http_status : null, e.code, e.message].filter(Boolean).jo'
-    'in(" · ") }));\n        });\n        if (!note.firstChild) { note.textContent = "—"; }\n        return '
-    '[{ v: mono(s.id), s: s.id }, { v: sourcePlane(s.id), c: "nw" }, { v: srcPill(s.status), s: s.status '
-    '}, { v: num(s.pages), s: s.pages }, { v: num(s.records), s: s.records }, { v: utc(s.time), c: "nw" }'
-    ', { v: note }];\n      }), { sortable: true, page: 12 }\n    );\n    var m = snap.methodology || {}, ca'
-    't = m.catalogSnapshot || {}, cov = m.catalog_coverage || {};\n    var dl = document.getElementById("m'
-    'ethod-notes");\n    clear(dl);\n    function row(term, node) { dl.appendChild(el("dt", { text: term })'
-    '); var dd = el("dd"); dd.appendChild(node instanceof Node ? node : document.createTextNode(node)); d'
-    'l.appendChild(dd); }\n    row("Local index", m.score_formula || "—");\n    row("Coverage", m.coverage_'
-    'formula || "—");\n    var catNode = el("span", { text: (cat.name || "Local catalog") + " · " + (cov.l'
-    'ocal_rules || 0) + " local rules · retrieved " + (cat.retrieved_at || "—") + " " });\n    [[cat.servi'
-    'ce_guide_url, "Service guide"], [cat.lakehouse_waf_url, "Lakehouse WAF"], [m.assessment_url, "Offici'
-    'al assessment"]].forEach(function (l) {\n      var u = safeLearnUrl(l[0]);\n      if (u) { catNode.app'
-    'endChild(document.createTextNode(" ")); catNode.appendChild(extLink(u, l[1])); }\n    });\n    row("Ru'
-    'le catalog", catNode);\n    var interp = el("ul");\n    (m.interpretation || []).forEach(function (t) '
-    '{ interp.appendChild(el("li", { text: t })); });\n    row("Interpretation", interp.firstChild ? inter'
-    'p : "—");\n    var limList = document.getElementById("methodology-limitations");\n    clear(limList);\n'
-    '    (m.limitations || []).forEach(function (l) { limList.appendChild(el("li", { text: l })); });\n  }'
-    '\n\n  function cssString(s) { return String(s).replace(/\\\\/g, "\\\\\\\\").replace(/"/g, \'\\\\"\').replace(/[\\'
-    'r\\n]+/g, " ").replace(/</g, "\\\\3c "); }\n  function renderFooter(snap) {\n    var ws = snap.workspace '
-    '|| {}, client = (snap.client && snap.client.name) || "Customer";\n    var when = utc(snap.reference_u'
-    'tc), costs = FOCUS === "costs";\n    document.getElementById("report-footer").textContent = "Generate'
-    'd by Azure SRE Agent · Read-only · generate-databricks-dependency-report · " + when + " · " + client'
-    ';\n    document.title = (ws.name ? ws.name + " · " : "") + (costs ? "Azure Databricks costs | Where c'
-    'ost comes from and how to optimize it" : "Azure Databricks review | Dependency map and configuration'
-    '");\n    var style = document.getElementById("print-page-style");\n    if (!style) { style = el("style'
-    '", { id: "print-page-style" }); document.head.appendChild(style); }\n    var foot = (costs ? "Azure D'
-    'atabricks costs · " : "Azure Databricks review · ") + (ws.name || "—") + " · " + when + (snap.proven'
-    'ance === "SIMULATED" ? " · SIMULATED DATA" : "");\n    style.textContent = \'@page { @bottom-left { co'
-    'ntent: "\' + cssString(foot) + \'"; font: 8pt "Segoe UI", sans-serif; color: #667085; } @bottom-right '
-    '{ content: "Page " counter(page) " of " counter(pages); font: 8pt "Segoe UI", sans-serif; color: #66'
-    "7085; } }';\n  }\n\n  function renderSnapshot(snap) {\n    currentSnap = snap;\n    document.getElementBy"
-    'Id("workspace-error-view").hidden = true;\n    document.getElementById("report-body").hidden = false;'
-    '\n    var g = (snap.scores && snap.scores.global) || {};\n    var counts = { critical: 0, high: 0, med'
-    'ium: 0, low: 0 };\n    (snap.findings || []).forEach(function (f) { if (counts[f.severity] !== undefi'
-    'ned) { counts[f.severity]++; } });\n    var sc = (snap.dependencies && snap.dependencies.summary_coun'
-    'ts) || {};\n    renderHero(snap, g, counts);\n    renderCostHero(snap);\n    renderKpis(snap, g, counts'
-    ');\n    renderFacts(snap);\n    renderExecutive(snap, g);\n    var sum = document.getElementById("dep-c'
-    'lass-summary");\n    clear(sum);\n    [["OBSERVED", sc.edges_observed, " relationships"], ["INFERRED",'
-    ' sc.edges_inferred, " relationships"], ["UNKNOWN", sc.unknowns_total, " blind spots"]].forEach(funct'
-    'ion (c) {\n      sum.appendChild(pill("cls-" + c[0], c[0] + " · " + num(c[1] || 0) + c[2]));\n    });\n'
-    '    sum.appendChild(pill("sev-info", num(sc.broken_references_total || 0) + plural(sc.broken_referen'
-    'ces_total || 0, " broken reference", " broken references")));\n    document.getElementById("dep-graph'
-    '-note").textContent = num(sc.nodes_total || 0) + " nodes · " + num(sc.edges_total || 0) + " relation'
-    'ships in total";\n    renderInventory(snap);\n    renderFinops(snap);\n    renderCosts(snap);\n    rende'
-    'rActions(snap);\n    renderSources(snap);\n    renderFooter(snap);\n    applyDependencyFilters();\n    a'
-    'pplyFindingFilters();\n    renderReferenceArchitecture();\n  }\n\n  applyPresentation();\n  if (isMulti) '
-    '{\n    var selWrap = document.getElementById("workspace-selector-wrap");\n    var sel = document.getEl'
-    'ementById("workspace-selector");\n    var runs = rootData.workspace_runs || [];\n    var agg = rootDat'
-    'a.aggregate || {};\n    document.getElementById("multi-overview").hidden = false;\n    selWrap.hidden '
-    '= false;\n    rich(document.getElementById("multi-summary"), ["Multi-workspace view · ", [num(runs.le'
-    'ngth)], plural(runs.length, " workspace selected", " workspaces selected") + " · ", [num(agg.finding'
-    's_total || 0)], " findings · ",\n      [num((agg.dependency_counts && agg.dependency_counts.nodes_tot'
-    'al) || 0)], " dependency nodes · ", [num(agg.failed_workspace_count || 0)], plural(agg.failed_worksp'
-    'ace_count || 0, " workspace with errors", " workspaces with errors")]);\n    runs.forEach(function (r'
-    ', idx) {\n      sel.appendChild(el("option", { value: String(idx), text: r.workspace_name + " (" + r.'
-    'status + ")" }));\n    });\n    var selectRun = function (idx) {\n      var run = runs[idx];\n      if ('
-    '!run) { return; }\n      if (run.snapshot) {\n        renderSnapshot(run.snapshot);\n      } else {\n   '
-    '     currentSnap = null;\n        document.getElementById("report-body").hidden = true;\n        var e'
-    'rrView = document.getElementById("workspace-error-view");\n        errView.hidden = false;\n        cl'
-    'ear(errView);\n        var err = run.error || {};\n        errView.appendChild(el("h2", { text: "Colle'
-    'ction failed for workspace " + run.workspace_name }));\n        errView.appendChild(el("p", { text: "'
-    'No empty data or scores from another workspace are substituted. Select another workspace, or fix the'
-    ' access and run the review again." }));\n        var dl = el("dl", { className: "dl2" });\n        [["'
-    'Code", err.code], ["Source", err.source_id], ["HTTP", err.http_status], ["Message", err.message], ["'
-    'UTC time", utc(run.reference_utc)]].forEach(function (p) {\n          dl.appendChild(el("dt", { text:'
-    ' p[0] }));\n          dl.appendChild(el("dd", { text: p[1] === null || p[1] === undefined || p[1] ==='
-    ' "" ? "—" : String(p[1]) }));\n        });\n        errView.appendChild(dl);\n      }\n    };\n    sel.ad'
-    'dEventListener("change", function () { selectRun(Number(sel.value)); });\n    selectRun(0);\n  } else '
-    '{\n    renderSnapshot(rootData);\n  }\n\n  var navLinks = [].slice.call(document.querySelectorAll(".bar-'
-    'nav a"));\n  if ("IntersectionObserver" in window && navLinks.length) {\n    var spy = new Intersectio'
-    'nObserver(function (entries) {\n      entries.forEach(function (en) {\n        if (!en.isIntersecting)'
-    ' { return; }\n        var id = en.target.id;\n        navLinks.forEach(function (a) { if (a.getAttribu'
-    'te("href") === "#" + id) { a.setAttribute("aria-current", "true"); } else { a.removeAttribute("aria-'
-    'current"); } });\n      });\n    }, { rootMargin: "-80px 0px -65% 0px" });\n    ["sec-cover", "sec-iden'
-    'tity", "sec-executive", "sec-dependencies", "sec-inventory", "sec-findings", "sec-finops", "sec-acti'
-    'ons", "sec-sources"].forEach(function (id) {\n      var node = document.getElementById(id);\n      if '
-    '(node) { spy.observe(node); }\n    });\n  }\n})();\n</script>\n</body>\n</html>\n'
+    '0px;font-weight:600}\n.fleet-filters{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px}\n.w'
+    's-select select,.ws-select input{min-height:38px;max-width:360px;padding:0 10px;border:1px solid var'
+    '(--line2);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;font-weight:400'
+    '}\n.ws-select input{width:260px}\n@media (max-width:520px){.fleet-filters,.ws-select{width:100%} .ws-s'
+    'elect select,.ws-select input{flex:1 1 0;min-width:0;width:auto;max-width:none}}\n@media (max-width:3'
+    '80px){#fleet-kpis{grid-template-columns:minmax(0,1fr)}}\n.fleet-hero .hero-in{grid-template-columns:m'
+    'inmax(0,1fr)}\n.fleet-cards{margin-top:22px}\n.fleet-ws{padding:0;border:0;background:none;color:var(-'
+    '-link);font:inherit;font-weight:700;text-align:left;cursor:pointer;text-decoration:underline;text-un'
+    'derline-offset:2px;white-space:nowrap}\n.fleet-note{display:block;margin-top:4px;max-width:34ch;font-'
+    'size:12.5px;color:var(--muted)}\n.sev-row{display:inline-flex;gap:4px;flex-wrap:nowrap}\n.sev-row .pil'
+    'l{padding:1px 7px}\n#fleet-table .sev-row{flex-wrap:wrap}\n.access-banner{max-width:1320px;margin:18px'
+    ' auto 0;padding:14px 18px;border:1px solid var(--high-bar);border-radius:14px;background:var(--high-'
+    'bg);color:var(--high-ink);font-size:14.5px}\n.access-banner b{font-weight:700}\n.hero{position:relativ'
+    'e;background:linear-gradient(150deg,var(--hero-a) 0%,var(--hero-b) 100%);color:#ffffff;padding:clamp'
+    '(28px,4.2vw,52px) clamp(14px,3vw,40px) 104px}\n.hero-in{max-width:1320px;margin:0 auto;display:grid;g'
+    'rid-template-columns:minmax(0,1fr) 330px;gap:24px 52px;align-items:start}\n.hero h1{margin:0 0 14px;f'
+    'ont-size:clamp(28px,3vw,44px);line-height:1.12;font-weight:700;letter-spacing:-.02em;text-wrap:balan'
+    'ce;color:#ffffff}\n.lead{margin:0;max-width:72ch;font-size:17px;line-height:1.55;color:var(--hero-mut'
+    'ed)}\n.lead b{color:#ffffff;font-weight:700}\n.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:20p'
+    'x}\n.meta span{font-size:12.5px;padding:5px 11px;border-radius:999px;border:1px solid var(--hero-line'
+    ');color:var(--hero-muted);white-space:nowrap}\n.meta b{color:#ffffff;font-weight:600}\n.meta span.on{b'
+    'ackground:rgba(255,255,255,.12);border-color:rgba(255,255,255,.45);color:#ffffff;font-weight:700;let'
+    'ter-spacing:.02em}\n.hero-side{display:grid;gap:14px}\n.plaque-k{margin:0 0 6px;font-size:12.5px;color'
+    ':var(--hero-muted)}\n.brand-plaque{color-scheme:only light;display:flex;align-items:center;justify-co'
+    'ntent:center;min-height:64px;padding:10px 16px;border-radius:12px;background:#ffffff;color:#334155}\n'
+    '.brand-plaque img{display:block;max-width:100%;max-height:44px;object-fit:contain}\n.brand-placeholde'
+    'r{font-size:14px;font-weight:700;letter-spacing:.16em;color:#334155}\n.client-name{margin:6px 0 0;fon'
+    't-size:14px;font-weight:600;color:#ffffff}\n.signal{padding:18px 20px;border-radius:16px;background:r'
+    'gba(255,255,255,.07);border:1px solid var(--sig-line)}\n.signal .k{font-size:13px;font-weight:600;col'
+    'or:var(--hero-muted)}\n.signal b{display:block;margin-top:4px;font-size:26px;line-height:1.15;font-we'
+    'ight:700;color:var(--sig-ink)}\n.signal p{margin:8px 0 0;font-size:14px;color:var(--hero-muted)}\n.sig'
+    'nal.crit{--sig-ink:#ffb4ab;--sig-line:rgba(255,180,171,.55)}\n.signal.warn{--sig-ink:#fedf89;--sig-li'
+    'ne:rgba(254,223,137,.5)}\n.signal.act{--sig-ink:#fdb022;--sig-line:rgba(253,176,34,.5)}\n.signal.ok{--'
+    'sig-ink:#a6f4c5;--sig-line:rgba(166,244,197,.45)}\n.signal.info{--sig-ink:#e4e7ec;--sig-line:rgba(255'
+    ',255,255,.35)}\n.dist{grid-column:1 / -1}\n.dist-head{display:flex;flex-wrap:wrap;justify-content:spac'
+    'e-between;gap:4px 16px;margin-bottom:8px;font-size:13.5px;color:var(--hero-muted)}\n.dist-head b,.leg'
+    'end b{color:#ffffff}\n.track{display:flex;height:14px;border-radius:999px;overflow:hidden;background:'
+    'rgba(255,255,255,.16)}\n.track i{display:block;height:100%}\n.legend{display:flex;flex-wrap:wrap;gap:6'
+    'px 20px;margin-top:10px;font-size:13.5px;color:var(--hero-muted)}\n.legend span{display:inline-flex;a'
+    'lign-items:center;gap:7px}\n.legend i{display:inline-block;width:10px;height:10px;border-radius:3px}\n'
+    '.page{max-width:1400px;margin:0 auto;padding:0 clamp(14px,3vw,40px) 56px}\n.kpis{position:relative;z-'
+    'index:2;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,178px),1fr));gap:14px;mar'
+    'gin-top:-62px}\n.kpi{min-width:0;padding:18px 20px;background:var(--surface);border:1px solid var(--l'
+    'ine);border-radius:16px;box-shadow:var(--shadow)}\n.kpi .v{display:flex;flex-wrap:wrap;align-items:ba'
+    'seline;gap:0 5px;font-size:33px;line-height:1.05;font-weight:700;letter-spacing:-.02em;color:var(--t'
+    'itle)}\n.kpi .v small{font-size:15px;font-weight:600;letter-spacing:0;color:var(--muted)}\n.kpi .l{mar'
+    'gin-top:9px;font-size:14px;font-weight:600}\n.kpi .s{margin-top:3px;font-size:13px;color:var(--muted)'
+    '}\n.sim,.note{display:flex;gap:10px;align-items:flex-start;margin-top:16px;padding:11px 16px;border-r'
+    'adius:12px;font-size:14px}\n.sim{background:repeating-linear-gradient(135deg,#fffaeb 0 12px,#fef0c7 1'
+    '2px 24px);border:1px solid #fedf89;color:#7a2e0e;font-weight:600}\n.note{background:var(--surface);bo'
+    'rder:1px solid var(--line);color:var(--ink)}\n.sim svg.i,.note svg.i{width:18px;height:18px;margin-to'
+    'p:1px}\n.note svg.i{color:var(--med-bar)}\n.chapter{margin-top:48px;scroll-margin-top:78px}\n.sh{margin'
+    '-bottom:16px}\n.sh h2{margin:0;font-size:23px;line-height:1.3;font-weight:700;letter-spacing:-.01em;c'
+    'olor:var(--title);text-wrap:balance}\n.sh p{margin:6px 0 0;max-width:75ch;font-size:14.5px;color:var('
+    '--muted)}\n.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap'
+    ':16px}\n.stack-gap>* + *{margin-top:16px}\n.card{min-width:0;padding:20px 22px;background:var(--surfac'
+    'e);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}\n.card h3{margin:0 0 4px'
+    ';font-size:17px;line-height:1.3;font-weight:700;color:var(--title)}\n.card .sub{margin:0 0 14px;font-'
+    'size:13.5px;color:var(--muted)}\n.card.flat{padding:0;overflow:hidden}\n.card-head{display:flex;flex-w'
+    'rap:wrap;align-items:baseline;justify-content:space-between;gap:4px 16px;padding:18px 22px 12px}\n.ca'
+    'rd-head h3{margin:0}\n.card-head p{margin:0;font-size:13.5px;color:var(--muted)}\n.facts{display:grid;'
+    'grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:16px 28px;margin:0}\n.facts dt'
+    '{margin-bottom:3px;font-size:12.5px;color:var(--muted)}\n.facts dd{margin:0;font-size:14.5px;font-wei'
+    'ght:600;min-width:0}\n.facts dd small{display:block;font-weight:400;color:var(--muted);font-size:12.5'
+    'px}\n.plist,.msgs{list-style:none;margin:0;padding:0}\n.msgs li{position:relative;padding:9px 0 9px 18'
+    'px;border-top:1px solid var(--line);font-size:14.5px}\n.msgs li:first-child{border-top:0;padding-top:'
+    '2px}\n.msgs li::before{content:"";position:absolute;left:2px;top:17px;width:6px;height:6px;border-rad'
+    'ius:50%;background:var(--chart)}\n.msgs li:first-child::before{top:10px}\n.plist li{display:grid;grid-'
+    'template-columns:auto minmax(0,1fr);gap:4px 12px;padding:12px 0;border-top:1px solid var(--line)}\n.p'
+    'list li:first-child{border-top:0;padding-top:0}\n.plist .pt{font-weight:600}\n.plist .pm{grid-column:2'
+    ';font-size:13.5px;color:var(--muted)}\n.bars{display:grid;gap:12px}\n.brow{display:grid;grid-template-'
+    'columns:minmax(120px,36%) minmax(0,1fr) auto;gap:12px;align-items:center;font-size:14px}\n.brow .bl{m'
+    'in-width:0}\n.brow .bl small,.brow .bv small{display:block;font-size:12.5px;font-weight:400;color:var'
+    '(--muted)}\n.bt{height:10px;border-radius:999px;overflow:hidden;background:var(--soft)}\n.bt i{display'
+    ':block;height:100%;min-width:2px;border-radius:999px;background:var(--chart)}\n.brow .bv{text-align:r'
+    'ight;font-weight:700;white-space:nowrap}\n.brow.na .bv{font-weight:600;color:var(--muted)}\n#check-sta'
+    'tus .brow{grid-template-columns:minmax(150px,46%) minmax(0,1fr) auto}\n.wrap,.graph{overflow-x:auto;b'
+    'order-top:1px solid var(--line);background:linear-gradient(90deg,var(--surface) 30%,rgba(255,255,255'
+    ',0)) left / 36px 100% no-repeat local,linear-gradient(270deg,var(--surface) 30%,rgba(255,255,255,0))'
+    ' right / 36px 100% no-repeat local,radial-gradient(farthest-side at 0 50%,rgba(16,24,40,.18),rgba(16'
+    ',24,40,0)) left / 14px 100% no-repeat scroll,radial-gradient(farthest-side at 100% 50%,rgba(16,24,40'
+    ',.18),rgba(16,24,40,0)) right / 14px 100% no-repeat scroll}\ntable{width:100%;border-collapse:collaps'
+    'e;font-size:14px;text-align:left}\nth{padding:10px 14px;background:var(--soft);color:var(--title);fon'
+    't-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;border-'
+    'bottom:1px solid var(--line);vertical-align:bottom}\ntd{padding:11px 14px;border-bottom:1px solid var'
+    '(--line);vertical-align:top}\ntbody tr:last-child td{border-bottom:0}\ntbody tr:hover{background:var(-'
+    '-hover)}\ntable.dense{font-size:13.5px}\n.dense td,.dense th{padding-left:11px;padding-right:11px}\ntd.'
+    'n,th.n{text-align:right;white-space:nowrap}\ntd.nw{white-space:nowrap}\ntd.w{min-width:240px}\ntd.empty'
+    '-cell{color:var(--muted)}\ntr.pg{display:none}\n.th-sort{all:unset;display:inline-flex;align-items:cen'
+    'ter;gap:4px;cursor:pointer}\n.th-sort:focus-visible{outline:3px solid var(--focus);outline-offset:2px'
+    ';border-radius:4px}\n.th-sort::after{content:"";width:0;height:0;border:4px solid transparent;border-'
+    'top-color:currentColor;opacity:.35;margin-top:4px}\nth[aria-sort="ascending"] .th-sort::after{border-'
+    'top-color:transparent;border-bottom-color:currentColor;margin-top:-4px;opacity:1}\nth[aria-sort="desc'
+    'ending"] .th-sort::after{opacity:1}\n.more-row{display:flex;flex-wrap:wrap;align-items:center;justify'
+    '-content:center;gap:8px 12px;padding:12px;border-top:1px solid var(--line)}\n.more-note{font-size:13p'
+    'x;color:var(--muted)}\n.stack b{display:block;font-weight:600}\n.stack small{display:block;font-size:1'
+    '2.5px;color:var(--muted)}\n.mono{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;font-siz'
+    'e:12.5px}\n.nw{white-space:nowrap}\n.muted{color:var(--muted)}\n.fd p,.fr p{margin:3px 0 0}\n.fd p{font-'
+    'size:13.5px;color:var(--muted)}\n.res b{display:block;font-weight:600}\n.res small{display:block;font-'
+    'size:12.5px;color:var(--muted)}\n.ext{display:inline-flex;align-items:center;gap:4px;margin-top:3px;f'
+    'ont-size:13px;font-weight:600;white-space:nowrap}\n.ext svg.i{width:13px;height:13px}\n.chips{display:'
+    'flex;flex-wrap:wrap;gap:5px;margin-top:6px}\n.chips span{padding:1px 8px;border-radius:7px;background'
+    ':var(--soft);color:var(--muted);font-size:12px}\n.chips b{color:var(--ink);font-weight:600}\ndetails.j'
+    'son{margin-top:6px;font-size:12.5px}\ndetails.json summary{cursor:pointer;color:var(--link);font-weig'
+    'ht:600}\ndetails.json pre{max-width:620px;max-height:260px;overflow:auto;margin:6px 0 0;padding:10px;'
+    'border-radius:8px;background:var(--soft);font:12px/1.45 ui-monospace,"Cascadia Mono",Consolas,monosp'
+    'ace;white-space:pre}\n.pill{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-ra'
+    'dius:999px;font-size:12.5px;font-weight:700;line-height:1.6;white-space:nowrap}\n.pill::before{conten'
+    't:"";width:7px;height:7px;border-radius:50%;background:var(--d,currentColor)}\n.sev-critical{color:va'
+    'r(--crit-ink);background:var(--crit-bg);--d:var(--crit-bar)}\n.sev-high{color:var(--high-ink);backgro'
+    'und:var(--high-bg);--d:var(--high-bar)}\n.sev-medium{color:var(--med-ink);background:var(--med-bg);--'
+    'd:var(--med-bar)}\n.sev-low{color:var(--low-ink);background:var(--low-bg);--d:var(--low-bar)}\n.sev-in'
+    'fo,.tone-info{color:var(--info-ink);background:var(--info-bg);--d:var(--info-bar)}\n.tone-ok{color:va'
+    'r(--ok-ink);background:var(--ok-bg);--d:var(--ok-bar)}\n.tone-warn{color:var(--med-ink);background:va'
+    'r(--med-bg);--d:var(--med-bar)}\n.tone-crit{color:var(--crit-ink);background:var(--crit-bg);--d:var(-'
+    '-crit-bar)}\n.cls-OBSERVED{color:var(--obs-ink);background:var(--obs-bg);--d:var(--obs-line)}\n.cls-IN'
+    'FERRED{color:var(--inf-ink);background:var(--inf-bg);--d:var(--inf-line);outline:1px dashed var(--in'
+    'f-line);outline-offset:-1px}\n.cls-UNKNOWN{color:var(--unk-ink);background:var(--unk-bg);--d:transpar'
+    'ent}\n.cls-UNKNOWN::before{box-shadow:inset 0 0 0 1.5px var(--unk-line)}\n.st{display:inline-flex;alig'
+    'n-items:center;gap:7px;font-size:13.5px;font-weight:600;white-space:nowrap}\n.st::before{content:"";w'
+    'idth:9px;height:9px;border-radius:50%;background:var(--d)}\n.st-failed{--d:var(--crit-bar)}\n.st-passe'
+    'd{--d:var(--ok-bar)}\n.st-not_evaluated{--d:var(--info-bar)}\n.st-not_applicable{--d:transparent;color'
+    ':var(--muted)}\n.st-not_applicable::before{box-shadow:inset 0 0 0 2px var(--info-bar)}\n.tools{display'
+    ':flex;flex-wrap:wrap;gap:10px 12px;align-items:flex-end;padding:0 22px 16px}\n.field{display:grid;gap'
+    ':4px;min-width:0;font-size:12.5px;font-weight:600;color:var(--muted)}\n.field select,.field input{col'
+    'or:var(--ink);font-size:14px;font-weight:400}\n.field.grow{flex:1 1 220px}\n.field.grow input{width:10'
+    '0%}\n.cls-sum{display:flex;flex-wrap:wrap;gap:8px;margin:-4px 0 16px}\n.tabs{display:inline-flex;flex-'
+    'wrap:wrap;gap:4px;margin:0 0 16px;padding:4px;background:var(--soft);border:1px solid var(--line);bo'
+    'rder-radius:12px}\n.tabs button{min-height:40px;padding:0 16px;border:0;border-radius:9px;background:'
+    'transparent;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer}\n.tabs button:hover{col'
+    'or:var(--title)}\n.tabs button[aria-selected="true"]{background:var(--surface);color:var(--title);box'
+    '-shadow:0 1px 2px rgba(16,24,40,.1),0 0 0 1px var(--line)}\n.graph{padding:4px 22px 6px}\n.graph svg{d'
+    'isplay:block;width:100%;min-width:760px;height:auto}\n.g-col{fill:var(--muted);font-size:11px;font-we'
+    'ight:700;letter-spacing:.06em;text-transform:uppercase}\n.g-node rect{fill:var(--surface);stroke:var('
+    '--line2);stroke-width:1.2}\n.g-node.ws rect{stroke:var(--brand-steel);stroke-width:2}\n.g-node.inf rec'
+    't{fill:var(--inf-bg);stroke:var(--inf-line);stroke-dasharray:5 4}\n.g-l1{fill:var(--ink);font-size:12'
+    '.5px;font-weight:600}\n.g-l2{fill:var(--muted);font-size:11px}\n.edge{fill:none;stroke:var(--edge);str'
+    'oke-width:1.3;opacity:.75}\n.edge.inf{stroke:var(--inf-line);stroke-dasharray:6 5;opacity:1}\n.arr.obs'
+    '{fill:var(--edge)}\n.arr.inf{fill:var(--inf-line)}\n.g-legend{display:flex;flex-wrap:wrap;gap:6px 20px'
+    ';align-items:center;padding:10px 22px 16px;font-size:13px;color:var(--muted)}\n.g-legend span{display'
+    ':inline-flex;align-items:center;gap:8px}\n.g-legend svg{width:34px;height:10px}\n.ref-box rect{fill:va'
+    'r(--soft);stroke:var(--brand-steel);stroke-width:1.5;stroke-dasharray:6 4}\n.ref-t{fill:var(--title);'
+    'font-size:13px;font-weight:700}\n.ref-s{fill:var(--muted);font-size:11.5px}\n.ref-link{stroke:var(--br'
+    'and-lava);stroke-width:2}\n.ref-flag rect{fill:var(--high-bg)}\n.ref-flag text{fill:var(--high-ink);fo'
+    'nt-size:11px;font-weight:700;letter-spacing:.05em}\n.ref-note{fill:var(--high-ink);font-size:12.5px;f'
+    'ont-weight:600}\n.stat{font-size:34px;line-height:1.1;font-weight:700;letter-spacing:-.02em;color:var'
+    '(--title);margin:6px 0 4px}\n.stat small{font-size:15px;font-weight:600;color:var(--muted);letter-spa'
+    'cing:0}\n.stat.na{font-size:24px}\n.notes{margin:12px 0 0;padding-left:18px;font-size:13px;color:var(-'
+    '-muted)}\n.notes li + li{margin-top:4px}\n.plan{display:grid;grid-template-columns:repeat(auto-fit,min'
+    'max(min(100%,360px),1fr));gap:16px;align-items:start}\n.steps{list-style:none;margin:12px 0 0;padding'
+    ':0}\n.steps li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:4px 12px;padding:12px 0;bord'
+    'er-top:1px solid var(--line)}\n.steps .no{display:grid;place-items:center;width:28px;height:28px;bord'
+    'er-radius:50%;background:var(--btn);color:var(--btn-ink);font-size:13px;font-weight:700}\n.steps .sx{'
+    'min-width:0}\n.steps .sx p{margin:4px 0 0;font-size:14px}\n.steps .sm{display:flex;flex-wrap:wrap;gap:'
+    '4px 12px;align-items:center;margin-top:6px;font-size:12.5px;color:var(--muted)}\n.steps .sm .ext{marg'
+    'in-top:0}\n.empty{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:14px}\n.empty '
+    'svg.i{width:22px;height:22px;color:var(--ok-bar)}\n.dl2{display:grid;grid-template-columns:minmax(150'
+    'px,220px) minmax(0,1fr);gap:10px 20px;margin:0;font-size:14px}\n.dl2 dt{color:var(--muted)}\n.dl2 dd{m'
+    'argin:0}\n.dl2 ul{margin:0;padding-left:18px}\n.state-card{max-width:1320px;margin:28px auto;padding:2'
+    '0px 22px;border:1px solid var(--crit-bar);border-radius:16px;background:var(--crit-bg);color:var(--c'
+    'rit-ink)}\n.state-card h2{margin:0 0 6px;font-size:20px}\n.state-card p{margin:0;color:var(--ink)}\n.st'
+    'ate-card dl{margin:12px 0 0;color:var(--ink)}\n.hero h1,.sh h2,.signal b{font-family:var(--display,in'
+    'herit)}\nhtml.brand-font .hero h1{font-weight:600;letter-spacing:0;font-size:clamp(32px,3.6vw,48px);l'
+    'ine-height:1.08}\nhtml.brand-font .sh h2{font-weight:600;letter-spacing:0;font-size:27px}\nhtml.brand-'
+    'font .signal b{font-weight:600;letter-spacing:0;font-size:28px}\n.client-logo{display:none}\nhtml.bran'
+    'd-bar .brand .mark,html.brand-bar .wordmark{display:none}\nhtml.brand-bar .client-logo{display:block;'
+    'height:30px;width:auto;max-width:200px}\nhtml.brand-bar .product{padding-left:16px;border-left-color:'
+    'var(--line)}\nhtml.brand-bar .brand-ribbon,html.brand-bar #plaque-block{display:none}\nhtml.brand-bar '
+    '.bar{box-shadow:none;border-bottom:3px solid var(--brand-rule,var(--btn))}\nhtml.branded .foot{max-wi'
+    'dth:none;margin:0;padding:18px clamp(14px,3vw,40px) 28px;border-top:0;background:var(--foot-bg,trans'
+    'parent);color:var(--foot-ink,var(--muted))}\n.cost-head{display:grid;grid-template-columns:minmax(0,1'
+    '.3fr) minmax(0,1fr);gap:22px 40px;align-items:start}\n.cstats{display:grid;grid-template-columns:repe'
+    'at(2,minmax(0,1fr));gap:20px 28px}\n.cstat .k{font-size:13px;font-weight:600;color:var(--muted)}\n.cst'
+    'at .n{margin-top:4px;font-size:30px;line-height:1.08;font-weight:700;letter-spacing:-.02em;color:var'
+    '(--title);white-space:nowrap}\n.cstat .n small{margin-left:5px;font-size:14px;font-weight:600;letter-'
+    'spacing:0;color:var(--muted)}\n.cstat .d{margin-top:5px;font-size:13px;color:var(--muted)}\n.up{color:'
+    'var(--up-ink);font-weight:600}\n.down{color:var(--down-ink);font-weight:600}\n.cost-trend h4{margin:0 '
+    '0 10px;font-size:13px;font-weight:600;color:var(--muted)}\n.mrow{display:grid;grid-template-columns:m'
+    'inmax(92px,auto) minmax(0,1fr) auto;gap:12px;align-items:center;padding:6px 0;font-size:13.5px}\n.mro'
+    'w .ml{font-weight:600;white-space:nowrap}\n.mrow .ml small{display:block;font-size:12px;font-weight:4'
+    '00;color:var(--muted)}\n.mrow .mv{text-align:right;font-weight:700;white-space:nowrap}\n.strack{displa'
+    'y:flex;height:14px;border-radius:999px;overflow:hidden;background:var(--soft)}\n.strack i{display:blo'
+    'ck;height:100%}\n.seg-dbu{background:var(--chart)}\n.seg-infra{background:var(--chart-2)}\n.mrow.partia'
+    'l .strack i{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.5) 0 4px,rgba(255,25'
+    '5,255,0) 4px 8px)}\n.keys{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:8px;font-size:12.5px;co'
+    'lor:var(--muted)}\n.keys span{display:inline-flex;align-items:center;gap:6px}\n.keys i{display:inline-'
+    'block;width:10px;height:10px;border-radius:3px}\n.vm-sizes{margin-top:16px;padding-top:12px;border-to'
+    'p:1px solid var(--line);font-size:13px;color:var(--muted)}\n.vm-sizes .chips{margin-top:6px}\n.cost-ta'
+    'bs{margin:0 22px 14px}\n.movers{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,32'
+    '0px),1fr));gap:0 36px}\n.movers h4{margin:4px 0 2px;font-size:13px;font-weight:600;color:var(--muted)'
+    '}\n.mover{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 14px;padding:10px 0;border-to'
+    'p:1px solid var(--line);font-size:14px}\n.mover b{font-weight:600;overflow-wrap:anywhere}\n.mover .dv{'
+    'text-align:right;font-weight:700;white-space:nowrap}\n.mover small{font-size:12.5px;color:var(--muted'
+    ')}\n.gapn{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin:2px 0 14px}\n.gapn b{fo'
+    'nt-size:30px;line-height:1.1;font-weight:700;letter-spacing:-.02em;color:var(--title)}\n.gapn span{fo'
+    'nt-size:14px;color:var(--muted)}\n.sav{font-weight:700;white-space:nowrap}\n.sav small{display:block;f'
+    'ont-size:12px;font-weight:400;color:var(--muted);white-space:normal}\n.sav.nc{font-weight:600;color:v'
+    'ar(--muted)}\n.legacy-sum{display:flex;flex-wrap:wrap;gap:6px 28px;align-items:baseline;padding:0 22p'
+    'x 14px}\n.legacy-sum .stat{margin:0}\n.legacy-sum .notes{margin:0;max-width:80ch}\n.sys-grid{display:gr'
+    'id;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 40px;margin-top:20px}\n.sys-grid h4,.sys-h{'
+    'margin:0 0 8px;font-size:13px;font-weight:600;color:var(--muted)}\n.sys-h{margin-top:14px}\n.sys-wrap{'
+    'margin:0 -22px;border-bottom:1px solid var(--line)}\n#sec-finops .bars{grid-template-columns:minmax(1'
+    '20px,36%) minmax(0,1fr) auto;column-gap:12px}\n#sec-finops .bars>*{grid-column:1 / -1}\n#sec-finops .b'
+    'ars>.brow{grid-template-columns:subgrid}\n.h3row{display:flex;flex-wrap:wrap;align-items:center;gap:6'
+    'px 12px;margin-bottom:4px}\n.h3row h3{margin:0}\n@media (max-width:1400px){#workspace-error-view,#open'
+    'ing-state{margin:28px clamp(14px,3vw,40px)}}\n.foot{max-width:1320px;margin:0 auto;padding:20px 0 40p'
+    'x;border-top:1px solid var(--line);color:var(--muted);font-size:13px}\n@media (max-width:1400px){.foo'
+    't{margin:0 clamp(14px,3vw,40px)}}\n@media (max-width:1360px){.bar-nav,.tag{display:none} .toc{display'
+    ':block}}\n@media (max-width:1040px){.hero-in{grid-template-columns:1fr} .hero-side{grid-template-colu'
+    'mns:repeat(auto-fit,minmax(min(100%,280px),1fr))} .product{display:none} .cost-head,.sys-grid{grid-t'
+    'emplate-columns:minmax(0,1fr)}}\n@media (max-width:720px){\n.btn .lbl{display:none}\n.btn{padding:0 11p'
+    'x}\n.acts{gap:6px}\n.hero{padding-bottom:92px}\n.lead{font-size:16px}\n.brand-plaque{min-height:52px}\n.k'
+    'pis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}\n.kpi{padding:14px 16px}\n.kpi .v{font-siz'
+    'e:27px}\n.brow,#check-status .brow{grid-template-columns:minmax(0,1fr) auto}\n.brow .bt{grid-column:1 '
+    '/ -1;grid-row:2}\n.tools,.card-head,.g-legend{padding-left:16px;padding-right:16px}\n.graph{padding-le'
+    'ft:16px;padding-right:16px}\n.card{padding:16px}\n.card.flat{padding:0}\n.dl2{grid-template-columns:1fr'
+    ';gap:2px 0}\n.dl2 dd + dt{margin-top:10px}\n.cost-tabs{margin-left:16px;margin-right:16px}\n.sys-wrap{m'
+    'argin:0 -16px}\n#sec-finops .bars{grid-template-columns:minmax(0,1fr) auto}\n.legacy-sum{padding-left:'
+    '16px;padding-right:16px}\n.cstats{gap:16px 18px}\n.cstat .n{font-size:25px}\nhtml.brand-font .hero h1{f'
+    'ont-size:30px}\nhtml.brand-font .sh h2{font-size:24px}\n}\n@media (max-width:420px){.wordmark{font-size'
+    ':15px} .brand .mark{width:26px;height:26px} .btn.icon,.acts .btn{width:38px;min-height:38px;padding:'
+    '0}}\n@media (max-width:360px){.bar{gap:8px} .acts{gap:4px} .brand{flex:0 1 auto;min-width:0} .wordmar'
+    'k{overflow:hidden;text-overflow:ellipsis}}\n@media (prefers-reduced-motion:reduce){*{transition:none '
+    '!important;scroll-behavior:auto !important}}\n@page{size:A4;margin:14mm 12mm 16mm}\n@media print{\n*{-w'
+    'ebkit-print-color-adjust:exact;print-color-adjust:exact}\nhtml,body{background:#ffffff;font-size:12px'
+    '}\n.bar,.skip,.tools,.more-row,.tabs,.ws-select,details.json{display:none !important}\n.multi-band{bor'
+    'der:0}\n.hero{padding:22px 24px 74px;border-radius:14px}\n.hero-in{grid-template-columns:minmax(0,1fr)'
+    ' 210px;gap:14px 26px}\n.hero-side{grid-template-columns:1fr}\n.hero h1{font-size:25px}\n.lead{font-size'
+    ':12.5px}\n.signal b{font-size:19px}\n.page{padding:0}\n.kpis{grid-template-columns:repeat(3,minmax(0,1f'
+    'r));gap:10px;margin-top:-54px}\n.kpi{padding:12px 14px;box-shadow:none}\n.kpi .v{font-size:24px}\n.card'
+    '{box-shadow:none;break-inside:avoid}\n.card.flat{break-inside:auto}\n.grid2{grid-template-columns:1fr '
+    '1fr}\n.plan{grid-template-columns:1fr}\n.plan .card{break-inside:auto}\n.steps .sx b,.plist .pt{font-si'
+    'ze:12px}\n.steps .sx p,.msgs li,.brow{font-size:11.5px}\n.plist .pm,.steps .sm,.brow small,.facts dt,.'
+    'facts dd small{font-size:10.5px}\n.facts dd{font-size:12px}\n.chapter{margin-top:24px}\n.sh{break-after'
+    ':avoid;break-inside:avoid}\n.card-head{display:block;break-after:avoid;break-inside:avoid}\n.card-head'
+    ' p{margin-top:2px}\n.sh::after,.card-head::after{content:"";display:block;height:150px;margin-bottom:'
+    '-150px}\n.sh p{font-size:12px}\ntr,.kpi,.signal,.brow,.steps li,.plist li{break-inside:avoid}\nthead{di'
+    'splay:table-header-group}\ntr.pg{display:table-row !important}\n.wrap,.graph{overflow:visible;backgrou'
+    'nd:none}\ntable,table.dense{font-size:10.5px}\ntd,th,.dense td,.dense th{padding:5px 7px}\ntd{overflow-'
+    'wrap:break-word}\ntd .mono,td.w,.chips span{overflow-wrap:anywhere}\ntd small,td p,td .ext,td .st,td .'
+    'pill,.chips span,.card td small,.card td p{font-size:9.5px}\nth[data-label] .th-sort{display:none}\nth'
+    '[data-label]::before{content:attr(data-label)}\ntd .pill{padding:1px 7px;gap:4px}\ntd .pill::before{wi'
+    'dth:5px;height:5px}\n.sh h2{font-size:18px}\n.card h3{font-size:13.5px}\n.card .sub,.card-head p,.notes'
+    ',.dl2{font-size:10.5px}\nth{font-size:9px;white-space:normal}\ntd.nw,td .nw{white-space:normal}\ntd.w{m'
+    'in-width:0}\n.mono{font-size:9.5px}\n.graph svg{min-width:0}\n[hidden].print-show{display:block !import'
+    'ant}\na{color:inherit;text-decoration:none}\n.foot{padding:14px 0 0}\n.cost-head{grid-template-columns:'
+    '1.25fr 1fr;gap:12px 24px}\n.cstat .n{font-size:20px}\n.cstat .d,.mrow,.mover,.keys,.vm-sizes{font-size'
+    ':10.5px}\n.gapn b{font-size:20px}\n.sys-grid{grid-template-columns:1fr 1fr}\n.brow .bl small,.brow .bv '
+    'small{font-size:10.5px}\n.mrow,.mover,.cstat{break-inside:avoid}\nhtml.brand-font .hero h1{font-size:2'
+    '8px}\nhtml.brand-font .sh h2{font-size:20px}\nhtml.branded .foot{background:none;color:#475467}\n}\n</st'
+    'yle>\n</head>\n<body>\n<a class="skip" href="#main-document">Skip to main content</a>\n<header class="ba'
+    'r">\n  <a class="brand" href="#sec-cover">\n    <svg class="mark" viewBox="0 0 32 32" aria-hidden="tru'
+    'e" focusable="false"><rect width="32" height="32" rx="8" fill="#003865"/><path d="M16 7.5l9 4.6-9 4.'
+    '6-9-4.6z" fill="#ff3621"/><path d="M7 16.4l9 4.6 9-4.6M7 20.8l9 4.6 9-4.6" fill="none" stroke="#ffff'
+    'ff" stroke-width="1.9" stroke-linejoin="round"/></svg>\n    <span class="wordmark">Azure SRE Agent</s'
+    'pan>\n    <span class="product" id="bar-product">Azure Databricks dependencies</span>\n  </a>\n  <nav c'
+    'lass="bar-nav" aria-label="Report contents" id="bar-nav">\n    <a href="#sec-dependencies">Dependenci'
+    'es</a>\n    <a href="#sec-inventory">Inventory</a>\n    <a href="#sec-findings">Findings</a>\n    <a hr'
+    'ef="#sec-finops">Costs</a>\n    <a href="#sec-actions">Plan</a>\n    <a href="#sec-sources">Sources</a'
+    '>\n  </nav>\n  <div class="acts">\n    <details class="menu toc">\n      <summary class="btn ghost" aria'
+    '-label="Contents"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M'
+    '4 6h16M4 12h16M4 18h10"/></svg><span class="lbl">Contents</span></summary>\n      <nav class="menu-po'
+    'p" aria-label="Contents" id="toc-menu">\n        <a href="#sec-cover">1. Cover and provenance</a>\n   '
+    '     <a href="#sec-executive">2. Executive summary and WAF</a>\n        <a href="#sec-dependencies">3'
+    '. Dependency map</a>\n        <a href="#sec-inventory">4. Lakehouse and ARM inventory</a>\n        <a '
+    'href="#sec-findings">5. Findings and rules</a>\n        <a href="#sec-finops">6. Databricks costs</a>'
+    '\n        <a href="#sec-actions">7. Action plan</a>\n        <a href="#sec-sources">8. Sources and met'
+    'hodology</a>\n      </nav>\n    </details>\n    <span class="tag">Read-only</span>\n    <button type="bu'
+    'tton" class="btn ghost icon" id="theme-toggle" aria-pressed="false" title="Dark mode"><svg class="i '
+    'moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8'
+    ' 0 1 0 20 14.5z"/></svg><svg class="i sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'
+    '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 '
+    '12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span class="sr">Dark mode</span></button>\n    <detai'
+    'ls class="menu" id="export-menu">\n      <summary class="btn ghost" aria-label="Export"><svg class="i'
+    '" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>'
+    '</svg><span class="lbl">Export</span></summary>\n      <div class="menu-pop">\n        <button type="b'
+    'utton" id="export-json-btn">Full snapshot (JSON)<small>Normalized model embedded in this report</sma'
+    'll></button>\n        <button type="button" id="export-deps-csv-btn">Dependencies (CSV)<small>Workspa'
+    'ce nodes, relationships and blind spots</small></button>\n        <button type="button" id="export-fi'
+    'ndings-csv-btn">Checks (CSV)<small>Every evaluated rule with its evidence</small></button>\n        <'
+    'button type="button" id="export-costs-csv-btn">Cost by workload (CSV)<small>The month\'s clusters, jo'
+    'bs, warehouses, pools and tags</small></button>\n        <button type="button" id="export-signals-csv'
+    '-btn">Optimization signals (CSV)<small>Each signal with its cost and estimated savings</small></butt'
+    'on>\n      </div>\n    </details>\n    <button type="button" class="btn" id="print-btn"><svg class="i" '
+    'viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 9V3h10v6M7 18H5a2 2 0 0 1-2-2v-'
+    '5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M7 14h10v7H7z"/></svg><span class="lbl">Print / P'
+    'DF</span></button>\n  </div>\n</header>\n<div class="brand-ribbon" aria-hidden="true"><span class="navy'
+    '"></span><span class="lava"></span><span class="steel"></span><span class="teal"></span></div>\n<div '
+    'class="multi-band" id="multi-overview" hidden>\n  <div class="band-in">\n    <p id="multi-summary"></p'
+    '>\n    <div class="fleet-filters" role="search" aria-label="Fleet filters">\n      <label class="ws-se'
+    'lect" id="fleet-sub-wrap" hidden>Subscription\n        <select id="fleet-sub-filter" aria-label="Filt'
+    'er by subscription"></select>\n      </label>\n      <label class="ws-select" id="workspace-selector-w'
+    'rap" hidden>Workspace\n        <select id="workspace-selector" aria-label="Select workspace"></select'
+    '>\n      </label>\n      <label class="ws-select" id="fleet-search-wrap" hidden>Search\n        <input '
+    'type="search" id="fleet-search" placeholder="Name, resource group, region" autocomplete="off" title='
+    '"Search by workspace name, subscription, resource group, region, SKU or host" aria-label="Search wor'
+    'kspaces by name, subscription, resource group, region, SKU or host">\n      </label>\n    </div>\n  </d'
+    'iv>\n</div>\n<main id="main-document" tabindex="-1">\n  <div id="opening-state" class="state-card" role'
+    '="alert" hidden></div>\n  <div id="workspace-error-view" class="state-card" role="alert" hidden></div'
+    '>\n  <section id="fleet-view" aria-labelledby="fleet-title" hidden>\n    <div class="hero fleet-hero">'
+    '\n      <div class="hero-in">\n        <div>\n          <h1 id="fleet-title">Azure Databricks fleet rev'
+    'iew</h1>\n          <p class="lead" id="fleet-lead"></p>\n        </div>\n      </div>\n    </div>\n    <'
+    'div class="page">\n      <div class="kpis" id="fleet-kpis"></div>\n      <div class="stack-gap fleet-c'
+    'ards">\n        <div class="card flat"><div class="card-head"><h3>Workspaces (<span id="fleet-ws-coun'
+    't">0</span>)</h3><p>One row per workspace: collection status, access inside the workspace, findings '
+    'and period cost. Select a name to open its detailed review.</p></div><div class="wrap"><table class='
+    '"dense" id="fleet-table"></table></div></div>\n        <div class="card flat"><div class="card-head">'
+    '<h3>Findings in the visible workspaces (<span id="fleet-findings-count">0</span>)</h3><p id="fleet-f'
+    'indings-note"></p></div><div class="wrap"><table class="dense" id="fleet-findings-table"></table></d'
+    'iv></div>\n      </div>\n    </div>\n  </section>\n  <div id="access-banner" class="access-banner" role='
+    '"status" hidden></div>\n  <div id="report-body" hidden>\n    <section class="hero" id="sec-cover" aria'
+    '-labelledby="cover-title">\n      <div class="hero-in">\n        <div>\n          <h1 id="cover-title">'
+    'Azure Databricks architecture, dependency and configuration review</h1>\n          <p class="lead" id'
+    '="cover-lead"></p>\n          <div class="meta" id="cover-badges"></div>\n        </div>\n        <asid'
+    'e class="hero-side" aria-label="Customer and verdict">\n          <div id="plaque-block">\n           '
+    ' <p class="plaque-k">Prepared for</p>\n            <div class="brand-plaque" id="brand-plaque"></div>'
+    '\n            <p class="client-name" id="client-name-label"></p>\n          </div>\n          <div clas'
+    's="signal" id="verdict"></div>\n        </aside>\n        <div class="dist" id="severity-dist"></div>\n'
+    '      </div>\n    </section>\n    <div class="page">\n      <div class="kpis" id="kpis"></div>\n      <d'
+    'iv id="notices"></div>\n\n      <section class="chapter" id="sec-identity" aria-labelledby="h-identity'
+    '">\n        <div class="sh"><h2 id="h-identity">1. Workspace, identity and provenance</h2><p>Which wo'
+    'rkspace was reviewed, with which identity and from which tenant: the context behind every figure in '
+    'this report.</p></div>\n        <div class="card"><dl class="facts" id="cover-facts"></dl></div>\n    '
+    '  </section>\n\n      <section class="chapter" id="sec-executive" aria-labelledby="h-exec">\n        <d'
+    'iv class="sh"><h2 id="h-exec">2. Executive summary, coverage and local indicators</h2><p>The local i'
+    'ndex measures only the rules evaluated on observed evidence. It never replaces an official Microsoft'
+    ' Well-Architected assessment or hides sources that weren\'t evaluated.</p></div>\n        <div class="'
+    'grid2">\n          <div class="card"><h3>Executive summary</h3><p class="sub">The key points of this '
+    'review, starting with cost.</p><ul class="msgs" id="executive-messages"></ul></div>\n          <div c'
+    'lass="card"><h3>Check distribution</h3><p class="sub">Status of each local rule against the observed'
+    ' evidence.</p><div class="bars" id="check-status"></div></div>\n          <div class="card"><h3>Break'
+    'down by area</h3><p class="sub">Local index by review area, beside its evaluated coverage.</p><div c'
+    'lass="bars" id="area-scores"></div></div>\n          <div class="card"><h3>Breakdown by Well-Architec'
+    'ted pillar</h3><p class="sub">The same calculation grouped by pillar; not an official WAF score.</p>'
+    '<div class="bars" id="pillar-scores"></div></div>\n        </div>\n        <div class="card" style="ma'
+    'rgin-top:16px"><h3>Observed critical and high-severity priorities</h3><p class="sub">Failed checks w'
+    'ith critical or high severity, with the affected object and its evidence.</p><ul class="plist" id="p'
+    'riority-findings"></ul></div>\n      </section>\n\n      <section class="chapter" id="sec-dependencies"'
+    ' aria-labelledby="h-deps">\n        <div class="sh"><h2 id="h-deps">3. Dependency map and Lakehouse a'
+    'rchitecture</h2><p>Each relationship is explicitly classified as <strong>OBSERVED</strong> (exact na'
+    'tive ID/key join confirmed in the APIs), <strong>INFERRED</strong> (explicit URI/host reference to a'
+    " resource not collected in ARM) or <strong>UNKNOWN</strong> (runtime lineage, or a scope that can't "
+    'be read without starting compute).</p></div>\n        <div class="cls-sum" id="dep-class-summary"></d'
+    'iv>\n        <div class="tabs" role="tablist" aria-label="Architecture and dependency views">\n       '
+    '   <button type="button" role="tab" id="tab-dep-observed" aria-selected="true" aria-controls="panel-'
+    'dep-observed">Observed and inferred dependency map</button>\n          <button type="button" role="ta'
+    'b" id="tab-dep-reference" aria-selected="false" aria-controls="panel-dep-reference" tabindex="-1">Re'
+    'ference proposal - NOT deployed</button>\n        </div>\n        <div id="panel-dep-observed" class="'
+    'print-show" role="tabpanel" aria-labelledby="tab-dep-observed">\n          <div class="card flat">\n  '
+    '          <div class="card-head"><h3>Neighborhood graph</h3><p id="dep-graph-note"></p></div>\n      '
+    '      <div class="tools">\n              <label class="field">Layer\n                <select id="dep-l'
+    'ayer-filter">\n                  <option value="all">All layers</option>\n                  <option va'
+    'lue="control_plane">Control plane (ARM)</option>\n                  <option value="compute">Compute ('
+    'clusters / pools / warehouses)</option>\n                  <option value="orchestration">Orchestratio'
+    'n (jobs / tasks / pipelines)</option>\n                  <option value="governance">Governance (Unity'
+    ' Catalog / secret scopes)</option>\n                  <option value="associated_resource">Associated '
+    'Azure resources</option>\n                </select>\n              </label>\n              <label class'
+    '="field">Classification\n                <select id="dep-class-filter">\n                  <option val'
+    'ue="all">All (OBSERVED / INFERRED / UNKNOWN)</option>\n                  <option value="OBSERVED">OBS'
+    'ERVED (exact native join)</option>\n                  <option value="INFERRED">INFERRED (URI/host ref'
+    'erence)</option>\n                  <option value="UNKNOWN">UNKNOWN (explicit blind spot)</option>\n  '
+    '              </select>\n              </label>\n              <label class="field grow">Search node /'
+    ' workload\n                <input type="search" id="dep-search-filter" placeholder="Job, cluster, cat'
+    'alog, ADLS account…">\n              </label>\n              <button type="button" class="btn ghost" i'
+    'd="dep-clear">Clear filters</button>\n            </div>\n            <div class="graph" id="dep-graph'
+    '-box"></div>\n            <div class="g-legend" aria-hidden="true">\n              <span><svg viewBox='
+    '"0 0 34 10"><line x1="1" y1="5" x2="33" y2="5" class="edge"/></svg>OBSERVED · native join</span>\n   '
+    '           <span><svg viewBox="0 0 34 10"><line x1="1" y1="5" x2="33" y2="5" class="edge inf"/></svg'
+    '>INFERRED · URI/host not in the ARM inventory</span>\n              <span id="dep-graph-caption"></sp'
+    'an>\n            </div>\n          </div>\n          <div class="stack-gap" style="margin-top:16px">\n  '
+    '          <div class="card flat"><div class="card-head"><h3>Dependency relationships (<span id="dep-'
+    'edges-count">0</span>)</h3><p>Source, relationship and target with the exact join fields.</p></div><'
+    'div class="wrap"><table class="dense" id="dep-edges-table"></table></div></div>\n            <div cla'
+    'ss="card flat"><div class="card-head"><h3>Graph nodes (<span id="dep-nodes-count">0</span>)</h3><p>E'
+    'ach object with its source and an evidence summary.</p></div><div class="wrap"><table class="dense" '
+    'id="dep-nodes-table"></table></div></div>\n            <div class="card flat"><div class="card-head">'
+    '<h3>UNKNOWN blind spots and scopes (<span id="dep-unknowns-count">0</span>)</h3><p>What this review '
+    'can\'t see without running compute or reading code.</p></div><div class="wrap"><table class="dense" i'
+    'd="dep-unknowns-table"></table></div></div>\n            <div class="card flat"><div class="card-head'
+    '"><h3>Broken references found (<span id="dep-broken-count">0</span>)</h3><p>Referenced identifiers t'
+    'hat don\'t exist in the observed inventory.</p></div><div class="wrap"><table class="dense" id="dep-b'
+    'roken-table"></table></div></div>\n          </div>\n        </div>\n        <div id="panel-dep-referen'
+    'ce" class="print-show" role="tabpanel" aria-labelledby="tab-dep-reference" hidden>\n          <div cl'
+    'ass="card flat">\n            <div class="card-head"><h3>Azure Databricks Lakehouse reference archite'
+    'cture — proposal NOT deployed</h3><p>Baseline recommended by Microsoft and the Databricks Well-Archi'
+    "tected Lakehouse. <strong>It doesn't represent resources deployed in the customer's environment.</st"
+    'rong></p></div>\n            <div class="graph" id="ref-arch-box"></div>\n            <div class="wrap'
+    '"><table id="ref-arch-table"></table></div>\n          </div>\n        </div>\n      </section>\n\n      '
+    '<section class="chapter" id="sec-inventory" aria-labelledby="h-inv">\n        <div class="sh"><h2 id='
+    '"h-inv">4. Workspace, compute, orchestration, Unity Catalog and associated resource inventory</h2><p'
+    '>The objects the rules are evaluated on. Each row comes from an API read recorded in section 8.</p><'
+    '/div>\n        <div class="stack-gap">\n          <div class="card flat"><div class="card-head"><h3>Al'
+    'l-purpose clusters, job clusters, instance pools and cluster policies</h3><p id="inv-compute-count">'
+    '</p></div><div class="wrap"><table class="dense" id="inv-compute-table"></table></div></div>\n       '
+    '   <div class="card flat"><div class="card-head"><h3>Jobs, task DAGs, declarative pipelines (Lakeflo'
+    'w / DLT) and SQL warehouses</h3><p id="inv-orchestration-count"></p></div><div class="wrap"><table c'
+    'lass="dense" id="inv-orchestration-table"></table></div></div>\n          <div class="card flat"><div'
+    ' class="card-head"><h3>Unity Catalog (metastore, catalogs, schemas, storage credentials, external lo'
+    'cations, connections) and secret scopes</h3><p id="inv-uc-count"></p></div><div class="wrap"><table '
+    'class="dense" id="inv-uc-table"></table></div></div>\n          <div class="card flat"><div class="ca'
+    'rd-head"><h3>Associated Azure resources and control-plane outbound dependency endpoints</h3><p id="i'
+    'nv-resources-count"></p></div><div class="wrap"><table class="dense" id="inv-resources-table"></tabl'
+    'e></div></div>\n        </div>\n      </section>\n\n      <section class="chapter" id="sec-findings" ari'
+    'a-labelledby="h-find">\n        <div class="sh"><h2 id="h-find">5. Findings and detailed rule evaluat'
+    'ion</h2><p>Each local check with its status, the observed evidence and the recommendation. Failed ch'
+    'ecks come first; filter, sort by column and export.</p></div>\n        <div class="card flat">\n      '
+    '    <div class="card-head"><h3>Check register</h3><p id="findings-count-label"></p></div>\n          '
+    '<div class="tools">\n            <label class="field">Area\n              <select id="find-area-filter'
+    '">\n                <option value="all">All</option>\n                <option value="best_practices">B'
+    'est practices</option>\n                <option value="security">Security</option>\n                <o'
+    'ption value="finops">FinOps</option>\n                <option value="optimization">Optimization</opti'
+    'on>\n              </select>\n            </label>\n            <label class="field">Level\n            '
+    '  <select id="find-level-filter">\n                <option value="all">All</option>\n                <'
+    'option value="workspace">Workspace / governance</option>\n                <option value="workload">Wo'
+    'rkload (compute / jobs / SQL)</option>\n                <option value="resource">Associated Azure res'
+    'ource</option>\n              </select>\n            </label>\n            <label class="field">Severit'
+    'y\n              <select id="find-sev-filter">\n                <option value="all">All</option>\n     '
+    '           <option value="critical">Critical</option>\n                <option value="high">High</opt'
+    'ion>\n                <option value="medium">Medium</option>\n                <option value="low">Low<'
+    '/option>\n              </select>\n            </label>\n            <label class="field">Status\n      '
+    '        <select id="find-status-filter">\n                <option value="all">All</option>\n          '
+    '      <option value="failed">Failed</option>\n                <option value="passed">Passed</option>\n'
+    '                <option value="not_evaluated">Not evaluated</option>\n                <option value="'
+    'not_applicable">Not applicable</option>\n              </select>\n            </label>\n            <la'
+    'bel class="field grow">Search resource / workload\n              <input type="search" id="find-search'
+    '-filter" placeholder="Filter by rule, job, cluster…">\n            </label>\n            <button type='
+    '"button" class="btn ghost" id="find-clear">Clear</button>\n            <button type="button" class="b'
+    'tn ghost" id="find-export-btn"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="fals'
+    'e"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Filtered CSV</button>\n          </div>\n          <'
+    'div class="wrap"><table class="dense" id="findings-table"></table></div>\n        </div>\n      </sect'
+    'ion>\n\n      <section class="chapter" id="sec-finops" aria-labelledby="h-finops">\n        <div class='
+    '"sh"><h2 id="h-finops">6. Databricks costs: where they come from and how to optimize them</h2><p id='
+    '"cost-intro">The month\'s cost in Cost Management, split by the tags Databricks puts on each cluster,'
+    ' job, SQL warehouse and pool, and the configuration changes that would reduce it.</p></div>\n        '
+    '<div id="cost-empty" hidden></div>\n        <div id="cost-body">\n          <div id="cost-data">\n     '
+    '     <div class="card cost-head">\n            <div class="cstats" id="cost-stats"></div>\n           '
+    ' <div class="cost-trend" id="cost-trend"></div>\n          </div>\n          <div class="grid2" style='
+    '"margin-top:16px">\n            <div class="card"><h3>DBU by compute type</h3><p class="sub" id="cost'
+    '-dbu-sub">What Databricks bills per processing unit, by workload type.</p><div class="bars" id="cost'
+    '-dbu-bars"></div></div>\n            <div class="card"><h3>Infrastructure by service</h3><p class="su'
+    'b" id="cost-infra-sub">Virtual machines, disks and network that the workspace uses in your subscript'
+    'ion.</p><div class="bars" id="cost-infra-bars"></div><div class="vm-sizes" id="cost-vm-sizes"></div>'
+    '</div>\n          </div>\n          <div class="card flat" style="margin-top:16px">\n            <div c'
+    'lass="card-head"><h3>Who consumes it</h3><p id="cost-attr-note"></p></div>\n            <div class="t'
+    'abs cost-tabs" role="tablist" aria-label="Cost attribution" id="cost-tabs"></div>\n            <div c'
+    'lass="tools">\n              <label class="field grow">Search\n                <input type="search" id'
+    '="cost-attr-search" placeholder="Cluster, job, warehouse, pool or tag value…">\n              </label'
+    '>\n              <button type="button" class="btn ghost" id="cost-attr-export"><svg class="i" viewBox'
+    '="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Att'
+    'ribution CSV</button>\n            </div>\n            <div class="wrap" role="tabpanel" id="cost-attr'
+    '-panel" aria-labelledby="cost-tab-cluster"><table class="dense" id="cost-attr-table"></table></div>\n'
+    '          </div>\n          <div class="grid2" style="margin-top:16px">\n            <div class="card"'
+    '><h3>What no tag explains</h3><p class="sub">Cost without the <span class="mono">Vendor</span> tag t'
+    'hat Databricks puts on all classic compute: shared workspace services and serverless compute.</p><di'
+    'v id="cost-gap"></div></div>\n            <div class="card"><h3>Coverage of your tags</h3><p class="s'
+    'ub" id="cost-tags-sub">Share of the month\'s cost that carries each configured allocation tag.</p><di'
+    'v class="bars" id="cost-tag-bars"></div><ul class="notes" id="cost-tag-notes"></ul></div>\n          '
+    '</div>\n          <div class="card" style="margin-top:16px"><h3>What changed from the previous month<'
+    '/h3><p class="sub" id="cost-movers-sub">Clusters, jobs, SQL warehouses and pools with the largest ch'
+    'ange.</p><div class="movers" id="cost-movers"></div></div>\n          </div>\n          <div class="ca'
+    'rd flat" style="margin-top:16px">\n            <div class="card-head"><h3>How to optimize it</h3><p i'
+    'd="cost-signals-count"></p></div>\n            <div class="tools">\n              <label class="field"'
+    '>Severity\n                <select id="cost-sig-sev">\n                  <option value="all">All</opti'
+    'on>\n                  <option value="high">High</option>\n                  <option value="medium">Me'
+    'dium</option>\n                  <option value="low">Low</option>\n                </select>\n         '
+    '     </label>\n              <label class="field">Savings\n                <select id="cost-sig-saving'
+    '">\n                  <option value="all">All signals</option>\n                  <option value="with"'
+    '>With estimated savings</option>\n                </select>\n              </label>\n              <lab'
+    'el class="field grow">Search\n                <input type="search" id="cost-sig-search" placeholder="'
+    'Signal, cluster, job, warehouse…">\n              </label>\n              <button type="button" class='
+    '"btn ghost" id="cost-sig-export"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="fa'
+    'lse"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Filtered CSV</button>\n            </div>\n       '
+    '     <div class="wrap"><table class="dense" id="cost-signals-table"></table></div>\n          </div>\n'
+    '          <div class="card" style="margin-top:16px" id="cost-system"></div>\n          <div class="ca'
+    'rd" style="margin-top:16px">\n            <h3>Method, assumptions and cost sources</h3>\n            <'
+    'p class="sub">How each figure in this section is calculated. No query starts compute or changes anyt'
+    'hing.</p>\n            <dl class="dl2" id="cost-method"></dl>\n          </div>\n        </div>\n       '
+    ' <div class="card flat legacy-cost" style="margin-top:16px" id="finops-legacy">\n          <div class'
+    '="card-head"><h3>ARM cost of the approved scope (<span class="mono">cost_scope</span>)</h3><p id="fi'
+    'nops-cost-window"></p></div>\n          <div class="legacy-sum"><div class="stat" id="finops-actual-c'
+    'ost"></div><ul class="notes" id="finops-cost-note"></ul></div>\n          <div class="wrap"><table cl'
+    'ass="dense" id="finops-cost-table"></table></div>\n        </div>\n      </section>\n\n      <section cl'
+    'ass="chapter" id="sec-actions" aria-labelledby="h-actions">\n        <div class="sh"><h2 id="h-action'
+    's">7. Prioritized action plan for human review</h2><p>The Quick win (&lt;1 week), Short term (1-3 mo'
+    'nths) and Medium term horizons are indicative planning categories, not delivery commitments or autom'
+    'atic changes.</p></div>\n        <div class="plan" id="actions-plan"></div>\n      </section>\n\n      <'
+    'section class="chapter" id="sec-sources" aria-labelledby="h-sources">\n        <div class="sh"><h2 id'
+    '="h-sources">8. Source ledger, HTTP receipts and methodological limits</h2><p>Which sources were rea'
+    'd, with what result, and what is out of scope. Read the local index only together with this coverage'
+    '.</p></div>\n        <div class="card flat">\n          <div class="card-head"><h3>Source coverage</h3'
+    '><p id="sources-summary"></p></div>\n          <div class="bars" id="sources-bars" style="padding:0 2'
+    '2px 16px"></div>\n          <div class="wrap"><table class="dense" id="sources-table"></table></div>\n'
+    '        </div>\n        <div class="card" style="margin-top:16px">\n          <h3>Method and interpret'
+    'ation</h3>\n          <p class="sub">How each indicator is calculated and what this review can\'t clai'
+    'm.</p>\n          <dl class="dl2" id="method-notes"></dl>\n          <h3 style="margin-top:18px">Limit'
+    'ations and interpretation rules</h3>\n          <ul class="notes" id="methodology-limitations"></ul>\n'
+    '        </div>\n      </section>\n    </div>\n  </div>\n</main>\n<footer class="foot" id="report-footer">'
+    '</footer>\n<script type="application/json" id="report-data">__REPORT_DATA_JSON__</script>\n<script>\n(f'
+    'unction () {\n  "use strict";\n  var SVGNS = "http://www.w3.org/2000/svg";\n  var LAYERS = ["control_pl'
+    'ane", "compute", "orchestration", "governance", "associated_resource"];\n  var SEVS = ["critical", "h'
+    'igh", "medium", "low"];\n  var STATUS_ORDER = { failed: 0, not_evaluated: 1, passed: 2, not_applicabl'
+    'e: 3 };\n  var L = {\n    status: { passed: "Passed", failed: "Failed", not_evaluated: "Not evaluated"'
+    ', not_applicable: "Not applicable" },\n    sev: { critical: "Critical", high: "High", medium: "Medium'
+    '", low: "Low" },\n    area: { best_practices: "Best practices", security: "Security", finops: "FinOps'
+    '", optimization: "Optimization" },\n    pillar: { reliability: "Reliability", security: "Security", c'
+    'ost: "Cost optimization", operations: "Operational excellence", performance: "Performance efficiency'
+    '" },\n    level: { workspace: "Workspace", workload: "Workload", resource: "Azure resource" },\n    la'
+    'yer: { control_plane: "Control plane", compute: "Compute", orchestration: "Orchestration", governanc'
+    'e: "Governance", associated_resource: "Associated resources" },\n    src: { complete: "Complete", par'
+    'tial: "Partial", denied: "Denied", error: "Error", not_configured: "Not configured", not_applicable:'
+    ' "Not applicable" },\n    effort: { L: "low effort", M: "medium effort", H: "high effort" },\n    kind'
+    ': {\n      databricks_workspace: "Workspace", managed_resource_group: "Managed resource group", outbo'
+    'und_dependency_category: "Outbound endpoint",\n      all_purpose_cluster: "All-purpose cluster", job_'
+    'cluster_spec: "Job cluster", instance_pool: "Instance pool", cluster_policy: "Cluster policy",\n     '
+    ' sql_warehouse: "SQL warehouse", job: "Job", job_task: "Job task", dlt_pipeline: "DLT pipeline", sec'
+    'ret_scope: "Secret scope",\n      uc_metastore: "UC metastore", uc_catalog: "UC catalog", uc_schema: '
+    '"UC schema", uc_storage_credential: "Storage credential",\n      uc_external_location: "External loca'
+    'tion", uc_connection: "UC connection", external_storage_target: "External storage",\n      external_k'
+    'ey_vault_target: "External key vault", "microsoft.network/virtualnetworks": "Virtual network", "micr'
+    'osoft.network/virtualnetworks/subnets": "Subnet",\n      "microsoft.network/networksecuritygroups": "'
+    'NSG", "microsoft.network/privateendpoints": "Private endpoint", "microsoft.databricks/accessconnecto'
+    'rs": "Access connector",\n      "microsoft.managedidentity/userassignedidentities": "Managed identity'
+    '", "microsoft.storage/storageaccounts": "Storage account",\n      "microsoft.keyvault/vaults": "Key v'
+    'ault", AllPurposeCluster: "All-purpose cluster", InstancePool: "Instance pool", ClusterPolicy: "Clus'
+    'ter policy",\n      "microsoft.network/routetables": "Route table", "microsoft.network/natgateways": '
+    '"NAT gateway", "microsoft.network/publicipaddresses": "Public IP address",\n      "microsoft.network/'
+    'loadbalancers": "Load balancer", "microsoft.network/privatednszones": "Private DNS zone", "microsoft'
+    '.eventhub/namespaces": "Event Hubs",\n      external_access_connector_target: "External access connec'
+    'tor", external_arm_target: "External ARM resource",\n      inferred_adls_storage_uri_target: "Inferre'
+    'd ADLS URI", inferred_catalog_storage_uri_target: "Inferred catalog storage",\n      inferred_pipelin'
+    'e_storage_uri_target: "Inferred pipeline storage", permission_filtered_absence_or_deleted_target: "T'
+    'arget not visible or deleted",\n      GlobalInitScript: "Global init script", OutboundDependency: "Ou'
+    'tbound endpoint"\n    }\n  };\n  var SEV_WORD = { critical: ["critical", "critical"], high: ["high", "h'
+    'igh"], medium: ["medium", "medium"], low: ["low", "low"] };\n  var SEV_BAR = { critical: "var(--crit-'
+    'bar)", high: "var(--high-bar)", medium: "var(--med-bar)", low: "var(--low-bar)" };\n  var NF = new In'
+    'tl.NumberFormat("en-US", { maximumFractionDigits: 2 });\n  var NF2 = new Intl.NumberFormat("en-US", {'
+    ' minimumFractionDigits: 2, maximumFractionDigits: 2 });\n  var ICON = {\n    ext: ["M14 4h6v6", "M20 4'
+    'l-9 9", "M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"],\n    check: ["M20 6L9 17l-5-5"],'
+    '\n    alert: ["M12 3.5l9 16H3z", "M12 10v4", "M12 17.2v.3"],\n    info: ["M12 21a9 9 0 1 0 0-18 9 9 0 '
+    '0 0 0 18z", "M12 11v5", "M12 7.8v.3"]\n  };\n\n  function el(tag, attrs, children) {\n    var node = doc'
+    'ument.createElement(tag);\n    if (attrs) {\n      Object.keys(attrs).forEach(function (k) {\n        i'
+    'f (k === "text") { node.textContent = String(attrs[k]); }\n        else if (k === "className") { if ('
+    'attrs[k]) { node.className = attrs[k]; } }\n        else if (attrs[k] !== null && attrs[k] !== undefi'
+    'ned) { node.setAttribute(k, String(attrs[k])); }\n      });\n    }\n    if (children) {\n      children.'
+    'forEach(function (c) {\n        if (typeof c === "string" || typeof c === "number") { node.appendChil'
+    'd(document.createTextNode(String(c))); }\n        else if (c) { node.appendChild(c); }\n      });\n    '
+    '}\n    return node;\n  }\n  function svg(tag, attrs, text) {\n    var node = document.createElementNS(SV'
+    'GNS, tag);\n    Object.keys(attrs || {}).forEach(function (k) { node.setAttribute(k, String(attrs[k])'
+    '); });\n    if (text !== undefined) { node.textContent = String(text); }\n    return node;\n  }\n  funct'
+    'ion clear(node) { while (node.firstChild) { node.removeChild(node.firstChild); } }\n  function icon(n'
+    'ame) {\n    var s = svg("svg", { "class": "i", viewBox: "0 0 24 24", "aria-hidden": "true", focusable'
+    ': "false" });\n    ICON[name].forEach(function (d) { s.appendChild(svg("path", { d: d })); });\n    re'
+    'turn s;\n  }\n  function lab(map, key) {\n    if (key === null || key === undefined || key === "") { re'
+    'turn "—"; }\n    return Object.prototype.hasOwnProperty.call(map, key) ? map[key] : String(key);\n  }\n'
+    '  function isNum(v) { return typeof v === "number" && isFinite(v); }\n  function num(v) { return isNu'
+    'm(v) ? NF.format(v) : (v === null || v === undefined || v === "" ? "—" : String(v)); }\n  function pc'
+    't(v) { return isNum(v) ? NF.format(v) + "%" : "Not evaluated"; }\n  function utc(s) {\n    if (!s) { r'
+    'eturn "—"; }\n    var m = /^(\\d{4}-\\d{2}-\\d{2})T(\\d{2}:\\d{2})/.exec(String(s));\n    return m ? m[1] +'
+    ' " " + m[2] + " UTC" : String(s);\n  }\n  function day(s) { var m = /^(\\d{4}-\\d{2}-\\d{2})/.exec(String'
+    '(s || "")); return m ? m[1] : "—"; }\n  function plural(n, one, many) { return n === 1 ? one : many; '
+    '}\n  function yesNo(v) { return v === true ? "Yes" : v === false ? "No" : "Not observed"; }\n  functio'
+    'n access(v) { return v === "Disabled" ? "Disabled" : v === "Enabled" ? "Enabled" : (v || "Not observ'
+    'ed"); }\n  function rich(node, parts) {\n    clear(node);\n    parts.forEach(function (p) { if (p !== "'
+    '" && p !== null) { node.appendChild(Array.isArray(p) ? el("b", { text: p[0] }) : document.createText'
+    'Node(String(p))); } });\n    return node;\n  }\n  function brk(text, cls) {\n    var span = el("span", {'
+    ' className: cls === undefined ? "mono" : cls });\n    var s = String(text === null || text === undefi'
+    'ned || text === "" ? "—" : text), buf = "";\n    if (s.length <= 24) { span.textContent = s; span.cla'
+    'ssName += " nw"; return span; }\n    for (var i = 0; i < s.length; i++) {\n      buf += s.charAt(i);\n '
+    '     if ("/_.-:,".indexOf(s.charAt(i)) >= 0 && i < s.length - 1) {\n        span.appendChild(document'
+    '.createTextNode(buf));\n        span.appendChild(document.createElement("wbr"));\n        buf = "";\n  '
+    '    }\n    }\n    if (buf) { span.appendChild(document.createTextNode(buf)); }\n    return span;\n  }\n  '
+    'function mono(text) { return el("span", { className: "mono nw", text: text === null || text === unde'
+    'fined || text === "" ? "—" : text }); }\n  function stack(main, sub) {\n    var d = el("div", { classN'
+    'ame: "stack" });\n    var b = el("b");\n    if (main instanceof Node) { b.appendChild(main); } else { '
+    'b.textContent = main === null || main === undefined || main === "" ? "—" : String(main); }\n    d.app'
+    'endChild(b);\n    if (sub instanceof Node) { var w = el("small"); w.appendChild(sub); d.appendChild(w'
+    '); }\n    else if (sub) { d.appendChild(el("small", { text: sub })); }\n    return d;\n  }\n  function p'
+    'ill(cls, text, title) { return el("span", { className: "pill " + cls, text: text, title: title || nu'
+    'll }); }\n  function sevPill(sev, label) { return pill(SEVS.indexOf(sev) >= 0 ? "sev-" + sev : "sev-i'
+    'nfo", label || lab(L.sev, sev)); }\n  function clsPill(c) { return pill("cls-" + (c === "OBSERVED" ||'
+    ' c === "INFERRED" ? c : "UNKNOWN"), c || "UNKNOWN"); }\n  function statusTag(st) { return el("span", '
+    '{ className: "st st-" + (STATUS_ORDER[st] !== undefined ? st : "not_evaluated"), title: st, text: la'
+    'b(L.status, st) }); }\n  function srcTone(st) { return st === "complete" ? "tone-ok" : st === "partia'
+    'l" ? "tone-warn" : (st === "denied" || st === "error") ? "tone-crit" : "tone-info"; }\n  function src'
+    'Pill(st) { return pill(srcTone(st), lab(L.src, st), st); }\n  function kindLabel(kind) { var t = lab('
+    'L.kind, kind); return el("span", { text: t, title: kind && t !== kind ? kind : null }); }\n  function'
+    ' emptyState(text) { return el("div", { className: "empty" }, [icon("check"), el("span", { text: text'
+    ' })]); }\n  function safeLearnUrl(u) {\n    if (typeof u !== "string") { return null; }\n    try {\n    '
+    '  var parsed = new URL(u);\n      return (parsed.protocol === "https:" && (parsed.hostname === "learn'
+    '.microsoft.com" || parsed.hostname === "docs.databricks.com")) ? u : null;\n    } catch (e) { return '
+    'null; }\n  }\n  function extLink(href, text) { return el("a", { className: "ext", href: href, target: '
+    '"_blank", rel: "noopener noreferrer" }, [text, icon("ext")]); }\n  var ARM_RE = /^\\/subscriptions\\/[0'
+    '-9a-f-]{36}\\/resourcegroups\\/([^\\/]+)\\/providers\\/(microsoft\\.[a-z0-9]+\\/[a-z0-9]+)\\/([^\\/]+)(?:\\/(['
+    'a-z0-9]+)\\/([^\\/]+))?$/i;\n  function armCell(id, name) {\n    var m = ARM_RE.exec(String(id || ""));\n'
+    '    if (!m) { return brk(id); }\n    var box = el("div", { className: "res" });\n    box.appendChild(e'
+    'l("b", { text: name || m[5] || m[3] }));\n    box.appendChild(el("small", null, [brk(m[1] + " · " + m'
+    '[2] + (m[4] ? "/" + m[4] : ""), "")]));\n    var a = extLink("https://portal.azure.com/#@/resource" +'
+    ' id, "Portal");\n    a.setAttribute("title", id);\n    box.appendChild(a);\n    return box;\n  }\n  funct'
+    'ion kvChips(obj, max) {\n    var wrap = el("div", { className: "chips" }), shown = 0;\n    Object.keys'
+    '(obj || {}).forEach(function (k) {\n      var v = obj[k];\n      if (v === null || v === undefined || '
+    'v === "" || typeof v === "object" || shown >= max) { return; }\n      var s = String(v);\n      if (s.'
+    'indexOf("/subscriptions/") === 0 || s.length > 70) { return; }\n      wrap.appendChild(el("span", nul'
+    'l, [k + ": ", el("b", { text: s })]));\n      shown++;\n    });\n    return shown ? wrap : null;\n  }\n  '
+    'function evidenceCell(obj) {\n    var box = el("div"), chips = kvChips(obj, 4), json = JSON.stringify'
+    '(obj || {}, null, 1);\n    if (chips) { box.appendChild(chips); }\n    if (json && json.length > 2) {\n'
+    '      var d = el("details", { className: "json" });\n      d.appendChild(el("summary", { text: "Full '
+    'JSON" }));\n      d.appendChild(el("pre", { text: json }));\n      box.appendChild(d);\n    }\n    if (!'
+    'box.firstChild) { box.textContent = "—"; }\n    return box;\n  }\n\n  var TSTATE = {};\n  function spec(c'
+    ') { return (c !== null && typeof c === "object" && !(c instanceof Node) && Object.prototype.hasOwnPr'
+    'operty.call(c, "v")) ? c : { v: c }; }\n  function sortValue(c) {\n    if (c.s !== undefined) { return'
+    ' c.s; }\n    return c.v instanceof Node ? c.v.textContent : (c.v === null || c.v === undefined ? "" :'
+    ' c.v);\n  }\n  function renderTable(tableNode, headers, rows, opts) {\n    var st = TSTATE[tableNode.id'
+    '] || (TSTATE[tableNode.id] = { sort: -1, dir: 1 });\n    st.headers = headers.map(function (h) { retu'
+    'rn typeof h === "string" ? { t: h } : h; });\n    st.rows = rows.map(function (r) { return r.map(spec'
+    '); });\n    st.opts = opts || {};\n    st.limit = st.opts.page || 0;\n    drawTable(tableNode, st, null'
+    ');\n  }\n  function drawTable(tableNode, st, focus) {\n    var headers = st.headers, opts = st.opts, ro'
+    'ws = st.rows;\n    if (st.sort >= 0) {\n      var i = st.sort, dir = st.dir;\n      rows = rows.map(fun'
+    'ction (r, idx) { return { r: r, idx: idx }; }).sort(function (a, b) {\n        var x = sortValue(a.r['
+    'i]), y = sortValue(b.r[i]);\n        var d = (isNum(x) && isNum(y)) ? x - y : String(x).localeCompare'
+    '(String(y), "en", { numeric: true, sensitivity: "base" });\n        return d * dir || a.idx - b.idx;\n'
+    '      }).map(function (o) { return o.r; });\n    }\n    clear(tableNode);\n    var thead = el("thead"),'
+    ' trh = el("tr");\n    headers.forEach(function (h, hi) {\n      var th = el("th", { className: h.c || '
+    'null, scope: "col" });\n      if (opts.sortable && h.s !== false) {\n        var b = el("button", { ty'
+    'pe: "button", className: "th-sort", text: h.t });\n        th.setAttribute("data-label", h.t);\n      '
+    '  if (st.sort === hi) { th.setAttribute("aria-sort", st.dir === 1 ? "ascending" : "descending"); }\n '
+    '       b.addEventListener("click", function () {\n          if (st.sort === hi) { st.dir = -st.dir; }'
+    ' else { st.sort = hi; st.dir = 1; }\n          drawTable(tableNode, st, "th" + hi);\n        });\n     '
+    '   th.appendChild(b);\n      } else { th.textContent = h.t; }\n      trh.appendChild(th);\n    });\n    '
+    'thead.appendChild(trh);\n    tableNode.appendChild(thead);\n    var tbody = el("tbody");\n    if (!rows'
+    '.length) {\n      var tr0 = el("tr");\n      tr0.appendChild(el("td", { colspan: headers.length, class'
+    'Name: "empty-cell", text: opts.empty || "No records in this scope or filter." }));\n      tbody.appen'
+    'dChild(tr0);\n    }\n    rows.forEach(function (cells, ri) {\n      var tr = el("tr", { className: st.l'
+    'imit && ri >= st.limit ? "pg" : null });\n      cells.forEach(function (c, ci) {\n        var td = el('
+    '"td", { className: [headers[ci] && headers[ci].c, c.c].filter(Boolean).join(" ") || null });\n       '
+    ' if (c.v instanceof Node) { td.appendChild(c.v); }\n        else { td.textContent = c.v === null || c'
+    '.v === undefined || c.v === "" ? "—" : String(c.v); }\n        tr.appendChild(td);\n      });\n      tb'
+    'ody.appendChild(tr);\n    });\n    tableNode.appendChild(tbody);\n    var wrap = tableNode.parentNode, '
+    'more = wrap.nextElementSibling;\n    if (!more || !more.classList.contains("more-row")) {\n      more '
+    '= el("div", { className: "more-row" });\n      wrap.parentNode.insertBefore(more, wrap.nextSibling);\n'
+    '    }\n    clear(more);\n    var hiddenRows = st.limit ? Math.max(0, rows.length - st.limit) : 0;\n    '
+    'more.hidden = hiddenRows === 0;\n    if (hiddenRows) {\n      var step = opts.page;\n      var b1 = el('
+    '"button", { type: "button", className: "btn ghost sm", "data-k": "more", text: "Show " + Math.min(st'
+    'ep, hiddenRows) + " more" });\n      b1.addEventListener("click", function () { st.limit += step; dra'
+    'wTable(tableNode, st, "more"); });\n      var b2 = el("button", { type: "button", className: "btn gho'
+    'st sm", "data-k": "all", text: "Show all (" + rows.length + ")" });\n      b2.addEventListener("click'
+    '", function () { st.limit = 0; drawTable(tableNode, st, "table"); });\n      more.appendChild(el("spa'
+    'n", { className: "more-note", text: "Showing " + st.limit + " of " + rows.length + " rows" }));\n    '
+    '  more.appendChild(b1);\n      more.appendChild(b2);\n    }\n    if (focus) {\n      var target = focus.'
+    'indexOf("th") === 0 ? tableNode.querySelectorAll(".th-sort")[Number(focus.slice(2))] : focus === "mo'
+    're" ? more.querySelector("[data-k=more]") : null;\n      if (target) { target.focus(); }\n      else i'
+    'f (focus === "more" || focus === "table") { tableNode.setAttribute("tabindex", "-1"); tableNode.focu'
+    's(); }\n    }\n  }\n\n  var rawText = document.getElementById("report-data").textContent;\n  var rootData'
+    ';\n  try {\n    rootData = JSON.parse(rawText);\n  } catch (e) {\n    var openErr = document.getElementB'
+    'yId("opening-state");\n    openErr.hidden = false;\n    openErr.textContent = "Couldn\'t load the repor'
+    't\'s embedded JSON model.";\n    return;\n  }\n\n  var isMulti = rootData && rootData.schema_version === '
+    '"databricks-dep-multi-workspace-v1";\n  var currentSnap = null;\n\n  var themeBtn = document.getElement'
+    'ById("theme-toggle");\n  themeBtn.addEventListener("click", function () {\n    var dark = document.doc'
+    'umentElement.getAttribute("data-theme") === "dark";\n    if (dark) { document.documentElement.removeA'
+    'ttribute("data-theme"); }\n    else { document.documentElement.setAttribute("data-theme", "dark"); }\n'
+    '    themeBtn.setAttribute("aria-pressed", dark ? "false" : "true");\n  });\n  document.getElementById('
+    '"print-btn").addEventListener("click", function () { window.print(); });\n  var themeBeforePrint = nu'
+    'll;\n  window.addEventListener("beforeprint", function () {\n    themeBeforePrint = document.documentE'
+    'lement.getAttribute("data-theme");\n    document.documentElement.removeAttribute("data-theme");\n  });'
+    '\n  window.addEventListener("afterprint", function () {\n    if (themeBeforePrint) { document.document'
+    'Element.setAttribute("data-theme", themeBeforePrint); }\n    themeBeforePrint = null;\n  });\n\n  functi'
+    'on closeMenus(except) {\n    [].forEach.call(document.querySelectorAll("details.menu[open]"), functio'
+    'n (d) { if (d !== except) { d.removeAttribute("open"); } });\n  }\n  document.addEventListener("click"'
+    ', function (ev) {\n    var inside = ev.target.closest ? ev.target.closest("details.menu") : null;\n   '
+    ' closeMenus(inside);\n    if (inside && ev.target.closest("a, button") && !ev.target.closest("summary'
+    '")) { inside.removeAttribute("open"); }\n  });\n  document.addEventListener("keydown", function (ev) {'
+    '\n    if (ev.key !== "Escape") { return; }\n    var open = document.querySelector("details.menu[open]"'
+    ');\n    if (open) { open.removeAttribute("open"); open.querySelector("summary").focus(); }\n  });\n\n  f'
+    'unction downloadBlob(filename, content, mime) {\n    var blob = new Blob([content], { type: mime });\n'
+    '    var url = URL.createObjectURL(blob);\n    var a = el("a", { href: url, download: filename });\n   '
+    ' document.body.appendChild(a);\n    a.click();\n    document.body.removeChild(a);\n    URL.revokeObject'
+    'URL(url);\n  }\n  function csvEscape(v) {\n    if (v === null || v === undefined) { return ""; }\n    va'
+    'r s = typeof v === "object" ? JSON.stringify(v) : String(v);\n    if (/^[=+\\-@\\t\\r\\n]/.test(s.trimLef'
+    't())) { s = "\'" + s; }\n    return \'"\' + s.replace(/"/g, \'""\') + \'"\';\n  }\n  var CHECK_COLS = ["check_'
+    'id", "rule_id", "title", "status", "level", "area", "pillar", "severity", "workload_name", "reason",'
+    ' "recommendation", "learn_url"];\n  function checksCsv(list) {\n    var lines = [CHECK_COLS.join(",")]'
+    ';\n    list.forEach(function (r) { lines.push(CHECK_COLS.map(function (c) { return csvEscape(r[c]); }'
+    ').join(",")); });\n    return "\\uFEFF" + lines.join("\\r\\n");\n  }\n  document.getElementById("export-js'
+    'on-btn").addEventListener("click", function () {\n    downloadBlob("databricks-dependency-snapshot.js'
+    'on", JSON.stringify(rootData, null, 2), "application/json;charset=utf-8");\n  });\n  document.getEleme'
+    'ntById("export-deps-csv-btn").addEventListener("click", function () {\n    if (!currentSnap) { return'
+    '; }\n    var cols = ["record_type", "classification", "layer", "id", "kind", "label", "from", "to", "'
+    'relation", "join_fields", "source_ids"];\n    var lines = [cols.join(",")];\n    var dep = currentSnap'
+    '.dependencies;\n    [].concat(dep.nodes || [], dep.edges || [], dep.unknowns || []).forEach(function '
+    '(r) {\n      lines.push(cols.map(function (c) { return csvEscape(r[c]); }).join(","));\n    });\n    do'
+    'wnloadBlob("databricks-dependencies.csv", "\\uFEFF" + lines.join("\\r\\n"), "text/csv;charset=utf-8");\n'
+    '  });\n  document.getElementById("export-findings-csv-btn").addEventListener("click", function () {\n '
+    '   if (currentSnap) { downloadBlob("databricks-findings.csv", checksCsv(currentSnap.checks || []), "'
+    'text/csv;charset=utf-8"); return; }\n    if (!isMulti) { return; }\n    var fleetRows = [];\n    (rootD'
+    'ata.workspace_runs || []).forEach(function (r) { ((r.snapshot && r.snapshot.findings) || []).forEach'
+    '(function (f) { fleetRows.push(f); }); });\n    var cols = ["workspace_name"].concat(CHECK_COLS), lin'
+    'es = [cols.join(",")];\n    fleetRows.forEach(function (f) { lines.push(cols.map(function (c) { retur'
+    'n csvEscape(f[c]); }).join(",")); });\n    downloadBlob("databricks-fleet-findings.csv", "\\uFEFF" + l'
+    'ines.join("\\r\\n"), "text/csv;charset=utf-8");\n  });\n\n  var tabObs = document.getElementById("tab-dep'
+    '-observed");\n  var tabRef = document.getElementById("tab-dep-reference");\n  var panelObs = document.'
+    'getElementById("panel-dep-observed");\n  var panelRef = document.getElementById("panel-dep-reference"'
+    ');\n  function selectTab(ref) {\n    tabObs.setAttribute("aria-selected", ref ? "false" : "true");\n   '
+    ' tabRef.setAttribute("aria-selected", ref ? "true" : "false");\n    tabObs.setAttribute("tabindex", r'
+    'ef ? "-1" : "0");\n    tabRef.setAttribute("tabindex", ref ? "0" : "-1");\n    panelObs.hidden = ref;\n'
+    '    panelRef.hidden = !ref;\n  }\n  tabObs.addEventListener("click", function () { selectTab(false); }'
+    ');\n  tabRef.addEventListener("click", function () { selectTab(true); });\n  [tabObs, tabRef].forEach('
+    'function (t) {\n    t.addEventListener("keydown", function (ev) {\n      if (ev.key === "ArrowRight" |'
+    '| ev.key === "ArrowLeft") {\n        var ref = t === tabObs;\n        selectTab(ref);\n        (ref ? t'
+    'abRef : tabObs).focus();\n        ev.preventDefault();\n      }\n    });\n  });\n\n  function fitText(s, m'
+    'ax) { s = String(s || ""); return s.length > max ? s.slice(0, Math.max(1, max - 1)) + "…" : s; }\n  f'
+    'unction nodeLines(n) {\n    var label = String(n.label || n.name || n.id), kind = lab(L.kind, n.kind)'
+    ', cut = label.indexOf(" :: ");\n    if (cut < 0) { cut = label.indexOf(" / "); }\n    if (cut > 0) { r'
+    'eturn [label.slice(label.indexOf(" ", cut + 1) + 1), kind + " · " + label.slice(0, cut)]; }\n    retu'
+    'rn [label, kind + (n.classification === "INFERRED" ? " · INFERRED" : "")];\n  }\n  function renderNeig'
+    'hborhoodSvg(nodes, edges) {\n    var box = document.getElementById("dep-graph-box");\n    var caption '
+    '= document.getElementById("dep-graph-caption");\n    clear(box);\n    if (!nodes.length) { box.appendC'
+    'hild(emptyState("No node matches this filter.")); caption.textContent = ""; return; }\n    var deg = '
+    '{};\n    edges.forEach(function (e) { deg[e.from] = (deg[e.from] || 0) + 1; deg[e.to] = (deg[e.to] ||'
+    ' 0) + 1; });\n    var subset = nodes.map(function (n, i) {\n      return { n: n, i: i, r: (n.kind === '
+    '"databricks_workspace" ? 1000 : 0) + (n.classification === "INFERRED" ? 500 : 0) + (deg[n.id] || 0) '
+    '};\n    }).sort(function (a, b) { return b.r - a.r || a.i - b.i; }).slice(0, 13).map(function (x) { r'
+    'eturn x.n; });\n    var order = LAYERS.slice();\n    subset.forEach(function (n) { if (order.indexOf(n'
+    '.layer) < 0) { order.push(n.layer); } });\n    var cols = [];\n    order.forEach(function (layer) {\n  '
+    '    var ns = subset.filter(function (n) { return n.layer === layer; });\n      for (var i = 0; i < ns'
+    '.length; i += 5) { cols.push({ layer: layer, nodes: ns.slice(i, i + 5), head: i === 0 }); }\n    });\n'
+    '    var W = 1200, colW = W / cols.length, bw = Math.min(214, colW - 30), bh = 50, gy = 20, top = 34;'
+    '\n    var rows = Math.max.apply(null, cols.map(function (c) { return c.nodes.length; }));\n    var H ='
+    ' top + rows * (bh + gy);\n    var pos = {};\n    cols.forEach(function (c, ci) {\n      var off = (rows'
+    ' - c.nodes.length) * (bh + gy) / 2;\n      c.nodes.forEach(function (n, ri) { pos[n.id] = { x: colW *'
+    ' ci + colW / 2, y: top + off + ri * (bh + gy) + bh / 2, c: ci }; });\n    });\n    var s = svg("svg", '
+    '{ viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": "Dependency graph: " + subset.length + "'
+    ' of " + nodes.length + " filtered nodes, grouped by layer." });\n    var defs = svg("defs");\n    ["ob'
+    's", "inf"].forEach(function (k) {\n      var m = svg("marker", { id: "dep-arrow-" + k, viewBox: "0 0 '
+    '10 10", refX: 9, refY: 5, markerWidth: 6, markerHeight: 6, orient: "auto" });\n      m.appendChild(sv'
+    'g("path", { d: "M0 0L10 5L0 10z", "class": "arr " + k }));\n      defs.appendChild(m);\n    });\n    s.'
+    'appendChild(defs);\n    cols.forEach(function (c, ci) {\n      if (c.head) { s.appendChild(svg("text",'
+    ' { x: colW * ci + colW / 2 - bw / 2, y: 16, "class": "g-col" }, fitText(lab(L.layer, c.layer), Math.'
+    'floor(bw / 7.5)))); }\n    });\n    var drawn = 0;\n    edges.forEach(function (e) {\n      var a = pos['
+    'e.from], b = pos[e.to];\n      if (!a || !b || e.from === e.to) { return; }\n      var sx, ex, c1, c2;'
+    '\n      if (a.c < b.c) { sx = a.x + bw / 2; ex = b.x - bw / 2 - 2; c1 = sx + (ex - sx) / 2; c2 = ex -'
+    ' (ex - sx) / 2; }\n      else if (a.c > b.c) { sx = a.x - bw / 2; ex = b.x + bw / 2 + 2; c1 = sx - (s'
+    'x - ex) / 2; c2 = ex + (sx - ex) / 2; }\n      else { sx = a.x + bw / 2; ex = b.x + bw / 2 + 2; c1 = '
+    'sx + 26; c2 = ex + 26; }\n      var k = e.classification === "INFERRED" ? "inf" : "obs";\n      s.appe'
+    'ndChild(svg("path", { d: "M" + sx + " " + a.y + " C" + c1 + " " + a.y + " " + c2 + " " + b.y + " " +'
+    ' ex + " " + b.y, "class": "edge " + k, "marker-end": "url(#dep-arrow-" + k + ")" }));\n      drawn++;'
+    '\n    });\n    var maxChars = Math.floor((bw - 22) / 6.9);\n    subset.forEach(function (n) {\n      var'
+    ' p = pos[n.id], lines = nodeLines(n);\n      var g = svg("g", { "class": "g-node" + (n.classification'
+    ' === "INFERRED" ? " inf" : "") + (n.kind === "databricks_workspace" ? " ws" : "") });\n      g.append'
+    'Child(svg("title", {}, (n.label || n.id) + " · " + (n.kind || "") + " · " + (n.classification || "")'
+    '));\n      g.appendChild(svg("rect", { x: p.x - bw / 2, y: p.y - bh / 2, width: bw, height: bh, rx: 8'
+    ' }));\n      g.appendChild(svg("text", { x: p.x - bw / 2 + 11, y: p.y - 3, "class": "g-l1" }, fitText'
+    '(lines[0], maxChars)));\n      g.appendChild(svg("text", { x: p.x - bw / 2 + 11, y: p.y + 14, "class"'
+    ': "g-l2" }, fitText(lines[1], Math.floor((bw - 22) / 6))));\n      s.appendChild(g);\n    });\n    box.'
+    'appendChild(s);\n    caption.textContent = "Showing " + subset.length + " of " + nodes.length + " fil'
+    'tered nodes and " + drawn + " relationships between them (limited to 13 nodes: the workspace, INFERR'
+    'ED references and the most connected nodes). The tables list every node, edge and blind spot.";\n  }\n'
+    '\n  function renderReferenceArchitecture() {\n    var box = document.getElementById("ref-arch-box");\n '
+    '   clear(box);\n    var s = svg("svg", { viewBox: "0 0 1200 236", role: "img", "aria-label": "Azure D'
+    'atabricks Lakehouse reference architecture - proposal NOT deployed" });\n    var flag = svg("g", { "c'
+    'lass": "ref-flag" });\n    flag.appendChild(svg("rect", { x: 0, y: 4, width: 300, height: 24, rx: 12 '
+    '}));\n    flag.appendChild(svg("text", { x: 14, y: 20 }, "REFERENCE PROPOSAL · NOT DEPLOYED"));\n    s'
+    '.appendChild(flag);\n    var boxes = [\n      ["Network and perimeter (ARM)", "VNet injection + SCC + '
+    'Private Link"],\n      ["Identity and secrets", "Entra SP/UAMI + Key Vault scopes"],\n      ["Compute '
+    'and orchestration", "Cluster policies + job/serverless"],\n      ["Unity Catalog & ADLS", "Access con'
+    'nector UAMI + lineage"]\n    ];\n    var bw = 262, gap = (1200 - 4 * bw) / 3;\n    boxes.forEach(functi'
+    'on (b, i) {\n      var x = i * (bw + gap);\n      if (i < boxes.length - 1) { s.appendChild(svg("line"'
+    ', { x1: x + bw, y1: 92, x2: x + bw + gap, y2: 92, "class": "ref-link" })); }\n      var g = svg("g", '
+    '{ "class": "ref-box" });\n      g.appendChild(svg("rect", { x: x + 1, y: 52, width: bw - 2, height: 8'
+    '0, rx: 10 }));\n      g.appendChild(svg("text", { x: x + 18, y: 86, "class": "ref-t" }, b[0]));\n     '
+    ' g.appendChild(svg("text", { x: x + 18, y: 108, "class": "ref-s" }, b[1]));\n      s.appendChild(g);\n'
+    '    });\n    s.appendChild(svg("text", { x: 0, y: 176, "class": "ref-note" }, "REFERENCE PROPOSAL (NO'
+    'T DEPLOYED): cross-tenant integration through an Entra multi-tenant FIC or Lighthouse + Databricks O'
+    'IDC."));\n    s.appendChild(svg("text", { x: 0, y: 204, "class": "ref-s" }, "Recommended components t'
+    'o compare with the observed map; none was detected or created in the reviewed workspace."));\n    box'
+    '.appendChild(s);\n    renderTable(document.getElementById("ref-arch-table"),\n      ["Reference compon'
+    'ent", "Microsoft / Databricks recommended practice", "Trade-off"],\n      [\n        ["VNet injection '
+    '+ secure cluster connectivity", "Deploy into your own VNet with enableNoPublicIp=true and delegated '
+    'host/container subnets with an NSG.", "Needs IPAM planning and outbound routes to the control-plane '
+    'endpoints."],\n        ["Private Link (front-end / back-end / WebAuth)", "Isolate user and data-plane'
+    ' traffic with approved private endpoints and private DNS zones.", "Needs the Premium SKU and private'
+    ' DNS management across hub-spoke networks."],\n        ["Unity Catalog + access connector (UAMI)", "G'
+    'overn catalogs and external locations with storage credentials based on a managed identity.", "Repla'
+    'ces shared keys and legacy DBFS mounts."],\n        ["Jobs on job compute / serverless + service prin'
+    'cipal", "Run production jobs as a service principal (run_as) on ephemeral job compute or serverless.'
+    '", "Lowers DBU cost compared with all-purpose compute and avoids failures when users leave."],\n     '
+    '   ["Cross-tenant integration without secrets", "Use a multi-tenant app with a federated identity cr'
+    'edential (UAMI) or Azure Lighthouse (ARM) + Databricks OIDC federation.", "Needs consent and assignm'
+    'ents from administrators in both tenants."]\n      ].map(function (r) { return [{ v: el("b", { text: '
+    'r[0] }) }, r[1], r[2]]; })\n    );\n  }\n\n  function applyDependencyFilters() {\n    if (!currentSnap) {'
+    ' return; }\n    var layer = document.getElementById("dep-layer-filter").value;\n    var cls = document'
+    '.getElementById("dep-class-filter").value;\n    var q = (document.getElementById("dep-search-filter")'
+    '.value || "").toLowerCase().trim();\n    var dep = currentSnap.dependencies || { nodes: [], edges: []'
+    ', unknowns: [], broken_references: [] };\n    function keep(r) {\n      if (layer !== "all" && r.layer'
+    ' !== layer) { return false; }\n      if (cls !== "all" && r.classification !== cls) { return false; }'
+    '\n      if (q && JSON.stringify(r).toLowerCase().indexOf(q) === -1) { return false; }\n      return tr'
+    'ue;\n    }\n    var nodes = (dep.nodes || []).filter(keep);\n    var edges = (dep.edges || []).filter(k'
+    'eep);\n    var unknowns = (dep.unknowns || []).filter(keep);\n    var byId = {};\n    (dep.nodes || [])'
+    '.forEach(function (n) { byId[n.id] = n; });\n    function nodeCell(id) {\n      var n = byId[id];\n    '
+    '  return n ? { v: stack(brk(n.label || n.id, ""), lab(L.kind, n.kind)), s: n.label || n.id } : { v: '
+    'brk(id) };\n    }\n    renderNeighborhoodSvg(nodes, edges);\n    document.getElementById("dep-edges-cou'
+    'nt").textContent = String(edges.length);\n    renderTable(document.getElementById("dep-edges-table"),'
+    '\n      ["Classification", "Layer", "Source", "Relationship", "Target", "Join fields", "Sources"],\n  '
+    '    edges.map(function (e) {\n        return [\n          { v: clsPill(e.classification), s: e.classif'
+    'ication },\n          lab(L.layer, e.layer),\n          nodeCell(e.from),\n          { v: brk(e.relatio'
+    'n), s: e.relation },\n          nodeCell(e.to),\n          { v: brk((e.join_fields || []).join(", ")) '
+    '},\n          { v: brk((e.source_ids || []).join(", ")) }\n        ];\n      }), { page: 12, sortable: '
+    'true }\n    );\n    document.getElementById("dep-nodes-count").textContent = String(nodes.length);\n   '
+    ' renderTable(document.getElementById("dep-nodes-table"),\n      ["Classification", "Layer", "Type", "'
+    'Name / label", "Source", { t: "Evidence", s: false, c: "w" }],\n      nodes.map(function (n) {\n      '
+    '  return [\n          { v: clsPill(n.classification), s: n.classification },\n          lab(L.layer, n'
+    '.layer),\n          { v: kindLabel(n.kind) },\n          { v: brk(n.label || n.id, ""), s: n.label },\n'
+    '          { v: mono(n.source_id) },\n          { v: evidenceCell(n.evidence) }\n        ];\n      }), {'
+    ' page: 12, sortable: true }\n    );\n    var broken = dep.broken_references || [];\n    document.getEle'
+    'mentById("dep-broken-count").textContent = String(broken.length);\n    renderTable(document.getElemen'
+    'tById("dep-broken-table"),\n      ["Source object", "Broken reference type", "Target ID not found"],\n'
+    '      broken.map(function (b) { return [b.source_object, b.kind, { v: brk(b.target_id) }]; }),\n     '
+    ' { empty: "No broken references between tasks, clusters, pools, policies, pipelines, warehouses and '
+    'credentials." }\n    );\n    document.getElementById("dep-unknowns-count").textContent = String(unknow'
+    'ns.length);\n    renderTable(document.getElementById("dep-unknowns-table"),\n      ["Layer", "Code", "'
+    'Blind spot description", "Sources"],\n      unknowns.map(function (u) {\n        return [lab(L.layer, '
+    'u.layer), { v: brk(u.code) }, u.message, { v: brk((u.source_ids || []).join(", ")) }];\n      })\n    '
+    ');\n  }\n\n  function observedValues(evidence) {\n    var merged = {};\n    (Array.isArray(evidence) ? ev'
+    'idence : []).forEach(function (ev) {\n      if (ev && ev.value && typeof ev.value === "object" && !Ar'
+    'ray.isArray(ev.value)) {\n        Object.keys(ev.value).forEach(function (k) { merged[k] = ev.value[k'
+    ']; });\n      }\n    });\n    return kvChips(merged, 3);\n  }\n  function filteredChecks() {\n    var area'
+    ' = document.getElementById("find-area-filter").value;\n    var level = document.getElementById("find-'
+    'level-filter").value;\n    var sev = document.getElementById("find-sev-filter").value;\n    var st = d'
+    'ocument.getElementById("find-status-filter").value;\n    var q = (document.getElementById("find-searc'
+    'h-filter").value || "").toLowerCase().trim();\n    return (currentSnap.checks || []).filter(function '
+    '(c) {\n      if (area !== "all" && c.area !== area) { return false; }\n      if (level !== "all" && c.'
+    'level !== level) { return false; }\n      if (sev !== "all" && c.severity !== sev) { return false; }\n'
+    '      if (st !== "all" && c.status !== st) { return false; }\n      if (q && JSON.stringify(c).toLowe'
+    'rCase().indexOf(q) === -1) { return false; }\n      return true;\n    });\n  }\n  function applyFindingF'
+    'ilters() {\n    if (!currentSnap) { return; }\n    var all = currentSnap.checks || [];\n    var filtere'
+    'd = filteredChecks().slice().sort(function (a, b) {\n      return (STATUS_ORDER[a.status] - STATUS_OR'
+    'DER[b.status]) || (SEVS.indexOf(a.severity) - SEVS.indexOf(b.severity)) || String(a.rule_id).localeC'
+    'ompare(String(b.rule_id), "en", { numeric: true });\n    });\n    var failed = filtered.filter(functio'
+    'n (c) { return c.status === "failed"; }).length;\n    document.getElementById("findings-count-label")'
+    '.textContent = "Showing " + filtered.length + " of " + all.length + " checks · " + failed + plural(f'
+    'ailed, " failed", " failed") + ".";\n    renderTable(document.getElementById("findings-table"),\n     '
+    ' [{ t: "Status" }, { t: "Severity" }, { t: "Rule" }, { t: "Area / pillar" }, { t: "Object" }, { t: "'
+    'Finding and evidence", c: "w" }, { t: "Recommendation", c: "w" }],\n      filtered.map(function (c) {'
+    '\n        var link = safeLearnUrl(c.learn_url);\n        var detail = el("div", { className: "fd" });\n'
+    '        detail.appendChild(el("b", { text: c.title }));\n        detail.appendChild(el("p", { text: c'
+    '.reason }));\n        var chips = observedValues(c.evidence);\n        if (chips) { detail.appendChild'
+    '(chips); }\n        var rec = el("div", { className: "fr" });\n        rec.appendChild(el("p", { text:'
+    ' c.recommendation }));\n        if (link) { rec.appendChild(extLink(link, "Official documentation"));'
+    ' }\n        return [\n          { v: statusTag(c.status), s: STATUS_ORDER[c.status] },\n          { v: '
+    'sevPill(c.severity, c.severity_label), s: SEVS.indexOf(c.severity) },\n          { v: stack(c.rule_id'
+    ', mono(c.reference_id)), s: c.rule_id },\n          { v: stack(lab(L.area, c.area), lab(L.pillar, c.p'
+    'illar)), s: lab(L.area, c.area) },\n          { v: stack(brk(c.workload_name || c.resource_name || c.'
+    'workspace_name, ""), lab(L.level, c.level)), s: c.workload_name || c.resource_name || "" },\n        '
+    '  { v: detail, s: c.title },\n          { v: rec, s: c.recommendation }\n        ];\n      }), { page: '
+    '15, sortable: true }\n    );\n  }\n\n  ["dep-layer-filter", "dep-class-filter", "dep-search-filter"].for'
+    'Each(function (id) {\n    document.getElementById(id).addEventListener("input", applyDependencyFilter'
+    's);\n    document.getElementById(id).addEventListener("change", applyDependencyFilters);\n  });\n  ["fi'
+    'nd-area-filter", "find-level-filter", "find-sev-filter", "find-status-filter", "find-search-filter"]'
+    '.forEach(function (id) {\n    document.getElementById(id).addEventListener("input", applyFindingFilte'
+    'rs);\n    document.getElementById(id).addEventListener("change", applyFindingFilters);\n  });\n  docume'
+    'nt.getElementById("dep-clear").addEventListener("click", function () {\n    document.getElementById("'
+    'dep-layer-filter").value = "all";\n    document.getElementById("dep-class-filter").value = "all";\n   '
+    ' document.getElementById("dep-search-filter").value = "";\n    applyDependencyFilters();\n  });\n  docu'
+    'ment.getElementById("find-clear").addEventListener("click", function () {\n    ["find-area-filter", "'
+    'find-level-filter", "find-sev-filter", "find-status-filter"].forEach(function (id) { document.getEle'
+    'mentById(id).value = "all"; });\n    document.getElementById("find-search-filter").value = "";\n    ap'
+    'plyFindingFilters();\n  });\n  document.getElementById("find-export-btn").addEventListener("click", fu'
+    'nction () {\n    if (!currentSnap) { return; }\n    downloadBlob("databricks-findings-filtered.csv", c'
+    'hecksCsv(filteredChecks()), "text/csv;charset=utf-8");\n  });\n\n  function barRow(label, sub, width, v'
+    'alue, valueSub, color, na) {\n    var row = el("div", { className: "brow" + (na ? " na" : "") });\n   '
+    ' var bl = el("div", { className: "bl" }, [label]);\n    if (sub) { bl.appendChild(el("small", { text:'
+    ' sub })); }\n    row.appendChild(bl);\n    var bar = el("i");\n    bar.style.width = Math.max(0, Math.m'
+    'in(100, width)) + "%";\n    if (color) { bar.style.background = color; }\n    if (na || !width) { bar.'
+    'style.minWidth = "0"; }\n    row.appendChild(el("div", { className: "bt" }, [bar]));\n    var bv = el('
+    '"div", { className: "bv", text: value });\n    if (valueSub) { bv.appendChild(el("small", { text: val'
+    'ueSub })); }\n    row.appendChild(bv);\n    return row;\n  }\n  function scoreBars(id, map, labels) {\n  '
+    '  var holder = document.getElementById(id);\n    clear(holder);\n    Object.keys(map || {}).forEach(fu'
+    'nction (k) {\n      var it = map[k] || {}, na = !isNum(it.score);\n      holder.appendChild(barRow(lab'
+    '(labels, k), null, na ? 0 : it.score, na ? "Not evaluated" : pct(it.score),\n        "coverage " + (i'
+    'sNum(it.coverage_percent) ? pct(it.coverage_percent) : "0%"), null, na));\n    });\n  }\n  function kpi'
+    '(value, unit, label, sub) {\n    var v = el("div", { className: "v" }, [String(value)]);\n    if (unit'
+    ') { v.appendChild(el("small", { text: unit })); }\n    return el("div", { className: "kpi" }, [v, el('
+    '"div", { className: "l", text: label }), sub ? el("div", { className: "s", text: sub }) : null]);\n  '
+    '}\n  function pctParts(v) { return isNum(v) ? [NF.format(v), "%"] : ["—", ""]; }\n  function sourcePla'
+    'ne(id) {\n    id = String(id || "");\n    if (id.indexOf("arm_") === 0 || id === "azure_cost") { retur'
+    'n "Plane 1 · ARM"; }\n    if (id.indexOf("dbx_") === 0) { return "Plane 2 · Databricks REST"; }\n    i'
+    'f (id.indexOf("uc_") === 0) { return "Plane 2 · Unity Catalog"; }\n    return "Internal";\n  }\n  var S'
+    'RC_COLOR = { complete: "var(--ok-bar)", partial: "var(--med-bar)", denied: "var(--crit-bar)", error:'
+    ' "var(--crit-bar)", not_configured: "var(--info-bar)", not_applicable: "var(--line2)" };\n\n  function'
+    ' renderHero(snap, g, counts) {\n    var ws = snap.workspace || {}, sc = (snap.dependencies && snap.de'
+    'pendencies.summary_counts) || {};\n    var fails = (snap.findings || []).length, ev = g.evaluated || '
+    '0;\n    var sevText = SEVS.filter(function (s) { return counts[s]; }).map(function (s) { return count'
+    's[s] + " " + plural(counts[s], SEV_WORD[s][0], SEV_WORD[s][1]); }).join(" · ");\n    var depParts = ['
+    '" The dependency map holds ", [num(sc.nodes_total || 0)], " nodes and ", [num(sc.edges_total || 0)],'
+    ' " relationships, with ", [num(sc.edges_inferred || 0)], " INFERRED references and ", [num(sc.unknow'
+    'ns_total || 0)], " UNKNOWN blind spots."];\n    var ch = (snap.databricks_costs && snap.databricks_co'
+    'sts.headline) || {};\n    if (isNum(ch.review_total)) {\n      costCurrency = snap.databricks_costs.cu'
+    'rrency || "";\n      depParts = depParts.concat([" Databricks cost ", [money(ch.review_total)], " in '
+    '" + monthName(ch.review_month)].concat(\n        isNum(ch.estimated_monthly_savings) ? ["; estimated '
+    'savings ", ["≈ " + money(ch.estimated_monthly_savings)], " a month (cost section)."] : ["."]));\n    '
+    '}\n    rich(document.getElementById("cover-lead"), ev ? [[num(fails)], plural(fails, " failed", " fai'
+    'led"), sevText ? " (" + sevText + ")" : "", " of ", [num(ev)], " evaluated checks; local index ", [p'
+    'ct(g.score)], " with ", [pct(g.coverage_percent)], " coverage."].concat(depParts)\n      : ["No check'
+    ' could be evaluated with the available sources; review the coverage in section 8."].concat(depParts)'
+    ');\n    var meta = document.getElementById("cover-badges");\n    clear(meta);\n    function chip(parts,'
+    ' on, title) { meta.appendChild(rich(el("span", { className: on ? "on" : null, title: title || null }'
+    '), parts)); }\n    chip(["Generated ", [utc(snap.reference_utc)]]);\n    chip(["Workspace ", [ws.name '
+    '|| "—"]]);\n    chip([[ws.cross_tenant ? "Cross-tenant" : "Same tenant"], " · " + (ws.auth_mode || "—'
+    '")], false, ws.cross_tenant ? (ws.sre_tenant_id || "—") + " → " + (ws.target_tenant_id || "—") : ws.'
+    'target_tenant_id);\n    chip(["Environment ", [snap.environment || "—"]]);\n    chip([snap.provenance '
+    '=== "SIMULATED" ? "SIMULATED DATA" : (snap.provenance || "LIVE") + " DATA"], true);\n\n    var tone = '
+    '"ok", title = counts.low ? "No relevant deviations" : "No observed deviations";\n    if (!ev) { tone '
+    '= "info"; title = "Not evaluated"; }\n    else if (counts.critical) { tone = "crit"; title = "Action '
+    'required"; }\n    else if (counts.high || counts.medium) { tone = "warn"; title = "Needs attention"; '
+    '}\n    var lowCov = isNum(g.coverage_percent) && g.coverage_percent < 50;\n    if (lowCov && tone === '
+    '"ok") { tone = "warn"; title = "Insufficient coverage"; }\n    var verdict = document.getElementById('
+    '"verdict");\n    verdict.className = "signal " + tone;\n    clear(verdict);\n    verdict.appendChild(el'
+    '("div", { className: "k", text: "Verdict" }));\n    verdict.appendChild(el("b", { text: title }));\n  '
+    '  verdict.appendChild(el("p", { text: (ev ? (sevText || "No findings") + " · coverage " + pct(g.cove'
+    'rage_percent) : "No checks evaluated") + (lowCov ? " · only " + ev + " of " + (ev + (g.not_evaluated'
+    ' || 0)) + " evaluated" : "") }));\n\n    var dist = document.getElementById("severity-dist");\n    clea'
+    'r(dist);\n    dist.hidden = !fails;\n    if (fails) {\n      dist.appendChild(rich(el("div", { classNam'
+    'e: "dist-head" }), ["Findings by severity", ""]));\n      dist.firstChild.appendChild(rich(el("span")'
+    ', [[num(fails)], " of " + num(g.total || 0) + " checks failed"]));\n      var track = el("div", { cla'
+    'ssName: "track", role: "img", "aria-label": sevText });\n      var legend = el("div", { className: "l'
+    'egend" });\n      SEVS.forEach(function (s) {\n        if (!counts[s]) { return; }\n        var seg = e'
+    'l("i", { title: L.sev[s] + ": " + counts[s] });\n        seg.style.width = (100 * counts[s] / fails) '
+    '+ "%";\n        seg.style.background = SEV_BAR[s];\n        track.appendChild(seg);\n        var key = '
+    'el("i");\n        key.style.background = SEV_BAR[s];\n        legend.appendChild(el("span", null, [key'
+    ', L.sev[s] + " ", el("b", { text: String(counts[s]) })]));\n      });\n      dist.appendChild(track);\n'
+    '      dist.appendChild(legend);\n    }\n\n    var client = (snap.client && snap.client.logo_data_uri) ?'
+    ' snap.client : ((rootData && rootData.client) || snap.client || { name: "Customer", logo_data_uri: "'
+    '", logo_alt: "Authorized customer logo" });\n    var plaque = document.getElementById("brand-plaque")'
+    ';\n    clear(plaque);\n    var hasLogo = client.logo_data_uri && /^data:image\\/(png|jpeg);base64,[A-Za'
+    '-z0-9+/=]+$/.test(client.logo_data_uri);\n    if (hasLogo) { plaque.appendChild(el("img", { src: clie'
+    'nt.logo_data_uri, alt: client.logo_alt || client.name || "Customer" })); }\n    else { plaque.appendC'
+    'hild(el("span", { className: "brand-placeholder", text: client.name || "Customer" })); }\n    var nam'
+    'eLabel = document.getElementById("client-name-label");\n    nameLabel.textContent = client.name || "C'
+    'ustomer";\n    nameLabel.hidden = !hasLogo;\n  }\n\n  function renderKpis(snap, g, counts) {\n    var sc '
+    '= (snap.dependencies && snap.dependencies.summary_counts) || {}, fin = snap.finops || {};\n    var fa'
+    'ils = (snap.findings || []).length, ev = g.evaluated || 0;\n    var holder = document.getElementById('
+    '"kpis");\n    clear(holder);\n    var sevText = SEVS.filter(function (s) { return counts[s]; }).map(fu'
+    'nction (s) { return counts[s] + " " + plural(counts[s], SEV_WORD[s][0], SEV_WORD[s][1]); }).join(" ·'
+    ' ");\n    var sp = pctParts(g.score), cp = pctParts(g.coverage_percent);\n    var hasCost = isNum(fin.'
+    'actual_cost);\n    var win = fin.window ? day(fin.window.start).slice(5) + " → " + day(fin.window.end'
+    ').slice(5) : null;\n    var cm = snap.databricks_costs || {}, ch = cm.headline || {};\n    costCurrenc'
+    'y = cm.currency || "";\n    var costKpi = isNum(ch.review_total)\n      ? kpi(NF0.format(ch.review_tot'
+    'al), cm.currency || "", "Databricks cost", monthName(ch.review_month).split(" ")[0] + (isNum(ch.dbu_'
+    'share) ? " · " + NF0.format(ch.dbu_share) + "% DBU" : "") + (isNum(ch.estimated_monthly_savings) ? "'
+    ' · savings ≈ " + money(ch.estimated_monthly_savings) + "/month" : " · " + signedPct(ch.change_pct) +'
+    ' " vs previous month"))\n      : kpi(hasCost ? NF2.format(fin.actual_cost) : "—", hasCost ? (fin.curr'
+    'ency || "") : "", "Observed cost", hasCost ? "ActualCost · " + (win || "period to date") : "Not eval'
+    'uated");\n    var list = FOCUS === "costs" && isNum(ch.review_total) ? [\n      kpi(NF0.format(ch.revi'
+    'ew_total), cm.currency || "", "Cost in " + monthName(ch.review_month).split(" ")[0], signedPct(ch.ch'
+    'ange_pct) + " vs " + monthName(ch.previous_month).split(" ")[0]),\n      kpi(NF0.format(ch.mtd_total)'
+    ', cm.currency || "", "Current month", "through " + ch.mtd_days + " " + monthName(ch.current_month).s'
+    'plit(" ")[0]),\n      kpi(NF0.format(ch.dbu_share || 0), "%", "DBU", NF0.format(100 - (ch.dbu_share |'
+    '| 0)) + "% infrastructure (" + money(ch.infra_total) + ")"),\n      kpi(isNum(ch.unattributed_share) '
+    '? NF1.format(ch.unattributed_share) : "—", isNum(ch.unattributed_share) ? "%" : "", "Without a compu'
+    'te tag", isNum(ch.unattributed_total) ? money(ch.unattributed_total) + " unattributed" : "Not evalua'
+    'ted"),\n      kpi(isNum(ch.estimated_monthly_savings) ? NF0.format(ch.estimated_monthly_savings) : "—'
+    '", isNum(ch.estimated_monthly_savings) ? cm.currency || "" : "", "Estimated monthly savings", ch.sav'
+    'ings_signals + " of " + ch.signals + " signals, nothing counted twice"),\n      kpi(num(fails), "", "'
+    'Configuration findings", sevText || "No observed deviations")\n    ] : [\n      kpi(num(fails), "", "F'
+    'indings", sevText || "No observed deviations"),\n      kpi(sp[0], sp[1], "Local index", ev ? "Based o'
+    'n " + ev + " evaluated" : "No evaluated checks"),\n      kpi(cp[0], cp[1], "Evaluated coverage", ev +'
+    ' " of " + (ev + (g.not_evaluated || 0)) + " applicable"),\n      kpi(num(sc.edges_total || 0), "", "R'
+    'elationships", num(sc.edges_observed || 0) + " OBSERVED · " + num(sc.edges_inferred || 0) + " INFERR'
+    'ED"),\n      kpi(num(sc.unknowns_total || 0), "", "UNKNOWN blind spots", num(sc.broken_references_tot'
+    'al || 0) + plural(sc.broken_references_total || 0, " broken reference", " broken references")),\n    '
+    '  costKpi\n    ];\n    list.forEach(function (k) { holder.appendChild(k); });\n\n    var notices = docum'
+    'ent.getElementById("notices");\n    clear(notices);\n    if (snap.provenance === "SIMULATED") {\n      '
+    'notices.appendChild(el("div", { className: "sim", role: "note" }, [icon("alert"), el("span", { text:'
+    ' "Simulated data: this report comes from a synthetic test dataset; the figures don\'t describe a real'
+    ' workspace." })]));\n    }\n    var gaps = (snap.sources || []).filter(function (s) { return s.status '
+    '!== "complete" && s.status !== "not_applicable"; });\n    if (gaps.length) {\n      var listed = gaps.'
+    'slice(0, 6).map(function (s) { return s.id + " (" + lab(L.src, s.status).toLowerCase() + ")"; }).joi'
+    'n(", ") + (gaps.length > 6 ? " and " + (gaps.length - 6) + " more" : "");\n      notices.appendChild('
+    'el("div", { className: "note", role: "note" }, [icon("info"), el("span", { text: gaps.length + plura'
+    'l(gaps.length, " source without complete data: ", " sources without complete data: ") + listed + ". '
+    'Checks that depend on them show as Not evaluated (section 8)." })]));\n    }\n  }\n\n  function renderFa'
+    'cts(snap) {\n    var ws = snap.workspace || {};\n    var facts = document.getElementById("cover-facts"'
+    ');\n    clear(facts);\n    function fact(label, main, sub) {\n      var dd = el("dd");\n      if (main i'
+    'nstanceof Node) { dd.appendChild(main); } else { dd.textContent = main === null || main === undefine'
+    'd || main === "" ? "—" : String(main); }\n      if (sub instanceof Node) { var w = el("small"); w.app'
+    'endChild(sub); dd.appendChild(w); } else if (sub) { dd.appendChild(el("small", { text: sub })); }\n  '
+    '    facts.appendChild(el("div", null, [el("dt", { text: label }), dd]));\n    }\n    fact("Workspace",'
+    ' ws.name, brk(ws.workspace_url || "—"));\n    fact("ARM resource", armCell(ws.id, ws.name));\n    fact'
+    '("Managed resource group", brk(ws.managed_resource_group || "—", ""));\n    fact("Region · SKU", (ws.'
+    'region || "—") + " · " + (ws.sku_name || "—"), ws.sku_tier ? "Tier " + ws.sku_tier : null);\n    fact'
+    '("Network", "Public access: " + access(ws.public_network_access), "No public IP (NPIP): " + yesNo(ws'
+    '.enable_no_public_ip) + (ws.custom_virtual_network_id ? " · VNet injection" : ""));\n    fact("Authen'
+    'tication", ws.auth_mode || "—", ws.cross_tenant ? "Cross-tenant" : "Same tenant");\n    var tenants ='
+    ' el("span");\n    if (ws.cross_tenant) { tenants.appendChild(mono(ws.sre_tenant_id)); tenants.appendC'
+    'hild(el("br")); tenants.appendChild(mono("→ " + (ws.target_tenant_id || "—"))); }\n    else { tenants'
+    '.appendChild(mono(ws.target_tenant_id)); }\n    fact(ws.cross_tenant ? "SRE tenant → target tenant" :'
+    ' "Tenant", tenants);\n    fact("Default Unity Catalog catalog", ws.default_catalog_name || "—", ws.de'
+    'fault_catalog_type || null);\n  }\n\n  function renderExecutive(snap, g) {\n    var msgList = document.g'
+    'etElementById("executive-messages");\n    clear(msgList);\n    (snap.executive_messages || []).forEach'
+    '(function (m) { msgList.appendChild(el("li", { text: m })); });\n    var total = Math.max(1, g.total '
+    '|| 0);\n    var status = document.getElementById("check-status");\n    clear(status);\n    [\n      ["pa'
+    'ssed", "Observed configuration meets the local rule.", "var(--ok-bar)"],\n      ["failed", "Observed '
+    'deviation or broken reference.", "var(--crit-bar)"],\n      ["not_evaluated", "Source not available, '
+    'requirement not confirmed or scope that needs compute.", "var(--info-bar)"],\n      ["not_applicable"'
+    ', "Excluded from the denominator by object type or a false requirement.", "var(--line2)"]\n    ].forE'
+    'ach(function (r) {\n      var n = g[r[0]] || 0;\n      status.appendChild(barRow(el("span", { classNam'
+    'e: "st st-" + r[0], text: L.status[r[0]] }), r[1], 100 * n / total, num(n), NF.format(100 * n / tota'
+    'l) + "%", r[2], !n));\n    });\n    scoreBars("area-scores", snap.scores && snap.scores.areas, L.area)'
+    ';\n    scoreBars("pillar-scores", snap.scores && snap.scores.pillars, L.pillar);\n    var list = docum'
+    'ent.getElementById("priority-findings");\n    clear(list);\n    var priorities = (snap.findings || [])'
+    '.filter(function (f) { return f.severity === "critical" || f.severity === "high"; })\n      .sort(fun'
+    'ction (a, b) { return SEVS.indexOf(a.severity) - SEVS.indexOf(b.severity); });\n    if (!priorities.l'
+    'ength) { list.appendChild(el("li", null, [emptyState("No critical or high-severity findings in the e'
+    'valuated checks.")])); }\n    priorities.forEach(function (f) {\n      list.appendChild(el("li", null,'
+    ' [\n        sevPill(f.severity, f.severity_label),\n        el("div", { className: "pt", text: f.title'
+    ' }),\n        el("div", { className: "pm", text: f.rule_id + " · " + lab(L.level, f.level) + (f.workl'
+    'oad_name ? ": " + f.workload_name : "") + " — " + (f.business_impact || f.reason || "") })\n      ]))'
+    ';\n    });\n  }\n\n  function renderInventory(snap) {\n    var inv = snap.inventory || {};\n    function c'
+    'ount(id, n, word) { document.getElementById(id).textContent = n + " " + word; }\n    var computeRows '
+    '= [].concat(inv.clusters || [], inv.instance_pools || [], inv.cluster_policies || [], inv.global_ini'
+    't_scripts || []);\n    count("inv-compute-count", computeRows.length, plural(computeRows.length, "obj'
+    'ect", "objects"));\n    renderTable(document.getElementById("inv-compute-table"),\n      ["Type", "Nam'
+    'e / ID", "State / runtime", "Access / auto-termination", "Policy / pool"],\n      computeRows.map(fun'
+    'ction (r) {\n        return [\n          { v: kindLabel(r.kind) },\n          { v: stack(r.name || "—",'
+    ' mono(r.id)), s: r.name },\n          { v: stack(r.state || "—", r.spark_version ? mono(r.spark_versi'
+    'on) : null), s: r.state },\n          (r.data_security_mode || "—") + (r.autotermination_minutes !== '
+    'undefined && r.autotermination_minutes !== null ? " · " + r.autotermination_minutes + " min" : ""),\n'
+    '          { v: stack(r.policy_id ? mono(r.policy_id) : "—", r.instance_pool_id ? mono("Pool: " + r.i'
+    'nstance_pool_id) : null) }\n        ];\n      }), { sortable: true }\n    );\n    var orchRows = [];\n   '
+    ' (inv.jobs || []).forEach(function (j) {\n      var tasks = el("div", { className: "chips" });\n      '
+    '(j.tasks || []).forEach(function (t) { tasks.appendChild(el("span", { text: t.task_key })); });\n    '
+    '  orchRows.push([{ v: kindLabel("Job") }, { v: stack(j.name, mono(j.id)), s: j.name }, j.scheduled ?'
+    ' "Scheduled" : "Not scheduled",\n        { v: stack(j.run_as_service_principal ? "Service principal" '
+    ': "User (no SP)", j.run_as_service_principal ? mono(j.run_as_service_principal) : null) },\n        {'
+    ' v: (j.tasks || []).length ? tasks : "—" }]);\n    });\n    (inv.pipelines || []).forEach(function (p)'
+    ' {\n      orchRows.push([{ v: kindLabel("dlt_pipeline") }, { v: stack(p.name, mono(p.id)), s: p.name '
+    '}, p.state || "—", "Serverless: " + yesNo(p.serverless),\n        "Catalog " + (p.catalog || "hive_me'
+    'tastore") + " · target " + (p.target || "—")]);\n    });\n    (inv.sql_warehouses || []).forEach(funct'
+    'ion (w) {\n      orchRows.push([{ v: kindLabel("sql_warehouse") }, { v: stack(w.name, mono(w.id)), s:'
+    ' w.name }, (w.state || "—") + " · " + (w.cluster_size || "—"),\n        "Serverless: " + yesNo(w.enab'
+    'le_serverless_compute) + " · auto-stop " + (isNum(w.auto_stop_mins) ? w.auto_stop_mins + " min" : "—'
+    '"), w.warehouse_type || "—"]);\n    });\n    count("inv-orchestration-count", orchRows.length, plural('
+    'orchRows.length, "object", "objects"));\n    renderTable(document.getElementById("inv-orchestration-t'
+    'able"),\n      ["Type", "Name / ID", "State / schedule", "Identity / mode", "Tasks / target"], orchRo'
+    'ws, { sortable: true });\n    var ucRows = [];\n    if (inv.uc_metastore) {\n      ucRows.push([L.kind.'
+    'uc_metastore, { v: brk(inv.uc_metastore.name, "") }, { v: mono(inv.uc_metastore.id) }, { v: brk(inv.'
+    'uc_metastore.storage_root || "—") }, "Region " + (inv.uc_metastore.region || "—")]);\n    }\n    (inv.'
+    'uc_catalogs || []).forEach(function (c) { ucRows.push([L.kind.uc_catalog, { v: brk(c.name, "") }, c.'
+    'catalog_type || "—", { v: brk(c.storage_root || "—") }, "Isolation " + (c.isolation_mode || "—")]); '
+    '});\n    (inv.uc_schemas || []).forEach(function (s) { ucRows.push([L.kind.uc_schema, { v: brk(s.full'
+    '_name, "") }, s.catalog_name, { v: brk(s.storage_root || "—") }, "—"]); });\n    (inv.uc_storage_cred'
+    'entials || []).forEach(function (cr) { ucRows.push([L.kind.uc_storage_credential, { v: brk(cr.name, '
+    '"") }, cr.uses_managed_identity ? "Managed identity" : "Service principal", { v: cr.access_connector'
+    '_id ? armCell(cr.access_connector_id) : "—" }, "Read-only: " + yesNo(cr.read_only)]); });\n    (inv.u'
+    'c_external_locations || []).forEach(function (loc) { ucRows.push([L.kind.uc_external_location, { v: '
+    'brk(loc.name, "") }, "Credential " + (loc.credential_name || "—"), { v: brk(loc.url || "—") }, "Read'
+    '-only: " + yesNo(loc.read_only)]); });\n    (inv.uc_connections || []).forEach(function (cn) { ucRows'
+    '.push([L.kind.uc_connection, { v: brk(cn.name, "") }, cn.connection_type || "—", { v: brk(cn.host ||'
+    ' "—") }, "Credential " + (cn.credential_type || "—")]); });\n    (inv.secret_scopes || []).forEach(fu'
+    'nction (sc) { ucRows.push([L.kind.secret_scope, { v: brk(sc.name, "") }, sc.backend_type || "—", { v'
+    ': sc.keyvault_resource_id ? armCell(sc.keyvault_resource_id) : brk(sc.keyvault_dns_name || "—") }, "'
+    'Values never read"]); });\n    count("inv-uc-count", ucRows.length, plural(ucRows.length, "object", "'
+    'objects"));\n    renderTable(document.getElementById("inv-uc-table"), ["Object", "Name", "Type / cred'
+    'ential", { t: "URI / resource", c: "w" }, "Detail"], ucRows, { sortable: true });\n    var resRows = '
+    '[];\n    (inv.related_resources || []).forEach(function (r) {\n      var a = r.association || {};\n    '
+    '  resRows.push([{ v: kindLabel(r.resource_kind) }, { v: armCell(r.id, r.name), s: r.name },\n        '
+    '{ v: stack(a.type || "—", brk([a.source_id, a.field].filter(Boolean).join(" · "))) }, { v: evidenceC'
+    'ell(r.configuration) }]);\n    });\n    (inv.outbound_endpoints || []).forEach(function (o) {\n      va'
+    'r chips = el("div", { className: "chips" });\n      (o.endpoints || []).forEach(function (ep) {\n     '
+    '   var ports = (ep.details || []).map(function (d) { return d.port; }).filter(Boolean).join(", ");\n '
+    '       chips.appendChild(el("span", { text: (ep.domain_name || ep.domainName || "—") + (ports ? ":" '
+    '+ ports : "") }));\n      });\n      resRows.push([{ v: kindLabel("OutboundDependency") }, { v: stack('
+    'o.category || "—", null), s: o.category }, { v: stack("outboundNetworkDependenciesEndpoints", null) '
+    '}, { v: chips.firstChild ? chips : "—" }]);\n    });\n    count("inv-resources-count", resRows.length,'
+    ' plural(resRows.length, "resource or endpoint", "resources and endpoints"));\n    renderTable(documen'
+    't.getElementById("inv-resources-table"), ["Type", "Resource", "Association", { t: "Observed configur'
+    'ation", c: "w", s: false }], resRows, { sortable: true });\n  }\n\n  function renderFinops(snap) {\n    '
+    'var fin = snap.finops || {};\n    var legacy = document.getElementById("finops-legacy");\n    var conf'
+    'igured = (fin.cost_rows || []).length > 0 || fin.cost_source_complete;\n    var amount = document.get'
+    'ElementById("finops-actual-cost");\n    clear(amount);\n    amount.hidden = !configured;\n    if (isNum'
+    '(fin.actual_cost)) { amount.className = "stat"; amount.appendChild(document.createTextNode(NF2.forma'
+    't(fin.actual_cost) + " ")); amount.appendChild(el("small", { text: fin.currency || "" })); }\n    els'
+    'e { amount.className = "stat na"; amount.textContent = "Not evaluated"; }\n    document.getElementByI'
+    'd("finops-cost-window").textContent = fin.window && configured ? "Window " + day(fin.window.start) +'
+    ' " → " + day(fin.window.end) + " · azure_cost source " + (fin.cost_source_complete ? "complete" : "i'
+    'ncomplete") : "Off (cost_scope = disabled). Optional: amounts by approved ResourceId, with no split '
+    'by workload.";\n    var notes = document.getElementById("finops-cost-note");\n    clear(notes);\n    (c'
+    'onfigured ? fin.notes || [] : []).forEach(function (n) { notes.appendChild(el("li", { text: n })); }'
+    ');\n    var table = document.getElementById("finops-cost-table");\n    table.parentNode.hidden = !conf'
+    'igured;\n    renderTable(table,\n      ["Resource", "Date", { t: "Amount", c: "n" }, "Currency", "Basi'
+    's"],\n      (fin.cost_rows || []).map(function (r) {\n        return [{ v: armCell(r.resource_id) }, r'
+    '.usage_date ? day(r.usage_date) : "Period to date", { v: isNum(r.amount) ? NF2.format(r.amount) : nu'
+    'm(r.amount), s: r.amount }, r.currency, r.basis];\n      }), { empty: "No billing rows observed in th'
+    'e approved scope." }\n    );\n    legacy.hidden = false;\n  }\n\n  var NF0 = new Intl.NumberFormat("en-US'
+    '", { maximumFractionDigits: 0, useGrouping: "always" });\n  var NF1 = new Intl.NumberFormat("en-US", '
+    '{ minimumFractionDigits: 1, maximumFractionDigits: 1 });\n  var MONTHS = ["January", "February", "Mar'
+    'ch", "April", "May", "June", "July", "August", "September", "October", "November", "December"];\n  va'
+    'r C = {\n    family: { all_purpose: "All-purpose (interactive)", jobs: "Jobs", jobs_light: "Jobs Ligh'
+    't", sql: "Pro and classic SQL warehouses", sql_serverless: "Serverless SQL warehouses",\n      pipeli'
+    'nes: "Pipelines (DLT)", serverless: "Serverless (notebooks and jobs)", ai: "AI and model serving", o'
+    'ther: "Other DBUs" },\n    category: { "virtual machines": "Virtual machines", storage: "Storage and '
+    'disks", bandwidth: "Data transfer", "virtual network": "Virtual network (NAT, public IPs)",\n      "l'
+    'oad balancer": "Load balancer", "azure databricks": "DBU", "nat gateway": "NAT gateway" },\n    gapWh'
+    'y: { storage: "Workspace root storage (DBFS) and disks without a cluster", "azure databricks": "They'
+    ' carry no Azure tags: split them with serverless usage policies or system tables",\n      bandwidth: '
+    '"Outbound data transfer", "virtual network": "Workspace NAT gateway and public IP addresses", "load '
+    'balancer": "Workspace load balancer",\n      "virtual machines": "Virtual machines without Databricks'
+    ' tags" },\n    dim: { cluster: "Clusters", job: "Jobs", warehouse: "SQL warehouses", pool: "Pools", c'
+    'reators: "Creators" },\n    kind: { all_purpose: "Interactive cluster", job_run: "Job cluster", job_r'
+    'uns: "Ephemeral job clusters", pipeline: "Pipeline cluster", pipeline_runs: "Pipeline clusters (DLT)'
+    '",\n      not_in_inventory: "Not in the inventory (deleted or another type)", job: "Job", warehouse: '
+    '"SQL warehouse", pool: "Pool" },\n    objKind: { AllPurposeCluster: "Interactive cluster", Job: "Job"'
+    ', InstancePool: "Pool", SqlWarehouse: "SQL warehouse", ClusterPolicy: "Compute policy", Runtime: "Ru'
+    'ntime", NodeType: "VM type" },\n    saving: { lower_bound: "at least", upper_bound: "up to", estimate'
+    ': "≈" },\n    basis: { weekend_cost: "the month\'s Saturday and Sunday cost", jobs_dbu_ratio: "cluster'
+    ' DBU × (1 − jobs/all-purpose ratio)", spot_discount: "worker VMs × spot discount",\n      daily_floor'
+    ': "minimum daily cost × days in the month", always_on_weekends: "cost × weekend days / days in the m'
+    'onth" },\n    ev: { autotermination_minutes: "auto-termination (min)", state: "state", uptime_hours: '
+    '"running (h)", active_days: "days with cost", weekend_cost: "weekend cost",\n      jobs: "jobs", jobs'
+    '_count: "job count", dbu_cost: "DBU cost", availability: "availability", workers: "workers", vm_cost'
+    ': "VM cost", continuous: "continuous",\n      max_workers: "max workers", min_idle_instances: "min id'
+    'le", idle_now: "idle now", idle_autotermination_minutes: "idle release (min)",\n      daily_floor: "d'
+    'aily floor", auto_stop_mins: "auto-stop (min)", serverless: "serverless", warehouse_type: "type", cl'
+    'uster_size: "size", objects: "objects",\n      allocation_tags: "tags", supported_list_checked: "offi'
+    'cial list checked", deprecated: "retired" },\n    status: { complete: "Complete", partial: "Partial",'
+    ' denied: "Denied", error: "Error", skipped: "Skipped (time limit)", not_configured: "Not configured"'
+    ', not_collected: "Not collected" }\n  };\n  var costCurrency = "";\n  function monthName(label, short) '
+    '{\n    var m = /^(\\d{4})-(\\d{2})$/.exec(String(label || ""));\n    if (!m) { return String(label || "—'
+    '"); }\n    var name = MONTHS[Number(m[2]) - 1] || m[2];\n    return short ? name.slice(0, 3) + " " + m'
+    '[1] : name + " " + m[1];\n  }\n  function money(v, cur) {\n    if (!isNum(v)) { return "—"; }\n    retur'
+    'n (v === 0 ? "0" : Math.abs(v) < 10 ? NF2.format(v) : NF0.format(v)) + (cur === "" ? "" : "\\u00a0" +'
+    ' (cur || costCurrency));\n  }\n  function signedPct(v) { return isNum(v) ? (v > 0 ? "+" : v < 0 ? "−" '
+    ': "") + NF1.format(Math.abs(v)) + "%" : "—"; }\n  function deltaNode(pct, abs, cur) {\n    if (!isNum('
+    'pct) && !isNum(abs)) { return el("span", { className: "muted", text: "no previous month" }); }\n    v'
+    'ar up = (isNum(abs) ? abs : pct) > 0;\n    var text = isNum(pct) ? signedPct(pct) : (abs > 0 ? "+" : '
+    '"−") + money(Math.abs(abs), cur);\n    return el("span", { className: up ? "up" : "down", text: text '
+    '});\n  }\n  function sh(v) { return isNum(v) ? NF1.format(v) + "%" : "—"; }\n  function lowerKey(s) { r'
+    'eturn String(s || "").toLowerCase(); }\n  function costRows(m) { return (m && m.attribution && m.attr'
+    'ibution.rows) || []; }\n  function rowName(r) {\n    if (r.kind === "job_runs") { return "Ephemeral jo'
+    'b clusters (" + r.count + plural(r.count, " run", " runs") + ")"; }\n    if (r.kind === "pipeline_run'
+    's") { return "Pipeline clusters (DLT)"; }\n    return r.name;\n  }\n  function tagChips(tags) {\n    var'
+    ' keys = Object.keys(tags || {});\n    if (!keys.length) { return el("span", { className: "muted", tex'
+    't: "No tags" }); }\n    var wrap = el("div", { className: "chips" });\n    keys.forEach(function (k) {'
+    ' wrap.appendChild(el("span", null, [k + ": ", el("b", { text: String(tags[k]) })])); });\n    return '
+    'wrap;\n  }\n  function evText(v) {\n    if (Array.isArray(v)) { return v.join(", "); }\n    if (v === tr'
+    'ue) { return "Yes"; }\n    if (v === false) { return "No"; }\n    return isNum(v) ? NF.format(v) : Str'
+    'ing(v);\n  }\n  function sigChips(ev) {\n    var wrap = el("div", { className: "chips" }), n = 0;\n    O'
+    'bject.keys(ev || {}).forEach(function (k) {\n      var v = ev[k];\n      if (v === null || v === undef'
+    'ined || v === "" || (Array.isArray(v) && !v.length) || n >= 4) { return; }\n      var shown = /cost|f'
+    'loor/.test(k) && isNum(v) ? money(v) : evText(v);\n      wrap.appendChild(el("span", null, [(C.ev[k] '
+    '|| k) + ": ", el("b", { text: shown })]));\n      n++;\n    });\n    return n ? wrap : null;\n  }\n  func'
+    'tion savingCell(s) {\n    if (!isNum(s.estimated_monthly_saving)) { return { v: el("span", { classNam'
+    'e: "muted", text: s.monthly_cost === null ? "—" : "No estimate" }), s: -1 }; }\n    var box = el("div'
+    '", { className: "sav" + (s.counted ? "" : " nc") }, [(C.saving[s.saving_kind] || "≈") + " " + money('
+    's.estimated_monthly_saving)]);\n    box.appendChild(el("small", { text: s.counted ? C.basis[s.saving_'
+    'basis] || "" : "Not counted: same object as a larger saving" }));\n    return { v: box, s: s.counted '
+    '? s.estimated_monthly_saving : s.estimated_monthly_saving / 1000 };\n  }\n  var COST_TAB = "cluster";\n'
+    '  function costTabs(m) {\n    var tabs = [];\n    ((m.attribution && m.attribution.dimensions) || []).'
+    'forEach(function (d) { tabs.push({ id: d.key, label: C.dim[d.key] || d.key }); });\n    if (m.attribu'
+    'tion && (m.attribution.creators || []).length) { tabs.push({ id: "creators", label: C.dim.creators }'
+    '); }\n    ((m.attribution && m.attribution.custom_tags) || []).forEach(function (t) { tabs.push({ id:'
+    ' "tag:" + t.tag, label: "Tag " + t.tag }); });\n    return tabs;\n  }\n  function drawCostTabs(m) {\n   '
+    ' var holder = document.getElementById("cost-tabs");\n    clear(holder);\n    var tabs = costTabs(m);\n '
+    '   if (!tabs.some(function (t) { return t.id === COST_TAB; })) { COST_TAB = tabs.length ? tabs[0].id'
+    ' : "cluster"; }\n    tabs.forEach(function (t, i) {\n      var b = el("button", { type: "button", role'
+    ': "tab", id: "cost-tab-" + i, "aria-selected": t.id === COST_TAB ? "true" : "false", "aria-controls"'
+    ': "cost-attr-panel", tabindex: t.id === COST_TAB ? "0" : "-1", text: t.label });\n      b.addEventLis'
+    'tener("click", function () { COST_TAB = t.id; drawCostTabs(m); renderAttribution(m); });\n      b.add'
+    'EventListener("keydown", function (ev) {\n        if (ev.key !== "ArrowRight" && ev.key !== "ArrowLef'
+    't") { return; }\n        var next = tabs[(i + (ev.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs'
+    '.length];\n        COST_TAB = next.id;\n        drawCostTabs(m);\n        renderAttribution(m);\n       '
+    ' var focusBtn = document.querySelector(\'#cost-tabs [aria-selected="true"]\');\n        if (focusBtn) {'
+    ' focusBtn.focus(); }\n        ev.preventDefault();\n      });\n      if (t.id === COST_TAB) { document.'
+    'getElementById("cost-attr-panel").setAttribute("aria-labelledby", "cost-tab-" + i); }\n      holder.a'
+    'ppendChild(b);\n    });\n  }\n  function attributionView(m) {\n    var head = m.headline || {}, q = (doc'
+    'ument.getElementById("cost-attr-search").value || "").toLowerCase().trim();\n    var prev = monthName'
+    '(head.previous_month, true), view = { headers: [], rows: [], note: "" };\n    function keep(text) { r'
+    'eturn !q || String(text).toLowerCase().indexOf(q) >= 0; }\n    var deltaHead = { t: "vs " + prev, c: '
+    '"n" };\n    if (COST_TAB === "creators") {\n      view.headers = ["Creator", { t: "Month cost", c: "n"'
+    ' }, { t: "% of month", c: "n" }];\n      view.rows = (m.attribution.creators || []).filter(function ('
+    'r) { return keep(r.creator); }).map(function (r) {\n        return [{ v: brk(r.creator === "—" ? "No '
+    'known creator" : r.creator, ""), s: r.creator }, { v: money(r.total), s: r.total, c: "n" }, { v: sh('
+    'r.share), s: r.share, c: "n" }];\n      });\n      view.note = "By who created each cluster, job and S'
+    'QL warehouse in the current inventory; deleted objects have no creator.";\n      return view;\n    }\n '
+    '   if (COST_TAB.indexOf("tag:") === 0) {\n      var t = (m.attribution.custom_tags || []).filter(func'
+    'tion (x) { return "tag:" + x.tag === COST_TAB; })[0] || { values: [] };\n      view.headers = ["Tag v'
+    'alue · " + t.tag, { t: "DBU", c: "n" }, { t: "Infrastructure", c: "n" }, { t: "Total", c: "n" }, { t'
+    ': "% of month", c: "n" }, deltaHead];\n      view.rows = (t.values || []).filter(function (r) { retur'
+    'n keep(r.value); }).map(function (r) {\n        return [{ v: el("b", { text: r.value }), s: r.value }'
+    ', { v: money(r.dbu), s: r.dbu, c: "n" }, { v: money(r.infra), s: r.infra, c: "n" }, { v: money(r.tot'
+    'al), s: r.total, c: "n" },\n          { v: sh(r.share), s: r.share, c: "n" }, { v: deltaNode(r.previo'
+    'us_total ? 100 * (r.total - r.previous_total) / r.previous_total : null, r.total - r.previous_total)'
+    ', s: r.total - r.previous_total, c: "n" }];\n      });\n      if (isNum(t.untagged_total) && keep("unt'
+    'agged")) {\n        var why = (t.untagged_categories || []).slice(0, 3).map(function (c) { return lab'
+    '(C.category, lowerKey(c.category)) + " " + money(c.review); }).join(" · ");\n        view.rows.push(['
+    '{ v: stack("Untagged · " + t.tag, why || null), s: "~" }, { v: "—", c: "n", s: -1 }, { v: "—", c: "n'
+    '", s: -1 }, { v: money(t.untagged_total), s: t.untagged_total, c: "n" },\n          { v: sh(isNum(hea'
+    'd.review_total) && head.review_total ? 100 * t.untagged_total / head.review_total : null), s: t.unta'
+    'gged_total, c: "n" }, { v: "—", c: "n", s: 0 }]);\n      }\n      view.note = isNum(t.tagged_share) ? '
+    '"The " + t.tag + " tag is on " + sh(t.tagged_share) + " of the month\'s cost; without it, " + money(t'
+    '.untagged_total) + " remain." : "Query of tag " + t.tag + ": " + lab(C.status, t.status) + ".";\n    '
+    '  return view;\n    }\n    var d = ((m.attribution && m.attribution.dimensions) || []).filter(function'
+    ' (x) { return x.key === COST_TAB; })[0] || {};\n    view.headers = ["Name", { t: "DBU", c: "n" }, { t'
+    ': "Infrastructure", c: "n" }, { t: "Total", c: "n" }, { t: "% of month", c: "n" }, deltaHead, "Alloc'
+    'ation tags"];\n    view.rows = costRows(m).filter(function (r) { return r.dimension === COST_TAB && k'
+    'eep(rowName(r) + " " + JSON.stringify(r.tags) + " " + (r.creator || "")); }).map(function (r) {\n    '
+    '  var grouped = r.kind === "job_runs" || r.kind === "pipeline_runs";\n      var sub = grouped ? (r.ki'
+    'nd === "job_runs" ? "Detail by job on the Jobs tab" : "Tags in each pipeline definition") : lab(C.ki'
+    'nd, r.kind) + (r.creator ? " · " + r.creator : "");\n      return [{ v: stack(brk(rowName(r), ""), su'
+    'b), s: rowName(r) }, { v: money(r.dbu), s: r.dbu, c: "n" }, { v: money(r.infra), s: r.infra, c: "n" '
+    '}, { v: el("b", { text: money(r.total) }), s: r.total, c: "n" },\n        { v: sh(r.share), s: r.shar'
+    'e, c: "n" }, { v: deltaNode(r.change_pct, r.change), s: r.change, c: "n" }, { v: grouped ? el("span"'
+    ', { className: "muted", text: "—" }) : tagChips(r.tags) }];\n    });\n    if (isNum(d.untagged_total) '
+    '&& keep("untagged")) {\n      view.rows.push([{ v: stack("Untagged · " + d.tag, "Cost that this tag d'
+    'oesn\'t explain"), s: "~" }, { v: "—", c: "n", s: -1 }, { v: "—", c: "n", s: -1 }, { v: money(d.untag'
+    'ged_total), s: d.untagged_total, c: "n" },\n        { v: sh(isNum(d.tagged_share) ? 100 - d.tagged_sh'
+    'are : null), s: d.untagged_total, c: "n" }, { v: "—", c: "n", s: 0 }, { v: "—" }]);\n    }\n    var wh'
+    'y = { cluster: "Jobs are grouped; their detail is on the Jobs tab.", job: "Only job compute carries '
+    'JobId: a job that runs on an interactive cluster counts on that cluster.",\n      warehouse: "Each SQ'
+    'L warehouse with its DBUs and, if it isn\'t serverless, its VMs.", pool: "A pool\'s VMs carry only the'
+    ' pool tags, never the tags of the cluster that uses them." }[COST_TAB] || "";\n    view.note = isNum('
+    'd.tagged_share) ? "The " + d.tag + " tag explains " + sh(d.tagged_share) + " of the month\'s cost. " '
+    '+ why : "Query " + (d.tag || "") + ": " + lab(C.status, d.status) + ".";\n    return view;\n  }\n  func'
+    'tion renderAttribution(m) {\n    var view = attributionView(m);\n    document.getElementById("cost-att'
+    'r-note").textContent = view.note;\n    renderTable(document.getElementById("cost-attr-table"), view.h'
+    'eaders, view.rows, { sortable: true, page: 12, empty: "No cost in this view." });\n  }\n  function fil'
+    'teredSignals(m) {\n    var sev = document.getElementById("cost-sig-sev").value, sav = document.getEle'
+    'mentById("cost-sig-saving").value;\n    var q = (document.getElementById("cost-sig-search").value || '
+    '"").toLowerCase().trim();\n    return (m.signals || []).filter(function (s) {\n      if (sev !== "all"'
+    ' && s.severity !== sev) { return false; }\n      if (sav === "with" && !isNum(s.estimated_monthly_sav'
+    'ing)) { return false; }\n      return !q || JSON.stringify(s).toLowerCase().indexOf(q) >= 0;\n    });\n'
+    '  }\n  function renderSignals(m) {\n    var all = m.signals || [], list = filteredSignals(m), head = m'
+    '.headline || {};\n    var counted = all.filter(function (s) { return s.counted; });\n    document.getE'
+    'lementById("cost-signals-count").textContent = "Showing " + list.length + " of " + all.length + plur'
+    'al(all.length, " signal", " signals") +\n      (counted.length ? " · " + counted.length + " with esti'
+    'mated savings that add up to " + money(head.estimated_monthly_savings) + " a month (only the largest'
+    ' per object counts)." : ".");\n    renderTable(document.getElementById("cost-signals-table"),\n      ['
+    '{ t: "Severity" }, { t: "Signal and evidence", c: "w" }, { t: "Object" }, { t: "Month cost", c: "n" '
+    '}, { t: "Estimated savings / month", c: "n" }, { t: "What to do", c: "w" }],\n      list.map(function'
+    ' (s) {\n        var d = el("div", { className: "fd" }, [el("b", { text: s.title })]);\n        var chi'
+    'ps = sigChips(s.evidence);\n        if (chips) { d.appendChild(chips); }\n        var rec = el("div", '
+    '{ className: "fr" }, [el("p", { text: s.recommendation })]);\n        var link = safeLearnUrl(s.learn'
+    '_url);\n        if (link) { rec.appendChild(extLink(link, "Microsoft Learn")); }\n        return [\n   '
+    '       { v: sevPill(s.severity), s: ["high", "medium", "low"].indexOf(s.severity) },\n          { v: '
+    'd, s: s.title },\n          { v: stack(brk(s.object_name, ""), lab(C.objKind, s.object_kind)), s: s.o'
+    'bject_name },\n          { v: money(s.monthly_cost), s: isNum(s.monthly_cost) ? s.monthly_cost : -1, '
+    'c: "n" },\n          savingCell(s),\n          { v: rec, s: s.recommendation }\n        ];\n      }), { '
+    'sortable: true, page: 12, empty: "No signal matches the filter." }\n    );\n  }\n  function costBars(ho'
+    'lder, items, total, color, cur) {\n    clear(holder);\n    var max = Math.max.apply(null, [1].concat(i'
+    'tems.map(function (i) { return i.value; })));\n    items.forEach(function (i) { holder.appendChild(ba'
+    'rRow(i.label, i.sub, 100 * i.value / max, money(i.value, cur), i.valueSub, color, false)); });\n    i'
+    'f (!items.length) { holder.appendChild(emptyState("No cost in the reviewed month.")); }\n  }\n  functi'
+    'on renderCostStats(m) {\n    var head = m.headline || {}, stats = document.getElementById("cost-stats'
+    '");\n    clear(stats);\n    function stat(k, n, unit, d) {\n      var nv = el("div", { className: "n" }'
+    ', [String(n)]);\n      if (unit) { nv.appendChild(el("small", { text: unit })); }\n      stats.appendC'
+    'hild(el("div", { className: "cstat" }, [el("div", { className: "k", text: k }), nv, d ? (d instanceo'
+    'f Node ? el("div", { className: "d" }, [d]) : el("div", { className: "d", text: d })) : null]));\n   '
+    ' }\n    var delta = el("span", null, [deltaNode(head.change_pct, head.change), " vs " + monthName(hea'
+    'd.previous_month) + " (" + money(head.previous_total) + ")"]);\n    stat("Cost in " + monthName(head.'
+    'review_month), money(head.review_total, ""), costCurrency, delta);\n    stat("DBU · infrastructure", '
+    'isNum(head.dbu_share) ? NF0.format(head.dbu_share) + " · " + NF0.format(100 - head.dbu_share) : "—",'
+    ' "%", money(head.dbu_total) + " DBU · " + money(head.infra_total) + " infrastructure");\n    stat("Wi'
+    'thout a compute tag", isNum(head.unattributed_share) ? NF1.format(head.unattributed_share) : "—", is'
+    'Num(head.unattributed_share) ? "%" : "",\n      isNum(head.unattributed_total) ? money(head.unattribu'
+    'ted_total) + " in shared services and serverless" : "Not evaluated");\n    stat("Estimated monthly sa'
+    'vings", isNum(head.estimated_monthly_savings) ? "≈ " + money(head.estimated_monthly_savings, "") : "'
+    '—", isNum(head.estimated_monthly_savings) ? costCurrency : "",\n      isNum(head.estimated_monthly_sa'
+    'vings) ? head.savings_signals + " of " + head.signals + " signals, nothing counted twice" : "No cost'
+    ' data to estimate it");\n    var trend = document.getElementById("cost-trend");\n    clear(trend);\n   '
+    ' trend.appendChild(el("h4", { text: "Monthly trend" }));\n    var maxTotal = Math.max.apply(null, [1]'
+    '.concat((m.monthly || []).map(function (r) { return r.total; })));\n    (m.monthly || []).forEach(fun'
+    'ction (r) {\n      var row = el("div", { className: "mrow" + (r.partial ? " partial" : "") });\n      '
+    'row.appendChild(el("div", { className: "ml" }, [monthName(r.month, true), r.partial ? el("small", { '
+    'text: "through day " + (head.mtd_days || "—") }) : r.month === head.review_month ? el("small", { tex'
+    't: "reviewed month" }) : null]));\n      var track = el("div", { className: "strack", role: "img", "a'
+    'ria-label": monthName(r.month) + ": " + money(r.dbu) + " DBU and " + money(r.infra) + " infrastructu'
+    're" });\n      [["seg-dbu", r.dbu], ["seg-infra", r.infra]].forEach(function (p) { var seg = el("i", '
+    '{ className: p[0] }); seg.style.width = (100 * p[1] / maxTotal) + "%"; track.appendChild(seg); });\n '
+    '     row.appendChild(track);\n      row.appendChild(el("div", { className: "mv", text: money(r.total)'
+    ' }));\n      trend.appendChild(row);\n    });\n    trend.appendChild(el("div", { className: "keys" }, ['
+    'el("span", null, [el("i", { className: "seg-dbu" }), "DBU"]), el("span", null, [el("i", { className:'
+    ' "seg-infra" }), "Infrastructure"])]));\n  }\n  function renderCostSplit(m) {\n    var split = m.split '
+    '|| {}, head = m.headline || {};\n    costBars(document.getElementById("cost-dbu-bars"), (split.dbu_fa'
+    'milies || []).map(function (f) {\n      return { label: lab(C.family, f.key), sub: (f.meters || []).s'
+    'lice(0, 2).map(function (x) { return x.meter; }).join(" · "), value: f.review,\n        valueSub: sh('
+    'f.share) + (isNum(f.previous) && f.previous ? " · " + signedPct(100 * (f.review - f.previous) / f.pr'
+    'evious) : "") };\n    }), head.dbu_total, "var(--chart)");\n    var ap = (split.dbu_families || []).fi'
+    'lter(function (f) { return f.key === "all_purpose"; })[0];\n    document.getElementById("cost-dbu-sub'
+    '").textContent = ap && isNum(ap.share) && ap.share >= 25\n      ? "Interactive compute is " + sh(ap.s'
+    'hare) + " of DBU spend, and its DBU costs almost twice as much as a jobs DBU."\n      : "What Databri'
+    'cks bills per processing unit, by workload type.";\n    costBars(document.getElementById("cost-infra-'
+    'bars"), (split.infra_categories || []).map(function (c) {\n      return { label: lab(C.category, lowe'
+    'rKey(c.category)), sub: null, value: c.review, valueSub: sh(c.share) };\n    }), head.infra_total, "v'
+    'ar(--chart-2)");\n    var sizes = document.getElementById("cost-vm-sizes");\n    clear(sizes);\n    if '
+    '((split.vm_sizes || []).length) {\n      sizes.appendChild(document.createTextNode("VM sizes with the'
+    ' highest cost"));\n      var chips = el("div", { className: "chips" });\n      split.vm_sizes.slice(0,'
+    ' 6).forEach(function (v) { chips.appendChild(el("span", null, [v.meter + " · ", el("b", { text: mone'
+    'y(v.review) })])); });\n      sizes.appendChild(chips);\n    }\n  }\n  function renderGapAndTags(m) {\n  '
+    '  var gapBox = document.getElementById("cost-gap"), gap = m.attribution && m.attribution.gap;\n    cl'
+    'ear(gapBox);\n    if (!gap) { gapBox.appendChild(el("p", { className: "muted", text: "Not evaluated: '
+    'the query by the Vendor tag isn\'t available." })); }\n    else {\n      gapBox.appendChild(el("div", {'
+    ' className: "gapn" }, [el("b", { text: NF1.format(gap.share || 0) + "%" }), el("span", { text: money'
+    '(gap.total) + " this month" })]));\n      var bars = el("div", { className: "bars" });\n      gapBox.a'
+    'ppendChild(bars);\n      costBars(bars, (gap.categories || []).map(function (c) {\n        var key = l'
+    'owerKey(c.category);\n        return { label: key === "azure databricks" ? "Serverless DBU" : lab(C.c'
+    'ategory, key), sub: C.gapWhy[key] || null, value: c.review, valueSub: sh(c.share) };\n      }), gap.t'
+    'otal, "var(--info-bar)");\n    }\n    var tags = (m.attribution && m.attribution.custom_tags) || [], h'
+    'older = document.getElementById("cost-tag-bars");\n    clear(holder);\n    tags.forEach(function (t) {'
+    '\n      holder.appendChild(barRow(el("span", { className: "mono", text: t.tag }), isNum(t.untagged_to'
+    'tal) ? "Without it: " + money(t.untagged_total) : lab(C.status, t.status),\n        isNum(t.tagged_sh'
+    'are) ? t.tagged_share : 0, isNum(t.tagged_share) ? sh(t.tagged_share) : "—", null, "var(--chart)", !'
+    'isNum(t.tagged_share)));\n    });\n    if (!tags.length) { holder.appendChild(el("p", { className: "mu'
+    'ted", text: "No allocation tags configured (COST_ALLOCATION_TAGS)." })); }\n    var notes = document.'
+    'getElementById("cost-tag-notes");\n    clear(notes);\n    (m.signals || []).filter(function (s) { retu'
+    'rn s.code === "MISSING_ALLOCATION_TAGS" || s.code === "POLICY_TAGS"; }).slice(0, 5).forEach(function'
+    ' (s) {\n      notes.appendChild(el("li", { text: s.title + ": " + ((s.evidence && s.evidence.objects)'
+    ' || []).slice(0, 4).join("; ") }));\n    });\n  }\n  function renderMovers(m) {\n    var holder = docume'
+    'nt.getElementById("cost-movers"), mv = m.movers || {}, head = m.headline || {};\n    clear(holder);\n '
+    '   document.getElementById("cost-movers-sub").textContent = "Clusters, jobs, SQL warehouses and pool'
+    's with the largest change from " + monthName(head.previous_month) + " to " + monthName(head.review_m'
+    'onth) + ".";\n    [["Up", mv.up || []], ["Down", mv.down || []]].forEach(function (g) {\n      var col'
+    ' = el("div", null, [el("h4", { text: g[0] })]);\n      if (!g[1].length) { col.appendChild(el("p", { '
+    'className: "muted", text: "No relevant changes." })); }\n      g[1].forEach(function (r) {\n        co'
+    'l.appendChild(el("div", { className: "mover" }, [\n          el("b", { text: rowName(r) }),\n         '
+    ' el("span", { className: "dv " + (r.change > 0 ? "up" : "down"), text: (r.change > 0 ? "+" : "−") + '
+    'money(Math.abs(r.change)) }),\n          el("small", { text: lab(C.kind, r.kind) + " · " + money(r.to'
+    'tal) + " in " + monthName(head.review_month, true) }),\n          el("small", { className: "dv", text'
+    ': r.previous_total ? signedPct(r.change_pct) : "new" })\n        ]));\n      });\n      holder.appendCh'
+    'ild(col);\n    });\n  }\n  function renderSystemTables(m) {\n    var box = document.getElementById("cost'
+    '-system"), st = m.system_tables || { status: "not_configured" };\n    clear(box);\n    var on = st.sta'
+    'tus === "complete";\n    box.appendChild(el("div", { className: "h3row" }, [el("h3", { text: "Detail '
+    'by run and user (system tables)" }),\n      pill(on ? "tone-warn" : st.status === "not_configured" ? '
+    '"tone-info" : "tone-crit", on ? "On · consumes DBUs" : st.status === "not_configured" ? "Off" : lab('
+    'C.status, st.status))]));\n    if (!on) {\n      box.appendChild(el("p", { className: "sub", text: st.'
+    'status === "not_configured"\n        ? "Optional and off by default because it consumes DBUs (and sta'
+    "rts the SQL warehouse if it's stopped). With system_tables_warehouse_id (an existing SQL warehouse),"
+    ' the tool runs one read-only query on system.billing.usage and system.billing.list_prices and shows '
+    'the cost per job run and per user here."\n        : "The system tables query didn\'t finish: check the'
+    ' dbx_system_billing source in section 8." }));\n      return;\n    }\n    var cur = st.currency || "USD'
+    '";\n    var ws = String(st.window && st.window.start || ""), we = String(st.window && st.window.end |'
+    '| "");\n    var wy = +ws.slice(0, 4), wm = +ws.slice(5, 7), nextMonth = wm === 12 ? (wy + 1) + "-01" '
+    ': wy + "-" + String(wm + 1).padStart(2, "0");\n    var wholeMonth = /^\\d{4}-\\d{2}-01/.test(ws) && we.'
+    'slice(0, 10) === nextMonth + "-01";\n    box.appendChild(el("p", { className: "sub", text: "Cost at l'
+    'ist price (" + cur + ", no discounts) " + (wholeMonth ? "for " + monthName(ws.slice(0, 7)) : "from "'
+    ' + day(ws) + " to " + day(we)) + ", from system.billing.usage." }));\n    box.appendChild(el("h4", { '
+    'className: "sys-h", text: "Runs and workloads with the highest cost" }));\n    var wrap = el("div", {'
+    ' className: "wrap sys-wrap" }), table = el("table", { className: "dense", id: "cost-system-table" })'
+    ';\n    wrap.appendChild(table);\n    box.appendChild(wrap);\n    var grid = el("div", { className: "sys'
+    '-grid" }), left = el("div"), right = el("div");\n    left.appendChild(el("h4", { text: "By user or se'
+    'rvice principal" }));\n    var ub = el("div", { className: "bars" });\n    left.appendChild(ub);\n    r'
+    'ight.appendChild(el("h4", { text: "By product" }));\n    var pb = el("div", { className: "bars" });\n '
+    '   right.appendChild(pb);\n    grid.appendChild(left);\n    grid.appendChild(right);\n    box.appendChi'
+    'ld(grid);\n    function sku(s) { return s ? String(s).replace(/_/g, " ").toLowerCase() : null; }\n    '
+    'function product(p) {\n      var known = { ALL_PURPOSE: "All-purpose (interactive)", JOBS: "Jobs", SQ'
+    'L: "SQL warehouses", DLT: "Pipelines (DLT)", INTERACTIVE: "Serverless notebooks",\n        MODEL_SERV'
+    'ING: "Model serving", VECTOR_SEARCH: "Vector Search", LAKEHOUSE_MONITORING: "Lakehouse Monitoring", '
+    'PREDICTIVE_OPTIMIZATION: "Predictive optimization" };\n      return p ? known[String(p).toUpperCase()'
+    '] || String(p).charAt(0) + String(p).slice(1).replace(/_/g, " ").toLowerCase() : "—";\n    }\n    rend'
+    'erTable(table, ["Product", "Job · run / resource", "Run by", { t: "DBU", c: "n" }, { t: "List cost",'
+    ' c: "n" }],\n      (st.runs || []).map(function (r) {\n        var what = r.job_id ? "Job " + r.job_id'
+    ' + (r.job_run_id ? " · run " + r.job_run_id : "") : r.warehouse_id ? "Warehouse " + r.warehouse_id :'
+    ' r.cluster_id ? "Cluster " + r.cluster_id : r.pipeline_id ? "Pipeline " + r.pipeline_id : "—";\n     '
+    '   return [{ v: stack(product(r.product), sku(r.sku)), s: r.product }, { v: brk(what, "") }, { v: br'
+    'k(r.run_as || "—", "") }, { v: NF0.format(r.dbus || 0), s: r.dbus, c: "n" }, { v: money(r.list_cost,'
+    ' cur), s: r.list_cost, c: "n" }];\n      }), { sortable: true, page: 8 });\n    costBars(ub, (st.users'
+    ' || []).slice(0, 8).map(function (u) { return { label: brk(u.run_as || "—", ""), value: u.list_cost '
+    '|| 0 }; }), null, "var(--chart)", cur);\n    costBars(pb, (st.products || []).slice(0, 8).map(functio'
+    'n (p) { return { label: product(p.product), sub: sku(p.sku), value: p.list_cost || 0 }; }), null, "v'
+    'ar(--chart-2)", cur);\n  }\n  function renderCostMethod(m) {\n    var dl = document.getElementById("cos'
+    't-method"), a = m.assumptions || {}, scope = m.scope || {}, p = m.periods || {};\n    clear(dl);\n    '
+    'function row(term, node) { dl.appendChild(el("dt", { text: term })); var dd = el("dd"); dd.appendChi'
+    'ld(node instanceof Node ? node : document.createTextNode(node)); dl.appendChild(dd); }\n    row("Scop'
+    'e", "Workspace resource (DBU)" + (scope.managed_resource_group ? " and its managed resource group " '
+    '+ scope.managed_resource_group + " (VMs, disks and network)" : "") +\n      ((scope.resource_ids || ['
+    ']).length > 1 ? ", plus " + (scope.resource_ids.length - 1) + " approved resources" : "") + "; " + ('
+    'm.metric === "ActualCost" ? "actual cost (invoice view)" : "amortized cost") + " in " + (m.currency '
+    '|| "the billing currency") + ".");\n    row("Months", "Reviewed month " + monthName(p.review) + " (cl'
+    'osed), compared with " + monthName(p.previous) + "; " + monthName(p.current) + " through day " + (p.'
+    'mtd_days || "—") + ". The cost of the last two days can still change.");\n    row("Attribution", "Cos'
+    't Management grouped by the tags Databricks puts on compute (ClusterName, JobId, SqlEndpointId, Data'
+    'bricksInstancePoolId, Vendor) and by " +\n      ((a.allocation_tags || []).length ? (a.allocation_tag'
+    's || []).join(", ") : "none of your own tags") + ", each with its service (DBU vs infrastructure).")'
+    ';\n    var rules = el("ul");\n    [\n      "Auto-termination off: what the cluster cost on Saturdays an'
+    'd Sundays (a lower bound, if nobody uses it at weekends).",\n      "Jobs on an interactive cluster: c'
+    'luster DBU × (1 − " + NF.format(a.jobs_to_all_purpose_dbu_ratio) + ") (an upper bound, if those jobs'
+    ' are all of its use).",\n      "Workers without spot: VM cost × workers / (workers + 1) × " + NF0.for'
+    'mat(100 * (a.spot_discount || 0)) + "% conservative discount.",\n      "Pool with minimum idle instan'
+    'ces: the pool\'s minimum daily cost × days in the month.",\n      "SQL warehouse without auto-stop: co'
+    'st × " + NF1.format(100 * (a.weekend_share || 0)) + "% (weekend days in the month).",\n      "Only th'
+    'e largest saving per object counts; the others show as \\u201cNot counted\\u201d. The other signals ha'
+    've no cost data that would allow an estimate without inventing one."\n    ].forEach(function (t) { ru'
+    'les.appendChild(el("li", { text: t })); });\n    row("Estimated savings", rules);\n    var chips = el('
+    '"div", { className: "chips" });\n    Object.keys(m.query_status || {}).forEach(function (k) { chips.a'
+    'ppendChild(el("span", null, [k + ": ", el("b", { text: lab(C.status, m.query_status[k]) })])); });\n '
+    '   row("Queries", chips.firstChild ? chips : "No cost queries (" + lab(C.status, m.status) + ").");\n'
+    '    var sys = m.system_tables || {};\n    var gaps = (sys.status === "complete" ? "" : "Usage per run'
+    ' and per user (system tables, off by default); ") +\n      "storage and network outside the managed r'
+    'esource group, except the resources in approved_cost_resource_ids" +\n      (sys.status === "complete'
+    '" ? "; the system tables detail is at list price, without your discounts." : ".");\n    row("Not cove'
+    'red", gaps.charAt(0).toUpperCase() + gaps.slice(1));\n  }\n  function renderCosts(snap) {\n    var m = '
+    'snap.databricks_costs, emptyBox = document.getElementById("cost-empty");\n    var body = document.get'
+    'ElementById("cost-body"), data = document.getElementById("cost-data");\n    clear(emptyBox);\n    if ('
+    '!m) {\n      body.hidden = true;\n      emptyBox.hidden = false;\n      emptyBox.appendChild(el("div", '
+    '{ className: "note", role: "note" }, [icon("info"), el("span", { text: "This snapshot doesn\'t includ'
+    'e the Databricks cost analysis." })]));\n      return;\n    }\n    body.hidden = false;\n    costCurrenc'
+    'y = m.currency || "";\n    var head = m.headline || {}, hasData = isNum(head.review_total);\n    data.'
+    'hidden = !hasData;\n    if (!hasData) {\n      emptyBox.hidden = false;\n      var why = { not_configur'
+    'ed: "Cost analysis is off in the configuration (cost_analysis_enabled = False).",\n        denied: "T'
+    "he identity can't read costs: grant Cost Management Reader (or Reader) on the subscription and run t"
+    'he review again.",\n        not_collected: "This run didn\'t collect costs from Cost Management." }[m.'
+    'status] || "Cost Management returned no usable data (" + lab(C.status, m.status) + "); see the azure'
+    '_cost_databricks source in section 8.";\n      emptyBox.appendChild(el("div", { className: "note", ro'
+    'le: "note" }, [icon("info"), el("span", { text: why + " The configuration signals follow below, with'
+    'out estimated savings." })]));\n    } else {\n      emptyBox.hidden = true;\n      renderCostStats(m);\n'
+    '      renderCostSplit(m);\n      drawCostTabs(m);\n      renderAttribution(m);\n      renderGapAndTags('
+    'm);\n      renderMovers(m);\n    }\n    renderSignals(m);\n    renderSystemTables(m);\n    renderCostMeth'
+    'od(m);\n  }\n  ["cost-sig-sev", "cost-sig-saving", "cost-sig-search"].forEach(function (id) {\n    var '
+    'node = document.getElementById(id);\n    ["input", "change"].forEach(function (evName) { node.addEven'
+    'tListener(evName, function () { if (currentSnap && currentSnap.databricks_costs) { renderSignals(cur'
+    'rentSnap.databricks_costs); } }); });\n  });\n  document.getElementById("cost-attr-search").addEventLi'
+    'stener("input", function () { if (currentSnap && currentSnap.databricks_costs) { renderAttribution(c'
+    'urrentSnap.databricks_costs); } });\n  function csvLines(cols, rows) { return "\\uFEFF" + [cols.join("'
+    ',")].concat(rows.map(function (r) { return cols.map(function (c) { return csvEscape(r[c]); }).join("'
+    ',"); })).join("\\r\\n"); }\n  function costCsv() {\n    var m = currentSnap && currentSnap.databricks_co'
+    'sts;\n    if (!m) { return csvLines(["dimension"], []); }\n    var rows = costRows(m).map(function (r)'
+    ' { return { dimension: r.dimension, name: rowName(r), kind: r.kind, creator: r.creator, dbu: r.dbu, '
+    'infra: r.infra, total: r.total, previous_total: r.previous_total, share: r.share, tags: r.tags, curr'
+    'ency: m.currency, month: m.periods && m.periods.review }; });\n    ((m.attribution && m.attribution.c'
+    'ustom_tags) || []).forEach(function (t) {\n      (t.values || []).forEach(function (v) { rows.push({ '
+    'dimension: "tag:" + t.tag, name: v.value, kind: "tag_value", dbu: v.dbu, infra: v.infra, total: v.to'
+    'tal, previous_total: v.previous_total, share: v.share, currency: m.currency, month: m.periods && m.p'
+    'eriods.review }); });\n      if (isNum(t.untagged_total)) { rows.push({ dimension: "tag:" + t.tag, na'
+    'me: "(untagged)", kind: "untagged", total: t.untagged_total, currency: m.currency, month: m.periods '
+    '&& m.periods.review }); }\n    });\n    return csvLines(["month", "dimension", "name", "kind", "creato'
+    'r", "dbu", "infra", "total", "previous_total", "share", "tags", "currency"], rows);\n  }\n  function s'
+    'ignalsCsv(list) {\n    var cur = currentSnap && currentSnap.databricks_costs ? currentSnap.databricks'
+    '_costs.currency : "";\n    return csvLines(["id", "code", "severity", "title", "object_kind", "object'
+    '_name", "monthly_cost", "estimated_monthly_saving", "saving_kind", "saving_basis", "counted", "curre'
+    'ncy", "recommendation", "learn_url", "evidence"],\n      list.map(function (s) { return Object.assign'
+    '({ currency: cur }, s); }));\n  }\n  document.getElementById("cost-attr-export").addEventListener("cli'
+    'ck", function () { downloadBlob("databricks-cost-by-workload.csv", costCsv(), "text/csv;charset=utf-'
+    '8"); });\n  document.getElementById("export-costs-csv-btn").addEventListener("click", function () { d'
+    'ownloadBlob("databricks-cost-by-workload.csv", costCsv(), "text/csv;charset=utf-8"); });\n  document.'
+    'getElementById("cost-sig-export").addEventListener("click", function () { if (currentSnap && current'
+    'Snap.databricks_costs) { downloadBlob("databricks-signals-filtered.csv", signalsCsv(filteredSignals('
+    'currentSnap.databricks_costs)), "text/csv;charset=utf-8"); } });\n  document.getElementById("export-s'
+    'ignals-csv-btn").addEventListener("click", function () { if (currentSnap && currentSnap.databricks_c'
+    'osts) { downloadBlob("databricks-optimization-signals.csv", signalsCsv(currentSnap.databricks_costs.'
+    'signals || []), "text/csv;charset=utf-8"); } });\n\n  var PRESENTATION = (rootData && rootData.present'
+    'ation) || {};\n  var FOCUS = PRESENTATION.focus === "costs" ? "costs" : "configuration";\n  function r'
+    'enumberSections() {\n    var short = { "sec-finops": "Databricks costs", "sec-identity": "Workspace a'
+    'nd identity", "sec-executive": "Executive summary and WAF", "sec-dependencies": "Dependency map",\n  '
+    '    "sec-inventory": "Lakehouse and ARM inventory", "sec-findings": "Findings and rules", "sec-actio'
+    'ns": "Action plan", "sec-sources": "Sources and methodology" };\n    var toc = document.getElementByI'
+    'd("toc-menu");\n    clear(toc);\n    toc.appendChild(el("a", { href: "#sec-cover", text: "Cover and ve'
+    'rdict" }));\n    [].slice.call(document.querySelectorAll(".page > .chapter")).forEach(function (c, i)'
+    ' {\n      var h = c.querySelector(".sh h2");\n      if (h) { h.textContent = h.textContent.replace(/^\\'
+    'd+\\.\\s*/, (i + 1) + ". "); }\n      toc.appendChild(el("a", { href: "#" + c.id, text: (i + 1) + ". " '
+    '+ (short[c.id] || c.id) }));\n    });\n  }\n  function applyPresentation() {\n    var p = PRESENTATION, '
+    'root = document.documentElement, css = "";\n    var theme = p.theme && typeof p.theme === "object" ? '
+    'p.theme : {};\n    var rules = Object.keys(theme).filter(function (k) {\n      return /^--[a-z0-9-]{1,'
+    '32}$/.test(k) && /^(#[0-9a-fA-F]{6}|rgba\\([0-9.,\\s]{7,40}\\))$/.test(String(theme[k]));\n    }).map(fu'
+    'nction (k) { return k + ":" + theme[k]; });\n    if (rules.length) { css += ":root{" + rules.join(";"'
+    ') + "}"; root.classList.add("branded"); themeBtn.hidden = true; }\n    if (typeof p.display_font === '
+    '"string" && /^data:font\\/woff2;base64,[A-Za-z0-9+\\/=]+$/.test(p.display_font)) {\n      css += "@font'
+    '-face{font-family:\\"Brand Display\\";src:url(" + p.display_font + ") format(\\"woff2\\");font-weight:60'
+    '0;font-style:normal;font-display:swap}" +\n        ":root{--display:\\"Brand Display\\",Didot,\\"Bodoni '
+    '72\\",\\"Bodoni MT\\",Georgia,serif}";\n      root.classList.add("brand-font");\n    }\n    if (css) { var'
+    ' style = el("style", { id: "brand-style" }); style.textContent = css; document.head.appendChild(styl'
+    'e); }\n    var client = rootData.client || {};\n    var barLogo = p.logo_placement === "bar" && client'
+    '.logo_data_uri && /^data:image\\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(client.logo_data_uri);\n    '
+    'if (barLogo) {\n      root.classList.add("brand-bar");\n      var brand = document.querySelector(".bar'
+    ' .brand");\n      brand.insertBefore(el("img", { className: "client-logo", src: client.logo_data_uri,'
+    ' alt: client.logo_alt || client.name || "" }), brand.firstChild);\n    }\n    document.getElementById('
+    '"bar-product").textContent = (FOCUS === "costs" ? "Azure Databricks costs and configuration" : "Azur'
+    'e Databricks dependencies") +\n      (barLogo && client.name ? " · " + client.name : "");\n    if (FOC'
+    'US === "costs") {\n      document.querySelector(".page").insertBefore(document.getElementById("sec-fi'
+    'nops"), document.getElementById("sec-identity"));\n      var nav = document.getElementById("bar-nav")'
+    ';\n      nav.insertBefore(nav.querySelector(\'a[href="#sec-finops"]\'), nav.firstChild);\n      renumber'
+    'Sections();\n    }\n  }\n  function renderCostHero(snap) {\n    var m = snap.databricks_costs || {}, h ='
+    ' m.headline || {}, ws = snap.workspace || {};\n    if (FOCUS !== "costs" || !isNum(h.review_total)) {'
+    ' return; }\n    costCurrency = m.currency || "";\n    var month = monthName(h.review_month).split(" ")'
+    '[0], prev = monthName(h.previous_month).split(" ")[0];\n    document.getElementById("cover-title").te'
+    'xtContent = "Azure Databricks costs: " + monthName(h.review_month);\n    var parts = ["Databricks cos'
+    't ", [money(h.review_total)], " in " + month + ", ", [signedPct(h.change_pct)], " vs " + prev + ": "'
+    ', [NF0.format(h.dbu_share || 0) + "%"],\n      " is DBU and ", [NF0.format(100 - (h.dbu_share || 0)) '
+    '+ "%"], " infrastructure."];\n    if (isNum(h.unattributed_share)) { parts = parts.concat([" ", [sh(h'
+    '.unattributed_share)], " isn\'t explained by any compute tag"]).concat(h.first_tag && isNum(h.first_t'
+    'ag.tagged_share) ? ["; your ", [h.first_tag.tag], " tag covers ", [sh(h.first_tag.tagged_share)], ".'
+    '"] : ["."]); }\n    if (isNum(h.estimated_monthly_savings)) { parts = parts.concat([" ", [String(h.sa'
+    'vings_signals)], plural(h.savings_signals, " change would save", " changes would save"), " about ", '
+    '[money(h.estimated_monthly_savings)], " a month."]); }\n    rich(document.getElementById("cover-lead"'
+    '), parts);\n    var meta = document.getElementById("cover-badges");\n    clear(meta);\n    function chi'
+    'p(p, on) { meta.appendChild(rich(el("span", { className: on ? "on" : null }), p)); }\n    chip(["Gene'
+    'rated ", [utc(snap.reference_utc)]]);\n    chip(["Workspace ", [ws.name || "—"]]);\n    chip([m.metric'
+    ' === "ActualCost" ? "Actual cost · " : "Amortized cost · ", [m.currency || "—"]]);\n    chip(["Enviro'
+    'nment ", [snap.environment || "—"]]);\n    chip([snap.provenance === "SIMULATED" ? "SIMULATED DATA" :'
+    ' (snap.provenance || "LIVE") + " DATA"], true);\n    var sev = h.signals_by_severity || {}, tone = "o'
+    'k", title = "On track";\n    if (sev.high) { tone = "act"; title = "Action needed"; } else if (sev.me'
+    'dium) { tone = "warn"; title = "Review recommended"; }\n    var verdict = document.getElementById("ve'
+    'rdict");\n    verdict.className = "signal " + tone;\n    clear(verdict);\n    verdict.appendChild(el("d'
+    'iv", { className: "k", text: "Verdict" }));\n    verdict.appendChild(el("b", { text: title }));\n    v'
+    'erdict.appendChild(el("p", { text: [isNum(h.estimated_monthly_savings) ? "Estimated savings ≈ " + mo'
+    'ney(h.estimated_monthly_savings) + "/month" : null,\n      isNum(h.unattributed_share) ? sh(h.unattri'
+    'buted_share) + " unattributed" : null, h.signals + plural(h.signals, " signal", " signals")].filter('
+    'Boolean).join(" · ") }));\n    var dist = document.getElementById("severity-dist");\n    clear(dist);\n'
+    '    dist.hidden = !h.signals;\n    if (!h.signals) { return; }\n    var head = el("div", { className: '
+    '"dist-head" }, [el("span", { text: "Optimization signals by severity" })]);\n    head.appendChild(ric'
+    'h(el("span"), [[num(h.signals)], plural(h.signals, " signal", " signals") + " in " + month]));\n    d'
+    'ist.appendChild(head);\n    var track = el("div", { className: "track", role: "img", "aria-label": ["'
+    'high", "medium", "low"].map(function (s) { return (sev[s] || 0) + " " + L.sev[s].toLowerCase(); }).j'
+    'oin(", ") });\n    var legend = el("div", { className: "legend" });\n    ["high", "medium", "low"].for'
+    'Each(function (s) {\n      if (!sev[s]) { return; }\n      var seg = el("i", { title: L.sev[s] + ": " '
+    '+ sev[s] });\n      seg.style.width = (100 * sev[s] / h.signals) + "%";\n      seg.style.background = '
+    'SEV_BAR[s];\n      track.appendChild(seg);\n      var key = el("i");\n      key.style.background = SEV_'
+    'BAR[s];\n      legend.appendChild(el("span", null, [key, L.sev[s] + " ", el("b", { text: String(sev[s'
+    ']) })]));\n    });\n    dist.appendChild(track);\n    dist.appendChild(legend);\n  }\n\n  function renderA'
+    'ctions(snap) {\n    var holder = document.getElementById("actions-plan");\n    clear(holder);\n    var '
+    'actions = snap.actions || [];\n    if (!actions.length) { holder.appendChild(el("div", { className: "'
+    'card" }, [emptyState("No actions: no evaluated check needs changes.")])); return; }\n    [["quick_win'
+    '", "Quick win", "Less than 1 week"], ["short_term", "Short term", "1-3 months"], ["medium_term", "Me'
+    'dium term", "Later planning"]].forEach(function (h) {\n      var items = actions.filter(function (a) '
+    '{ return a.horizon === h[0]; });\n      var card = el("div", { className: "card" }, [el("h3", { text:'
+    ' h[1] }), el("p", { className: "sub", text: h[2] + " · " + items.length + plural(items.length, " act'
+    'ion", " actions") })]);\n      if (!items.length) { card.appendChild(el("p", { className: "muted", te'
+    'xt: "No actions in this horizon." })); }\n      else {\n        var ol = el("ol", { className: "steps"'
+    ' });\n        items.forEach(function (a, i) {\n          var link = safeLearnUrl(a.learn_url);\n       '
+    '   var meta = el("div", { className: "sm" }, [sevPill(a.severity, a.severity_label), el("span", { te'
+    'xt: a.rule_id + " · " + lab(L.effort, a.effort_label) })]);\n          if (link) { meta.appendChild(e'
+    'xtLink(link, "Documentation")); }\n          ol.appendChild(el("li", null, [\n            el("span", {'
+    ' className: "no", text: String(i + 1) }),\n            el("div", { className: "sx" }, [el("b", { text'
+    ': a.title }), el("div", { className: "muted", text: lab(L.level, a.level) + ": " + (a.workload_name '
+    '|| a.resource_id || "—") }), el("p", { text: a.recommendation }), meta])\n          ]));\n        });\n'
+    '        card.appendChild(ol);\n      }\n      holder.appendChild(card);\n    });\n  }\n\n  function render'
+    'Sources(snap) {\n    var sources = snap.sources || [];\n    var byStatus = {};\n    sources.forEach(fun'
+    'ction (s) { byStatus[s.status] = (byStatus[s.status] || 0) + 1; });\n    var complete = byStatus.comp'
+    'lete || 0;\n    document.getElementById("sources-summary").textContent = complete + " of " + sources.'
+    'length + plural(sources.length, " source complete", " sources complete");\n    var bars = document.ge'
+    'tElementById("sources-bars");\n    clear(bars);\n    Object.keys(L.src).forEach(function (k) {\n      i'
+    'f (!byStatus[k]) { return; }\n      bars.appendChild(barRow(srcPill(k), null, 100 * byStatus[k] / Mat'
+    'h.max(1, sources.length), num(byStatus[k]), null, SRC_COLOR[k], false));\n    });\n    renderTable(doc'
+    'ument.getElementById("sources-table"),\n      ["Source", "Plane", "Status", { t: "Pages", c: "n" }, {'
+    ' t: "Records", c: "n" }, "UTC time", { t: "Note / errors", c: "w" }],\n      sources.map(function (s)'
+    ' {\n        var note = el("div");\n        if (s.note) { note.appendChild(el("span", { text: s.note })'
+    '); }\n        (s.errors || []).forEach(function (e) {\n          note.appendChild(el("div", { classNam'
+    'e: "muted", text: [e.http_status ? "HTTP " + e.http_status : null, e.code, e.message].filter(Boolean'
+    ').join(" · ") }));\n        });\n        if (!note.firstChild) { note.textContent = "—"; }\n        ret'
+    'urn [{ v: mono(s.id), s: s.id }, { v: sourcePlane(s.id), c: "nw" }, { v: srcPill(s.status), s: s.sta'
+    'tus }, { v: num(s.pages), s: s.pages }, { v: num(s.records), s: s.records }, { v: utc(s.time), c: "n'
+    'w" }, { v: note }];\n      }), { sortable: true, page: 12 }\n    );\n    var m = snap.methodology || {}'
+    ', cat = m.catalogSnapshot || {}, cov = m.catalog_coverage || {};\n    var dl = document.getElementByI'
+    'd("method-notes");\n    clear(dl);\n    function row(term, node) { dl.appendChild(el("dt", { text: ter'
+    'm })); var dd = el("dd"); dd.appendChild(node instanceof Node ? node : document.createTextNode(node)'
+    '); dl.appendChild(dd); }\n    row("Local index", m.score_formula || "—");\n    row("Coverage", m.cover'
+    'age_formula || "—");\n    var catNode = el("span", { text: (cat.name || "Local catalog") + " · " + (c'
+    'ov.local_rules || 0) + " local rules · retrieved " + (cat.retrieved_at || "—") + " " });\n    [[cat.s'
+    'ervice_guide_url, "Service guide"], [cat.lakehouse_waf_url, "Lakehouse WAF"], [m.assessment_url, "Of'
+    'ficial assessment"]].forEach(function (l) {\n      var u = safeLearnUrl(l[0]);\n      if (u) { catNode'
+    '.appendChild(document.createTextNode(" ")); catNode.appendChild(extLink(u, l[1])); }\n    });\n    row'
+    '("Rule catalog", catNode);\n    var interp = el("ul");\n    (m.interpretation || []).forEach(function '
+    '(t) { interp.appendChild(el("li", { text: t })); });\n    row("Interpretation", interp.firstChild ? i'
+    'nterp : "—");\n    var limList = document.getElementById("methodology-limitations");\n    clear(limLis'
+    't);\n    (m.limitations || []).forEach(function (l) { limList.appendChild(el("li", { text: l })); });'
+    '\n  }\n\n  function cssString(s) { return String(s).replace(/\\\\/g, "\\\\\\\\").replace(/"/g, \'\\\\"\').replace'
+    '(/[\\r\\n]+/g, " ").replace(/</g, "\\\\3c "); }\n  function renderFooter(snap) {\n    var ws = snap.worksp'
+    'ace || {}, client = (snap.client && snap.client.name) || "Customer";\n    var when = utc(snap.referen'
+    'ce_utc), costs = FOCUS === "costs";\n    document.getElementById("report-footer").textContent = "Gene'
+    'rated by Azure SRE Agent · Read-only · generate-databricks-dependency-report · " + when + " · " + cl'
+    'ient;\n    document.title = (ws.name ? ws.name + " · " : "") + (costs ? "Azure Databricks costs | Whe'
+    're cost comes from and how to optimize it" : "Azure Databricks review | Dependency map and configura'
+    'tion");\n    var style = document.getElementById("print-page-style");\n    if (!style) { style = el("s'
+    'tyle", { id: "print-page-style" }); document.head.appendChild(style); }\n    var foot = (costs ? "Azu'
+    're Databricks costs · " : "Azure Databricks review · ") + (ws.name || "—") + " · " + when + (snap.pr'
+    'ovenance === "SIMULATED" ? " · SIMULATED DATA" : "");\n    style.textContent = \'@page { @bottom-left '
+    '{ content: "\' + cssString(foot) + \'"; font: 8pt "Segoe UI", sans-serif; color: #667085; } @bottom-ri'
+    'ght { content: "Page " counter(page) " of " counter(pages); font: 8pt "Segoe UI", sans-serif; color:'
+    " #667085; } }';\n  }\n\n  function renderSnapshot(snap) {\n    currentSnap = snap;\n    document.getEleme"
+    'ntById("workspace-error-view").hidden = true;\n    document.getElementById("fleet-view").hidden = tru'
+    'e;\n    document.getElementById("report-body").hidden = false;\n    var accBanner = document.getElemen'
+    'tById("access-banner"), acc = snap.workspace_access;\n    clear(accBanner);\n    accBanner.hidden = !('
+    'acc && acc.in_workspace === false);\n    if (!accBanner.hidden) {\n      accBanner.appendChild(el("b",'
+    ' { text: "No access inside the workspace. " }));\n      accBanner.appendChild(document.createTextNode'
+    '((acc.reason || "") + " This review shows the Azure side (ARM, network, associated resources, Adviso'
+    'r and costs); checks that need the workspace APIs stay Not evaluated."));\n    }\n    var g = (snap.sc'
+    'ores && snap.scores.global) || {};\n    var counts = { critical: 0, high: 0, medium: 0, low: 0 };\n   '
+    ' (snap.findings || []).forEach(function (f) { if (counts[f.severity] !== undefined) { counts[f.sever'
+    'ity]++; } });\n    var sc = (snap.dependencies && snap.dependencies.summary_counts) || {};\n    render'
+    'Hero(snap, g, counts);\n    renderCostHero(snap);\n    renderKpis(snap, g, counts);\n    renderFacts(sn'
+    'ap);\n    renderExecutive(snap, g);\n    var sum = document.getElementById("dep-class-summary");\n    c'
+    'lear(sum);\n    [["OBSERVED", sc.edges_observed, " relationships"], ["INFERRED", sc.edges_inferred, "'
+    ' relationships"], ["UNKNOWN", sc.unknowns_total, " blind spots"]].forEach(function (c) {\n      sum.a'
+    'ppendChild(pill("cls-" + c[0], c[0] + " · " + num(c[1] || 0) + c[2]));\n    });\n    sum.appendChild(p'
+    'ill("sev-info", num(sc.broken_references_total || 0) + plural(sc.broken_references_total || 0, " bro'
+    'ken reference", " broken references")));\n    document.getElementById("dep-graph-note").textContent ='
+    ' num(sc.nodes_total || 0) + " nodes · " + num(sc.edges_total || 0) + " relationships in total";\n    '
+    'renderInventory(snap);\n    renderFinops(snap);\n    renderCosts(snap);\n    renderActions(snap);\n    r'
+    'enderSources(snap);\n    renderFooter(snap);\n    applyDependencyFilters();\n    applyFindingFilters();'
+    '\n    renderReferenceArchitecture();\n  }\n\n  applyPresentation();\n  if (isMulti) {\n    var runs = root'
+    'Data.workspace_runs || [];\n    var fleetMeta = rootData.fleet || {};\n    var sel = document.getEleme'
+    'ntById("workspace-selector");\n    var subSel = document.getElementById("fleet-sub-filter");\n    var '
+    'search = document.getElementById("fleet-search");\n    var fleetView = document.getElementById("fleet'
+    '-view");\n    ["multi-overview", "workspace-selector-wrap", "fleet-sub-wrap", "fleet-search-wrap"].fo'
+    'rEach(function (id) { document.getElementById(id).hidden = false; });\n    var ACCESS = { granted: "Y'
+    'es", partial: "Yes (partial)", denied: "No", unreachable: "No (network)", token_failed: "No (token)"'
+    ', disabled: "No (disabled)", error: "No (error)", not_collected: "Not evaluated" };\n    var RUN = { '
+    'ok: "Complete", partial: "Partial", error: "Error" };\n    var COST = { complete: "Complete", partial'
+    ': "Partial", error: "Not available", denied: "No cost permission", not_configured: "Not configured",'
+    ' throttled: "Throttled (HTTP 429)", not_collected: "Not collected" };\n    function fr(r) { return r.'
+    'fleet_row || {}; }\n    function subKey(r) { return fr(r).subscription_id || r.subscription_id || "";'
+    ' }\n    function subName(r) { return fr(r).subscription_name || r.subscription_name || subKey(r) || "'
+    '—"; }\n    var subs = {};\n    runs.forEach(function (r) { var k = subKey(r); if (!subs[k]) { subs[k] '
+    '= { name: subName(r), count: 0 }; } subs[k].count += 1; });\n    subSel.appendChild(el("option", { va'
+    'lue: "all", text: "All (" + runs.length + plural(runs.length, " workspace)", " workspaces)") }));\n  '
+    '  Object.keys(subs).sort(function (a, b) { return String(subs[a].name).localeCompare(String(subs[b].'
+    'name), "en", { sensitivity: "base" }); }).forEach(function (k) {\n      subSel.appendChild(el("option'
+    '", { value: k, text: subs[k].name + " (" + subs[k].count + ")" }));\n    });\n    function visibleRuns'
+    '() {\n      var sub = subSel.value || "all", q = (search.value || "").toLowerCase().trim(), out = [];'
+    '\n      runs.forEach(function (r, idx) {\n        if (sub !== "all" && subKey(r) !== sub) { return; }\n'
+    '        if (q) {\n          var f = fr(r), hay = [r.workspace_name, subName(r), f.resource_group, f.l'
+    'ocation, f.sku, f.workspace_host].join(" ").toLowerCase();\n          if (hay.indexOf(q) === -1) { re'
+    'turn; }\n        }\n        out.push({ run: r, idx: idx });\n      });\n      return out;\n    }\n    func'
+    'tion refillWorkspaces(vis) {\n      var prev = sel.value;\n      clear(sel);\n      sel.appendChild(el('
+    '"option", { value: "all", text: "All (" + vis.length + ")" }));\n      vis.forEach(function (x) { sel'
+    '.appendChild(el("option", { value: String(x.idx), text: x.run.workspace_name + " · " + lab(RUN, x.ru'
+    'n.status) })); });\n      sel.value = vis.some(function (x) { return String(x.idx) === prev; }) ? pre'
+    'v : "all";\n    }\n    function accessCell(f) {\n      var a = f.workspace_access || {}, yes = a.in_wor'
+    'kspace === true;\n      var box = el("div");\n      box.appendChild(pill(yes ? (a.status === "partial"'
+    ' ? "tone-warn" : "tone-ok") : "tone-crit", lab(ACCESS, a.status)));\n      if (a.reason && (!yes || a'
+    '.status === "partial")) { box.appendChild(el("small", { className: "fleet-note", text: a.reason }));'
+    ' }\n      return { v: box, s: yes ? 1 : 0 };\n    }\n    function sevCell(c) {\n      c = c || {};\n     '
+    ' var box = el("span", { className: "sev-row", title: SEVS.map(function (k) { return L.sev[k] + ": " '
+    '+ (c[k] || 0); }).join(" · ") });\n      SEVS.forEach(function (k) { box.appendChild(sevPill(k, L.sev'
+    '[k].charAt(0) + " " + (c[k] || 0))); });\n      return { v: box, s: (c.critical || 0) * 1e6 + (c.high'
+    ' || 0) * 1e4 + (c.medium || 0) * 100 + (c.low || 0) };\n    }\n    function costCell(f) {\n      var c '
+    '= f.cost || {};\n      if (isNum(c.total) && c.currency) {\n        var parts = [];\n        if (isNum('
+    'c.dbu)) { parts.push("DBU " + money(c.dbu, c.currency)); }\n        if (isNum(c.infra)) { parts.push('
+    '"infra " + money(c.infra, c.currency)); }\n        return { v: stack(money(c.total, c.currency), part'
+    's.join(" · ") || null), s: c.total };\n      }\n      if (c.total === 0) { return { v: "No charges in '
+    'the period", s: 0 }; }\n      return { v: el("span", { className: "fleet-note", text: lab(COST, c.sta'
+    'tus) + (c.reason ? " (" + c.reason + ")" : "") }), s: -1 };\n    }\n    function renderFleet(vis) {\n  '
+    '    var counts = { ok: 0, partial: 0, error: 0 }, sev = { critical: 0, high: 0, medium: 0, low: 0 },'
+    ' noAccess = 0, subsSeen = {};\n      var passed = 0, failed = 0, evaluated = 0, notEval = 0, totals ='
+    ' {}, dbu = {}, infra = {}, split = {}, zero = 0, missing = 0;\n      vis.forEach(function (x) {\n     '
+    '   var r = x.run, f = fr(r), c = f.cost || {}, g = (r.snapshot && r.snapshot.scores && r.snapshot.sc'
+    'ores.global) || {};\n        counts[r.status] = (counts[r.status] || 0) + 1;\n        subsSeen[subKey('
+    'r)] = true;\n        if (r.snapshot && !(f.workspace_access && f.workspace_access.in_workspace)) { no'
+    'Access += 1; }\n        SEVS.forEach(function (k) { sev[k] += ((f.findings || {})[k]) || 0; });\n     '
+    '   passed += g.passed || 0; failed += g.failed || 0; evaluated += g.evaluated || 0; notEval += g.not'
+    '_evaluated || 0;\n        if (isNum(c.total) && c.currency) {\n          totals[c.currency] = (totals['
+    'c.currency] || 0) + c.total;\n          dbu[c.currency] = (dbu[c.currency] || 0) + (c.dbu || 0);\n    '
+    '      infra[c.currency] = (infra[c.currency] || 0) + (c.infra || 0);\n          if (isNum(c.dbu) || i'
+    'sNum(c.infra)) { split[c.currency] = true; }\n        } else if (c.total === 0) { zero += 1; } else {'
+    ' missing += 1; }\n      });\n      var nSubs = Object.keys(subsSeen).length, total = sev.critical + se'
+    'v.high + sev.medium + sev.low, applicable = evaluated + notEval;\n      rich(document.getElementById('
+    '"fleet-lead"), [[num(vis.length)], " of " + num(runs.length) + plural(runs.length, " workspace", " w'
+    'orkspaces") + " in ", [num(nSubs)],\n        plural(nSubs, " subscription", " subscriptions") + " · s'
+    'election: " + (fleetMeta.selection === "names" ? "workspaces named in the request" : "every visible '
+    'workspace")\n        + (fleetMeta.subscription_filter ? " of subscription " + fleetMeta.subscription_'
+    'filter : "") + " · " + utc(rootData.reference_utc)\n        + (isNum(fleetMeta.duration_seconds) ? " '
+    '· collected in " + num(fleetMeta.duration_seconds) + " s" : "")\n        + (rootData.provenance === "'
+    'SIMULATED" ? " · SIMULATED DATA" : "")]);\n      var k = document.getElementById("fleet-kpis");\n     '
+    ' clear(k);\n      k.appendChild(kpi(num(vis.length), null, "Workspaces", num(nSubs) + plural(nSubs, "'
+    ' subscription", " subscriptions") + " · " + counts.ok + " complete · " + counts.partial + " partial '
+    '· " + counts.error + " error"));\n      k.appendChild(kpi(num(noAccess), null, "No access inside the '
+    'workspace", noAccess ? "Azure-side review only for these workspaces" : "Every collected workspace wa'
+    's readable"));\n      k.appendChild(kpi(num(total), null, "Findings", sev.critical + " critical · " +'
+    ' sev.high + " high · " + sev.medium + " medium · " + sev.low + " low"));\n      var idx = passed + fa'
+    'iled ? Math.round(1000 * passed / (passed + failed)) / 10 : null;\n      k.appendChild(kpi(isNum(idx)'
+    ' ? NF.format(idx) : "—", isNum(idx) ? "%" : null, "Combined local index", passed + " passed · " + fa'
+    'iled + " failed"));\n      var cov = applicable ? Math.round(1000 * evaluated / applicable) / 10 : nu'
+    'll;\n      k.appendChild(kpi(isNum(cov) ? NF.format(cov) : "—", isNum(cov) ? "%" : null, "Combined co'
+    'verage", evaluated + " of " + applicable + " applicable checks evaluated"));\n      var cur = Object.'
+    'keys(totals).sort(), notes = [];\n      var splitCur = cur.filter(function (c) { return split[c]; });'
+    '\n      if (splitCur.length) { notes.push(splitCur.map(function (c) { return "DBU " + money(dbu[c], c'
+    ') + " · infra " + money(infra[c], c); }).join(" | ")); }\n      else if (cur.length) { notes.push("Mo'
+    'nth to date"); }\n      if (zero) { notes.push(zero + " with no charges"); }\n      if (missing) { not'
+    'es.push(missing + " without cost data"); }\n      k.appendChild(kpi(cur.length ? cur.map(function (c)'
+    ' { return money(totals[c], c); }).join(" + ") : (zero && !missing ? "0" : "—"), null, "Period cost",'
+    ' notes.join(" · ") || "No cost data"));\n      document.getElementById("fleet-ws-count").textContent '
+    '= num(vis.length);\n      renderTable(document.getElementById("fleet-table"),\n        ["Workspace", "'
+    'Subscription", "Resource group", "Region / SKU", "Collection", "In-workspace access", "Index / cover'
+    'age", { t: "Findings C/H/M/L" }, "Period cost"],\n        vis.map(function (x) {\n          var r = x.'
+    'run, f = fr(r);\n          var btn = el("button", { type: "button", className: "fleet-ws", text: r.wo'
+    'rkspace_name, "aria-label": "Open the detailed review of " + r.workspace_name });\n          btn.addE'
+    'ventListener("click", function () { sel.value = String(x.idx); applyFleet(); window.scrollTo(0, 0); '
+    '});\n          var stBox = el("div");\n          stBox.appendChild(pill(r.status === "ok" ? "tone-ok" '
+    ': r.status === "partial" ? "tone-warn" : "tone-crit", lab(RUN, r.status)));\n          if (r.status ='
+    '== "error" && r.error) { stBox.appendChild(el("small", { className: "fleet-note", text: String(r.err'
+    'or.code || "") })); }\n          if (isNum(f.duration_seconds)) { stBox.appendChild(el("small", { cla'
+    'ssName: "fleet-note", text: num(f.duration_seconds) + " s" })); }\n          return [{ v: btn, s: r.w'
+    'orkspace_name }, subName(r), f.resource_group || "—", (f.location || "—") + " / " + (f.sku || "—"),\n'
+    '            { v: stBox, s: r.status === "error" ? 2 : r.status === "partial" ? 1 : 0 }, accessCell(f'
+    '),\n            { v: (isNum(f.score) ? pct(f.score) : "Not evaluated") + " / " + (isNum(f.coverage_pe'
+    'rcent) ? pct(f.coverage_percent) : "—"), s: isNum(f.score) ? f.score : -1 },\n            sevCell(f.f'
+    'indings), costCell(f)];\n        }),\n        { sortable: true, page: 25, empty: "No workspace matches'
+    ' the filter." });\n      var all = [];\n      vis.forEach(function (x) { ((x.run.snapshot && x.run.sna'
+    'pshot.findings) || []).forEach(function (f) { all.push({ f: f, r: x.run }); }); });\n      all.sort(f'
+    'unction (a, b) { return (SEVS.indexOf(a.f.severity) - SEVS.indexOf(b.f.severity)) || String(a.r.work'
+    'space_name).localeCompare(String(b.r.workspace_name)); });\n      var LIMIT = 400, shown = all.slice('
+    '0, LIMIT);\n      document.getElementById("fleet-findings-count").textContent = num(all.length);\n    '
+    '  document.getElementById("fleet-findings-note").textContent = all.length > LIMIT\n        ? "The " +'
+    ' LIMIT + " most severe of " + num(all.length) + " findings; filter by subscription or workspace, or '
+    'export the checks CSV."\n        : "Failed checks of the visible workspaces, most severe first.";\n   '
+    '   renderTable(document.getElementById("fleet-findings-table"),\n        ["Severity", "Workspace", "A'
+    'rea", "Level", "Finding", "Resource / workload", "Recommendation"],\n        shown.map(function (x) {'
+    '\n          return [{ v: sevPill(x.f.severity), s: SEVS.indexOf(x.f.severity) }, x.r.workspace_name, '
+    'lab(L.area, x.f.area), lab(L.level, x.f.level),\n            x.f.title, x.f.workload_name ? x.f.workl'
+    'oad_name : { v: brk(x.f.resource_id) }, x.f.recommendation];\n        }),\n        { sortable: true, p'
+    'age: 25, empty: "No findings in this scope or filter." });\n    }\n    var selectRun = function (idx) '
+    '{\n      var run = runs[idx];\n      if (!run) { return; }\n      fleetView.hidden = true;\n      if (ru'
+    'n.snapshot) {\n        renderSnapshot(run.snapshot);\n      } else {\n        currentSnap = null;\n     '
+    '   document.getElementById("report-body").hidden = true;\n        document.getElementById("access-ban'
+    'ner").hidden = true;\n        var errView = document.getElementById("workspace-error-view");\n        '
+    'errView.hidden = false;\n        clear(errView);\n        var err = run.error || {}, f = fr(run);\n    '
+    '    errView.appendChild(el("h2", { text: "Collection failed for workspace " + run.workspace_name }))'
+    ';\n        errView.appendChild(el("p", { text: "No empty data or scores from another workspace are su'
+    'bstituted. Select another workspace, or fix the access and run the review again." }));\n        var d'
+    'l = el("dl", { className: "dl2" });\n        [["Subscription", subName(run)], ["Resource group", f.re'
+    'source_group], ["Code", err.code], ["Source", err.source_id], ["HTTP", err.http_status], ["Message",'
+    ' err.message], ["UTC time", utc(run.reference_utc)]].forEach(function (p) {\n          dl.appendChild'
+    '(el("dt", { text: p[0] }));\n          dl.appendChild(el("dd", { text: p[1] === null || p[1] === unde'
+    'fined || p[1] === "" ? "—" : String(p[1]) }));\n        });\n        errView.appendChild(dl);\n      }\n'
+    '    };\n    function applyFleet() {\n      var vis = visibleRuns();\n      refillWorkspaces(vis);\n     '
+    ' rich(document.getElementById("multi-summary"), ["Fleet view · ", [num(vis.length)], " of " + num(ru'
+    'ns.length) + plural(runs.length, " workspace", " workspaces")]);\n      if (sel.value === "all") {\n  '
+    '      currentSnap = null;\n        document.getElementById("report-body").hidden = true;\n        docu'
+    'ment.getElementById("workspace-error-view").hidden = true;\n        document.getElementById("access-b'
+    'anner").hidden = true;\n        fleetView.hidden = false;\n        renderFleet(vis);\n        document.'
+    'title = "Azure Databricks fleet review | " + num(vis.length) + plural(vis.length, " workspace", " wo'
+    'rkspaces");\n      } else {\n        selectRun(Number(sel.value));\n      }\n    }\n    subSel.addEventLi'
+    'stener("change", applyFleet);\n    search.addEventListener("input", applyFleet);\n    sel.addEventList'
+    'ener("change", function () { applyFleet(); window.scrollTo(0, 0); });\n    applyFleet();\n  } else {\n '
+    '   renderSnapshot(rootData);\n  }\n\n  var navLinks = [].slice.call(document.querySelectorAll(".bar-nav'
+    ' a"));\n  if ("IntersectionObserver" in window && navLinks.length) {\n    var spy = new IntersectionOb'
+    'server(function (entries) {\n      entries.forEach(function (en) {\n        if (!en.isIntersecting) { '
+    'return; }\n        var id = en.target.id;\n        navLinks.forEach(function (a) { if (a.getAttribute('
+    '"href") === "#" + id) { a.setAttribute("aria-current", "true"); } else { a.removeAttribute("aria-cur'
+    'rent"); } });\n      });\n    }, { rootMargin: "-80px 0px -65% 0px" });\n    ["sec-cover", "sec-identit'
+    'y", "sec-executive", "sec-dependencies", "sec-inventory", "sec-findings", "sec-finops", "sec-actions'
+    '", "sec-sources"].forEach(function (id) {\n      var node = document.getElementById(id);\n      if (no'
+    'de) { spy.observe(node); }\n    });\n  }\n})();\n</script>\n</body>\n</html>\n'
 )
 # END BUILD-TIME ASSETS
 
@@ -2323,18 +2535,75 @@ def validate_workspace_host(host, required=True):
     return host.lower()
 
 
+def plain(value, maximum):
+    if not isinstance(value, str):
+        return None
+    value = value.strip()
+    if not value or len(value) > maximum or re.search(r"[\x00-\x1f\x7f]", value):
+        return None
+    return value
+
+
+def auto_discovery_enabled():
+    value = globals().get("AUTO_DISCOVERY", False)
+    if not isinstance(value, bool):
+        raise EvidenceError("configuration_required", "AUTO_DISCOVERY must be True or False.", "configuration")
+    return value
+
+
+def operator_entries():
+    if not isinstance(APPROVED_WORKSPACES, dict):
+        raise EvidenceError("configuration_required", "APPROVED_WORKSPACES must be a dictionary (it can be empty).", "configuration")
+    return {key: value for key, value in APPROVED_WORKSPACES.items() if not (isinstance(key, str) and key.startswith("<"))}
+
+
+def active_roster():
+    return ROSTER if ROSTER is not None else operator_entries()
+
+
+def validate_branding_once():
+    key = (CLIENT_LOGO_DATA_URI, CLIENT_LOGO_ALT, CLIENT_NAME)
+    if key in BRANDING_CHECKED:
+        return
+    validate_logo(CLIENT_LOGO_DATA_URI, CLIENT_LOGO_ALT)
+    if not isinstance(CLIENT_NAME, str) or not 1 <= len(CLIENT_NAME) <= 120 or any(ord(c) < 32 for c in CLIENT_NAME):
+        raise EvidenceError("configuration_required", "Client label must be bounded plain text.", "configuration")
+    BRANDING_CHECKED.add(key)
+
+
+def preflight_configuration():
+    """Everything that can be checked offline, before any token request or Resource Graph read."""
+    validate_guid(SRE_TENANT_ID, "SRE_TENANT_ID")
+    validate_guid(TARGET_TENANT_ID, "TARGET_TENANT_ID")
+    validate_guid(MANAGED_IDENTITY_CLIENT_ID, "MANAGED_IDENTITY_CLIENT_ID")
+    if not isinstance(globals().get("WORKSPACE_DEFAULTS", {}), dict):
+        raise EvidenceError("configuration_required", "WORKSPACE_DEFAULTS must be a dictionary.", "configuration")
+    entries = operator_entries()
+    if not auto_discovery_enabled() and not entries:
+        raise EvidenceError("configuration_required", "Enable AUTO_DISCOVERY or configure at least one approved Databricks workspace.", "configuration")
+    for entry in entries.values():
+        validate_guid(obj(entry, "configuration").get("subscription_id") or SUBSCRIPTION_ID, "SUBSCRIPTION_ID")
+    validate_cost_settings()
+    presentation_settings()
+    validate_branding_once()
+
+
 def validate_config(workspace_name):
-    validate_guid(SUBSCRIPTION_ID, "SUBSCRIPTION_ID")
     sre_tid = validate_guid(SRE_TENANT_ID, "SRE_TENANT_ID")
     target_tid = validate_guid(TARGET_TENANT_ID, "TARGET_TENANT_ID")
     validate_guid(MANAGED_IDENTITY_CLIENT_ID, "MANAGED_IDENTITY_CLIENT_ID")
-    if not isinstance(APPROVED_WORKSPACES, dict) or not 1 <= len(APPROVED_WORKSPACES) <= 5:
-        raise EvidenceError("configuration_required", "Configure one to five fixed approved Databricks workspaces.", "configuration")
-    name = workspace_name or next(iter(APPROVED_WORKSPACES))
-    if name not in APPROVED_WORKSPACES:
-        raise EvidenceError("invalid_parameter", "workspace_name must exactly match the fixed operator allowlist.", "parameters")
-    config = obj(APPROVED_WORKSPACES[name], "configuration")
-    for field, value, maximum in (("name", name, 64), ("resource_group", config.get("resource_group"), 90)):
+    roster = active_roster()
+    if not isinstance(roster, dict) or not 1 <= len(roster) <= MAX_DISCOVERED_WORKSPACES:
+        raise EvidenceError("configuration_required", "Enable AUTO_DISCOVERY or configure one to " + str(MAX_DISCOVERED_WORKSPACES)
+                            + " approved Databricks workspaces.", "configuration")
+    name = workspace_name or next(iter(roster))
+    if name not in roster:
+        raise EvidenceError("invalid_parameter", "workspace_name must exactly match a workspace_name returned by list_workspaces.", "parameters")
+    defaults = globals().get("WORKSPACE_DEFAULTS") or {}
+    config = {**json.loads(json.dumps(obj(defaults, "configuration"))), **obj(roster[name], "configuration")}
+    subscription = validate_guid(config.get("subscription_id") or SUBSCRIPTION_ID, "SUBSCRIPTION_ID")
+    arm_name = config.get("arm_name") or name
+    for field, value, maximum in (("name", name, 80), ("arm_name", arm_name, 64), ("resource_group", config.get("resource_group"), 90)):
         if not isinstance(value, str) or not 1 <= len(value) <= maximum or not re.fullmatch(r"[A-Za-z0-9_.()-]+", value):
             raise EvidenceError("configuration_required", "Configure a bounded approved " + field + ".", "configuration")
     if config.get("environment") not in ("LAB", "PRODUCTION", "UNSPECIFIED"):
@@ -2379,8 +2648,8 @@ def validate_config(workspace_name):
                 "configuration",
             )
     host = validate_workspace_host(config.get("workspace_host", ""), required=dbx_plane_enabled)
-    if config.get("cost_scope") not in ("disabled", "resource_ids", "managed_resource_group"):
-        raise EvidenceError("configuration_required", "Configure disabled/resource_ids/managed_resource_group cost scope.", "configuration")
+    if config.get("cost_scope") not in ("disabled", "resource_ids", "managed_resource_group", "workspace_and_managed_resource_group"):
+        raise EvidenceError("configuration_required", "Configure disabled/resource_ids/managed_resource_group/workspace_and_managed_resource_group cost scope.", "configuration")
     if config.get("cost_timeframe") not in ("month_to_date", "last_30_days"):
         raise EvidenceError("configuration_required", "Configure month_to_date/last_30_days billing timeframe.", "configuration")
     cost_analysis = config.get("cost_analysis_enabled", True)
@@ -2396,7 +2665,7 @@ def validate_config(workspace_name):
         if not isinstance(ids, list) or len(ids) > MAX_RELATED_RESOURCES or len({str(i).lower() for i in ids}) != len(ids):
             raise EvidenceError("configuration_required", "Configure distinct bounded fixed resource IDs.", "configuration")
         for value in ids:
-            arm_id(value, SUBSCRIPTION_ID)
+            arm_id(value, subscription)
     requirements = obj(config.get("requirements"), "configuration")
     allowed = {
         "premium_required",
@@ -2420,48 +2689,221 @@ def validate_config(workspace_name):
     for key, value in requirements.items():
         if value is not None and not isinstance(value, bool):
             raise EvidenceError("configuration_required", "Requirement values must be boolean or unknown.", "configuration")
-    validate_logo(CLIENT_LOGO_DATA_URI, CLIENT_LOGO_ALT)
-    if not isinstance(CLIENT_NAME, str) or not 1 <= len(CLIENT_NAME) <= 120 or any(ord(c) < 32 for c in CLIENT_NAME):
-        raise EvidenceError("configuration_required", "Client label must be bounded plain text.", "configuration")
+    validate_branding_once()
     return {
         **config,
         "name": name,
+        "arm_name": arm_name,
+        "subscription_id": subscription,
+        "subscription_name": plain(config.get("subscription_name"), 128) or subscription,
+        "location": plain(config.get("location"), 64),
+        "sku": plain(config.get("sku"), 32),
         "workspace_host": host,
         "cost_analysis_enabled": cost_analysis,
         "system_tables_warehouse_id": warehouse,
         "sre_tenant_id": sre_tid,
         "target_tenant_id": target_tid,
         "cross_tenant": sre_tid != target_tid,
-        "id": "/subscriptions/" + SUBSCRIPTION_ID + "/resourceGroups/" + config["resource_group"]
-        + "/providers/Microsoft.Databricks/workspaces/" + name,
+        "id": "/subscriptions/" + subscription + "/resourceGroups/" + config["resource_group"]
+        + "/providers/Microsoft.Databricks/workspaces/" + arm_name,
     }
 
 
-def selection_configs(workspace_name, workspace_names):
-    first = validate_config(workspace_name)
-    configured = [validate_config(name) for name in APPROVED_WORKSPACES]
-    names = workspace_names.split(",") if workspace_names else [first["name"]]
-    if len(set(names)) != len(names) or any(name not in APPROVED_WORKSPACES for name in names):
-        raise EvidenceError("invalid_parameter", "Select distinct exact fixed allowlisted workspace names only.", "parameters")
-    by_name = {config["name"]: config for config in configured}
-    roster = [
-        {
-            "workspace_id": config["id"],
-            "workspace_name": config["name"],
-            "resource_group": config["resource_group"],
-            "workspace_host": config["workspace_host"],
-            "environment": config["environment"],
-            "auth_mode": config["auth_mode"],
-            "cross_tenant": config["cross_tenant"],
+def discover_workspaces():
+    """Observed inventory: every Databricks workspace the agent identity can read, from one fixed read-only Resource Graph query."""
+    scope = globals().get("DISCOVERY_SUBSCRIPTION_IDS") or []
+    if not isinstance(scope, list) or len(scope) > 1000:
+        raise EvidenceError("configuration_required", "DISCOVERY_SUBSCRIPTION_IDS must be a list of up to 1000 subscription IDs.", "configuration")
+    subscriptions = [validate_guid(value, "DISCOVERY_SUBSCRIPTION_IDS") for value in scope]
+    identity = Identity({"auth_mode": "same_tenant_uami", "workspace_host": ""})
+    try:
+        reader = HttpReader(identity, ARM_ORIGIN, "arm")
+        url = reader.allow(ARM_ORIGIN + "/providers/Microsoft.ResourceGraph/resources?api-version=" + ARG_API, "POST")
+        rows, skip_token, seen_tokens = [], None, set()
+        for _ in range(MAX_DISCOVERY_PAGES):
+            options = {"resultFormat": "objectArray", "$top": 1000}
+            if skip_token:
+                options["$skipToken"] = skip_token
+            body = {"query": DISCOVERY_QUERY, "options": options}
+            if subscriptions:
+                body["subscriptions"] = subscriptions
+            page = obj(reader.request("POST", url, "arm_discovery", body=body), "arm_discovery")
+            rows.extend(array(page.get("data"), "arm_discovery"))
+            skip_token = page.get("$skipToken")
+            if not isinstance(skip_token, str) or not skip_token:
+                return rows, True
+            if skip_token in seen_tokens or len(rows) > MAX_DISCOVERED_WORKSPACES:
+                break
+            seen_tokens.add(skip_token)
+        return rows, False
+    finally:
+        identity.close()
+
+
+def effective_roster():
+    """Operator entries first (overrides), then every discovered workspace not already listed; bounded and deterministic."""
+    entries = operator_entries()
+    sre = validate_guid(SRE_TENANT_ID, "SRE_TENANT_ID")
+    target = validate_guid(TARGET_TENANT_ID, "TARGET_TENANT_ID")
+    if not auto_discovery_enabled() or sre != target:
+        DISCOVERY_INFO.clear()
+        DISCOVERY_INFO.update({"mode": "operator_only", "operator_entries": len(entries),
+                               "reason": "auto_discovery_disabled" if not auto_discovery_enabled() else "cross_tenant_configuration"})
+        return entries
+    default_subscription = SUBSCRIPTION_ID.lower() if isinstance(SUBSCRIPTION_ID, str) and GUID_TEXT.fullmatch(SUBSCRIPTION_ID.lower()) else ""
+    operator_ids = {}
+    for key, entry in entries.items():
+        entry = obj(entry, "configuration")
+        subscription = str(entry.get("subscription_id") or default_subscription).lower()
+        operator_ids[key] = ("/subscriptions/" + subscription + "/resourcegroups/" + str(entry.get("resource_group", ""))
+                             + "/providers/microsoft.databricks/workspaces/" + str(entry.get("arm_name") or key)).lower()
+    discovery_error = None
+    try:
+        rows, complete = discover_workspaces()
+    except EvidenceError as exc:
+        if not entries:
+            raise EvidenceError(exc.code, "Auto-discovery (Azure Resource Graph) failed and APPROVED_WORKSPACES is empty: " + str(exc), "arm_discovery", exc.http_status) from exc
+        rows, complete, discovery_error = [], True, exc.public()
+    discovered, skipped, other_tenant, without_url = {}, 0, 0, 0
+    for row in rows:
+        if not isinstance(row, dict):
+            skipped += 1
+            continue
+        workspace_id = str(row.get("id") or "")
+        parts = workspace_id.split("/")
+        if (len(parts) != 9 or parts[0] != "" or parts[1].lower() != "subscriptions" or parts[3].lower() != "resourcegroups"
+                or parts[5].lower() != "providers" or parts[6].lower() != "microsoft.databricks" or parts[7].lower() != "workspaces"):
+            skipped += 1
+            continue
+        subscription, group, name = parts[2].lower(), parts[4], parts[8]
+        tenant = str(row.get("tenantId") or "").lower()
+        if tenant and tenant != target:
+            other_tenant += 1
+            continue
+        if (not GUID_TEXT.fullmatch(subscription) or not (1 <= len(name) <= 64 and SAFE_LOCAL_NAME.fullmatch(name))
+                or not (1 <= len(group) <= 90 and SAFE_LOCAL_NAME.fullmatch(group)) or workspace_id.lower() in discovered):
+            skipped += 1
+            continue
+        host = str(row.get("workspaceUrl") or "").lower()
+        host_ok = bool(re.fullmatch(r"adb-[0-9]{10,24}\.[0-9]{1,4}\.azuredatabricks\.net", host))
+        info = {
+            "resource_group": group,
+            "subscription_id": subscription,
+            "subscription_name": plain(row.get("subscriptionName"), 128) or subscription,
+            "arm_name": name,
+            "location": plain(row.get("location"), 64),
+            "sku": plain(row.get("skuName"), 32),
+            "workspace_host": host if host_ok else "",
+            "public_network_access": plain(row.get("publicNetworkAccess"), 32),
+            "custom_vnet": bool(plain(row.get("customVnet"), 2048)),
+            "discovered": True,
         }
-        for config in configured
-    ]
-    return [by_name[name] for name in names], roster
+        if not host_ok:
+            without_url += 1
+            info.update(workspace_api_enabled=False, unity_catalog_enabled=False, host_unavailable=True)
+        discovered[workspace_id.lower()] = info
+    if not complete or len(discovered) > MAX_DISCOVERED_WORKSPACES:
+        raise EvidenceError("configuration_required", "Auto-discovery found more than " + str(MAX_DISCOVERED_WORKSPACES)
+                            + " Databricks workspaces; limit DISCOVERY_SUBSCRIPTION_IDS.", "configuration")
+    roster = {}
+    for key, entry in entries.items():
+        merged = dict(obj(entry, "configuration"))
+        seen = discovered.pop(operator_ids[key], None)
+        if seen:
+            for field in ("subscription_name", "location", "sku", "public_network_access", "custom_vnet"):
+                merged.setdefault(field, seen[field])
+            if not merged.get("workspace_host") and seen["workspace_host"]:
+                merged["workspace_host"] = seen["workspace_host"]
+            merged["discovered"] = True
+        merged["operator_entry"] = True
+        roster[key] = merged
+    operator_count, added = len(roster), 0
+    for info in discovered.values():
+        name = info["arm_name"]
+        key = name if name not in roster else info["subscription_id"][:8] + "-" + name
+        if key in roster:
+            skipped += 1
+            continue
+        roster[key] = info
+        added += 1
+    DISCOVERY_INFO.clear()
+    DISCOVERY_INFO.update({
+        "mode": "auto", "source": "azure_resource_graph", "discovered": added, "operator_entries": operator_count,
+        "skipped": skipped, "other_tenant_skipped": other_tenant, "without_workspace_url": without_url,
+        "subscriptions_visible": len({str(entry.get("subscription_id") or default_subscription).lower() for entry in roster.values()}),
+        "subscription_scope": "configured_list" if globals().get("DISCOVERY_SUBSCRIPTION_IDS") else "all_readable",
+    })
+    if discovery_error:
+        DISCOVERY_INFO["error"] = {key: discovery_error.get(key) for key in ("code", "http_status")}
+    if not roster:
+        raise EvidenceError("no_workspaces_visible", "Auto-discovery found no Azure Databricks workspace the agent identity can read; "
+                            "grant Reader at the management group (or subscriptions) and wait 5-10 minutes.", "arm_discovery")
+    return roster
+
+
+def roster_row(config):
+    return {
+        "workspace_name": config["name"],
+        "resource_group": config["resource_group"],
+        "subscription_id": config["subscription_id"],
+        "subscription_name": config["subscription_name"],
+        "location": config.get("location"),
+        "sku": config.get("sku"),
+        "workspace_host": config["workspace_host"] or None,
+        "environment": config["environment"],
+    }
+
+
+def document_roster_row(config):
+    return {
+        **roster_row(config),
+        "workspace_id": config["id"],
+        "arm_name": config["arm_name"],
+        "auth_mode": config["auth_mode"],
+        "cross_tenant": config["cross_tenant"],
+        "discovered": bool(config.get("discovered")),
+        "operator_entry": bool(config.get("operator_entry")),
+    }
+
+
+def selection_configs(workspace_name, workspace_names, subscription=""):
+    configured = [validate_config(key) for key in active_roster()]
+    configured.sort(key=lambda c: (str(c["subscription_name"]).lower(), c["name"].lower()))
+    roster = [document_roster_row(config) for config in configured]
+    scoped = configured
+    if subscription:
+        wanted = subscription.strip().lower()
+        scoped = [c for c in configured if c["subscription_id"] == wanted or str(c["subscription_name"]).lower() == wanted]
+        if not scoped:
+            raise EvidenceError("invalid_parameter", "subscription must be an exact subscription ID or display name returned by list_workspaces "
+                                "(no visible Databricks workspace matches it).", "parameters")
+    if workspace_name == "all" or workspace_names == "all" or (not workspace_name and not workspace_names):
+        return scoped, roster, "all"
+    requested = [workspace_name] if workspace_name else workspace_names.split(",")
+    if len(set(requested)) != len(requested):
+        raise EvidenceError("invalid_parameter", "Select distinct exact workspace names only.", "parameters")
+    selected, unknown = [], []
+    for name in requested:
+        matches = [c for c in scoped if c["name"] == name] or [c for c in scoped if c["arm_name"] == name]
+        if len(matches) > 1:
+            raise EvidenceError("ambiguous_workspace_name", "Workspace name " + name + " exists in several subscriptions; use one of: "
+                                + ", ".join(c["name"] for c in matches[:5]) + " or add subscription.", "parameters")
+        if not matches:
+            unknown.append(name)
+            continue
+        selected.append(matches[0])
+    if unknown:
+        raise EvidenceError("invalid_parameter", "Unknown workspace name(s) " + ", ".join(unknown[:5])
+                            + (" in the selected subscription" if subscription else "")
+                            + "; use exact workspace_name values returned by list_workspaces.", "parameters")
+    if len({c["id"].lower() for c in selected}) != len(selected):
+        raise EvidenceError("invalid_parameter", "Select distinct workspaces only.", "parameters")
+    return selected, roster, "names"
 
 
 def validate_parameters(
     operation, view, workspace_name, workspace_names, workload_name,
-    classification, area, level, severity, status, limit, offset,
+    classification, area, level, severity, status, limit, offset, subscription="",
 ):
     for key, value, choices in (
         ("operation", operation, OPERATIONS),
@@ -2478,20 +2920,27 @@ def validate_parameters(
         raise EvidenceError("invalid_parameter", "limit must be an integer from 1 to 100.", "parameters")
     if isinstance(offset, bool) or not isinstance(offset, int) or not 0 <= offset <= 500000:
         raise EvidenceError("invalid_parameter", "offset must be an integer from 0 to 500000.", "parameters")
-    for key, value, maximum in (("workspace_name", workspace_name, 64), ("workload_name", workload_name, 253)):
+    for key, value, maximum in (("workspace_name", workspace_name, 80), ("workload_name", workload_name, 253)):
         if not isinstance(value, str) or len(value) > maximum or (value and not re.fullmatch(r"[A-Za-z0-9_.:()-]+", value)):
             raise EvidenceError("invalid_parameter", key + " is a bounded exact local name, not a path, URL or command.", "parameters")
-    if not isinstance(workspace_names, str) or len(workspace_names) > 324 or (
-        workspace_names and not re.fullmatch(r"[A-Za-z0-9_.()-]{1,64}(?:,[A-Za-z0-9_.()-]{1,64}){0,4}", workspace_names)
+    if not isinstance(workspace_names, str) or len(workspace_names) > 4100 or (
+        workspace_names and workspace_names != "all"
+        and not re.fullmatch(r"[A-Za-z0-9_.()-]{1,80}(?:,[A-Za-z0-9_.()-]{1,80}){0,49}", workspace_names)
     ):
-        raise EvidenceError("invalid_parameter", "workspace_names is an exact comma-separated allowlist selection of one to five names, without spaces.", "parameters")
+        raise EvidenceError("invalid_parameter", "workspace_names is \"all\" or an exact comma-separated selection of 1 to 50 workspace names from list_workspaces, without spaces.", "parameters")
+    if not isinstance(subscription, str) or len(subscription) > 128 or re.search(r'[\x00-\x1f\x7f<>"`\\]', subscription):
+        raise EvidenceError("invalid_parameter", "subscription is an exact subscription ID or display name returned by list_workspaces.", "parameters")
     if workspace_name and workspace_names:
         raise EvidenceError("invalid_combination", "Use workspace_name or workspace_names, not both.", "parameters")
     filters = any((workload_name, classification != "all", area != "all", level != "all", severity != "all", status != "all"))
-    if operation in ("report", "list_workspaces", "self_test") and (view != "summary" or filters or limit != 25 or offset != 0):
-        raise EvidenceError("invalid_combination", "report/list_workspaces/self_test cannot be narrowed by query filters or paging.", "parameters")
+    if operation in ("report", "self_test") and (view != "summary" or filters or limit != 25 or offset != 0):
+        raise EvidenceError("invalid_combination", "report/self_test cannot be narrowed by query filters or paging; select with workspace_names or subscription.", "parameters")
+    if operation == "list_workspaces" and (view != "summary" or filters):
+        raise EvidenceError("invalid_combination", "list_workspaces accepts only subscription, limit and offset.", "parameters")
     if operation in ("list_workspaces", "self_test") and (workspace_name or workspace_names):
         raise EvidenceError("invalid_combination", "list_workspaces and self_test do not select a workspace.", "parameters")
+    if operation == "self_test" and subscription:
+        raise EvidenceError("invalid_combination", "self_test uses built-in SIMULATED data and takes no subscription.", "parameters")
     if operation == "query":
         if classification != "all" and view != "dependencies":
             raise EvidenceError("invalid_combination", "classification filter applies only to view=dependencies.", "parameters")
@@ -2508,7 +2957,7 @@ def validate_parameters(
     return dict(
         operation=operation, view=view, workspace_name=workspace_name, workspace_names=workspace_names,
         workload_name=workload_name, classification=classification, area=area, level=level,
-        severity=severity, status=status, limit=limit, offset=offset,
+        severity=severity, status=status, limit=limit, offset=offset, subscription=subscription.strip(),
     )
 
 
@@ -2562,6 +3011,7 @@ class Identity:
         self.credential = ManagedIdentityCredential(client_id=MANAGED_IDENTITY_CLIENT_ID)
         self.deadline = time.monotonic() + MAX_COLLECTION_SECONDS
         self.request_count = 0
+        self.dbx_gate = None
         self.context = ssl.create_default_context()
         if self.context.verify_mode != ssl.CERT_REQUIRED or not self.context.check_hostname:
             raise EvidenceError("unsafe_tls", "TLS peer and hostname validation are mandatory.", "tls")
@@ -2749,7 +3199,7 @@ class HttpReader:
         if parsed.scheme != "https" or (parsed.scheme + "://" + parsed.netloc) != self.origin or parsed.fragment or parsed.username:
             raise EvidenceError("unsafe_endpoint", "Read URL changed the fixed HTTPS origin.", "scope")
         if method not in ("GET", "POST"):
-            raise EvidenceError("unsafe_method", "Only enumerated GET reads and one Cost Management read-only POST are permitted.", "scope")
+            raise EvidenceError("unsafe_method", "Only enumerated GET reads and fixed read-only POST queries (Cost Management, Resource Graph) are permitted.", "scope")
         if any(forbidden in parsed.path.lower() for forbidden in ("/secrets/get", "/secrets/put", "/secrets/delete", "/commands/", "/clusters/start", "/clusters/create", "/jobs/run-now", "/sql/statements")):
             raise EvidenceError("unsafe_endpoint", "Secret-value reads, compute starts, SQL statement execution and writes are forbidden.", "scope")
         self.allowed.add((method, parsed.path))
@@ -2765,15 +3215,37 @@ class HttpReader:
             or len(url) > 16384 or (method, parsed.path) not in self.allowed
         ):
             raise EvidenceError("unsafe_endpoint", "Request was not one of the scoped allowlisted reads.", source)
+        cost_query = method == "POST" and parsed.path.lower().endswith("/providers/microsoft.costmanagement/query")
         if method == "POST" and not (
-            parsed.path.lower().endswith("/providers/microsoft.costmanagement/query")
+            cost_query
+            or parsed.path.lower() == "/providers/microsoft.resourcegraph/resources"
             or (self.statement_path is not None and parsed.path == self.statement_path)
         ):
             raise EvidenceError("unsafe_method", "This POST is not an enumerated read-only operation.", source)
+        gate = getattr(self.identity, "__dict__", {}).get("dbx_gate") if self.token_kind == "databricks" else None
+        if isinstance(gate, dict):
+            raise EvidenceError(gate.get("code"), "Skipped after the first in-workspace access failure: " + str(gate.get("message")), source, gate.get("http_status"))
         payload = None if body is None else json.dumps(body, allow_nan=False).encode("utf-8")
+        if not cost_query:
+            return self._send(method, url, source, payload, allow_empty)
+        # at most COST_CONCURRENCY Cost Management queries run at once across the whole fleet
+        if not COST_SEMAPHORE.acquire(timeout=max(0.0, getattr(self.identity, "deadline", time.monotonic()) - time.monotonic() - 5)):
+            raise EvidenceError("throttled", "Cost query not started: the time bound ended while waiting for one of the "
+                                + str(COST_CONCURRENCY) + " parallel cost-query slots; the cost is missing, not zero.", source)
+        try:
+            return self._send(method, url, source, payload, allow_empty)
+        finally:
+            COST_SEMAPHORE.release()
+
+    def _send(self, method, url, source, payload, allow_empty):
         attempts = 5 if self.patient else 3
         for attempt in range(attempts):
-            bearer = self._bearer()
+            try:
+                bearer = self._bearer()
+            except EvidenceError as exc:
+                if self.token_kind == "databricks" and exc.code not in ("collection_deadline", "request_cap"):
+                    self.identity.dbx_gate = exc.public()
+                raise
             self.identity._guard_budget()
             request = Request(url, data=payload, method=method, headers={
                 "Authorization": "Bearer " + bearer,
@@ -2801,15 +3273,21 @@ class HttpReader:
                     else:
                         time.sleep(min(max(waits), 5) if waits else attempt + 1)
                         continue
-                raise EvidenceError(
+                error = EvidenceError(
                     "access_denied" if exc.code in (401, 403) else "throttled" if exc.code == 429 and self.patient else "http_error",
                     "Read returned HTTP " + str(exc.code) + "; response bodies are excluded.",
                     source, exc.code,
-                ) from exc
+                )
+                if self.token_kind == "databricks" and exc.code == 401:
+                    self.identity.dbx_gate = error.public()
+                raise error from exc
             except (URLError, TimeoutError, ssl.SSLError, OSError) as exc:
                 reason = getattr(exc, "reason", exc)
                 code = "tls_failed" if isinstance(reason, ssl.SSLError) else "transport_failed"
-                raise EvidenceError(code, "Read transport/TLS failed; no insecure retry or alternate identity.", source) from exc
+                error = EvidenceError(code, "Read transport/TLS failed; no insecure retry or alternate identity.", source)
+                if self.token_kind == "databricks":
+                    self.identity.dbx_gate = error.public()
+                raise error from exc
             try:
                 decoded = json.loads(raw)
                 return decoded if isinstance(decoded, (dict, list)) else obj(decoded, source)
@@ -3003,11 +3481,11 @@ def normalize_workspace(raw, source_id, reference, config):
         if len(arm_id_parts) >= 5 and arm_id_parts[1].lower() == "subscriptions" and arm_id_parts[3].lower() == "resourcegroups":
             managed_rg_name = text(arm_id_parts[4], source_id, 90)
     access_connector = obj(props.get("accessConnector", {}), source_id) if props.get("accessConnector") else {}
-    ac_id = arm_id(access_connector.get("id"), sub) if access_connector.get("id") else None
-    ac_uami = arm_id(access_connector.get("userAssignedIdentityId"), sub) if access_connector.get("userAssignedIdentityId") else None
+    ac_id = arm_id(access_connector.get("id")) if access_connector.get("id") else None
+    ac_uami = arm_id(access_connector.get("userAssignedIdentityId")) if access_connector.get("userAssignedIdentityId") else None
     custom_vnet_id = param_val(params, "customVirtualNetworkId", "str", source_id)
     if custom_vnet_id:
-        custom_vnet_id = arm_id(custom_vnet_id, sub)
+        custom_vnet_id = arm_id(custom_vnet_id)
     enc_entities = obj(pick(props, "encryption", "entities") or {}, source_id)
     managed_services_cmk = obj(enc_entities.get("managedServices", {}), source_id) if enc_entities.get("managedServices") else {}
     managed_disk_cmk = obj(enc_entities.get("managedDisk", {}), source_id) if enc_entities.get("managedDisk") else {}
@@ -3139,7 +3617,7 @@ def normalize_resource(raw, source_id, reference, config, association):
         row["identity_type"] = text(identity_block.get("type"), source_id, 64)
         row["principal_id"] = text(identity_block.get("principalId"), source_id, 64)
         row["user_assigned_identities"] = [
-            arm_id(k, sub) for k in obj(identity_block.get("userAssignedIdentities") or {}, source_id)
+            arm_id(k) for k in obj(identity_block.get("userAssignedIdentities") or {}, source_id)
         ]
     elif kind == "microsoft.storage/storageaccounts":
         for field in ("supportsHttpsTrafficOnly", "minimumTlsVersion", "allowBlobPublicAccess", "allowSharedKeyAccess", "publicNetworkAccess", "isHnsEnabled"):
@@ -3159,12 +3637,12 @@ def normalize_resource(raw, source_id, reference, config, association):
         row["vault_uri"] = text(props.get("vaultUri"), source_id, 512)
     elif kind == "microsoft.network/virtualnetworks":
         row["address_space"] = strings(pick(props, "addressSpace", "addressPrefixes"), source_id)
-        row["subnet_ids"] = [arm_id(s.get("id"), sub) for s in array(props.get("subnets", []), source_id) if s.get("id")]
+        row["subnet_ids"] = [arm_id(s.get("id")) for s in array(props.get("subnets", []), source_id) if s.get("id")]
     elif kind == "microsoft.network/virtualnetworks/subnets":
         row["address_prefix"] = text(props.get("addressPrefix"), source_id, 128)
-        row["nsg_id"] = arm_id(pick(props, "networkSecurityGroup", "id"), sub) if pick(props, "networkSecurityGroup", "id") else None
-        row["route_table_id"] = arm_id(pick(props, "routeTable", "id"), sub) if pick(props, "routeTable", "id") else None
-        row["nat_gateway_id"] = arm_id(pick(props, "natGateway", "id"), sub) if pick(props, "natGateway", "id") else None
+        row["nsg_id"] = arm_id(pick(props, "networkSecurityGroup", "id")) if pick(props, "networkSecurityGroup", "id") else None
+        row["route_table_id"] = arm_id(pick(props, "routeTable", "id")) if pick(props, "routeTable", "id") else None
+        row["nat_gateway_id"] = arm_id(pick(props, "natGateway", "id")) if pick(props, "natGateway", "id") else None
         row["delegations"] = [text(pick(d, "properties", "serviceName") or d.get("name"), source_id, 256) for d in array(props.get("delegations", []), source_id)]
     elif kind == "microsoft.network/routetables":
         row["disable_bgp_route_propagation"] = boolean(props.get("disableBgpRoutePropagation"), source_id)
@@ -3188,12 +3666,12 @@ def normalize_resource(raw, source_id, reference, config, association):
             for item in array(props.get("securityRules", []), source_id)
         ]
     elif kind == "microsoft.network/natgateways":
-        row["public_ip_ids"] = [arm_id(ip.get("id"), sub) for ip in array(props.get("publicIpAddresses", []), source_id) if ip.get("id")]
+        row["public_ip_ids"] = [arm_id(ip.get("id")) for ip in array(props.get("publicIpAddresses", []), source_id) if ip.get("id")]
     elif kind == "microsoft.network/publicipaddresses":
         row["configuration"]["ipAddress"] = text(props.get("ipAddress"), source_id, 128)
         row["configuration"]["publicIPAllocationMethod"] = text(props.get("publicIPAllocationMethod"), source_id, 64)
     elif kind == "microsoft.network/privateendpoints":
-        row["subnet_id"] = arm_id(pick(props, "subnet", "id"), sub) if pick(props, "subnet", "id") else None
+        row["subnet_id"] = arm_id(pick(props, "subnet", "id")) if pick(props, "subnet", "id") else None
         connections = array(props.get("privateLinkServiceConnections", []) or props.get("manualPrivateLinkServiceConnections", []), source_id)
         row["connections"] = [
             {
@@ -3219,7 +3697,7 @@ def referenced_resource_ids(row, subscription=None):
     if row.get("resource_kind") == "microsoft.network/virtualnetworks/subnets":
         refs.append((re.split(r"/subnets/", row["id"], flags=re.IGNORECASE)[0], "parent_virtual_network_id"))
     for val, field in refs:
-        val = arm_id(val, subscription or SUBSCRIPTION_ID)
+        val = arm_id(val)
         if resource_type(val) in RESOURCE_APIS:
             yield val, field
 
@@ -3522,8 +4000,8 @@ def normalize_secret_scope(raw, source_id, reference, config):
         raise EvidenceError("invalid_record", "Secret scope requires name.", source_id)
     kv = obj(raw.get("keyvault_metadata", {}), source_id) if raw.get("keyvault_metadata") else {}
     kv_resource_id = text(kv.get("resource_id"), source_id, 2048)
-    if kv_resource_id and kv_resource_id.lower().startswith("/subscriptions/" + SUBSCRIPTION_ID.lower() + "/"):
-        kv_resource_id = arm_id(kv_resource_id, SUBSCRIPTION_ID)
+    if kv_resource_id and kv_resource_id.lower().startswith("/subscriptions/" + (config.get("subscription_id") or SUBSCRIPTION_ID).lower() + "/"):
+        kv_resource_id = arm_id(kv_resource_id, (config.get("subscription_id") or SUBSCRIPTION_ID))
     return {
         "id": "scope:" + name,
         "name": name,
@@ -3761,6 +4239,7 @@ def read_runtime_catalog(reader, reference, inventory):
 
 def collect_live(config, reference, deadline=None):
     identity = Identity(config)
+    sub = config.get("subscription_id") or SUBSCRIPTION_ID
     try:
         if deadline is not None:
             identity.deadline = min(identity.deadline, deadline)
@@ -3808,7 +4287,7 @@ def collect_live(config, reference, deadline=None):
                 "workspace_id": config["id"],
                 "workspace_guid": None,
                 "workspace_url": config["workspace_host"],
-                "subscription_id": SUBSCRIPTION_ID,
+                "subscription_id": sub,
                 "sre_tenant_id": config["sre_tenant_id"],
                 "target_tenant_id": config["target_tenant_id"],
                 "auth_mode": config["auth_mode"],
@@ -3866,6 +4345,9 @@ def collect_live(config, reference, deadline=None):
             top_level_list=True,
         )
         raw["inventory"]["outbound_endpoints"] = outbound
+        if (workspace_arm_error is None and not workspace.get("custom_virtual_network_id") and out_receipt["status"] == "error"
+                and any(error.get("http_status") == 404 for error in out_receipt["errors"])):
+            out_receipt.update(status="not_applicable", errors=[], note="HTTP 404 expected: outbound dependency endpoints exist only for VNet-injected workspaces (no customVirtualNetworkId observed).")
         raw["sources"].append(out_receipt)
 
         def normalize_diag(item):
@@ -3898,9 +4380,9 @@ def collect_live(config, reference, deadline=None):
         related_cap_omitted = []
 
         def queue_related(rid, assoc):
-            if not rid or not isinstance(rid, str) or not rid.lower().startswith("/subscriptions/" + SUBSCRIPTION_ID.lower() + "/"):
+            if not rid or not isinstance(rid, str) or not rid.lower().startswith("/subscriptions/" + sub.lower() + "/"):
                 return
-            rid_clean = arm_id(rid, SUBSCRIPTION_ID)
+            rid_clean = arm_id(rid, sub)
             if resource_type(rid_clean) not in RESOURCE_APIS or rid_clean.lower() in seen_related:
                 return
             if len(seen_related) >= MAX_RELATED_RESOURCES:
@@ -3929,9 +4411,9 @@ def collect_live(config, reference, deadline=None):
                 queue_related(pe["private_endpoint_id"], {"type": "direct_reference", "source_id": "arm_workspace", "resource_id": workspace["id"], "field": "privateEndpointConnections"})
 
         if config["include_managed_resource_group"] and workspace.get("managed_resource_group"):
-            mrg_url = ARM_ORIGIN + "/subscriptions/" + SUBSCRIPTION_ID + "/resourceGroups/" + workspace["managed_resource_group"] + "/resources?api-version=2021-04-01"
+            mrg_url = ARM_ORIGIN + "/subscriptions/" + sub + "/resourceGroups/" + workspace["managed_resource_group"] + "/resources?api-version=2021-04-01"
             def mrg_item(item):
-                rid = arm_id(item.get("id"), SUBSCRIPTION_ID)
+                rid = arm_id(item.get("id"), sub)
                 return {"id": rid, "resource_id": rid, "type": text(item.get("type"), "arm_managed_rg_inventory", 256)}
             mrg_rows, mrg_receipt = read_arm_pages(arm, mrg_url, "arm_managed_rg_inventory", reference, mrg_item)
             raw["sources"].append(mrg_receipt)
@@ -4176,12 +4658,12 @@ def collect_live(config, reference, deadline=None):
 
         advisor_source = source_receipt("arm_advisor", reference, "not_configured", "Cached recommendations only; no generateRecommendations action.")
         if config["advisor_enabled"]:
-            adv_url = ARM_ORIGIN + "/subscriptions/" + SUBSCRIPTION_ID + "/providers/Microsoft.Advisor/recommendations?" + urlencode({
+            adv_url = ARM_ORIGIN + "/subscriptions/" + sub + "/providers/Microsoft.Advisor/recommendations?" + urlencode({
                 "api-version": "2025-01-01", "$filter": "ResourceId eq '" + config["id"] + "'", "$top": "100",
             })
             def advisor_row(item):
                 advisory_id = text(item.get("id"), "arm_advisor", 2048)
-                if not advisory_id or not advisory_id.lower().startswith("/subscriptions/" + SUBSCRIPTION_ID.lower() + "/"):
+                if not advisory_id or not advisory_id.lower().startswith("/subscriptions/" + sub.lower() + "/"):
                     raise EvidenceError("scope_mismatch", "Advisor ID changed subscription scope.", "arm_advisor")
                 target = pick(item, "properties", "resourceMetadata", "resourceId")
                 if not isinstance(target, str) or target.lower() != config["id"].lower():
@@ -4241,14 +4723,21 @@ def collect_cost(reader, config, reference, related, workspace=None):
     )
     if mode == "disabled":
         return [], receipt
-    scope = "/subscriptions/" + SUBSCRIPTION_ID
+    sub = config.get("subscription_id") or SUBSCRIPTION_ID
+    scope = "/subscriptions/" + sub
     managed_rg = pick(workspace, "managed_resource_group")
-    if mode == "managed_resource_group":
+    if mode in ("managed_resource_group", "workspace_and_managed_resource_group"):
         if not isinstance(managed_rg, str) or not re.fullmatch(r"[A-Za-z0-9_.()-]{1,90}", managed_rg):
             receipt.update(status="error", errors=[EvidenceError("unverified_cost_scope", "Billing managedResourceGroup must come from the exact observed ARM workspace.", "azure_cost").public()])
             return [], receipt
-        scope += "/resourceGroups/" + managed_rg
-        receipt["association"] = {"type": "managed_resource_group_billing_context", "source_id": "arm_workspace", "managed_resource_group": managed_rg}
+        if mode == "managed_resource_group":
+            scope += "/resourceGroups/" + managed_rg
+            receipt["association"] = {"type": "managed_resource_group_billing_context", "source_id": "arm_workspace", "managed_resource_group": managed_rg}
+        else:
+            receipt["association"] = {
+                "type": "workspace_and_managed_resource_group_billing_context", "source_id": "arm_workspace",
+                "managed_resource_group": managed_rg, "workspace_id": config["id"],
+            }
     else:
         observed_ids = {row["resource_id"].lower() for row in related} | {config["id"].lower()}
         if not ids or any(value.lower() not in observed_ids for value in ids):
@@ -4257,6 +4746,10 @@ def collect_cost(reader, config, reference, related, workspace=None):
         receipt["association"] = {"type": "approved_observed_resource_ids", "source_id": "configuration"}
     url = ARM_ORIGIN + scope + "/providers/Microsoft.CostManagement/query?api-version=2023-11-01"
     receipt.update(scope=scope, read_signature="POST " + url)
+    if isinstance(reader, HttpReader) and not reader.patient:
+        patient = HttpReader(reader.identity, ARM_ORIGIN, "arm", patient=True)
+        patient.opener = reader.opener
+        reader = patient
     reader.allow(url, "POST")
     body = {
         "type": "ActualCost",
@@ -4271,6 +4764,11 @@ def collect_cost(reader, config, reference, related, workspace=None):
         body["timePeriod"] = {"from": start, "to": reference}
     if mode == "resource_ids":
         body["dataset"]["filter"] = {"dimensions": {"name": "ResourceId", "operator": "In", "values": ids}}
+    if mode == "workspace_and_managed_resource_group":
+        body["dataset"]["filter"] = {"or": [
+            {"dimensions": {"name": "ResourceId", "operator": "In", "values": [config["id"].lower()]}},
+            {"dimensions": {"name": "ResourceGroupName", "operator": "In", "values": [managed_rg.lower()]}},
+        ]}
     rows, seen = [], set()
     current = url
     try:
@@ -4296,7 +4794,7 @@ def collect_cost(reader, config, reference, related, workspace=None):
                 if not isinstance(value, list) or len(value) != len(names):
                     raise EvidenceError("invalid_cost_shape", "Cost row/column lengths differ.", "azure_cost")
                 record = dict(zip(names, value))
-                resource_id = arm_id(record["ResourceId"], SUBSCRIPTION_ID)
+                resource_id = arm_id(record["ResourceId"], sub)
                 currency = text(record["Currency"], "azure_cost", 8)
                 if not currency or not re.fullmatch(r"[A-Z]{3}", currency):
                     raise EvidenceError("invalid_currency", "Cost currency is not an observed ISO currency code.", "azure_cost")
@@ -5505,7 +6003,13 @@ def collect_databricks_costs(identity, config, reference, workspace, inventory):
     )
     if not config.get("cost_analysis_enabled", True):
         return None, receipt
-    url = ARM_ORIGIN + "/subscriptions/" + SUBSCRIPTION_ID + "/providers/Microsoft.CostManagement/query?api-version=" + COST_API_VERSION
+    if config.get("fleet_cost_analysis_skipped"):
+        receipt["note"] = ("Detailed Databricks cost analysis is skipped in fleet reports of more than " + str(FLEET_COST_ANALYSIS_MAX_WORKSPACES)
+                           + " workspaces (Cost Management throttling); the period cost per workspace comes from cost_scope. Report up to "
+                           + str(FLEET_COST_ANALYSIS_MAX_WORKSPACES) + " workspaces to get this section.")
+        return None, receipt
+    sub = config.get("subscription_id") or SUBSCRIPTION_ID
+    url = ARM_ORIGIN + "/subscriptions/" + sub + "/providers/Microsoft.CostManagement/query?api-version=" + COST_API_VERSION
     reader = HttpReader(identity, ARM_ORIGIN, "arm", patient=True)
     reader.allow(url, "POST")
     resource_ids = [config["id"].lower()] + [rid.lower() for rid in config.get("approved_cost_resource_ids", []) if rid.lower() != config["id"].lower()]
@@ -5516,13 +6020,19 @@ def collect_databricks_costs(identity, config, reference, workspace, inventory):
     scope_filter = parts[0] if len(parts) == 1 else {"or": parts}
     data = {
         "metric": COST_METRIC, "periods": labels, "queries": {},
-        "scope": {"subscription_id": SUBSCRIPTION_ID, "resource_ids": resource_ids, "managed_resource_group": managed_rg},
+        "scope": {"subscription_id": sub, "resource_ids": resource_ids, "managed_resource_group": managed_rg},
     }
+    throttled_stop = False
     for qid, body in cost_query_plan(periods, scope_filter, inventory):
         started, rows, pages, error, status = time.monotonic(), [], 0, None, "complete"
         if identity.deadline - started < COST_QUERY_RESERVE_SECONDS:
             error = EvidenceError("collection_deadline", "Collection time bound reached before this cost query; it is missing, not zero.", "azure_cost_databricks").public()
             data["queries"][qid] = {"status": "skipped", "rows": [], "pages": 0, "seconds": 0.0, "error": error}
+            continue
+        if throttled_stop:
+            data["queries"][qid] = {"status": "skipped", "rows": [], "pages": 0, "seconds": 0.0, "error": EvidenceError(
+                "throttled", "Skipped: Cost Management throttled an earlier query for this workspace (HTTP 429); this part of the cost is missing, not zero.",
+                "azure_cost_databricks", 429).public()}
             continue
         current, seen = url, set()
         try:
@@ -5546,6 +6056,7 @@ def collect_databricks_costs(identity, config, reference, workspace, inventory):
             error = failure.public()
             status = "partial" if rows else "denied" if failure.http_status in (401, 403) else "error"
         data["queries"][qid] = {"status": status, "rows": rows, "pages": pages, "seconds": round(time.monotonic() - started, 1), "error": error}
+        throttled_stop = throttled_stop or bool(error and error.get("code") == "throttled")
     statuses = [q["status"] for q in data["queries"].values()]
     overall = (
         "complete" if all(s == "complete" for s in statuses)
@@ -5558,7 +6069,7 @@ def collect_databricks_costs(identity, config, reference, workspace, inventory):
         records=sum(len(q["rows"]) for q in data["queries"].values()),
         pages=sum(q["pages"] for q in data["queries"].values()),
         pagination_complete=overall == "complete",
-        scope="/subscriptions/" + SUBSCRIPTION_ID,
+        scope="/subscriptions/" + sub,
         read_signature="POST " + url,
         queries=[{"id": qid, "status": q["status"], "records": len(q["rows"]), "seconds": q["seconds"]} for qid, q in data["queries"].items()],
         errors=[q["error"] for q in data["queries"].values() if q["error"]][:3],
@@ -6612,9 +7123,190 @@ def finish_snapshot(raw, reference, provenance="LIVE", environment="UNSPECIFIED"
     }
 
 
-def multi_snapshot(runs, reference, roster):
-    if not 1 <= len(runs) <= 5 or len({run["workspace_id"].lower() for run in runs}) != len(runs):
-        raise EvidenceError("invalid_workspace_runs", "Multi-workspace runs require distinct fixed workspace IDs.", "assessment")
+def workspace_access(sources, config, public_network_access=None):
+    """Explicit in-workspace (Databricks REST plane) access status; never inferred healthy."""
+    if not (config["workspace_api_enabled"] or config["unity_catalog_enabled"]):
+        reason = ("The workspace URL is not available in Azure (workspace not provisioned or being deleted)."
+                  if config.get("host_unavailable") else
+                  "In-workspace reads are disabled in the configuration (workspace_api_enabled/unity_catalog_enabled).")
+        return {"status": "disabled", "in_workspace": False, "http_status": None, "code": None, "reason": reason}
+    plane = [
+        source for source in sources
+        if source["id"].startswith(("dbx_", "uc_")) and source["id"] not in ("uc_system_lineage", "dbx_system_billing")
+        and source["status"] not in ("not_configured", "not_applicable")
+    ]
+    readable = [source for source in plane if source["status"] in ("complete", "partial")]
+    failed = [source for source in plane if source["status"] in ("denied", "error")]
+    if readable:
+        return {
+            "status": "granted" if not failed else "partial", "in_workspace": True, "http_status": None, "code": None,
+            "reason": "In-workspace reads succeeded." if not failed else
+            str(len(failed)) + " of " + str(len(plane)) + " in-workspace reads were denied or failed (partial permissions).",
+        }
+    if not plane:
+        return {"status": "not_collected", "in_workspace": False, "http_status": None, "code": None,
+                "reason": "The workspace APIs were not reached (earlier failure or time bound)."}
+    error = next((source["errors"][0] for source in failed if source.get("errors")), {}) or {}
+    code, http_status = error.get("code"), error.get("http_status")
+    private = str(public_network_access or "").lower() == "disabled"
+    if http_status == 401:
+        status, reason = "denied", "The agent identity is not a user of this workspace (HTTP 401): add it with the workspace admin script."
+    elif http_status == 403:
+        status = "denied"
+        reason = ("Access denied inside the workspace (HTTP 403): identity not added or without permissions"
+                  + ("; public network access is also disabled (publicNetworkAccess=Disabled)." if private
+                     else ", or a network block (IP access list / public access disabled)."))
+    elif code in ("transport_failed", "tls_failed"):
+        status = "unreachable"
+        reason = ("The workspace is not reachable over the network" + (" (publicNetworkAccess=Disabled: private workspace)" if private else " (possibly a private / Private Link workspace)")
+                  + "; the agent has no route to its data plane.")
+    elif code in ("authentication_failed", "identity_mismatch", "cross_tenant_auth_failed", "databricks_oidc_failed",
+                  "databricks_oauth_m2m_failed", "keyvault_secret_read_failed"):
+        status, reason = "token_failed", "No valid Azure Databricks token could be obtained (" + str(code) + ")."
+    elif code in ("collection_deadline", "request_cap"):
+        status, reason = "not_collected", "The time or request budget ended before the in-workspace reads."
+    else:
+        status, reason = "error", "The workspace APIs failed (" + str(code) + (", HTTP " + str(http_status) if http_status else "") + ")."
+    return {"status": status, "in_workspace": False, "http_status": http_status, "code": code, "reason": reason}
+
+
+def run_cost_summary(snapshot, config):
+    if snapshot is None:
+        return {"status": "not_collected", "basis": None, "currency": None, "total": None, "dbu": None, "infra": None, "reason": None}
+    fin = snapshot["finops"]
+    source = next((item for item in snapshot["sources"] if item["id"] == "azure_cost"), None) or {}
+    errors = source.get("errors") or []
+    code = errors[0].get("code") if errors else None
+    http_status = errors[0].get("http_status") if errors else None
+    status = source.get("status") or "not_configured"
+    result = {
+        "status": "throttled" if code in ("throttled", "cost_deadline") or http_status == 429 else status,
+        "basis": "cost_scope " + str(config.get("cost_scope")) + " / " + str(config.get("cost_timeframe")),
+        "currency": fin["currency"], "total": fin["actual_cost"], "dbu": None, "infra": None,
+        "reason": (str(code) + (" (HTTP " + str(http_status) + ")" if http_status else "")) if code else None,
+    }
+    if fin["actual_cost"] is not None and fin["currency"]:
+        workspace_id = config["id"].lower()
+        dbu = sum((Decimal(str(row["amount"])) for row in fin["cost_rows"] if row["resource_id"].lower() == workspace_id), Decimal(0))
+        result["dbu"] = float(dbu)
+        result["infra"] = float(Decimal(str(fin["actual_cost"])) - dbu)
+    elif status == "complete" and not fin["cost_rows"]:
+        result.update(total=0.0, dbu=0.0, infra=0.0, reason="no charges in the period")
+    elif status == "not_configured":
+        head = ((snapshot.get("databricks_costs") or {}).get("headline") or {})
+        currency = (snapshot.get("databricks_costs") or {}).get("currency")
+        if isinstance(head.get("mtd_total"), (int, float)) and currency:
+            result.update(status="complete", basis="databricks_costs month to date", currency=currency, total=float(head["mtd_total"]))
+    return result
+
+
+def fleet_row(run, config):
+    snapshot = run["snapshot"]
+    workspace = snapshot["workspace"] if snapshot else {}
+    findings = Counter(row["severity"] for row in snapshot["findings"]) if snapshot else Counter()
+    global_score = snapshot["scores"]["global"] if snapshot else {}
+    public_access = workspace.get("public_network_access") or config.get("public_network_access")
+    return {
+        "workspace_name": config["name"],
+        "arm_name": config["arm_name"],
+        "subscription_id": config["subscription_id"],
+        "subscription_name": config["subscription_name"],
+        "resource_group": config["resource_group"],
+        "location": workspace.get("region") or config.get("location"),
+        "sku": workspace.get("sku_name") or config.get("sku"),
+        "workspace_host": config["workspace_host"] or None,
+        "environment": config["environment"],
+        "public_network_access": public_access,
+        "status": run["status"],
+        "duration_seconds": run.get("duration_seconds"),
+        "workspace_access": workspace_access(run_sources(run), config, public_access),
+        "score": global_score.get("score"),
+        "coverage_percent": global_score.get("coverage_percent"),
+        "findings": {severity: findings.get(severity, 0) for severity in SEVERITIES},
+        "cost": run_cost_summary(snapshot, config),
+        "error": {key: run["error"].get(key) for key in ("code", "http_status")} if run["error"] else None,
+    }
+
+
+def run_status(snapshot):
+    return "partial" if any(source["status"] not in ("complete", "not_applicable", "not_configured") for source in snapshot["sources"]) else "ok"
+
+
+def collect_fleet(configs):
+    """Collect several workspaces in parallel (bounded daemon workers, shared deadline); each run is ok, partial or a structured error."""
+    started = time.monotonic()
+    deadline = started + FLEET_COLLECTION_SECONDS
+    hard_stop = started + FLEET_HARD_STOP_SECONDS
+    light_costs = len(configs) > FLEET_COST_ANALYSIS_MAX_WORKSPACES
+    results = [None] * len(configs)
+    pending = queue.Queue()
+    for index in range(len(configs)):
+        pending.put(index)
+    lock = threading.Lock()
+
+    def base_run(config, run_reference):
+        return {
+            "workspace_id": config["id"],
+            "workspace_name": config["name"],
+            "subscription_id": config["subscription_id"],
+            "subscription_name": config["subscription_name"],
+            "reference_utc": run_reference,
+            "snapshot": None,
+            "error": None,
+            "status": "error",
+        }
+
+    def collect_one(config):
+        run = base_run(config, utc_now())
+        begun = time.monotonic()
+        try:
+            if time.monotonic() >= deadline:
+                raise EvidenceError("collection_deadline", "Shared fleet time bound reached before this workspace started; it was not collected, not empty/healthy.", "collection")
+            raw = collect_live({**config, "fleet_cost_analysis_skipped": True} if light_costs else config, run["reference_utc"], deadline=deadline)
+            snapshot = finish_snapshot(raw, run["reference_utc"], environment=config["environment"])
+            run["snapshot"] = snapshot
+            run["status"] = run_status(snapshot)
+        except EvidenceError as exc:
+            run.update(snapshot=None, status="error", error=exc.public())
+        except Exception as exc:  # one workspace must never abort the fleet report
+            run.update(snapshot=None, status="error", error=EvidenceError(
+                "collector_exception", "Unexpected " + type(exc).__name__ + " while collecting this workspace; no data is inferred.", "collection").public())
+        run["duration_seconds"] = round(time.monotonic() - begun, 1)
+        run["fleet_row"] = fleet_row(run, config)
+        if run["snapshot"] is not None:
+            run["snapshot"]["workspace_access"] = run["fleet_row"]["workspace_access"]
+        return run
+
+    def worker():
+        while True:
+            try:
+                index = pending.get_nowait()
+            except queue.Empty:
+                return
+            run = collect_one(configs[index])
+            with lock:
+                results[index] = run
+
+    threads = [threading.Thread(target=worker, name="dbx-fleet-" + str(n), daemon=True) for n in range(min(FLEET_WORKERS, len(configs)))]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(max(0.0, hard_stop - time.monotonic()))
+    with lock:
+        runs = list(results)
+    for index, config in enumerate(configs):
+        if runs[index] is None:
+            run = base_run(config, utc_now())
+            run["error"] = EvidenceError("collection_timeout", "This workspace did not finish before the fleet hard stop; it is not empty/healthy.", "collection").public()
+            run["duration_seconds"] = None
+            run["fleet_row"] = fleet_row(run, config)
+            runs[index] = run
+    return runs
+
+
+def multi_snapshot(runs, reference, roster, meta=None):
+    if not 1 <= len(runs) <= MAX_REPORT_WORKSPACES or len({run["workspace_id"].lower() for run in runs}) != len(runs):
+        raise EvidenceError("invalid_workspace_runs", "Multi-workspace runs require 1 to " + str(MAX_REPORT_WORKSPACES) + " distinct workspace IDs.", "assessment")
     if any(
         run["status"] not in ("ok", "partial", "error")
         or ((run["snapshot"] is None) != (run["status"] == "error"))
@@ -6624,6 +7316,11 @@ def multi_snapshot(runs, reference, roster):
     ):
         raise EvidenceError("invalid_workspace_runs", "Each run is an explicit snapshot success/partial or a structured error, never both.", "assessment")
     snapshots = [run["snapshot"] for run in runs if run["snapshot"] is not None]
+    for snapshot in snapshots:
+        # the logo and the heading font are embedded once, at document level
+        snapshot["client"] = {**(snapshot.get("client") or {}), "logo_data_uri": ""}
+        if isinstance(snapshot.get("presentation"), dict):
+            snapshot["presentation"] = {**snapshot["presentation"], "display_font": ""}
     provenances = {snapshot["provenance"] for snapshot in snapshots}
     if len(provenances) > 1:
         raise EvidenceError("mixed_provenance", "LIVE and SIMULATED snapshots cannot be combined.", "assessment")
@@ -6638,8 +7335,27 @@ def multi_snapshot(runs, reference, roster):
     heads = [((s.get("databricks_costs") or {}).get("headline") or {}, (s.get("databricks_costs") or {}).get("currency")) for s in snapshots]
     currencies = {cur for head, cur in heads if head.get("review_total") is not None}
     comparable = bool(heads) and len(currencies) == 1 and all(head.get("review_total") is not None for head, _ in heads)
+    rows = [run.get("fleet_row") or {} for run in runs]
+    subscriptions = {}
+    for run, row in zip(runs, rows):
+        key = row.get("subscription_id") or run.get("subscription_id")
+        entry = subscriptions.setdefault(key, {
+            "subscription_id": key, "subscription_name": row.get("subscription_name") or run.get("subscription_name") or key, "workspaces": 0,
+        })
+        entry["workspaces"] += 1
+    totals, dbu, infra = {}, {}, {}
+    for row in rows:
+        cost = row.get("cost") or {}
+        if cost.get("currency") and cost.get("total") is not None:
+            code = cost["currency"]
+            totals[code] = float(Decimal(str(totals.get(code, 0))) + Decimal(str(cost["total"])))
+            dbu[code] = float(Decimal(str(dbu.get(code, 0))) + Decimal(str(cost.get("dbu") or 0)))
+            infra[code] = float(Decimal(str(infra.get(code, 0))) + Decimal(str(cost.get("infra") or 0)))
+    severity_counts = Counter(finding["severity"] for snapshot in snapshots for finding in snapshot["findings"])
+    meta = dict(meta or {})
     return {
         "schema_version": "databricks-dep-multi-workspace-v1",
+        "fleet_version": "1",
         "reference_utc": reference,
         "provenance": next(iter(provenances)) if provenances else "LIVE",
         "client": {"name": CLIENT_NAME, "logo_data_uri": CLIENT_LOGO_DATA_URI, "logo_alt": CLIENT_LOGO_ALT},
@@ -6647,6 +7363,25 @@ def multi_snapshot(runs, reference, roster):
         "available_workspaces": roster,
         "selected_workspace_names": [run["workspace_name"] for run in runs],
         "workspace_runs": runs,
+        "fleet": {
+            "selection": meta.get("mode", "names"),
+            "subscription_filter": meta.get("subscription_filter"),
+            "duration_seconds": meta.get("duration_seconds"),
+            "discovery": meta.get("discovery") or {},
+            "workspaces": len(runs),
+            "subscriptions": sorted(subscriptions.values(), key=lambda item: (str(item["subscription_name"]).lower(), str(item["subscription_id"]))),
+            "access_counts": dict(Counter((row.get("workspace_access") or {}).get("status") for row in rows if row)),
+            "without_workspace_access": sum(run["snapshot"] is not None and not (row.get("workspace_access") or {}).get("in_workspace")
+                                            for run, row in zip(runs, rows)),
+            "cost_totals_by_currency": totals,
+            "dbu_totals_by_currency": dbu,
+            "infra_totals_by_currency": infra,
+            "cost_unavailable": sum(bool(row) and (row.get("cost") or {}).get("total") is None for row in rows),
+            "detailed_cost_analysis": "skipped_above_" + str(FLEET_COST_ANALYSIS_MAX_WORKSPACES) + "_workspaces"
+            if len(runs) > FLEET_COST_ANALYSIS_MAX_WORKSPACES else "per_workspace",
+            "limits": {"max_workspaces": MAX_REPORT_WORKSPACES, "workers": FLEET_WORKERS, "deadline_seconds": FLEET_COLLECTION_SECONDS,
+                       "parallel_cost_queries": COST_CONCURRENCY, "detailed_cost_analysis_max_workspaces": FLEET_COST_ANALYSIS_MAX_WORKSPACES},
+        },
         "aggregate": {
             "scores": scores,
             "inventory_counts": {
@@ -6659,6 +7394,7 @@ def multi_snapshot(runs, reference, roster):
             },
             "findings_total": sum(len(snapshot["findings"]) for snapshot in snapshots),
             "critical_total": sum(check["status"] == "failed" and check["severity"] == "critical" for check in checks),
+            "severity_counts": {severity: severity_counts.get(severity, 0) for severity in SEVERITIES},
             "workspace_status_counts": dict(Counter(run["status"] for run in runs)),
             "failed_workspace_count": sum(run["snapshot"] is None for run in runs),
             "official_waf_score": False,
@@ -7051,7 +7787,77 @@ def sharing_fields(root, paths):
     return {**result, "sharing_mode": "native_ui", **aliases}
 
 
+def fit_lists(result, keys):
+    """Drop whole trailing list items (never characters) until the default-serialized response fits TRANSPORT_BYTES."""
+    while response_bytes(result) > TRANSPORT_BYTES:
+        for key in keys:
+            if result.get(key):
+                result[key].pop()
+                result["lists_truncated"] = True
+                break
+        else:
+            return result
+    return result
+
+
+def fleet_envelope(snapshot, paths, root):
+    runs = snapshot["workspace_runs"]
+    fleet = snapshot["fleet"]
+    findings = [(run, row) for run in runs if run["snapshot"] for row in run["snapshot"]["findings"]]
+    severity = Counter(row["severity"] for _, row in findings)
+    without_access = [run for run in runs if run["snapshot"] is not None and not run["fleet_row"]["workspace_access"]["in_workspace"]]
+    errors = [run for run in runs if run["status"] == "error"]
+    critical = [(run, row) for run, row in findings if row["severity"] == "critical"]
+    global_score = snapshot["aggregate"]["scores"]["global"]
+    status_counts = Counter(run["status"] for run in runs)
+    result = {
+        "status": "partial" if any(run["status"] != "ok" for run in runs) else "ok",
+        "operation": "self_test" if snapshot.get("provenance") == "SIMULATED" else "report",
+        "artifact_status": "written",
+        **sharing_fields(root, paths),
+        "reference_utc": snapshot["reference_utc"],
+        "provenance": snapshot["provenance"],
+        "fleet": {
+            "selection": fleet["selection"],
+            "subscription_filter": fleet["subscription_filter"],
+            "workspaces": len(runs),
+            "subscriptions": len(fleet["subscriptions"]),
+            "status_counts": {key: status_counts.get(key, 0) for key in ("ok", "partial", "error")},
+            "without_workspace_access": len(without_access),
+            "findings_by_severity": {key: severity.get(key, 0) for key in SEVERITIES},
+            "cost_by_currency": fleet["cost_totals_by_currency"],
+            "cost_unavailable": fleet["cost_unavailable"],
+            "detailed_cost_analysis": fleet["detailed_cost_analysis"],
+            "duration_seconds": fleet["duration_seconds"],
+        },
+        "global": {"score": global_score.get("score"), "coverage_percent": global_score.get("coverage_percent")},
+        "findings_total": len(findings),
+        "critical_total": severity.get("critical", 0),
+        "estimated_savings": None,
+        "lists_truncated": len(without_access) > 5 or len(errors) > 5 or len(critical) > 5,
+        "without_workspace_access": [
+            {"workspace": run["workspace_name"], "access": run["fleet_row"]["workspace_access"]["status"],
+             "http_status": run["fleet_row"]["workspace_access"]["http_status"]}
+            for run in without_access[:5]
+        ],
+        "workspace_errors": [{"workspace": run["workspace_name"], "code": run["error"].get("code")} for run in errors[:5]],
+        "top_critical": [
+            {"workspace": run["workspace_name"], "rule_id": row.get("rule_id"), "title": str(row.get("title") or "")[:90]}
+            for run, row in critical[:5]
+        ],
+        **{key: str(path) for key, path in paths.items()},
+    }
+    fit_lists(result, ("top_critical", "workspace_errors", "without_workspace_access"))
+    if response_bytes(result) > TRANSPORT_BYTES and result.get("report_url"):
+        for key in paths:
+            result.pop(key, None)
+        result["local_paths_omitted"] = True
+    return ensure_response(result)
+
+
 def report_envelope(snapshot, paths, root):
+    if snapshot.get("schema_version") == "databricks-dep-multi-workspace-v1" and snapshot.get("fleet"):
+        return fleet_envelope(snapshot, paths, root)
     items = successful_snapshots(snapshot)
     findings = [row for item in items for row in item["findings"]]
     multi = snapshot.get("schema_version") == "databricks-dep-multi-workspace-v1"
@@ -7075,6 +7881,57 @@ def report_envelope(snapshot, paths, root):
         "databricks_costs": aggregate["databricks_costs"] if multi else cost_summary(snapshot.get("databricks_costs")),
         **{key: str(path) for key, path in paths.items()},
     }
+    access = snapshot.get("workspace_access") if not multi else None
+    if access:
+        for candidate in ({key: access.get(key) for key in ("status", "in_workspace", "http_status", "reason")},
+                          {key: access.get(key) for key in ("status", "in_workspace", "http_status")}):
+            if response_bytes({**result, "workspace_access": candidate}) <= TRANSPORT_BYTES:
+                result["workspace_access"] = candidate
+                break
+    return ensure_response(result)
+
+
+def list_workspaces_response(configs, params):
+    rows = [roster_row(config) for config in configs]
+    counts = Counter((row["subscription_id"], row["subscription_name"]) for row in rows)
+    subscriptions = [{"name": name, "id": sub, "workspaces": count}
+                     for (sub, name), count in sorted(counts.items(), key=lambda item: (str(item[0][1]).lower(), item[0][0]))]
+    offset, limit = params["offset"], params["limit"]
+    page = rows[offset:offset + limit]
+    auto = DISCOVERY_INFO.get("mode") == "auto"
+    result = {
+        "status": "ok",
+        "operation": "list_workspaces",
+        "fresh_collection": auto,
+        "roster_basis": "observed_inventory_azure_resource_graph_plus_operator_entries" if auto
+        else "fixed_operator_configuration_not_observed_inventory",
+        "discovery": dict(DISCOVERY_INFO),
+        "subscription_filter": params["subscription"] or None,
+        "total": len(rows),
+        "subscriptions_total": len(subscriptions),
+        "subscriptions": subscriptions,
+        "report_batch_limit": MAX_REPORT_WORKSPACES,
+        "offset": offset,
+        "requested_limit": limit,
+        "returned": len(page),
+        "has_more": offset + len(page) < len(rows),
+        "next_offset": offset + len(page) if offset + len(page) < len(rows) else None,
+        "transport_capped": False,
+        "available_workspaces": page,
+    }
+    while len(json.dumps(result["subscriptions"])) > 900:
+        result["subscriptions"].pop()
+        result["subscriptions_truncated"] = True
+    while page and response_bytes(result) > TRANSPORT_BYTES:
+        page = page[:-1]
+        result.update(
+            available_workspaces=page, returned=len(page), transport_capped=True,
+            has_more=offset + len(page) < len(rows),
+            next_offset=offset + len(page) if offset + len(page) < len(rows) else None,
+        )
+    while response_bytes(result) > TRANSPORT_BYTES and result["subscriptions"]:
+        result["subscriptions"].pop()
+        result["subscriptions_truncated"] = True
     return ensure_response(result)
 
 
@@ -7111,7 +7968,7 @@ def write_report(snapshot):
     }
     encoded = {key: value.encode("utf-8-sig" if key.endswith("csv_path") else "utf-8") for key, value in documents.items()}
     if any(len(value) > ARTIFACT_BYTES for value in encoded.values()):
-        raise EvidenceError("artifact_size_exceeded", "Complete artifacts exceed 4800000 bytes; no records, sources or time windows were dropped and no files were written.", "artifact_storage")
+        raise EvidenceError("artifact_size_exceeded", "Complete artifacts exceed " + str(ARTIFACT_BYTES) + " bytes; no records, sources or time windows were dropped and no files were written. For a fleet, filter with subscription or workspace_names.", "artifact_storage")
     temporary, written = [], []
     try:
         directory.mkdir(exist_ok=True)
@@ -7166,12 +8023,14 @@ def main(
     status: str = "all",
     limit: int = 25,
     offset: int = 0,
+    subscription: str = "",
 ) -> dict:
-    """Collect one or several fixed approved Azure Databricks workspaces; never change source scope or identity."""
+    """Review one, several or all auto-discovered (or approved) Azure Databricks workspaces, read-only; never changes source scope or identity."""
+    global ROSTER
     try:
         params = validate_parameters(
             operation, view, workspace_name, workspace_names, workload_name,
-            classification, area, level, severity, status, limit, offset,
+            classification, area, level, severity, status, limit, offset, subscription,
         )
         if operation == "self_test":
             validate_cost_settings()
@@ -7184,50 +8043,38 @@ def main(
             snapshot = finish_snapshot(raw, reference, provenance="SIMULATED", environment="PRODUCTION")
             snapshot.update(available_workspaces=raw["demo_roster"], selected_workspace_names=[raw["demo_roster"][0]["workspace_name"]])
             return write_report(snapshot)
-        configs, roster = selection_configs(workspace_name, workspace_names)
+        preflight_configuration()
+        ROSTER = None
+        DISCOVERY_INFO.clear()
+        ROSTER = effective_roster()
+        configs, roster, mode = selection_configs(params["workspace_name"], params["workspace_names"], params["subscription"])
         if operation == "list_workspaces":
-            return ensure_response({
-                "status": "ok",
-                "operation": operation,
-                "fresh_collection": False,
-                "roster_basis": "fixed_operator_configuration_not_observed_inventory",
-                "available_workspaces": roster,
-                "total": len(roster),
-            })
+            return list_workspaces_response(configs, params)
         if not CATALOG.get("rules"):
             raise EvidenceError("catalog_missing", "Use the build-generated whole-file tool, not unbuilt engine.py.", "rule_catalog")
+        if operation == "query" and len(configs) > MAX_QUERY_WORKSPACES:
+            raise EvidenceError("too_many_workspaces", "query reads at most " + str(MAX_QUERY_WORKSPACES) + " workspaces per call ("
+                                + str(len(configs)) + " selected); use operation=report for the fleet, or select workspace_name.", "parameters")
+        if len(configs) > MAX_REPORT_WORKSPACES:
+            raise EvidenceError("too_many_workspaces", "The selection has " + str(len(configs)) + " workspaces and one report covers at most "
+                                + str(MAX_REPORT_WORKSPACES) + "; filter with subscription or list exact workspace_names.", "parameters")
         reference = utc_now()
-        if len(configs) == 1:
+        if len(configs) == 1 and (mode == "names" or operation == "query"):
             config = configs[0]
             raw = collect_live(config, reference)
             snapshot = finish_snapshot(raw, reference, environment=config["environment"])
+            snapshot["workspace_access"] = workspace_access(
+                snapshot["sources"], config, snapshot["workspace"].get("public_network_access") or config.get("public_network_access"))
             snapshot.update(available_workspaces=roster, selected_workspace_names=[config["name"]])
         else:
-            runs = []
-            deadline = time.monotonic() + MAX_COLLECTION_SECONDS
-            for config in configs:
-                run_reference = utc_now()
-                run = {
-                    "workspace_id": config["id"],
-                    "workspace_name": config["name"],
-                    "reference_utc": run_reference,
-                    "snapshot": None,
-                    "error": None,
-                    "status": "error",
-                }
-                try:
-                    if time.monotonic() >= deadline:
-                        raise EvidenceError("collection_deadline", "Shared multi-workspace time bound reached; this workspace was not collected, not empty/healthy.", "collection")
-                    raw = collect_live(config, run_reference, deadline=deadline)
-                    run["snapshot"] = finish_snapshot(raw, run_reference, environment=config["environment"])
-                    run["status"] = "partial" if any(
-                        source["status"] not in ("complete", "not_applicable") for source in run["snapshot"]["sources"]
-                    ) else "ok"
-                except EvidenceError as exc:
-                    run["error"] = exc.public()
-                runs.append(run)
-            snapshot = multi_snapshot(runs, reference, roster)
+            started = time.monotonic()
+            runs = collect_fleet(configs)
+            snapshot = multi_snapshot(runs, reference, roster, {
+                "mode": mode, "subscription_filter": params["subscription"] or None,
+                "duration_seconds": round(time.monotonic() - started, 1), "discovery": dict(DISCOVERY_INFO),
+            })
             if not successful_snapshots(snapshot):
+                codes = Counter(run["error"].get("code") for run in runs)
                 return ensure_response({
                     "status": "error",
                     "error": {
@@ -7236,13 +8083,15 @@ def main(
                         "message": "No selected workspace produced a snapshot; no empty/healthy report or files.",
                     },
                     "artifact_status": "not_written",
+                    "error_codes": dict(codes.most_common(8)),
                     "workspace_errors": [
                         {
                             "workspace_name": run["workspace_name"],
                             "error": {key: run["error"].get(key) for key in ("code", "source_id", "http_status")},
                         }
-                        for run in runs
+                        for run in runs[:8]
                     ],
+                    "workspaces": len(runs),
                     "provenance": "LIVE",
                 })
         return query_snapshot(snapshot, params) if operation == "query" else write_report(snapshot)

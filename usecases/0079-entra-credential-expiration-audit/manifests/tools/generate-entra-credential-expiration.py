@@ -1,0 +1,953 @@
+# generate-entra-credential-expiration
+# Python tool for Azure SRE Agent: Microsoft Entra credential expiration audit.
+# Read-only. Before you paste it into the Code tab, replace <YOUR_AGENT_CLIENT_ID>
+# with the Client ID of your agent's managed identity (Step 0 of the guide).
+# Version 1.1 · October 2026
+
+def main() -> dict:
+    """Audit Microsoft Entra credential expiration for applications and service principals."""
+    import html
+    import json
+    import os
+    from collections import Counter
+    from datetime import datetime, timezone
+    from typing import Any, Dict, List, Optional
+    import requests
+    # ------------------------------------------------------------------
+    # REQUIRED CONFIGURATION
+    # Replace the value with the Client ID of the user-assigned managed
+    # identity of YOUR Azure SRE Agent (Step 0 of the guide).
+    # A Client ID is not a secret.
+    # ------------------------------------------------------------------
+    MANAGED_IDENTITY_CLIENT_ID = "<YOUR_AGENT_CLIENT_ID>"
+
+    def fail(message: str) -> dict:
+        return {"error": message, "coverage": "partial"}
+
+    if not MANAGED_IDENTITY_CLIENT_ID or MANAGED_IDENTITY_CLIENT_ID.startswith("<"):
+        return fail(
+            "Configuration required: set MANAGED_IDENTITY_CLIENT_ID to the "
+            "Client ID of your Azure SRE Agent user-assigned managed identity."
+        )
+
+    try:
+        from azure.identity import ManagedIdentityCredential
+        credential = ManagedIdentityCredential(
+            client_id=MANAGED_IDENTITY_CLIENT_ID
+        )
+        graph_token = credential.get_token(
+            "https://graph.microsoft.com/.default"
+        ).token
+    except Exception as exc:
+        return fail(f"Failed to acquire Microsoft Graph token: {exc}")
+    now_utc = datetime.now(timezone.utc)
+    reference_date = now_utc.date()
+    reference_iso = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+    session = requests.Session()
+    session.headers.update({
+        "Authorization": f"Bearer {graph_token}",
+        "Accept": "application/json",
+    })
+    def parse_datetime(value: Optional[str]) -> Optional[datetime]:
+        if not value:
+            return None
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    def classify(days_remaining: Optional[int]) -> str:
+        if days_remaining is None:
+            return "UNKNOWN"
+        if days_remaining <= 0:
+            return "EXPIRED"
+        if days_remaining <= 7:
+            return "CRITICAL"
+        if days_remaining <= 30:
+            return "EXPIRING SOON"
+        if days_remaining <= 90:
+            return "EXPIRING"
+        return "Valid"
+    def fetch_all(url: str) -> List[Dict[str, Any]]:
+        items: List[Dict[str, Any]] = []
+        next_url = url
+        while next_url:
+            response = session.get(next_url, timeout=60)
+            if response.status_code in (401, 403):
+                raise RuntimeError(
+                    f"Microsoft Graph authorization failed: HTTP {response.status_code}."
+                )
+            if not response.ok:
+                raise RuntimeError(
+                    f"Microsoft Graph request failed: HTTP {response.status_code}."
+                )
+            payload = response.json()
+            if not isinstance(payload, dict) or "value" not in payload:
+                raise RuntimeError(
+                    "Unexpected response format returned by Microsoft Graph."
+                )
+            items.extend(payload.get("value") or [])
+            next_url = payload.get("@odata.nextLink")
+        return items
+    applications_url = (
+        "https://graph.microsoft.com/v1.0/applications"
+        "?$select=displayName,appId,id,passwordCredentials,keyCredentials"
+        "&$top=999"
+    )
+    service_principals_url = (
+        "https://graph.microsoft.com/v1.0/servicePrincipals"
+        "?$select=displayName,appId,id,servicePrincipalType,"
+        "passwordCredentials,keyCredentials"
+        "&$top=999"
+    )
+    try:
+        applications = fetch_all(applications_url)
+        all_service_principals = fetch_all(service_principals_url)
+    except Exception as exc:
+
+        return fail(str(exc))
+    service_principals = []
+    managed_identity_excluded_count = 0
+    for service_principal in all_service_principals:
+        if service_principal.get("servicePrincipalType") == "ManagedIdentity":
+            managed_identity_excluded_count += 1
+            continue
+        service_principals.append(service_principal)
+    rows: List[Dict[str, Any]] = []
+    status_counter = Counter()
+    def add_credential_rows(source_object: Dict[str, Any], object_type: str) -> None:
+        object_name = source_object.get("displayName") or ""
+        app_id = source_object.get("appId") or ""
+        object_id = source_object.get("id") or ""
+        credential_sets = [
+            ("passwordCredential", source_object.get("passwordCredentials") or []),
+            ("keyCredential", source_object.get("keyCredentials") or []),
+        ]
+        for credential_type, credentials in credential_sets:
+            for credential_item in credentials:
+                expiration = parse_datetime(credential_item.get("endDateTime"))
+                days_remaining = (
+                    None if expiration is None
+                    else (expiration.date() - reference_date).days
+                )
+                status = classify(days_remaining)
+                status_counter[status] += 1
+                rows.append({
+                    "credentialName": credential_item.get("displayName") or "",
+                    "type": credential_type,
+                    "objectType": object_type,
+                    "objectName": object_name,
+                    "appId": app_id,
+                    "objectId": object_id,
+                    "expirationUtc": (
+                        expiration.strftime("%Y-%m-%dT%H:%M:%SZ")
+                        if expiration else ""
+                    ),
+                    "daysRemaining": (
+                        days_remaining if days_remaining is not None else ""
+                    ),
+                    "status": status,
+                    "actionUrl": (
+                        "https://entra.microsoft.com/"
+                        "#view/Microsoft_AAD_RegisteredApps/"
+                        f"ApplicationMenuBlade/~/Overview/appId/{app_id}"
+                        if app_id else ""
+                    ),
+                })
+    for application in applications:
+        add_credential_rows(application, "Application")
+    for service_principal in service_principals:
+        add_credential_rows(service_principal, "Service Principal")
+    application_count = len(applications)
+    service_principal_count = len(service_principals)
+    counts_by_status = {
+        key: int(value) for key, value in status_counter.items()
+    }
+    coverage = {
+        "status": "complete",
+        "reference_utc": reference_iso,
+        "pagination_completed": True,
+        "applications_scanned": application_count,
+        "service_principals_scanned": service_principal_count,
+        "managed_identities_excluded": managed_identity_excluded_count,
+        "credential_rows": len(rows),
+        "scope": (
+            "Applications and Service Principals, excluding "
+            "ManagedIdentity Service Principals"
+        ),
+    }
+    report_date = now_utc.strftime("%Y-%m-%d")
+    report_path = f"/mnt/data/entra-credential-expiration-audit-{report_date}.html"
+    def escape(value):
+        return html.escape("" if value is None else str(value), quote=True)
+    def status_css(status):
+        return "".join(ch.lower() if ch.isalnum() else "-" for ch in status).strip("-") or "unknown"
+    def plural(number, word, many=None):
+        return f"{number} {word if number == 1 else (many or word + 's')}"
+    status_order = ["EXPIRED", "CRITICAL", "EXPIRING SOON", "EXPIRING", "Valid"]
+    status_notes = {
+        "EXPIRED": "Requires immediate rotation review",
+        "CRITICAL": "Expires within 7 days",
+        "EXPIRING SOON": "Expires within 30 days",
+        "EXPIRING": "Plan the next maintenance window",
+        "Valid": "No immediate action",
+        "UNKNOWN": "Expiry date missing or unreadable",
+    }
+    status_labels = {
+        "EXPIRED": "Expired", "CRITICAL": "Critical", "EXPIRING SOON": "Expiring soon",
+        "EXPIRING": "Expiring", "Valid": "Valid", "UNKNOWN": "Unknown",
+    }
+    status_windows = {
+        "EXPIRED": "End date on or before the reference day",
+        "CRITICAL": "1 to 7 days left",
+        "EXPIRING SOON": "8 to 30 days left",
+        "EXPIRING": "31 to 90 days left",
+        "Valid": "More than 90 days left",
+        "UNKNOWN": "No readable end date",
+    }
+    status_steps = {
+        "EXPIRED": "Review each one with its owner: sign-ins that still use an expired "
+                   "credential fail. Rotate or remove it through your change process.",
+        "CRITICAL": "Confirm the owner and rotate before the expiry date.",
+        "EXPIRING SOON": "Schedule the rotation in an upcoming change window.",
+        "UNKNOWN": "Open each one in Microsoft Entra and confirm its end date.",
+    }
+    count = {status: counts_by_status.get(status, 0) for status in status_order + ["UNKNOWN"]}
+    total_rows = len(rows)
+    secret_count = sum(1 for row in rows if row["type"] == "passwordCredential")
+    certificate_count = total_rows - secret_count
+    expired_or_critical = count["EXPIRED"] + count["CRITICAL"]
+    upcoming = count["EXPIRING SOON"] + count["EXPIRING"]
+    bar_statuses = status_order + (["UNKNOWN"] if count["UNKNOWN"] else [])
+    focus_statuses = ["EXPIRED", "CRITICAL", "EXPIRING SOON"]
+    if expired_or_critical:
+        action_title = "Action required"
+        action_detail = f"{expired_or_critical} credential(s) need owner review now."
+        action_class = "signal--urgent"
+    else:
+        action_title = "No immediate action"
+        action_detail = "No expired or critical credentials were found."
+        action_class = "signal--clear"
+    signal_breakdown = " · ".join(
+        f"{count[status]} {status_labels[status].lower()}"
+        for status in ("EXPIRED", "CRITICAL", "EXPIRING SOON", "EXPIRING", "UNKNOWN") if count[status]
+    ) or ("Every credential has more than 90 days left" if total_rows else "No credentials in scope")
+    if not total_rows:
+        summary_html = "No application or service principal credentials were found in scope."
+    elif not (expired_or_critical or upcoming or count["UNKNOWN"]):
+        summary_html = (
+            "The only credential in scope has more than 90 days left." if total_rows == 1
+            else f"All <b>{total_rows}</b> credentials have more than 90 days left."
+        )
+    else:
+        parts = []
+        if expired_or_critical:
+            reasons = []
+            if count["EXPIRED"]:
+                reasons.append(f"<b>{count['EXPIRED']}</b> {'has' if count['EXPIRED'] == 1 else 'have'} expired")
+            if count["CRITICAL"]:
+                reasons.append(
+                    f"<b>{count['CRITICAL']}</b> {'expires' if count['CRITICAL'] == 1 else 'expire'} within 7 days"
+                )
+            parts.append(
+                f"<b>{expired_or_critical} of {plural(total_rows, 'credential')}</b> "
+                f"{'needs' if expired_or_critical == 1 else 'need'} owner review now: " + " and ".join(reasons) + "."
+            )
+        else:
+            parts.append("No credential has expired or expires within 7 days.")
+        if upcoming:
+            parts.append(
+                f"<b>{upcoming}</b> {'more ' if expired_or_critical else ''}"
+                f"{'expires' if upcoming == 1 else 'expire'} within 90 days."
+            )
+        if count["UNKNOWN"]:
+            parts.append(f"<b>{count['UNKNOWN']}</b> {'has' if count['UNKNOWN'] == 1 else 'have'} no readable expiry date.")
+        summary_html = " ".join(parts)
+    def segments(counter, statuses, scale):
+        if not scale:
+            return ""
+        return "".join(
+            f'<i class="seg seg--{status_css(status)}" style="width:{counter[status] * 100 / scale:.2f}%"'
+            f' title="{escape(status_labels[status])}: {counter[status]}"></i>'
+            for status in statuses if counter[status]
+        )
+    def describe(counter, statuses):
+        return ", ".join(
+            f"{counter[status]} {status_labels[status].lower()}" for status in statuses if counter[status]
+        ) or "none"
+    def legend(statuses, counter=None):
+        items = []
+        for status in statuses:
+            value = "" if counter is None else f" <b>{counter[status]}</b>"
+            zero = " is-zero" if counter is not None and not counter[status] else ""
+            items.append(
+                f'<span class="legend__item{zero}"><i class="dot dot--{status_css(status)}"></i>'
+                f"{escape(status_labels[status])}{value}</span>"
+            )
+        return "".join(items)
+    kpi_cards = "".join(
+        f'<article class="kpi"><div class="kpi__value">{value}</div><div class="kpi__label">{label}</div>'
+        f'<div class="kpi__note">{note}</div></article>'
+        for value, label, note in (
+            (total_rows, "Credentials in scope",
+             f"{plural(secret_count, 'client secret')} · {plural(certificate_count, 'certificate')}"),
+            (application_count, "Applications", "Application registrations scanned"),
+            (service_principal_count, "Service principals", "Non-managed identities included"),
+            ("100%", "Coverage", "Microsoft Graph pagination completed"),
+        )
+    )
+    posture_rows = []
+    for status in ["EXPIRED", "CRITICAL", "EXPIRING SOON", "EXPIRING"] + (
+        ["UNKNOWN"] if count["UNKNOWN"] else []
+    ) + ["Valid"]:
+        number = count[status]
+        css = status_css(status)
+        step = status_steps.get(status, "") if number else ""
+        detail = status_windows[status] + (f". {step}" if step else "")
+        button = (
+            f'<button class="btn btn--ghost btn--sm" type="button" data-show="{escape(status)}"'
+            f' aria-label="Show the {plural(number, "credential")} with status {escape(status)} in the inventory">'
+            f"Show {number}</button>"
+            if number else '<span class="posture__none">None</span>'
+        )
+        posture_rows.append(
+            f'<li class="posture__row posture__row--{css}{"" if number else " is-zero"}">'
+            f'<span class="posture__count">{number}</span>'
+            f'<span class="posture__status"><span class="status-badge status-badge--{css}">{escape(status)}</span></span>'
+            f'<div class="posture__body"><b>{escape(status_notes[status])}</b><p>{escape(detail)}</p></div>'
+            f"{button}</li>"
+        )
+    per_object = {}
+    for row in rows:
+        object_key = (row["objectName"], row["objectType"], row["appId"])
+        per_object.setdefault(object_key, Counter())[row["status"]] += 1
+    top_objects = sorted(
+        (
+            (object_key, counter, sum(counter[status] for status in focus_statuses))
+            for object_key, counter in per_object.items()
+        ),
+        key=lambda item: (-item[2], -item[1]["EXPIRED"], -item[1]["CRITICAL"], item[0][0].lower()),
+    )
+    top_objects = [item for item in top_objects if item[2]][:6]
+    object_scale = max((item[2] for item in top_objects), default=0)
+    object_bars = "".join(
+        f'<div class="brow"><div class="brow__label"><b title="{escape(name)}">{escape(name) or "No display name"}</b>'
+        f"<small>{escape(object_type)}</small></div>"
+        f'<div class="track" role="img" aria-label="{escape(describe(counter, focus_statuses))}">'
+        f"{segments(counter, focus_statuses, object_scale)}</div>"
+        f'<b class="brow__value">{total}</b></div>'
+        for (name, object_type, _app_id), counter, total in top_objects
+    ) or (
+        '<p class="empty-note">No application or service principal has a credential that is expired '
+        "or expires within 30 days.</p>"
+    )
+    type_counters = {
+        key: Counter() for key in ("passwordCredential", "keyCredential", "Application", "Service Principal")
+    }
+    for row in rows:
+        type_counters[row["type"]][row["status"]] += 1
+        type_counters[row["objectType"]][row["status"]] += 1
+    type_scale = max((sum(counter.values()) for counter in type_counters.values()), default=0)
+    type_bars = "".join(
+        (f'<div class="bars__group">{label}</div>' if raw is None else
+         f'<div class="brow"><div class="brow__label"><b>{label}</b><small>{raw}</small></div>'
+         f'<div class="track" role="img" aria-label="{escape(describe(type_counters[raw], bar_statuses))}">'
+         f"{segments(type_counters[raw], bar_statuses, type_scale)}</div>"
+         f'<b class="brow__value">{sum(type_counters[raw].values())}</b></div>')
+        for raw, label in (
+            (None, "Credential type"), ("passwordCredential", "Client secrets"), ("keyCredential", "Certificates"),
+            (None, "Object type"), ("Application", "Applications"), ("Service Principal", "Service principals"),
+        )
+    )
+    type_labels = {"passwordCredential": "Client secret", "keyCredential": "Certificate"}
+    minus_sign = "\u2212"
+    def urgency(row):
+        days = row["daysRemaining"]
+        return (days == "", days if days != "" else 0, row["objectName"].lower(), row["credentialName"].lower())
+    table_rows = []
+    for row in sorted(rows, key=urgency):
+        css = status_css(row["status"])
+        days = row["daysRemaining"]
+        expiration = row["expirationUtc"]
+        credential_name = escape(row["credentialName"])
+        object_name = escape(row["objectName"])
+        days_html = (
+            escape(days).replace("-", minus_sign) if days != ""
+            else '<span class="nil" title="No readable end date">—</span>'
+        )
+        expires_html = (
+            f'<time datetime="{escape(expiration)}" title="{escape(expiration)}">{escape(expiration[:10])}'
+            f" <span>{escape(expiration[11:16])}</span></time>"
+            if expiration else '<span class="nil" title="No readable end date">—</span>'
+        )
+        no_name = "" if credential_name else '<div class="sub nil">No display name</div>'
+        link = (
+            f'<a class="action-link" rel="noopener noreferrer" target="_blank" href="{escape(row["actionUrl"])}"'
+            f' aria-label="Review {object_name or "this application"} in Microsoft Entra (opens in a new tab)">'
+            'Review<span class="action-link__more"> in Entra</span></a>'
+            if row["actionUrl"] else '<span class="nil">No App ID</span>'
+        )
+        table_rows.append(
+            f'<tr class="row--{css}" data-status="{escape(row["status"])}" data-days="{escape(days)}"'
+            f' data-otype="{escape(row["objectType"])}" data-type="{escape(row["type"])}"'
+            f' data-appid="{escape(row["appId"])}" data-exp="{escape(expiration)}">'
+            f'<td><span class="status-badge status-badge--{css}">{escape(row["status"])}</span></td>'
+            f'<td class="num">{days_html}</td>'
+            f'<td><div class="credential-name">{credential_name}</div>{no_name}'
+            f'<div class="sub" title="{escape(row["type"])}">{escape(type_labels.get(row["type"], row["type"]))}</div></td>'
+            f'<td><div class="object-name">{object_name}</div>'
+            f'<div class="sub"><span class="app-id-label">App ID </span><span class="guid">{escape(row["appId"])}</span></div></td>'
+            f'<td><span class="object-tag">{escape(row["objectType"])}</span></td>'
+            f'<td class="date-cell">{expires_html}</td>'
+            f'<td class="action-cell">{link}</td></tr>'
+        )
+    if rows:
+        table_rows.append(
+            '<tr id="emptyRow" class="empty-row" hidden><td colspan="7">No credential matches these filters. '
+            '<button class="link-button" type="button">Clear filters</button></td></tr>'
+        )
+    else:
+        table_rows.append(
+            '<tr class="empty-row"><td colspan="7">No application or service principal credentials '
+            "were found in scope.</td></tr>"
+        )
+    icon_sort = (
+        '<svg class="sort-icon" viewBox="0 0 10 14" aria-hidden="true" focusable="false">'
+        '<path class="up" d="M2 5.5 5 2.5l3 3"/><path class="down" d="M2 8.5l3 3 3-3"/></svg>'
+    )
+    def sort_header(key, label, extra=""):
+        return (
+            f'<th scope="col" data-key="{key}" data-label="{label}"{extra}><button class="sort" type="button" data-sort="{key}">'
+            f"{label}{icon_sort}</button></th>"
+        )
+    table_head = (
+        "<tr>" + sort_header("status", "Status") + sort_header("days", "Days left", ' class="num" aria-sort="ascending"')
+        + sort_header("credential", "Credential") + sort_header("object", "Object")
+        + sort_header("otype", "Object type") + sort_header("expires", "Expires (UTC)")
+        + '<th scope="col"><span class="th-label">Action</span></th></tr>'
+    )
+    facts_html = "".join(
+        f'<div class="fact"><dt>{escape(term)}</dt><dd>{escape(value)}</dd></div>'
+        for term, value in (
+            ("Reference time (UTC)", reference_iso),
+            ("Scope", coverage["scope"]),
+            ("Objects scanned",
+             f"{plural(application_count, 'application')} · {plural(service_principal_count, 'service principal')}"),
+            ("Managed Identities excluded", managed_identity_excluded_count),
+            ("Credential rows",
+             f"{total_rows} ({plural(secret_count, 'client secret')} · {plural(certificate_count, 'certificate')})"),
+            ("Microsoft Graph pagination", "Complete for applications and service principals"),
+            ("Source", "Microsoft Graph v1.0 applications and servicePrincipals, read-only"),
+            ("Status thresholds", "Calendar days from the UTC reference date. EXPIRED: 0 or fewer · CRITICAL: 1 to 7 "
+             "· EXPIRING SOON: 8 to 30 · EXPIRING: 31 to 90 · Valid: more than 90 · UNKNOWN: no readable end date"),
+            ("Not collected", "Credential owners, sign-in use, rotation results, federated credentials and "
+             "managed identity credentials"),
+            ("Content", "Metadata only: no secret values, tokens or certificate content"),
+        )
+    )
+    print_footer = f"Entra credential expiration audit · Reference UTC {reference_iso}"
+    print_footer = print_footer.replace("\\", "\\\\").replace('"', '\\"')
+    icon_print = (
+        '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5'
+        'a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z"/></svg>'
+    )
+    icon_download = (
+        '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">'
+        '<path d="M12 3v12m-5-5 5 5 5-5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>'
+    )
+    report_css = """
+:root{--title:#10233f;--ink:#1d2939;--muted:#475467;--line:#e1e7ef;--line2:#c8d2de;--paper:#f2f5f9;--soft:#eef2f7;--hover:#f7f9fc;--link:#0a6c84;--accent:#22b5d3;--focus:#2e90fa;--shadow:0 1px 2px rgba(16,35,63,.05),0 8px 24px rgba(16,35,63,.07);--font:"Aptos","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;--mono:ui-monospace,"Cascadia Mono",Consolas,monospace;--ext:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 4h6v6M10 14 20 4M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5'/%3E%3C/svg%3E");color-scheme:light;}
+*{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.55 var(--font);font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;}
+::selection{background:#c3ecf5;color:var(--title);}
+a{color:var(--link);text-underline-offset:3px;}
+button,input,select{font:inherit;color:inherit;}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+.skip{position:absolute;top:-80px;left:12px;z-index:40;padding:10px 16px;border-radius:10px;background:#fff;color:var(--title);font-weight:700;box-shadow:var(--shadow);}
+.skip:focus{top:10px;}
+.bar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:20px;min-height:60px;padding:10px max(clamp(16px,3vw,40px),calc((100% - 1320px) / 2));background:#fff;box-shadow:0 1px 0 var(--line);}
+.brand{display:flex;align-items:center;gap:12px;min-width:0;color:var(--title);text-decoration:none;}
+.wordmark{font-size:17px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;}
+.brand__context{overflow:hidden;color:var(--muted);font-size:14px;text-overflow:ellipsis;white-space:nowrap;}
+.bar__nav{display:flex;gap:2px;}
+.bar__nav a{padding:8px 12px;border-radius:10px;color:var(--muted);font-size:14px;font-weight:600;text-decoration:none;}
+.bar__nav a:hover{background:var(--soft);color:var(--title);}
+.bar__actions{display:flex;align-items:center;gap:10px;margin-left:auto;}
+.chip{padding:5px 12px;border:1px solid var(--line2);border-radius:999px;color:var(--muted);font-size:13px;font-weight:600;white-space:nowrap;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border:1px solid transparent;border-radius:10px;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;transition:background-color .15s ease,border-color .15s ease;}
+.btn svg,.sort-icon{flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.btn svg{width:16px;height:16px;}
+.btn--primary{background:var(--link);color:#fff;}
+.btn--primary:hover{background:#085a6e;}
+.btn--ghost{border-color:var(--line2);background:#fff;color:var(--title);}
+.btn--ghost:hover{border-color:#98a8ba;background:var(--soft);}
+.btn--sm{min-height:36px;padding:0 14px;font-size:13.5px;}
+.btn:disabled{opacity:.55;cursor:default;}
+.btn--ghost:disabled:hover{border-color:var(--line2);background:#fff;}
+.link-button{padding:0;border:0;background:none;color:var(--link);font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer;}
+.hero{position:relative;padding:46px clamp(16px,3vw,40px) 108px;background:linear-gradient(160deg,#10233f 0%,#0e2d4f 100%);color:#fff;}
+.hero::before{content:"";position:absolute;inset:0 0 auto;height:4px;background:var(--accent);}
+.hero__in{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:28px 48px;max-width:1320px;margin:0 auto;}
+.hero h1{margin:0 0 14px;font-size:44px;font-weight:700;line-height:1.08;letter-spacing:-.02em;text-wrap:balance;}
+.hero__sum{max-width:66ch;margin:0 0 10px;color:#e3edf7;font-size:18px;line-height:1.5;}
+.hero__sum b{color:#fff;}
+.hero__lead{max-width:75ch;margin:0;color:#b8c9dc;}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 0;padding:0;list-style:none;}
+.meta li{padding:5px 12px;border:1px solid rgba(255,255,255,.24);border-radius:999px;color:#dbe7f3;font-size:13px;white-space:nowrap;}
+.signal{align-self:start;padding:20px 22px;border:1px solid rgba(255,255,255,.22);border-radius:16px;background:rgba(255,255,255,.06);}
+.signal--urgent{border-color:rgba(255,180,171,.6);}
+.signal--clear{border-color:rgba(166,244,197,.55);}
+.signal__label{color:#b8c9dc;font-size:13px;font-weight:600;}
+.signal__title{margin-top:4px;font-size:28px;font-weight:700;line-height:1.15;}
+.signal--urgent .signal__title{color:#ffb4ab;}
+.signal--clear .signal__title{color:#a6f4c5;}
+.signal__detail{margin-top:8px;color:#fff;}
+.signal__breakdown{margin-top:4px;color:#b8c9dc;font-size:14px;}
+.dist{grid-column:1 / -1;}
+.dist__head{display:flex;justify-content:space-between;gap:12px;margin-bottom:8px;color:#b8c9dc;font-size:14px;}
+.track{display:flex;height:12px;overflow:hidden;border-radius:999px;background:var(--soft);}
+.track--hero{height:14px;background:rgba(255,255,255,.14);}
+.seg{display:block;height:100%;}
+.legend{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:12px;color:#dbe7f3;font-size:14px;}
+.legend__item{display:inline-flex;align-items:center;gap:7px;}
+.legend b{color:#fff;}
+.legend .is-zero{color:#9fb3c8;}
+.legend--key{margin-top:18px;color:var(--muted);font-size:13.5px;}
+.dot{display:inline-block;flex:none;width:10px;height:10px;border-radius:3px;}
+.seg--expired,.dot--expired{background:#d92d20;}
+.seg--critical,.dot--critical{background:#ef6820;}
+.seg--expiring-soon,.dot--expiring-soon{background:#f79009;}
+.seg--expiring,.dot--expiring{background:#2e90fa;}
+.seg--valid,.dot--valid{background:#17b26a;}
+.seg--unknown,.dot--unknown{background:#98a2b3;}
+main{max-width:calc(1320px + 2 * clamp(16px,3vw,40px));margin:0 auto;padding:0 clamp(16px,3vw,40px) 40px;}
+.kpis{position:relative;z-index:2;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-top:-66px;}
+.kpi{min-width:0;padding:18px 20px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:var(--shadow);}
+.kpi__value{color:var(--title);font-size:40px;font-weight:700;line-height:1;letter-spacing:-.02em;}
+.kpi__label{margin-top:10px;color:var(--title);font-weight:600;}
+.kpi__note{margin-top:2px;color:var(--muted);font-size:13.5px;}
+.block{margin-top:44px;scroll-margin-top:84px;}
+.sh{margin-bottom:14px;}
+.sh h2{margin:0;color:var(--title);font-size:22px;font-weight:700;line-height:1.25;letter-spacing:-.01em;scroll-margin-top:84px;}
+.sh h2:focus{outline:none;}
+.sh p{max-width:75ch;margin:4px 0 0;color:var(--muted);font-size:14px;}
+.card{min-width:0;padding:20px 22px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:var(--shadow);}
+.card h3{margin:0 0 4px;color:var(--title);font-size:17px;font-weight:700;}
+.card__sub{margin:0 0 18px;color:var(--muted);font-size:14px;}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:16px;}
+.posture{margin:-12px 0;padding:0;list-style:none;}
+.posture__row{display:grid;grid-template-columns:44px 136px minmax(0,1fr) auto;gap:6px 16px;align-items:center;padding:14px 0;}
+.posture__row+.posture__row{border-top:1px solid var(--line);}
+.posture__count{color:var(--title);font-size:30px;font-weight:700;line-height:1;text-align:right;}
+.posture__row--expired .posture__count{color:#b42318;}
+.posture__row--critical .posture__count{color:#b93815;}
+.posture__row--expiring-soon .posture__count{color:#93370d;}
+.posture__row--expiring .posture__count{color:#175cd3;}
+.posture__row--valid .posture__count{color:#067647;}
+.posture__row--unknown .posture__count{color:#344054;}
+.posture__row.is-zero .posture__count{color:#667085;}
+.posture__body{min-width:0;}
+.posture__body b{color:var(--title);font-weight:600;}
+.posture__body p{max-width:85ch;margin:2px 0 0;color:var(--muted);font-size:14px;}
+.posture__none{padding:0 14px;color:var(--muted);font-size:14px;}
+.bars{display:grid;gap:14px;}
+.bars__group{margin-bottom:-4px;color:var(--muted);font-size:13px;font-weight:600;}
+.bars__group ~ .bars__group{margin-top:6px;}
+.brow{display:grid;grid-template-columns:minmax(120px,38%) minmax(0,1fr) 36px;gap:14px;align-items:center;}
+.brow__label{min-width:0;line-height:1.3;}
+.brow__label b{display:block;overflow:hidden;color:var(--title);font-size:14px;font-weight:600;text-overflow:ellipsis;white-space:nowrap;}
+.brow__label small{display:block;color:var(--muted);font-size:13px;}
+.brow__value{color:var(--title);text-align:right;}
+.empty-note{margin:0;color:var(--muted);}
+.card--flush{padding:0;overflow:hidden;}
+.filters{display:grid;grid-template-columns:minmax(200px,2fr) repeat(2,minmax(110px,.8fr)) repeat(2,minmax(150px,1fr));gap:12px;padding:18px 20px 4px;}
+.field label{display:block;margin-bottom:6px;color:var(--title);font-size:13.5px;font-weight:600;}
+.field input,.field select{width:100%;min-height:42px;padding:0 12px;border:1px solid var(--line2);border-radius:10px;background:#fff;color:var(--ink);}
+.field input::placeholder{color:#667085;opacity:1;}
+.field input:hover,.field select:hover{border-color:#98a8ba;}
+.field input:focus-visible,.field select:focus-visible{border-color:var(--focus);outline-offset:0;}
+.table-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding:12px 20px 16px;}
+.table-count{margin:0;color:var(--muted);font-size:14px;}
+.table-toolbar__actions{display:flex;flex-wrap:wrap;gap:8px;}
+.table-wrap{overflow-x:auto;border-top:1px solid var(--line);background:linear-gradient(90deg,#fff 30%,rgba(255,255,255,0)) left / 36px 100% no-repeat local,linear-gradient(270deg,#fff 30%,rgba(255,255,255,0)) right / 36px 100% no-repeat local,radial-gradient(farthest-side at 0 50%,rgba(16,35,63,.13),rgba(16,35,63,0)) left / 14px 100% no-repeat scroll,radial-gradient(farthest-side at 100% 50%,rgba(16,35,63,.13),rgba(16,35,63,0)) right / 14px 100% no-repeat scroll;}
+table{width:100%;border-collapse:collapse;font-size:14px;}
+th{padding:0;border-bottom:1px solid var(--line);background:var(--soft);color:var(--title);font-size:12px;font-weight:700;letter-spacing:.04em;text-align:left;text-transform:uppercase;white-space:nowrap;}
+.sort,.th-label{display:flex;align-items:center;gap:6px;width:100%;padding:11px 12px;}
+.sort{border:0;background:none;font:inherit;letter-spacing:inherit;text-align:inherit;text-transform:inherit;cursor:pointer;}
+.sort:hover{color:var(--link);}
+.sort:focus-visible{outline-offset:-3px;}
+th.num .sort{justify-content:flex-end;}
+th[data-key=status],th[data-key=days],th[data-key=otype],th[data-key=expires],th:last-child{width:1%;}
+.sort-icon{width:10px;height:14px;}
+.sort-icon path{opacity:.35;}
+th[aria-sort="ascending"] .up,th[aria-sort="descending"] .down{opacity:1;}
+td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top;}
+tbody tr:hover{background:var(--hover);}
+tbody tr:last-child td{border-bottom:0;}
+td.num{color:var(--title);font-weight:700;text-align:right;white-space:nowrap;}
+.credential-name,.object-name{min-width:140px;max-width:300px;color:var(--title);font-weight:600;line-height:1.35;overflow-wrap:anywhere;}
+.sub{margin-top:3px;color:var(--muted);font-size:13px;white-space:nowrap;}
+.guid{font-family:var(--mono);font-size:12.5px;}
+.nil{color:var(--muted);font-weight:400;}
+.status-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;}
+.status-badge::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;}
+.status-badge--expired{background:#fee4e2;color:#b42318;}
+.status-badge--critical{background:#ffead5;color:#b93815;}
+.status-badge--expiring-soon{background:#fef0c7;color:#93370d;}
+.status-badge--expiring{background:#d1e9ff;color:#175cd3;}
+.status-badge--valid{background:#dcfae6;color:#067647;}
+.status-badge--unknown{background:#eaecf0;color:#344054;}
+.object-tag{display:inline-block;padding:2px 10px;border-radius:999px;background:var(--soft);color:#344054;font-size:13px;font-weight:600;white-space:nowrap;}
+.date-cell{white-space:nowrap;}
+.date-cell span{color:var(--muted);}
+.action-cell{white-space:nowrap;}
+.action-link{font-weight:600;}
+.action-link::after{content:"";display:inline-block;width:12px;height:12px;margin-left:6px;vertical-align:-1px;background:currentColor;-webkit-mask:var(--ext) center / contain no-repeat;mask:var(--ext) center / contain no-repeat;}
+.empty-row td{padding:28px 20px;color:var(--muted);text-align:center;}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:0 36px;margin:-11px 0 0;clip-path:inset(1px 0 0);}
+.fact{padding:11px 0;border-top:1px solid var(--line);}
+.fact dt{color:var(--muted);font-size:13.5px;font-weight:600;}
+.fact dd{margin:2px 0 0;color:var(--ink);overflow-wrap:anywhere;}
+.foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 16px;max-width:calc(1320px + 2 * clamp(16px,3vw,40px));margin:0 auto;padding:4px clamp(16px,3vw,40px) 40px;color:var(--muted);font-size:13px;}
+@media (max-width:1180px){.bar__nav{display:none;}}
+@media (max-width:1040px){
+.hero__in{grid-template-columns:minmax(0,1fr);}
+.filters{grid-template-columns:repeat(2,minmax(0,1fr));}
+.field--wide{grid-column:1 / -1;}
+}
+@media (max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media (max-width:640px){
+.brand__context,.chip{display:none;}
+.hero{padding:30px 16px 92px;}
+.hero h1{font-size:32px;}
+.hero__sum{font-size:16.5px;}
+.meta li{white-space:normal;}
+.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:-60px;}
+.kpi{padding:14px;}
+.kpi__value{font-size:30px;}
+.card{padding:18px 16px;}
+.posture__row{grid-template-columns:40px minmax(0,1fr);}
+.posture__status,.posture__body,.posture__row > .btn,.posture__none{grid-column:2;justify-self:start;}
+.posture__none{padding:0;}
+.posture__count{grid-row:1 / span 2;align-self:start;font-size:26px;}
+.brow{grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;}
+.brow .track{grid-row:2;grid-column:1 / -1;}
+.filters{padding:16px 16px 4px;}
+.table-toolbar{padding:12px 16px 14px;}
+.table-toolbar__actions,.table-toolbar__actions .btn{width:100%;}
+}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth;}}
+@media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+@page{size:A4;margin:12mm 11mm 16mm;@bottom-left{content:"__PRINT_FOOTER__";color:#667085;font:8pt "Segoe UI",Arial,sans-serif;}@bottom-right{content:"Page " counter(page) " of " counter(pages);color:#667085;font:8pt "Segoe UI",Arial,sans-serif;}}
+@media print{
+*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+html{scroll-behavior:auto;}
+body{background:#fff;font-size:11px;}
+.skip,.bar__nav,.bar__actions .btn,.filters,.table-toolbar__actions,.posture .btn,.posture__none,.empty-row,.sort-icon,.action-link::after{display:none !important;}
+.bar{position:static;min-height:0;padding:0 0 8px;box-shadow:none;}
+.hero{overflow:hidden;padding:20px 22px 62px;border-radius:12px;}
+.hero::before{display:none;}
+.hero__in{grid-template-columns:minmax(0,1fr) 200px;gap:12px 22px;}
+.hero h1{margin-bottom:8px;font-size:25px;}
+.hero__sum{font-size:13px;}
+.hero__lead,.dist__head{font-size:10.5px;}
+.meta{margin-top:12px;}
+.meta li,.chip{padding:3px 9px;font-size:10px;}
+.signal{padding:12px 14px;}
+.signal__label,.signal__breakdown{font-size:10px;}
+.signal__title{font-size:18px;}
+.signal__detail{font-size:11px;}
+.track--hero{height:10px;}
+.legend{margin-top:8px;font-size:10.5px;}
+main{padding:0 12px;}
+.kpis{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:-46px;}
+.kpi{padding:10px 12px;box-shadow:none;}
+.kpi__value{font-size:24px;}
+.kpi__label{margin-top:6px;font-size:11.5px;}
+.kpi__note{font-size:10px;}
+.block{margin-top:18px;}
+.sh{margin-bottom:8px;break-inside:avoid;break-after:avoid;}
+.sh h2{font-size:16px;}
+.sh p{font-size:10.5px;}
+.card{padding:12px 14px;box-shadow:none;}
+.card h3{font-size:12.5px;}
+.card__sub{margin-bottom:10px;font-size:10px;}
+.grid2{grid-template-columns:1fr 1fr;gap:10px;}
+.posture{margin:-6px 0;}
+.posture__row{grid-template-columns:34px 112px minmax(0,1fr);padding:7px 0;}
+.posture__count{font-size:20px;}
+.posture__body b{font-size:11px;}
+.posture__body p{font-size:10px;}
+.bars{gap:8px;}
+.bars__group,.legend--key{font-size:10px;}
+.legend--key{margin-top:10px;}
+.brow{grid-template-columns:minmax(0,40%) minmax(0,1fr) 22px;gap:8px;}
+.brow__label b{overflow:visible;font-size:10.5px;white-space:normal;overflow-wrap:anywhere;}
+.brow__label small{font-size:9.5px;}
+.brow__value{font-size:10.5px;}
+.track{height:8px;}
+.card,.kpi,.grid2,.posture__row,.brow,tr,.signal,.fact{break-inside:avoid;}
+.card--flush{padding:0;break-inside:auto;}
+.table-toolbar{padding:8px 12px;}
+.table-count{font-size:10px;}
+.table-wrap{overflow:visible;background:none;}
+table{font-size:10.5px;}
+thead{display:table-header-group;}
+th{font-size:9px;}
+.sort{display:none;}
+th[data-label]::before{content:attr(data-label);display:block;padding:6px;}
+th.num::before{text-align:right;}
+.th-label{padding:6px;}
+td{padding:5px 6px;}
+.credential-name{min-width:96px;max-width:none;}
+.object-name{min-width:0;max-width:none;}
+.app-id-label{display:none;}
+.sub{font-size:9.5px;}
+.guid{font-size:9px;}
+.status-badge{padding:2px 6px;font-size:9px;}
+.status-badge::before{display:none;}
+.object-tag{padding:1px 6px;font-size:9.5px;white-space:normal;}
+.date-cell{white-space:normal;}
+.action-link__more{display:none;}
+.facts{grid-template-columns:1fr 1fr;margin-top:-6px;}
+.fact{padding:6px 0;}
+.fact dt{font-size:10px;}
+.fact dd{font-size:11px;}
+.foot{padding:10px 0 0;font-size:9.5px;}
+}
+""".replace("__PRINT_FOOTER__", print_footer)
+    report_script = r"""
+(() => {
+  const byId = id => document.getElementById(id);
+  const table = byId("auditTable");
+  const tbody = table.tBodies[0];
+  const rows = Array.from(tbody.querySelectorAll("tr[data-status]"));
+  const emptyRow = byId("emptyRow");
+  const fields = ["f_name", "f_min", "f_max", "f_status", "f_object"].map(byId);
+  const [nameInput, minInput, maxInput, statusSelect, objectSelect] = fields;
+  const countLabel = byId("countLabel");
+  const clearButton = byId("clearFilters");
+  const rank = { "EXPIRED": 0, "CRITICAL": 1, "EXPIRING SOON": 2, "EXPIRING": 3, "Valid": 4, "UNKNOWN": 5 };
+  const text = (row, selector) => (row.querySelector(selector)?.textContent || "").trim();
+  const days = row => (row.dataset.days === "" ? null : Number(row.dataset.days));
+  const sortValue = {
+    status: row => rank[row.dataset.status] ?? 9,
+    days,
+    credential: row => text(row, ".credential-name") || null,
+    object: row => text(row, ".object-name") || null,
+    otype: row => row.dataset.otype || null,
+    expires: row => row.dataset.exp || null,
+  };
+  let sortKey = "days";
+  let sortDirection = 1;
+  function matchesFilters(row) {
+    const name = nameInput.value.trim().toLowerCase();
+    const value = days(row);
+    if (name && !text(row, ".credential-name").toLowerCase().includes(name)) return false;
+    if (statusSelect.value && row.dataset.status !== statusSelect.value) return false;
+    if (objectSelect.value && row.dataset.otype !== objectSelect.value) return false;
+    if (minInput.value !== "" && (value === null || value < Number.parseInt(minInput.value, 10))) return false;
+    if (maxInput.value !== "" && (value === null || value > Number.parseInt(maxInput.value, 10))) return false;
+    return true;
+  }
+  function applyFilters() {
+    let visible = 0;
+    rows.forEach(row => {
+      const show = matchesFilters(row);
+      row.hidden = !show;
+      if (show) visible += 1;
+    });
+    countLabel.textContent = `${visible} of ${rows.length} credentials visible`;
+    if (emptyRow) emptyRow.hidden = visible > 0;
+    clearButton.disabled = fields.every(field => field.value === "");
+  }
+  function clearFilters() {
+    fields.forEach(field => { field.value = ""; });
+    applyFilters();
+  }
+  function compareRows(left, right) {
+    const a = sortValue[sortKey](left);
+    const b = sortValue[sortKey](right);
+    if (a === b) return 0;
+    if (a === null) return 1;
+    if (b === null) return -1;
+    const order = typeof a === "number" && typeof b === "number"
+      ? a - b
+      : String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: "base" });
+    return order * sortDirection;
+  }
+  function sortTable(key) {
+    sortDirection = sortKey === key ? -sortDirection : 1;
+    sortKey = key;
+    rows.sort(compareRows).forEach(row => tbody.appendChild(row));
+    if (emptyRow) tbody.appendChild(emptyRow);
+    table.querySelectorAll("th[data-key]").forEach(th => {
+      if (th.dataset.key === key) th.setAttribute("aria-sort", sortDirection === 1 ? "ascending" : "descending");
+      else th.removeAttribute("aria-sort");
+    });
+  }
+  function csvValue(value) {
+    return `"${String(value ?? "").replaceAll('"', '""')}"`;
+  }
+  window.exportCsv = () => {
+    const headers = ["credentialName", "type", "objectType", "objectName", "appId", "expirationUtc", "daysRemaining", "status", "actionUrl"];
+    const lines = [headers.map(csvValue).join(",")];
+    rows.filter(row => !row.hidden).forEach(row => {
+      const data = row.dataset;
+      lines.push([
+        text(row, ".credential-name"), data.type, data.otype, text(row, ".object-name"), data.appid,
+        data.exp, data.days, data.status, row.querySelector("a.action-link")?.href || ""
+      ].map(csvValue).join(","));
+    });
+    const blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "entra-credential-expiration-audit-filtered.csv";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  };
+  table.querySelectorAll("button[data-sort]").forEach(button => {
+    button.addEventListener("click", () => sortTable(button.dataset.sort));
+  });
+  document.querySelectorAll("button[data-show]").forEach(button => {
+    button.addEventListener("click", () => {
+      fields.forEach(field => { field.value = ""; });
+      statusSelect.value = button.dataset.show;
+      applyFilters();
+      const heading = byId("inventory-title");
+      heading.scrollIntoView({ block: "start" });
+      heading.focus({ preventScroll: true });
+    });
+  });
+  [clearButton, emptyRow?.querySelector("button")].forEach(button => {
+    button?.addEventListener("click", () => { clearFilters(); nameInput.focus(); });
+  });
+  document.querySelectorAll("[data-print]").forEach(button => {
+    button.addEventListener("click", () => window.print());
+  });
+  fields.forEach(field => {
+    field.addEventListener("input", applyFilters);
+    field.addEventListener("change", applyFilters);
+  });
+  applyFilters();
+})();
+"""
+    html_document = f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; font-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>Entra Credential Expiration Audit · {report_date}</title>
+<style>{report_css}</style>
+</head>
+<body>
+<a class="skip" href="#inventory">Skip to the credential inventory</a>
+<header class="bar">
+  <a class="brand" href="#top"><span class="wordmark">Azure SRE Agent</span><span class="brand__context">Identity operations · Microsoft Entra ID</span></a>
+  <nav class="bar__nav" aria-label="Report sections"><a href="#top">Summary</a><a href="#posture">Risk posture</a><a href="#breakdown">Breakdown</a><a href="#inventory">Inventory</a><a href="#coverage">Coverage</a></nav>
+  <div class="bar__actions"><span class="chip">Read-only</span><button class="btn btn--primary" type="button" data-print>{icon_print}<span>Print / PDF</span></button></div>
+</header>
+<section class="hero" id="top" aria-labelledby="report-title">
+  <div class="hero__in">
+    <div>
+      <h1 id="report-title">Entra credential expiration audit</h1>
+      <p class="hero__sum">{summary_html}</p>
+      <p class="hero__lead">A read-only inventory of application and service principal credentials. Review the red path first, then schedule the remaining rotation work.</p>
+      <ul class="meta" aria-label="Report context">
+        <li>Reference UTC: {escape(reference_iso)}</li>
+        <li>Horizon: 90 days</li>
+        <li>Pagination: complete</li>
+        <li>Managed Identities excluded: {managed_identity_excluded_count}</li>
+      </ul>
+    </div>
+    <aside class="signal {action_class}" aria-label="Risk signal">
+      <div class="signal__label">Risk signal</div>
+      <div class="signal__title">{escape(action_title)}</div>
+      <div class="signal__detail">{escape(action_detail)}</div>
+      <div class="signal__breakdown">{escape(signal_breakdown)}</div>
+    </aside>
+    <div class="dist">
+      <div class="dist__head"><span>Credentials by status</span><span>{total_rows} in scope</span></div>
+      <div class="track track--hero" role="img" aria-label="Credentials by status: {escape(describe(count, bar_statuses))}">{segments(count, bar_statuses, total_rows)}</div>
+      <div class="legend">{legend(bar_statuses, count)}</div>
+    </div>
+  </div>
+</section>
+<main>
+  <section class="kpis" id="summary" aria-label="Audit scope">{kpi_cards}</section>
+  <section class="block" id="posture" aria-labelledby="posture-title">
+    <div class="sh"><h2 id="posture-title">Risk posture and next steps</h2><p>Most urgent first. All counts use the same UTC reference time.</p></div>
+    <div class="card"><ol class="posture">{''.join(posture_rows)}</ol></div>
+  </section>
+  <section class="block" id="breakdown" aria-labelledby="breakdown-title">
+    <div class="sh"><h2 id="breakdown-title">Where the risk sits</h2><p>Which objects hold the credentials to act on, and the split by type.</p></div>
+    <div class="grid2">
+      <div class="card"><h3>Objects with the most credentials to act on</h3><p class="card__sub">Expired or expiring within 30 days. Top 6 applications and service principals.</p><div class="bars">{object_bars}</div><div class="legend legend--key">{legend(focus_statuses)}</div></div>
+      <div class="card"><h3>Credential and object types</h3><p class="card__sub">Every credential in scope, by status.</p><div class="bars">{type_bars}</div><div class="legend legend--key">{legend(bar_statuses)}</div></div>
+    </div>
+  </section>
+  <section class="block" id="inventory" aria-labelledby="inventory-title">
+    <div class="sh"><h2 id="inventory-title" tabindex="-1">Credential inventory</h2><p>One row per credential, most urgent first. Filters and export run offline.</p></div>
+    <div class="card card--flush workspace">
+      <div class="filters" role="search" aria-label="Filter credentials">
+        <div class="field field--wide"><label for="f_name">Credential name</label><input id="f_name" type="search" placeholder="Search by credential name" autocomplete="off"></div>
+        <div class="field"><label for="f_min">Minimum days</label><input id="f_min" type="number" inputmode="numeric" placeholder="e.g. 0"></div>
+        <div class="field"><label for="f_max">Maximum days</label><input id="f_max" type="number" inputmode="numeric" placeholder="e.g. 30"></div>
+        <div class="field"><label for="f_status">Risk status</label><select id="f_status"><option value="">All statuses</option><option>EXPIRED</option><option>CRITICAL</option><option>EXPIRING SOON</option><option>EXPIRING</option><option>Valid</option><option>UNKNOWN</option></select></div>
+        <div class="field"><label for="f_object">Object type</label><select id="f_object"><option value="">All objects</option><option>Application</option><option>Service Principal</option></select></div>
+      </div>
+      <div class="table-toolbar">
+        <p class="table-count" id="countLabel" aria-live="polite">{total_rows} of {total_rows} credentials visible</p>
+        <div class="table-toolbar__actions"><button class="btn btn--ghost" id="clearFilters" type="button" disabled>Clear filters</button><button class="btn btn--primary export-button" type="button" onclick="exportCsv()">{icon_download}<span>Export visible rows as CSV</span></button></div>
+      </div>
+      <div class="table-wrap">
+        <table id="auditTable"><caption class="sr">Credential inventory, one row per credential</caption><thead>{table_head}</thead><tbody>{''.join(table_rows)}</tbody></table>
+      </div>
+    </div>
+  </section>
+  <section class="block" id="coverage" aria-labelledby="coverage-title">
+    <div class="sh"><h2 id="coverage-title">Coverage and method</h2><p>What was read, what was left out, and how each status is computed.</p></div>
+    <div class="card"><dl class="facts">{facts_html}</dl></div>
+  </section>
+</main>
+<footer class="foot"><span>Generated by Azure SRE Agent · Read-only · generate-entra-credential-expiration</span><span>Reference UTC: {escape(reference_iso)}</span></footer>
+<script>{report_script}</script>
+</body>
+</html>"""
+    try:
+        os.makedirs("/mnt/data", exist_ok=True)
+        with open(report_path, "w", encoding="utf-8") as report_file:
+            report_file.write(html_document)
+    except Exception as exc:
+        return fail(f"Failed to write report: {exc}")
+    result = {
+        "report_path": report_path,
+        "coverage": coverage,
+        "application_count": application_count,
+        "service_principal_count": service_principal_count,
+        "managed_identity_excluded_count": managed_identity_excluded_count,
+        "counts_by_status": counts_by_status,
+    }
+    # The SRE Agent files API serves the chat thread folder (the tool's working
+    # directory), not /mnt/data: keep a copy there and return its download link.
+    try:
+        import re
+        from urllib.parse import quote
+        cwd = os.getcwd()
+        thread = re.fullmatch(
+            r"/(?:root/sreagent|usr)/terminalRoot/tmp/ThreadFiles/([0-9a-fA-F-]{36})", cwd
+        )
+        if thread:
+            report_name = os.path.basename(report_path)
+            with open(os.path.join(cwd, report_name), "w", encoding="utf-8") as report_copy:
+                report_copy.write(html_document)
+            result["report_url"] = (
+                f"/api/files/tmp/ThreadFiles/{thread.group(1)}/{quote(report_name, safe='')}"
+            )
+    except Exception:
+        pass
+    return result

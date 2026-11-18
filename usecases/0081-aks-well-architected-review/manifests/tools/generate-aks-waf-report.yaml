@@ -1,0 +1,82 @@
+api_version: azuresre.ai/v1
+kind: Tool
+metadata:
+  name: generate-aks-waf-report
+spec:
+  type: PythonFunctionTool
+  description: Read-only AKS configuration and Well-Architected review of the clusters the agent identity
+    can read, auto-discovered with one fixed Azure Resource Graph query (all, one subscription or named
+    clusters, up to 100 per report), and their associated resources. operation=report writes four files
+    (HTML with a fleet overview and Subscription and Cluster filters, snapshot JSON, findings CSV, inventory
+    CSV); query filters a fresh collection of one cluster (or up to five); list_clusters lists the discovered
+    clusters with their subscriptions. No remediation.
+  timeoutSeconds: 900
+  code_file: ./generate-aks-waf-report.py
+  parameters:
+  - name: operation
+    type: string
+    required: false
+    description: 'report writes one report (HTML + JSON + 2 CSV) for the selection; no selection = every
+      visible cluster (at most 100). query filters a fresh collection of 1 cluster (or up to 5 in cluster_names).
+      list_clusters returns one page (limit/offset) of the inventory discovered with Azure Resource Graph
+      across every readable subscription (optionally filtered by subscription); inventory, not observed
+      health. Default: report. Allowed: report, query, list_clusters.'
+  - name: view
+    type: string
+    required: false
+    description: 'findings exposes all checks; report findings contains failed checks only. coverage exposes
+      scoped source receipts. architecture exposes observed nodes/edges and explicit unknowns. Default:
+      summary. Allowed: summary, cluster, node_pools, workloads, resources, findings, finops, coverage,
+      actions, architecture.'
+  - name: cluster_name
+    type: string
+    required: false
+    description: One cluster by exact name (case-insensitive) as returned by list_clusters. If the same
+      AKS name exists in several subscriptions, add subscription or use the prefixed list_clusters name.
+      Mutually exclusive with cluster_names.
+  - name: cluster_names
+    type: string
+    required: false
+    description: '"all" = every visible cluster (after the subscription filter), or 1 to 100 exact comma-separated
+      names without spaces. Empty in report means "all". A failed cluster is reported as an error, never
+      as healthy.'
+  - name: subscription
+    type: string
+    required: false
+    description: 'Optional subscription filter: subscription ID (GUID) or exact display name (case-insensitive).
+      Compared locally with the discovered inventory, never sent to Azure. Valid for report, query and
+      list_clusters.'
+  - name: namespace
+    type: string
+    required: false
+    description: Exact local namespace filter, never a server-side scope override.
+  - name: workload_name
+    type: string
+    required: false
+    description: Exact local workload-name filter; no URL/path/query/command.
+  - name: area
+    type: string
+    required: false
+    description: 'Default: all. Allowed: all, best_practices, security, finops, optimization.'
+  - name: level
+    type: string
+    required: false
+    description: 'Default: all. Allowed: all, cluster, workload, resource.'
+  - name: severity
+    type: string
+    required: false
+    description: 'Default: all. Allowed: all, critical, high, medium, low.'
+  - name: status
+    type: string
+    required: false
+    description: 'Default: all. Allowed: all, passed, failed, not_evaluated, not_applicable, complete,
+      partial, denied, error, not_configured.'
+  - name: limit
+    type: int
+    required: false
+    description: 'Rows requested for query/list_clusters; the 3500-byte budget may return fewer whole
+      rows (use next_offset). Default: 25.'
+  - name: offset
+    type: int
+    required: false
+    description: 'Local offset in this fresh collection; not a persistent cursor. Default: 0.'

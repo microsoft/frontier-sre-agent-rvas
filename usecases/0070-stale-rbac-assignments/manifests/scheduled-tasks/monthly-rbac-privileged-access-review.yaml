@@ -1,0 +1,15 @@
+api_version: azuresre.ai/v1
+kind: ScheduledTask
+metadata:
+  name: monthly-rbac-privileged-access-review
+spec:
+  description: Azure RBAC - Monthly privileged access review. Read-only review of privileged role assignments
+    with a cleanup proposal (orphaned, redundant) and an individual review list.
+  schedule: "0 8 1 * *"
+  time_zone: UTC
+  enabled: false
+  agent: rbac-access-reviewer
+  mode: Autonomous
+  prompt: '@rbac-access-reviewer Run the monthly Azure RBAC privileged access review and give me the links
+    to the HTML report, CSV and JSON with the executive summary, Owner decisions, coverage and required
+    actions.'

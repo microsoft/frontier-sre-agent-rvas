@@ -1,0 +1,91 @@
+api_version: azuresre.ai/v1
+kind: Tool
+metadata:
+  name: infrastructure-operations-report
+spec:
+  type: PythonFunctionTool
+  description: Collect read-only infrastructure evidence from the fixed approved Azure subscription and
+    Log Analytics workspaces. Generate offline HTML, resource CSV, signal CSV and complete JSON, or answer
+    bounded typed evidence queries. Preserve source status, UTC window, units, missing data and paging.
+    No changes.
+  timeoutSeconds: 900
+  code_file: ./generate-infrastructure-operations-report.py
+  parameters:
+  - name: operation
+    type: string
+    required: false
+    description: 'Default: report. Allowed: report, query.'
+  - name: view
+    type: string
+    required: false
+    description: 'A query view. extensions pages safe Arc machine extension metadata, not extra machines;
+      metric must be all. Full collected evidence is retained in the report JSON. Default: summary. Allowed:
+      summary, resources, extensions, metrics, timeline, signals, actions, coverage.'
+  - name: hosting
+    type: string
+    required: false
+    description: 'Default: all. Allowed: all, arc, azure.'
+  - name: resource_group
+    type: string
+    required: false
+    description: Case-insensitive exact local resource-group match; not KQL.
+  - name: resource_name
+    type: string
+    required: false
+    description: Case-insensitive resource-name substring matched against fixed-scope inventory.
+  - name: resource_id
+    type: string
+    required: false
+    description: Exact local ARM ID match within the configured subscription; never a request URL.
+  - name: resource_type
+    type: string
+    required: false
+    description: Case-insensitive exact provider/type match against the supported infrastructure inventory.
+  - name: metric
+    type: string
+    required: false
+    description: 'Exact normalized metric. Different service/guest semantics remain separate. Default:
+      all. Allowed: all, cpu_percent, memory_available_percent, memory_available_bytes, memory_used_percent,
+      memory_commit_percent, disk_free_percent, disk_iops_percent, disk_bandwidth_percent, vm_availability,
+      storage_used_bytes, service_availability_percent, service_latency_ms, service_requests, service_errors,
+      node_cpu_percent, node_memory_percent, node_disk_percent, app_cpu_time_seconds, app_memory_bytes,
+      container_cpu_cores, container_memory_bytes, container_cpu_percent, container_memory_percent, container_replicas,
+      plan_cpu_percent, plan_memory_percent, sql_cpu_percent, sql_memory_percent, sql_storage_percent.'
+  - name: state
+    type: string
+    required: false
+    description: 'Resource assessment or signal state. observed means observations without a configured
+      review flag, not proof of health. Default: all. Allowed: all, review, unknown, observed.'
+  - name: severity
+    type: string
+    required: false
+    description: 'Only signals, timeline and actions accept this filter. Default: all. Allowed: all, critical,
+      warning, info.'
+  - name: period
+    type: string
+    required: false
+    description: 'auto selects the previous UTC calendar month for a report and the last 24 hours for
+      a query. Default: auto. Allowed: auto, last_2h, last_24h, last_7d, last_30d, previous_month, custom.'
+  - name: start_utc
+    type: string
+    required: false
+    description: Required only for custom; ISO 8601 with an explicit UTC offset. No more than 31 days.
+  - name: end_utc
+    type: string
+    required: false
+    description: Required only for custom; after start_utc and no later than collection time.
+  - name: grain
+    type: string
+    required: false
+    description: 'auto uses 5-minute bins up to 48 hours, otherwise hourly. At most 800 bins; no data
+      truncation. Default: auto. Allowed: auto, PT5M, PT1H.'
+  - name: limit
+    type: int
+    required: false
+    description: 'Requested query page size; the default-serialized 3500-byte transport budget may return
+      fewer rows. Default: 20.'
+  - name: offset
+    type: int
+    required: false
+    description: 'Query offset. Use next_offset; each live invocation is a fresh collection, not a stable
+      stored cursor. Default: 0.'

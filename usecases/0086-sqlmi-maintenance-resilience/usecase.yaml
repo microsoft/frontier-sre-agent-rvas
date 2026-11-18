@@ -1,0 +1,32 @@
+id: 0086-sqlmi-maintenance-resilience
+status: validated
+title: "Azure SQL Managed Instance maintenance resilience"
+summary: "Weekly read-only report of SQL Managed Instance maintenance: real reconfigurations, apps that showed errors and the best window."
+domain: management
+trigger: [schedule, chat]
+frequency: "Weekly"
+timeSaved: High
+topPick: false
+products: [azure-sql-managed-instance, azure-service-health, azure-monitor, application-insights, azure-sre-agent]
+autonomy: read-only
+samplePrompt: "Generate the SQL Managed Instance maintenance resilience report for the last 30 days and tell me which applications show errors to users during maintenance."
+source: { type: community, url: "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/12-sqlmi-maintenance-resilience" }
+package:
+  version: 1.0.0
+  apiVersion: azuresre.ai/v1
+  requires:
+    connectors: []
+    roles:
+      - "Reader and Monitoring Reader on each subscription with SQL Managed Instances"
+      - "Log Analytics Reader on the workspaces where the applications' Application Insights write"
+      - "SRE Agent Administrator for the person deploying"
+  parameters:
+    MANAGED_IDENTITY_CLIENT_ID: "Client ID of the agent user-assigned managed identity"
+    SUBSCRIPTION_IDS: "Comma-separated subscriptions with SQL Managed Instances"
+    LOG_ANALYTICS_WORKSPACE_IDS: "Comma-separated workspaces where Application Insights write (optional; user impact needs them)"
+  contents:
+    tools: [manifests/tools/generate-sqlmi-maintenance-report.yaml]
+    skills: [manifests/skills/sqlmi-maintenance-resilience/SKILL.md]
+    subagents: [manifests/subagents/sqlmi-maintenance-advisor.yaml]
+    scheduledTasks: [manifests/scheduled-tasks/weekly-sqlmi-maintenance-resilience.yaml]
+    permissions: [permissions/grant-sqlmi-permissions.ps1]

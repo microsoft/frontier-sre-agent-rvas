@@ -1,0 +1,36 @@
+id: 0081-aks-well-architected-review
+status: validated
+title: "AKS configuration and Well-Architected review"
+summary: "Read-only review of all AKS clusters the agent can read, with workloads and related resources, against security, cost and optimization best practices."
+domain: platform-devops
+trigger: [chat, schedule]
+frequency: "On demand or monthly"
+timeSaved: High
+topPick: false
+products: [azure-kubernetes-service, azure-resource-graph, azure-advisor, azure-cost-management, azure-resource-manager, azure-sre-agent]
+autonomy: read-only
+samplePrompt: "Generate the complete read-only AKS configuration review for every cluster in every subscription (operation=report, cluster_names=all) and deliver the HTML, the complete JSON, the findings CSV and the inventory CSV."
+source: { type: community, url: "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/04-aks-well-architected-review" }
+package:
+  version: 1.0.0
+  apiVersion: azuresre.ai/v1
+  requires:
+    connectors: []
+    roles:
+      - "Reader on the management group (recommended) or on each subscription with AKS clusters (Resource Graph discovery, cluster, agent pool, associated-resource, Kubernetes version and Advisor reads)"
+      - "Cost Management Reader on the same scope, for the actual cost of each cluster's node resource group (read by default; without it the cost stays not evaluated)"
+      - "Azure Kubernetes Service Cluster User Role and Azure Kubernetes Service RBAC Reader on the same scope or on each cluster, only for the optional Kubernetes reads (kubernetes_enabled, off by default)"
+  parameters:
+    TENANT_ID: "Tenant of the clusters (required)"
+    MANAGED_IDENTITY_CLIENT_ID: "Client ID of the agent user-assigned managed identity (required)"
+    SUBSCRIPTION_ID: "Optional: subscription for APPROVED_CLUSTERS entries without their own subscription_id"
+    APPROVED_CLUSTERS: "Optional per-cluster overrides (environment, requirements, Kubernetes reads, cost scope); empty by default, because every readable cluster is discovered"
+    DISCOVERY_SUBSCRIPTION_IDS: "Optional: limit discovery to these subscription IDs (empty: every subscription the identity can read)"
+    CLIENT_NAME: "Optional organization name on the report cover"
+    CLIENT_LOGO_DATA_URI: "Optional logo as a data URI"
+  contents:
+    tools: [manifests/tools/generate-aks-waf-report.yaml]
+    skills: [manifests/skills/aks-waf-live/SKILL.md]
+    subagents: [manifests/subagents/aks-waf-live.yaml]
+    scheduledTasks: [manifests/scheduled-tasks/monthly-aks-configuration-review.yaml]
+    permissions: [permissions/grant-aks-permissions.ps1]

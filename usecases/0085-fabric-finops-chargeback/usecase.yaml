@@ -1,0 +1,35 @@
+id: 0085-fabric-finops-chargeback
+status: validated
+title: "Microsoft Fabric FinOps and chargeback"
+summary: "Monthly read-only Fabric FinOps report: real bill per meter, idle capacity, savings and chargeback by workspace and person."
+domain: billing-entra-tenant
+trigger: [schedule, chat]
+frequency: "Monthly"
+timeSaved: High
+topPick: false
+products: [microsoft-fabric, azure-cost-management, azure-monitor-activity-log, microsoft-graph, azure-sre-agent]
+autonomy: read-only
+samplePrompt: "Generate the Fabric FinOps report for the last 30 days."
+source: { type: community, url: "https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/11-fabric-finops-chargeback" }
+package:
+  version: 1.0.0
+  apiVersion: azuresre.ai/v1
+  requires:
+    connectors: []
+    roles:
+      - "Fabric tenant setting for read-only admin APIs (through a security group) and Viewer on the workspaces"
+      - "Reader and Cost Management Reader on the capacity subscription"
+      - "Optional: Microsoft Graph GroupMember.Read.All and User.Read.All, to list group members"
+      - "Fabric Administrator and Owner or User Access Administrator on the capacity subscription, once, to run the grant script"
+  parameters:
+    MANAGED_IDENTITY_CLIENT_ID: "Client ID of the agent user-assigned managed identity"
+    FEDERATED_APP_CLIENT_ID: "Cross-tenant only, the multi-tenant app in the Fabric tenant"
+    TARGET_FABRIC_TENANT_ID: "Cross-tenant only, the Fabric tenant"
+    CROSS_TENANT_CERT_KEYVAULT_URL: "Cross-tenant only, the Key Vault that holds the app certificate"
+    CROSS_TENANT_CERT_NAME: "Cross-tenant only, the certificate name in that Key Vault"
+  contents:
+    tools: [manifests/tools/generate-fabric-chargeback-report.yaml]
+    skills: [manifests/skills/fabric-chargeback-live/SKILL.md]
+    subagents: [manifests/subagents/fabric-chargeback-live.yaml]
+    scheduledTasks: [manifests/scheduled-tasks/monthly-fabric-finops-chargeback.yaml]
+    permissions: [permissions/grant-fabric-finops-access.ps1, permissions/grant-graph-read-permissions.ps1, permissions/setup-cross-tenant-app.ps1]

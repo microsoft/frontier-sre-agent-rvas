@@ -97,6 +97,20 @@ select:focus-visible,input:focus-visible{outline:3px solid var(--focus);outline-
 .band-in p{margin:0;color:var(--muted)}
 .band-in b{color:var(--ink)}
 .ws-select{display:flex;align-items:center;gap:10px;font-weight:600}
+.fleet-filters{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px}
+.ws-select select,.ws-select input{min-height:38px;max-width:360px;padding:0 10px;border:1px solid var(--line2);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;font-weight:400}
+.ws-select input{width:260px}
+@media (max-width:520px){.fleet-filters,.ws-select{width:100%} .ws-select select,.ws-select input{flex:1 1 0;min-width:0;width:auto;max-width:none}}
+@media (max-width:380px){#fleet-kpis{grid-template-columns:minmax(0,1fr)}}
+.fleet-hero .hero-in{grid-template-columns:minmax(0,1fr)}
+.fleet-cards{margin-top:22px}
+.fleet-ws{padding:0;border:0;background:none;color:var(--link);font:inherit;font-weight:700;text-align:left;cursor:pointer;text-decoration:underline;text-underline-offset:2px;white-space:nowrap}
+.fleet-note{display:block;margin-top:4px;max-width:34ch;font-size:12.5px;color:var(--muted)}
+.sev-row{display:inline-flex;gap:4px;flex-wrap:nowrap}
+.sev-row .pill{padding:1px 7px}
+#fleet-table .sev-row{flex-wrap:wrap}
+.access-banner{max-width:1320px;margin:18px auto 0;padding:14px 18px;border:1px solid var(--high-bar);border-radius:14px;background:var(--high-bg);color:var(--high-ink);font-size:14.5px}
+.access-banner b{font-weight:700}
 .hero{position:relative;background:linear-gradient(150deg,var(--hero-a) 0%,var(--hero-b) 100%);color:#ffffff;padding:clamp(28px,4.2vw,52px) clamp(14px,3vw,40px) 104px}
 .hero-in{max-width:1320px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:24px 52px;align-items:start}
 .hero h1{margin:0 0 14px;font-size:clamp(28px,3vw,44px);line-height:1.12;font-weight:700;letter-spacing:-.02em;text-wrap:balance;color:#ffffff}
@@ -500,14 +514,40 @@ html.branded .foot{background:none;color:#475467}
 <div class="multi-band" id="multi-overview" hidden>
   <div class="band-in">
     <p id="multi-summary"></p>
-    <label class="ws-select" id="workspace-selector-wrap" hidden>Workspace
-      <select id="workspace-selector" aria-label="Select workspace"></select>
-    </label>
+    <div class="fleet-filters" role="search" aria-label="Fleet filters">
+      <label class="ws-select" id="fleet-sub-wrap" hidden>Subscription
+        <select id="fleet-sub-filter" aria-label="Filter by subscription"></select>
+      </label>
+      <label class="ws-select" id="workspace-selector-wrap" hidden>Workspace
+        <select id="workspace-selector" aria-label="Select workspace"></select>
+      </label>
+      <label class="ws-select" id="fleet-search-wrap" hidden>Search
+        <input type="search" id="fleet-search" placeholder="Name, resource group, region" autocomplete="off" title="Search by workspace name, subscription, resource group, region, SKU or host" aria-label="Search workspaces by name, subscription, resource group, region, SKU or host">
+      </label>
+    </div>
   </div>
 </div>
 <main id="main-document" tabindex="-1">
   <div id="opening-state" class="state-card" role="alert" hidden></div>
   <div id="workspace-error-view" class="state-card" role="alert" hidden></div>
+  <section id="fleet-view" aria-labelledby="fleet-title" hidden>
+    <div class="hero fleet-hero">
+      <div class="hero-in">
+        <div>
+          <h1 id="fleet-title">Azure Databricks fleet review</h1>
+          <p class="lead" id="fleet-lead"></p>
+        </div>
+      </div>
+    </div>
+    <div class="page">
+      <div class="kpis" id="fleet-kpis"></div>
+      <div class="stack-gap fleet-cards">
+        <div class="card flat"><div class="card-head"><h3>Workspaces (<span id="fleet-ws-count">0</span>)</h3><p>One row per workspace: collection status, access inside the workspace, findings and period cost. Select a name to open its detailed review.</p></div><div class="wrap"><table class="dense" id="fleet-table"></table></div></div>
+        <div class="card flat"><div class="card-head"><h3>Findings in the visible workspaces (<span id="fleet-findings-count">0</span>)</h3><p id="fleet-findings-note"></p></div><div class="wrap"><table class="dense" id="fleet-findings-table"></table></div></div>
+      </div>
+    </div>
+  </section>
+  <div id="access-banner" class="access-banner" role="status" hidden></div>
   <div id="report-body" hidden>
     <section class="hero" id="sec-cover" aria-labelledby="cover-title">
       <div class="hero-in">
@@ -1095,8 +1135,13 @@ html.branded .foot{background:none;color:#475467}
     downloadBlob("databricks-dependencies.csv", "\uFEFF" + lines.join("\r\n"), "text/csv;charset=utf-8");
   });
   document.getElementById("export-findings-csv-btn").addEventListener("click", function () {
-    if (!currentSnap) { return; }
-    downloadBlob("databricks-findings.csv", checksCsv(currentSnap.checks || []), "text/csv;charset=utf-8");
+    if (currentSnap) { downloadBlob("databricks-findings.csv", checksCsv(currentSnap.checks || []), "text/csv;charset=utf-8"); return; }
+    if (!isMulti) { return; }
+    var fleetRows = [];
+    (rootData.workspace_runs || []).forEach(function (r) { ((r.snapshot && r.snapshot.findings) || []).forEach(function (f) { fleetRows.push(f); }); });
+    var cols = ["workspace_name"].concat(CHECK_COLS), lines = [cols.join(",")];
+    fleetRows.forEach(function (f) { lines.push(cols.map(function (c) { return csvEscape(f[c]); }).join(",")); });
+    downloadBlob("databricks-fleet-findings.csv", "\uFEFF" + lines.join("\r\n"), "text/csv;charset=utf-8");
   });
 
   var tabObs = document.getElementById("tab-dep-observed");
@@ -1476,7 +1521,7 @@ html.branded .foot{background:none;color:#475467}
       dist.appendChild(legend);
     }
 
-    var client = snap.client || { name: "Customer", logo_data_uri: "", logo_alt: "Authorized customer logo" };
+    var client = (snap.client && snap.client.logo_data_uri) ? snap.client : ((rootData && rootData.client) || snap.client || { name: "Customer", logo_data_uri: "", logo_alt: "Authorized customer logo" });
     var plaque = document.getElementById("brand-plaque");
     clear(plaque);
     var hasLogo = client.logo_data_uri && /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(client.logo_data_uri);
@@ -2283,7 +2328,15 @@ html.branded .foot{background:none;color:#475467}
   function renderSnapshot(snap) {
     currentSnap = snap;
     document.getElementById("workspace-error-view").hidden = true;
+    document.getElementById("fleet-view").hidden = true;
     document.getElementById("report-body").hidden = false;
+    var accBanner = document.getElementById("access-banner"), acc = snap.workspace_access;
+    clear(accBanner);
+    accBanner.hidden = !(acc && acc.in_workspace === false);
+    if (!accBanner.hidden) {
+      accBanner.appendChild(el("b", { text: "No access inside the workspace. " }));
+      accBanner.appendChild(document.createTextNode((acc.reason || "") + " This review shows the Azure side (ARM, network, associated resources, Advisor and costs); checks that need the workspace APIs stay Not evaluated."));
+    }
     var g = (snap.scores && snap.scores.global) || {};
     var counts = { critical: 0, high: 0, medium: 0, low: 0 };
     (snap.findings || []).forEach(function (f) { if (counts[f.severity] !== undefined) { counts[f.severity]++; } });
@@ -2313,41 +2366,184 @@ html.branded .foot{background:none;color:#475467}
 
   applyPresentation();
   if (isMulti) {
-    var selWrap = document.getElementById("workspace-selector-wrap");
-    var sel = document.getElementById("workspace-selector");
     var runs = rootData.workspace_runs || [];
-    var agg = rootData.aggregate || {};
-    document.getElementById("multi-overview").hidden = false;
-    selWrap.hidden = false;
-    rich(document.getElementById("multi-summary"), ["Multi-workspace view · ", [num(runs.length)], plural(runs.length, " workspace selected", " workspaces selected") + " · ", [num(agg.findings_total || 0)], " findings · ",
-      [num((agg.dependency_counts && agg.dependency_counts.nodes_total) || 0)], " dependency nodes · ", [num(agg.failed_workspace_count || 0)], plural(agg.failed_workspace_count || 0, " workspace with errors", " workspaces with errors")]);
-    runs.forEach(function (r, idx) {
-      sel.appendChild(el("option", { value: String(idx), text: r.workspace_name + " (" + r.status + ")" }));
+    var fleetMeta = rootData.fleet || {};
+    var sel = document.getElementById("workspace-selector");
+    var subSel = document.getElementById("fleet-sub-filter");
+    var search = document.getElementById("fleet-search");
+    var fleetView = document.getElementById("fleet-view");
+    ["multi-overview", "workspace-selector-wrap", "fleet-sub-wrap", "fleet-search-wrap"].forEach(function (id) { document.getElementById(id).hidden = false; });
+    var ACCESS = { granted: "Yes", partial: "Yes (partial)", denied: "No", unreachable: "No (network)", token_failed: "No (token)", disabled: "No (disabled)", error: "No (error)", not_collected: "Not evaluated" };
+    var RUN = { ok: "Complete", partial: "Partial", error: "Error" };
+    var COST = { complete: "Complete", partial: "Partial", error: "Not available", denied: "No cost permission", not_configured: "Not configured", throttled: "Throttled (HTTP 429)", not_collected: "Not collected" };
+    function fr(r) { return r.fleet_row || {}; }
+    function subKey(r) { return fr(r).subscription_id || r.subscription_id || ""; }
+    function subName(r) { return fr(r).subscription_name || r.subscription_name || subKey(r) || "—"; }
+    var subs = {};
+    runs.forEach(function (r) { var k = subKey(r); if (!subs[k]) { subs[k] = { name: subName(r), count: 0 }; } subs[k].count += 1; });
+    subSel.appendChild(el("option", { value: "all", text: "All (" + runs.length + plural(runs.length, " workspace)", " workspaces)") }));
+    Object.keys(subs).sort(function (a, b) { return String(subs[a].name).localeCompare(String(subs[b].name), "en", { sensitivity: "base" }); }).forEach(function (k) {
+      subSel.appendChild(el("option", { value: k, text: subs[k].name + " (" + subs[k].count + ")" }));
     });
+    function visibleRuns() {
+      var sub = subSel.value || "all", q = (search.value || "").toLowerCase().trim(), out = [];
+      runs.forEach(function (r, idx) {
+        if (sub !== "all" && subKey(r) !== sub) { return; }
+        if (q) {
+          var f = fr(r), hay = [r.workspace_name, subName(r), f.resource_group, f.location, f.sku, f.workspace_host].join(" ").toLowerCase();
+          if (hay.indexOf(q) === -1) { return; }
+        }
+        out.push({ run: r, idx: idx });
+      });
+      return out;
+    }
+    function refillWorkspaces(vis) {
+      var prev = sel.value;
+      clear(sel);
+      sel.appendChild(el("option", { value: "all", text: "All (" + vis.length + ")" }));
+      vis.forEach(function (x) { sel.appendChild(el("option", { value: String(x.idx), text: x.run.workspace_name + " · " + lab(RUN, x.run.status) })); });
+      sel.value = vis.some(function (x) { return String(x.idx) === prev; }) ? prev : "all";
+    }
+    function accessCell(f) {
+      var a = f.workspace_access || {}, yes = a.in_workspace === true;
+      var box = el("div");
+      box.appendChild(pill(yes ? (a.status === "partial" ? "tone-warn" : "tone-ok") : "tone-crit", lab(ACCESS, a.status)));
+      if (a.reason && (!yes || a.status === "partial")) { box.appendChild(el("small", { className: "fleet-note", text: a.reason })); }
+      return { v: box, s: yes ? 1 : 0 };
+    }
+    function sevCell(c) {
+      c = c || {};
+      var box = el("span", { className: "sev-row", title: SEVS.map(function (k) { return L.sev[k] + ": " + (c[k] || 0); }).join(" · ") });
+      SEVS.forEach(function (k) { box.appendChild(sevPill(k, L.sev[k].charAt(0) + " " + (c[k] || 0))); });
+      return { v: box, s: (c.critical || 0) * 1e6 + (c.high || 0) * 1e4 + (c.medium || 0) * 100 + (c.low || 0) };
+    }
+    function costCell(f) {
+      var c = f.cost || {};
+      if (isNum(c.total) && c.currency) {
+        var parts = [];
+        if (isNum(c.dbu)) { parts.push("DBU " + money(c.dbu, c.currency)); }
+        if (isNum(c.infra)) { parts.push("infra " + money(c.infra, c.currency)); }
+        return { v: stack(money(c.total, c.currency), parts.join(" · ") || null), s: c.total };
+      }
+      if (c.total === 0) { return { v: "No charges in the period", s: 0 }; }
+      return { v: el("span", { className: "fleet-note", text: lab(COST, c.status) + (c.reason ? " (" + c.reason + ")" : "") }), s: -1 };
+    }
+    function renderFleet(vis) {
+      var counts = { ok: 0, partial: 0, error: 0 }, sev = { critical: 0, high: 0, medium: 0, low: 0 }, noAccess = 0, subsSeen = {};
+      var passed = 0, failed = 0, evaluated = 0, notEval = 0, totals = {}, dbu = {}, infra = {}, split = {}, zero = 0, missing = 0;
+      vis.forEach(function (x) {
+        var r = x.run, f = fr(r), c = f.cost || {}, g = (r.snapshot && r.snapshot.scores && r.snapshot.scores.global) || {};
+        counts[r.status] = (counts[r.status] || 0) + 1;
+        subsSeen[subKey(r)] = true;
+        if (r.snapshot && !(f.workspace_access && f.workspace_access.in_workspace)) { noAccess += 1; }
+        SEVS.forEach(function (k) { sev[k] += ((f.findings || {})[k]) || 0; });
+        passed += g.passed || 0; failed += g.failed || 0; evaluated += g.evaluated || 0; notEval += g.not_evaluated || 0;
+        if (isNum(c.total) && c.currency) {
+          totals[c.currency] = (totals[c.currency] || 0) + c.total;
+          dbu[c.currency] = (dbu[c.currency] || 0) + (c.dbu || 0);
+          infra[c.currency] = (infra[c.currency] || 0) + (c.infra || 0);
+          if (isNum(c.dbu) || isNum(c.infra)) { split[c.currency] = true; }
+        } else if (c.total === 0) { zero += 1; } else { missing += 1; }
+      });
+      var nSubs = Object.keys(subsSeen).length, total = sev.critical + sev.high + sev.medium + sev.low, applicable = evaluated + notEval;
+      rich(document.getElementById("fleet-lead"), [[num(vis.length)], " of " + num(runs.length) + plural(runs.length, " workspace", " workspaces") + " in ", [num(nSubs)],
+        plural(nSubs, " subscription", " subscriptions") + " · selection: " + (fleetMeta.selection === "names" ? "workspaces named in the request" : "every visible workspace")
+        + (fleetMeta.subscription_filter ? " of subscription " + fleetMeta.subscription_filter : "") + " · " + utc(rootData.reference_utc)
+        + (isNum(fleetMeta.duration_seconds) ? " · collected in " + num(fleetMeta.duration_seconds) + " s" : "")
+        + (rootData.provenance === "SIMULATED" ? " · SIMULATED DATA" : "")]);
+      var k = document.getElementById("fleet-kpis");
+      clear(k);
+      k.appendChild(kpi(num(vis.length), null, "Workspaces", num(nSubs) + plural(nSubs, " subscription", " subscriptions") + " · " + counts.ok + " complete · " + counts.partial + " partial · " + counts.error + " error"));
+      k.appendChild(kpi(num(noAccess), null, "No access inside the workspace", noAccess ? "Azure-side review only for these workspaces" : "Every collected workspace was readable"));
+      k.appendChild(kpi(num(total), null, "Findings", sev.critical + " critical · " + sev.high + " high · " + sev.medium + " medium · " + sev.low + " low"));
+      var idx = passed + failed ? Math.round(1000 * passed / (passed + failed)) / 10 : null;
+      k.appendChild(kpi(isNum(idx) ? NF.format(idx) : "—", isNum(idx) ? "%" : null, "Combined local index", passed + " passed · " + failed + " failed"));
+      var cov = applicable ? Math.round(1000 * evaluated / applicable) / 10 : null;
+      k.appendChild(kpi(isNum(cov) ? NF.format(cov) : "—", isNum(cov) ? "%" : null, "Combined coverage", evaluated + " of " + applicable + " applicable checks evaluated"));
+      var cur = Object.keys(totals).sort(), notes = [];
+      var splitCur = cur.filter(function (c) { return split[c]; });
+      if (splitCur.length) { notes.push(splitCur.map(function (c) { return "DBU " + money(dbu[c], c) + " · infra " + money(infra[c], c); }).join(" | ")); }
+      else if (cur.length) { notes.push("Month to date"); }
+      if (zero) { notes.push(zero + " with no charges"); }
+      if (missing) { notes.push(missing + " without cost data"); }
+      k.appendChild(kpi(cur.length ? cur.map(function (c) { return money(totals[c], c); }).join(" + ") : (zero && !missing ? "0" : "—"), null, "Period cost", notes.join(" · ") || "No cost data"));
+      document.getElementById("fleet-ws-count").textContent = num(vis.length);
+      renderTable(document.getElementById("fleet-table"),
+        ["Workspace", "Subscription", "Resource group", "Region / SKU", "Collection", "In-workspace access", "Index / coverage", { t: "Findings C/H/M/L" }, "Period cost"],
+        vis.map(function (x) {
+          var r = x.run, f = fr(r);
+          var btn = el("button", { type: "button", className: "fleet-ws", text: r.workspace_name, "aria-label": "Open the detailed review of " + r.workspace_name });
+          btn.addEventListener("click", function () { sel.value = String(x.idx); applyFleet(); window.scrollTo(0, 0); });
+          var stBox = el("div");
+          stBox.appendChild(pill(r.status === "ok" ? "tone-ok" : r.status === "partial" ? "tone-warn" : "tone-crit", lab(RUN, r.status)));
+          if (r.status === "error" && r.error) { stBox.appendChild(el("small", { className: "fleet-note", text: String(r.error.code || "") })); }
+          if (isNum(f.duration_seconds)) { stBox.appendChild(el("small", { className: "fleet-note", text: num(f.duration_seconds) + " s" })); }
+          return [{ v: btn, s: r.workspace_name }, subName(r), f.resource_group || "—", (f.location || "—") + " / " + (f.sku || "—"),
+            { v: stBox, s: r.status === "error" ? 2 : r.status === "partial" ? 1 : 0 }, accessCell(f),
+            { v: (isNum(f.score) ? pct(f.score) : "Not evaluated") + " / " + (isNum(f.coverage_percent) ? pct(f.coverage_percent) : "—"), s: isNum(f.score) ? f.score : -1 },
+            sevCell(f.findings), costCell(f)];
+        }),
+        { sortable: true, page: 25, empty: "No workspace matches the filter." });
+      var all = [];
+      vis.forEach(function (x) { ((x.run.snapshot && x.run.snapshot.findings) || []).forEach(function (f) { all.push({ f: f, r: x.run }); }); });
+      all.sort(function (a, b) { return (SEVS.indexOf(a.f.severity) - SEVS.indexOf(b.f.severity)) || String(a.r.workspace_name).localeCompare(String(b.r.workspace_name)); });
+      var LIMIT = 400, shown = all.slice(0, LIMIT);
+      document.getElementById("fleet-findings-count").textContent = num(all.length);
+      document.getElementById("fleet-findings-note").textContent = all.length > LIMIT
+        ? "The " + LIMIT + " most severe of " + num(all.length) + " findings; filter by subscription or workspace, or export the checks CSV."
+        : "Failed checks of the visible workspaces, most severe first.";
+      renderTable(document.getElementById("fleet-findings-table"),
+        ["Severity", "Workspace", "Area", "Level", "Finding", "Resource / workload", "Recommendation"],
+        shown.map(function (x) {
+          return [{ v: sevPill(x.f.severity), s: SEVS.indexOf(x.f.severity) }, x.r.workspace_name, lab(L.area, x.f.area), lab(L.level, x.f.level),
+            x.f.title, x.f.workload_name ? x.f.workload_name : { v: brk(x.f.resource_id) }, x.f.recommendation];
+        }),
+        { sortable: true, page: 25, empty: "No findings in this scope or filter." });
+    }
     var selectRun = function (idx) {
       var run = runs[idx];
       if (!run) { return; }
+      fleetView.hidden = true;
       if (run.snapshot) {
         renderSnapshot(run.snapshot);
       } else {
         currentSnap = null;
         document.getElementById("report-body").hidden = true;
+        document.getElementById("access-banner").hidden = true;
         var errView = document.getElementById("workspace-error-view");
         errView.hidden = false;
         clear(errView);
-        var err = run.error || {};
+        var err = run.error || {}, f = fr(run);
         errView.appendChild(el("h2", { text: "Collection failed for workspace " + run.workspace_name }));
         errView.appendChild(el("p", { text: "No empty data or scores from another workspace are substituted. Select another workspace, or fix the access and run the review again." }));
         var dl = el("dl", { className: "dl2" });
-        [["Code", err.code], ["Source", err.source_id], ["HTTP", err.http_status], ["Message", err.message], ["UTC time", utc(run.reference_utc)]].forEach(function (p) {
+        [["Subscription", subName(run)], ["Resource group", f.resource_group], ["Code", err.code], ["Source", err.source_id], ["HTTP", err.http_status], ["Message", err.message], ["UTC time", utc(run.reference_utc)]].forEach(function (p) {
           dl.appendChild(el("dt", { text: p[0] }));
           dl.appendChild(el("dd", { text: p[1] === null || p[1] === undefined || p[1] === "" ? "—" : String(p[1]) }));
         });
         errView.appendChild(dl);
       }
     };
-    sel.addEventListener("change", function () { selectRun(Number(sel.value)); });
-    selectRun(0);
+    function applyFleet() {
+      var vis = visibleRuns();
+      refillWorkspaces(vis);
+      rich(document.getElementById("multi-summary"), ["Fleet view · ", [num(vis.length)], " of " + num(runs.length) + plural(runs.length, " workspace", " workspaces")]);
+      if (sel.value === "all") {
+        currentSnap = null;
+        document.getElementById("report-body").hidden = true;
+        document.getElementById("workspace-error-view").hidden = true;
+        document.getElementById("access-banner").hidden = true;
+        fleetView.hidden = false;
+        renderFleet(vis);
+        document.title = "Azure Databricks fleet review | " + num(vis.length) + plural(vis.length, " workspace", " workspaces");
+      } else {
+        selectRun(Number(sel.value));
+      }
+    }
+    subSel.addEventListener("change", applyFleet);
+    search.addEventListener("input", applyFleet);
+    sel.addEventListener("change", function () { applyFleet(); window.scrollTo(0, 0); });
+    applyFleet();
   } else {
     renderSnapshot(rootData);
   }

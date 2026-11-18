@@ -1,0 +1,16 @@
+api_version: azuresre.ai/v1
+kind: ScheduledTask
+metadata:
+  name: weekly-sqlmi-maintenance-resilience
+spec:
+  description: SQL MI - Weekly maintenance resilience report. Every Monday, last week's SQL MI reconfigurations,
+    user impact, applications without retries and upcoming maintenance.
+  schedule: "0 7 * * 1"
+  time_zone: UTC
+  enabled: false
+  agent: sqlmi-maintenance-advisor
+  mode: Autonomous
+  prompt: '@sqlmi-maintenance-advisor Generate the weekly SQL Managed Instance maintenance resilience
+    report (operation=report, period=last_7d). Deliver the 4 download links (HTML, JSON, instances CSV
+    and impact CSV), the short answer, the next maintenance with the applications at risk and the High
+    priority actions.'
