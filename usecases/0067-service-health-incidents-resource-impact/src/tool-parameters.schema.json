@@ -1,0 +1,75 @@
+{
+  "title": "generate-service-health-report runtime parameters",
+  "description": "Azure SRE runtime input schema. Numeric parameter type is int (not JSON Schema's integer). Identity, source scope, branding, query text and output directory are administrator-owned code configuration, never inputs.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "operation": {
+      "type": "string",
+      "enum": ["report", "query"],
+      "default": "report"
+    },
+    "period": {
+      "type": "string",
+      "enum": ["auto", "previous_month", "last_24h", "last_7d", "custom"],
+      "default": "auto",
+      "description": "auto requests previous UTC calendar-month updates for report, last 24-hour updates for query. Active observed and future maintenance retain separate context from the source's 365-day lastUpdateTime lookback; monthly recurrence is not a historical-completeness promise."
+    },
+    "start_utc": {
+      "type": "string",
+      "default": "",
+      "maxLength": 40,
+      "description": "Only with custom: ISO 8601 timestamp with Z or explicit zero UTC offset, up to microsecond precision. At most 93 days, within the retained-source lookback; no sub-microsecond rounding."
+    },
+    "end_utc": {
+      "type": "string",
+      "default": "",
+      "maxLength": 40,
+      "description": "Only with custom: exclusive UTC end with up to microsecond precision, after start and no later than the run reference."
+    },
+    "view": {
+      "type": "string",
+      "enum": ["summary", "events", "resources", "coverage"],
+      "default": "summary",
+      "description": "Query projection; raw records/page envelopes remain in full report JSON."
+    },
+    "event_type": {
+      "type": "string",
+      "enum": ["all", "ServiceIssue", "PlannedMaintenance"],
+      "default": "all",
+      "description": "Exact query-only local event category. Never broadens source access."
+    },
+    "state": {
+      "type": "string",
+      "enum": ["all", "Active", "Resolved", "Unknown"],
+      "default": "all",
+      "description": "Query-only source-observed current status, not historical status or workload health."
+    },
+    "time_scope": {
+      "type": "string",
+      "enum": ["all", "requested_updates", "active_now", "future_maintenance"],
+      "default": "all",
+      "description": "Query-only local temporal classification. Lanes can overlap. Newness is never automatically established."
+    },
+    "search": {
+      "type": "string",
+      "default": "",
+      "maxLength": 160,
+      "description": "Query-only case-insensitive substring over event ID/name/title/summary, service and region. Not a URL or source-side query."
+    },
+    "limit": {
+      "type": "int",
+      "default": 10,
+      "minimum": 1,
+      "maximum": 50,
+      "description": "Query-only requested page size. Whole projected rows may be fewer to meet the 3500-byte default-JSON transport bound. Report requires the default."
+    },
+    "offset": {
+      "type": "int",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 10000,
+      "description": "Query-only offset. Use returned next_offset. Every invocation is a fresh read, not a stable previous-report cursor. Report requires zero."
+    }
+  }
+}

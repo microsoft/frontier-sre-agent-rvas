@@ -1,0 +1,17 @@
+api_version: azuresre.ai/v1
+kind: ScheduledTask
+metadata:
+  name: daily-relevant-changes-digest
+spec:
+  description: Azure Changes - Daily relevant changes digest. Relevant Azure changes of the last 24 hours,
+    with noise filtered out, deletes, security-relevant changes, new role assignments, Activity Log gap
+    events and unusual activity.
+  schedule: "0 18 * * *"
+  time_zone: UTC
+  enabled: false
+  agent: change-digest-reviewer
+  mode: Autonomous
+  prompt: '@change-digest-reviewer Run the daily relevant Azure changes digest (operation=report, period=last_24h).
+    Give me the links to the HTML report, the JSON snapshot and the two CSV files first, then the headline,
+    the high and medium changes, deletes, security-relevant changes, new role assignments, Activity Log
+    gap events, unusual activity and the coverage.'

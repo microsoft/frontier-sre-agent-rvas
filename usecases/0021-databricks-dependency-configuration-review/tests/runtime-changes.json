@@ -1,0 +1,70 @@
+{
+  "_description": "Runtime changes made after native-readiness-validation.json. That receipt stays as observed; each entry records why a frozen runtime file changed and its new LF SHA-256.",
+  "changes": [
+    {
+      "date_utc": "2026-11-06",
+      "files_sha256": {
+        "generate-databricks-dependency-report.py": "2d7263f01ce738e66f82fda57d7d983536a18e0b6a31e588a7d47eb5c05da778"
+      },
+      "reason": "Azure SRE Agent sandbox now issues sidecar placeholder managed identity tokens (iss adc-msi-sidecar, claims tid/clientId/scp, no aud/appid) that the platform proxy swaps at egress. Token claim checks map them with normalize_sidecar_claims; cross_tenant_multitenant_fic can read the bridge app certificate from Key Vault (CROSS_TENANT_CERT_KEYVAULT_URL / CROSS_TENANT_CERT_NAME) because a sidecar token cannot be sent as a federated client assertion (AADSTS5002723).",
+      "validated": "Unit tests (tests/test_sidecar_tokens.py) and a live cross-tenant run in a lab agent on 2026-11-06 (4 files written; ARM 403 handled by Plane 2 as before)."
+    },
+    {
+      "date_utc": "2026-11-12",
+      "files_sha256": {
+        "generate-databricks-dependency-report.py": "a26928c8b3a96a26c91a5210f01d507f98b9b358f8dd417444374eda3aabd642"
+      },
+      "reason": "Report presentation redesign only (report_template.html rebuilt into the standalone tool with build_tool.py): slim top bar with section navigation, export menu and print, verdict-first hero, KPI cards, layered dependency graph with legend, sortable and paged tables, A4 print footer and dark mode. Data collection, model, findings logic, parameters, output files and the tool-result JSON are unchanged.",
+      "validated": "Offline test suite (python -m pytest -q) and browser renders of the synthetic fixture at 1440, 1280, 1024, 768, 390 and 320 px plus A4 print (Edge headless)."
+    },
+    {
+      "date_utc": "2026-11-12",
+      "files_sha256": {
+        "generate-databricks-dependency-report.py": "d2fca84a8ea2d2ceaefe8b616f68c2f62a0096631bbdb40172517516e780a972",
+        "tool-parameters.schema.json": "5d90b8e2a6e8f8c6e118e7e0c7396ee2b7a40bf0de155b1f1e58b4ac12bf777c",
+        "skills/databricks-dependency-live/SKILL.md": "091520084062d3c7be0a732501b1c09ad8be8a733d09a8455ecc8ceadf006629",
+        "subagent-instructions-and-prompts.md": "0d89b25559ce57d1520f329433642f94c598425c8f6199d84948d3e35cdb0733"
+      },
+      "reason": "Databricks costs module (report section 6, view=costs): read-only Cost Management queries (api-version 2025-03-01, AmortizedCost) for the workspace resource and its managed resource group grouped by the Databricks tags (Vendor, ClusterName, JobId, SqlEndpointId, DatabricksInstancePoolId) and up to three allocation tags; DBU vs infrastructure, attribution, the unattributed share, movers and optimisation signals with documented savings estimates counted once per object; runtime catalog reads (clusters/spark-versions, clusters/list-node-types); optional system.billing.usage detail through one fixed Statement Execution request, off by default; operation=self_test (built-in SIMULATED workspace, no network); validated presentation hooks for customer editions (REPORT_FOCUS, BRAND_THEME, BRAND_DISPLAY_FONT_DATA_URI, BRAND_LOGO_PLACEMENT); R06 evaluated from tag coverage. Parameter schema gains operation=self_test and view=costs; the skill and specialist instructions explain costs, estimates and when self_test may be used.",
+      "validated": "Offline test suite (python -m pytest -q, including tests/test_costs.py), Cost Management query shapes validated read-only against a lab subscription without Databricks (2026-11-12), Edge renders at 1440, 390 and A4 print plus dark mode, and a lab SRE Agent run of the customer edition built from this tool (self_test, four files HTTP 200)."
+    },
+    {
+      "date_utc": "2026-11-16",
+      "files_sha256": {
+        "tool-parameters.schema.json": "139c88710fdeb321a0d6b9834287b6c29bee8909d83c45ed5c6cb0e236288ed0",
+        "skills/databricks-dependency-live/SKILL.md": "a6c5dca83feb5f203f1ae4d4bc7665714970326c2ff9b14c3ec819ecb2858d42",
+        "subagent-instructions-and-prompts.md": "557924fd4645d5c6dea63b109f8be51b48c3edb80072537d1445b7082fda2b64"
+      },
+      "reason": "Tool name only. Today's portal limits Tool Name to 36 characters and cuts the previous name generate-databricks-dependency-report (37 characters), so the tool is now named databricks-dependency-report. The skill, the specialist instructions and the parameter schema title use the new name. The Python file keeps its name and its code is unchanged; the 2026-10-16 receipt and the screenshots keep the name that was saved through the API.",
+      "validated": "Offline test suite (python -m unittest discover) on 2026-11-16. The new name was not saved or run in a lab agent as part of this change."
+    },
+    {
+      "date_utc": "2026-11-16",
+      "files_sha256": {
+        "generate-databricks-dependency-report.py": "163f6c79d6ee1fbe1d0c9627270765ce891f7861b518667d1af2c18d9ec161ed",
+        "skills/databricks-dependency-live/SKILL.md": "6800b43dd20f5f8cc293c45c2ee1a7d85f8cabdb084f7fe25dfceab6a5d3e943",
+        "subagent-instructions-and-prompts.md": "bb58aefe4f2128b4a6fb59d5386e948a7ea7fe687188b5de7c039c46419b8794"
+      },
+      "reason": "English report. The HTML report (template text, labels, chips, tooltips, empty states, print footer, <html lang=\"en\">, in-report CSV download names), the rule catalog (titles, recommendations and business impacts; rule IDs unchanged), the engine's check reasons, FinOps candidates, cost signals, executive messages and severity labels, and the data names of the built-in SIMULATED self_test workspace are now English. Amounts and months use English formats (19,575; 60.2%; October 2026) and the CLIENT_NAME / CLIENT_LOGO_ALT defaults are Customer / Authorized customer logo. Collection, scopes, parameters, the tool-result JSON, the four output file names and the findings logic are unchanged: only string constants changed, plus the two formatting helpers (es_amount / es_month renamed en_amount / en_month, without the Spanish separator swap). The skill and the specialist instructions quote the English labels.",
+      "validated": "Offline test suite (python -m pytest -q, 52 tests) on 2026-11-16; an AST comparison with the previous files (only string constants and the two formatting helpers differ); a second byte-identical rebuild with build_tool.py; Edge renders of the English sample run and of operation=self_test at 1440, 1024 and 390 px, in dark mode and in A4 print. The change was not saved or run in a lab agent."
+    },
+    {
+      "date_utc": "2026-11-17",
+      "files_sha256": {
+        "generate-databricks-dependency-report.py": "70a17a4cb862fa394a57764c5d0b14ac84d21ce643709bff9b1e31351326bfc0",
+        "tool-parameters.schema.json": "a938a4522ac502f7066d951c28fb15e6192e1a4a28cbc3940af358d51b53a15a"
+      },
+      "reason": "Fleet review. AUTO_DISCOVERY (default True, same tenant only) lists every Databricks workspace the agent identity can read with one fixed read-only Azure Resource Graph query (POST /providers/Microsoft.ResourceGraph/resources, api-version 2022-10-01; the only new POST, no user input in the KQL or in URLs), including subscription display names; APPROVED_WORKSPACES becomes optional per-workspace overrides (placeholder keys ignored) and WORKSPACE_DEFAULTS covers discovered workspaces, with the new cost_scope workspace_and_managed_resource_group (workspace DBUs + managed resource group infrastructure in one Cost Management query). New last parameter subscription (ID or display name); workspace_names accepts all or 1-50 exact names; report without a selection reviews every visible workspace (at most 50); query is limited to 5 workspaces; list_workspaces pages the discovered inventory with subscription names. Workspaces are collected in parallel (6 workers, 720 s shared budget, 800 s hard stop), with at most 2 concurrent Cost Management queries and the detailed cost analysis skipped above 5 workspaces; each workspace reports its in-workspace access (401 or network failure stops further in-workspace calls) and a 404 from outboundNetworkDependenciesEndpoints without VNet injection is not_applicable. One report covers the selection with Subscription / Workspace / Search filters and a fleet overview (KPIs, one row per workspace, findings) that opens the existing detailed view; the fleet table and the full search placeholder fit a 1440-pixel window, and the filters and fleet KPI cards stack without horizontal scrolling down to 320 pixels. ARTIFACT_BYTES rises to 40 MB per file and the tool result stays within 3500 bytes. The schema adds subscription and the new bounds. self_test, the four output files and the findings logic are unchanged.",
+      "validated": "Offline test suite (python -m pytest -q: the existing 52 tests plus 15 in tests/test_fleet.py, 67 in total) on 2026-11-17; Edge headless checks of the SIMULATED fleet sample run (filters, detail, no-access banner, error view, no console errors, widths from 1440 to 320 pixels) and of a simulated 50-workspace report; live runs in a same-tenant lab agent through the Python tool test playground, with the lab IDs only in a temporary copy: list_workspaces with and without subscription, and reports of all workspaces and of one workspace with the detailed cost analysis off, because the playground cuts calls at about 100 seconds. The case without in-workspace access is covered offline (tests and sample run). The live runs used an earlier build of the same day that differs only in the report template (fleet table header, search box text, filter-bar and fleet KPI CSS)."
+    },
+    {
+      "date_utc": "2026-11-17",
+      "files_sha256": {
+        "skills/databricks-dependency-live/SKILL.md": "f7950c44080f4c9f55d2c8b0c6e61c94e6fc2495df82f14a5ba33dd270c768d3",
+        "subagent-instructions-and-prompts.md": "b782ed04806a09db0011af23b5a2229753787181170bc1f3b72179dd1f88e145"
+      },
+      "reason": "Documentation for the fleet review. The runtime skill and the specialist instructions drop the approved workspace list: the tool works with every workspace the agent identity can read, and the specialist maps each request to one call (all workspaces, one subscription by display name or ID, one workspace, several exact names, list_workspaces by subscription), keeps reports within 50 workspaces and queries within 5, reports each workspace's in-workspace access and keeps the cross-tenant notes. Chat prompts are English only.",
+      "validated": "Offline test suite (python -m pytest -q, 67 tests) on 2026-11-17, including the frozen-file hashes and the README links to every image."
+    }
+  ]
+}

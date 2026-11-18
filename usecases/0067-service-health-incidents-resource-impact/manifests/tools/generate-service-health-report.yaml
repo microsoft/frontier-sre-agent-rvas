@@ -1,0 +1,67 @@
+api_version: azuresre.ai/v1
+kind: Tool
+metadata:
+  name: generate-service-health-report
+spec:
+  type: PythonFunctionTool
+  description: Read-only ServiceIssue and PlannedMaintenance review for the fixed approved subscription;
+    complete HTML, JSON and two CSV files, or bounded source-qualified queries. No Azure writes.
+  timeoutSeconds: 900
+  code_file: ./generate-service-health-report.py
+  parameters:
+  - name: operation
+    type: string
+    required: false
+    description: 'Default: report. Allowed: report, query.'
+  - name: period
+    type: string
+    required: false
+    description: 'auto requests previous UTC calendar-month updates for report, last 24-hour updates for
+      query. Active observed and future maintenance retain separate context from the source''s 365-day
+      lastUpdateTime lookback; monthly recurrence is not a historical-completeness promise. Default: auto.
+      Allowed: auto, previous_month, last_24h, last_7d, custom.'
+  - name: start_utc
+    type: string
+    required: false
+    description: 'Only with custom: ISO 8601 timestamp with Z or explicit zero UTC offset, up to microsecond
+      precision. At most 93 days, within the retained-source lookback; no sub-microsecond rounding.'
+  - name: end_utc
+    type: string
+    required: false
+    description: 'Only with custom: exclusive UTC end with up to microsecond precision, after start and
+      no later than the run reference.'
+  - name: view
+    type: string
+    required: false
+    description: 'Query projection; raw records/page envelopes remain in full report JSON. Default: summary.
+      Allowed: summary, events, resources, coverage.'
+  - name: event_type
+    type: string
+    required: false
+    description: 'Exact query-only local event category. Never broadens source access. Default: all. Allowed:
+      all, ServiceIssue, PlannedMaintenance.'
+  - name: state
+    type: string
+    required: false
+    description: 'Query-only source-observed current status, not historical status or workload health.
+      Default: all. Allowed: all, Active, Resolved, Unknown.'
+  - name: time_scope
+    type: string
+    required: false
+    description: 'Query-only local temporal classification. Lanes can overlap. Newness is never automatically
+      established. Default: all. Allowed: all, requested_updates, active_now, future_maintenance.'
+  - name: search
+    type: string
+    required: false
+    description: Query-only case-insensitive substring over event ID/name/title/summary, service and region.
+      Not a URL or source-side query.
+  - name: limit
+    type: int
+    required: false
+    description: 'Query-only requested page size. Whole projected rows may be fewer to meet the 3500-byte
+      default-JSON transport bound. Report requires the default. Default: 10.'
+  - name: offset
+    type: int
+    required: false
+    description: 'Query-only offset. Use returned next_offset. Every invocation is a fresh read, not a
+      stable previous-report cursor. Report requires zero. Default: 0.'

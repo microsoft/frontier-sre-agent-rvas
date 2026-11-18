@@ -7,7 +7,6 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-STANDALONE = ROOT.parent / "manifests" / "tools" / "generate-databricks-dependency-report.py"
 REFERENCE = "2026-10-16T12:00:00Z"
 SUBSCRIPTION = "11111111-1111-4111-8111-111111111111"
 SRE_TENANT = "22222222-2222-4222-8222-222222222222"
@@ -31,7 +30,7 @@ def make_jwt(tid, appid, aud):
 
 
 def load_engine(standalone=False, cross_tenant=True):
-    target = STANDALONE if standalone else ROOT / "engine.py"
+    target = (ROOT.parent / "manifests" / "tools" / "generate-databricks-dependency-report.py" if standalone else ROOT / "engine.py")
     spec = importlib.util.spec_from_file_location("dbx_engine_test", target)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
