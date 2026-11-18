@@ -59,7 +59,7 @@ Create the pieces by hand in the portal, or deploy the manifests with the framew
    ![New chat with the subagent chip and the test prompt](docs/images/setup-chat.png)
 8. **Schedule it.** **Automation > Create ▾ > Scheduled task**: task name `Monthly AKS configuration review`, response subagent `aks-waf-live`, **Custom cron** `0 9 1 * *` (UTC), task details from `prompt` in [`manifests/scheduled-tasks/monthly-aks-configuration-review.yaml`](manifests/scheduled-tasks/monthly-aks-configuration-review.yaml) and **New chat thread for each run**. Run it once (in **Automation**, tick only this task and select **Run now**) and check the thread before you rely on the schedule.
 
-   ![Automation: search the task by name, tick only this task and Run now](docs/images/setup-task.png)
+   ![Automation: search by the task name; in this lab no monthly task exists yet, because it is optional](docs/images/setup-task.png)
 
 **Or deploy the manifests with the CLI.** From the repository root, or the unzipped package, and from a configured copy of the tool (the CLI sends the code as it is in the folder; it has not been run against a live agent yet):
 
