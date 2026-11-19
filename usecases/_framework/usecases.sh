@@ -666,10 +666,12 @@ meta = json.loads(meta)
 name = os.path.basename(src)
 skip_dirs = {"__pycache__", "node_modules", ".git", ".venv", "fixtures"}
 skip_files = {".DS_Store", ".env"}
+skip_top_dirs = {"sample-report", "src", "tests"}
 entries = []
 def walk(root, prefix, tests_fixtures=False):
     for dp, dns, fns in os.walk(root):
-        dns[:] = sorted(x for x in dns if x not in skip_dirs)
+        dns[:] = sorted(x for x in dns if x not in skip_dirs
+                        and not (dp == root and x in skip_top_dirs))
         for fn in sorted(fns):
             if fn in skip_files or fn.endswith(".pyc") or fn.startswith(".env."):
                 continue
